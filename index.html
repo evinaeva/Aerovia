@@ -280,6 +280,7 @@
       'toast.rush':'Rush hour!',
       'toast.wind':'Wind shift — runway closed',
       'toast.fog':'Fog — taxiing slowed',
+      'toast.emergency':'Fuel critical — land now!', 'toast.medical':'Medevac — straight through!',
       'float.combo':'×{x} combo', 'float.express':'on time!', 'float.nearMiss':'phew!',
       'loss.airTimeout':'Air timeout — didn\'t land in time',
       'loss.collision':'Collision',
@@ -288,7 +289,7 @@
       'loss.collisionRunway':'Collision on the runway',
       'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!',
       'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time',
-      'hud.vip':'VIP', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
+      'hud.vip':'VIP', 'hud.med':'MED', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
       'canvas.terminal':'TERMINAL', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- медали / достижения ---
@@ -379,6 +380,7 @@
       'toast.rush':'Час пик!',
       'toast.wind':'Смена ветра — полоса закрыта',
       'toast.fog':'Туман — руление замедлено',
+      'toast.emergency':'Топливо на нуле — садить срочно!', 'toast.medical':'Медицинский — вне очереди!',
       'float.combo':'×{x} комбо', 'float.express':'вовремя!', 'float.nearMiss':'уфф!',
       'loss.airTimeout':'Воздушный таймаут — не успел сесть',
       'loss.collision':'Столкновение',
@@ -387,7 +389,7 @@
       'loss.collisionRunway':'Столкновение на ВПП',
       'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!',
       'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время',
-      'hud.vip':'ВИП', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
+      'hud.vip':'ВИП', 'hud.med':'МЕД', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
       'canvas.terminal':'ТЕРМИНАЛ', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- медали / достижения ---
@@ -531,6 +533,9 @@
     // спец-борты / события
     EMERGENCY_CHANCE: 0.12,           // доля бортов «топливо на нуле»
     EMERGENCY_BONUS: 1.5,             // x1.5 денег за аварийный борт
+    MEDICAL_CHANCE: 0.10,             // доля «медицинских» бортов (вне очереди)
+    MEDICAL_AIR: 0.7,                 // множитель воздушного терпения медицинского (срочный)
+    MEDICAL_PAY: 30,                  // фикс-бонус за медицинский (он без наземных услуг)
     RUSH_PERIOD: 35, RUSH_DUR: 8,     // «час пик»: период и длительность волны
     WIND_PERIOD: 28, WIND_DUR: 12,    // смена ветра: период и длительность закрытия ВПП
     FOG_PERIOD: 45, FOG_DUR: 10,      // туман: период и длительность
@@ -569,7 +574,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.14';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.15';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -767,21 +772,27 @@
   function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
   function spawnPlane(){
-    const vip = Math.random() < K.VIP_CHANCE;
-    const emergency = !vip && Math.random() < K.EMERGENCY_CHANCE; // «топливо на нуле»
+    // спец-борты как мини-события (раздел 3 копилки): частный джет (вип),
+    // «топливо на нуле» (срочный + бонус), медицинский (вне очереди — без боксов).
+    const vip = Math.random() < K.VIP_CHANCE;                            // частный джет
+    const emergency = !vip && Math.random() < K.EMERGENCY_CHANCE;        // «топливо на нуле»
+    const medical = !vip && !emergency && Math.random() < K.MEDICAL_CHANCE; // медицинский
     const pool = shuffle(['repair','fuel','board']);
-    const nSvc = Math.random() < 0.45 ? 2 : 1;
+    // медицинский «вне очереди» — без наземных услуг: сразу к вылету, быстрый разворот
+    const nSvc = medical ? 0 : (Math.random() < 0.45 ? 2 : 1);
     const requests = pool.slice(0, nSvc).concat(['depart']);
-    const waitMult = vip ? 1 : 2;
-    // у аварийного борта воздушное терпение сильно меньше — садить срочно
-    const airBase = (emergency ? K.AIR_BASE*0.4 : K.AIR_BASE) * waitMult;
+    const waitMult = (vip||medical) ? 1 : 2;                             // джет и медицинский нетерпеливы
+    // воздушное терпение: топливо-на-нуле — садить срочно; медицинский — тоже спешит
+    const airMult = emergency ? 0.4 : (medical ? K.MEDICAL_AIR : 1);
+    const airBase = K.AIR_BASE * airMult * waitMult;
     const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1);
+    const reward = medical ? K.MEDICAL_PAY : Math.round(nSvc * K.MONEY_SVC * bonus);
     // вертикальная позиция зависания — у одной из полос/между ними
     const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
     planes.push({
       id: ++planeSeq,
       x: field.hoverX, y, ang: Math.PI, // нос влево
-      vip, emergency, requests, reqIndex:0,
+      vip, emergency, medical, requests, reqIndex:0,
       zone:'air',            // air | runway | field | bay
       path:[], moving:false, selected:false,
       landing:false, takeoff:false, exiting:false,
@@ -790,9 +801,14 @@
       groundTime:0, groundMax:0, waitMult,
       serveTime:0, serveMax:0, landedAt:0,
       halfPay:false, dead:false,
-      reward: Math.round(nSvc * K.MONEY_SVC * bonus),
+      reward,
       nSvc,
     });
+    // анонс мини-события (срочные борта «ломают рутину»); не на стартовом спавне
+    if(gameTime>0 && !zen){
+      if(emergency) toast={text:t('toast.emergency'), t:0, good:false};
+      else if(medical) toast={text:t('toast.medical'), t:0, good:false};
+    }
   }
 
   // ---- geometry ----
@@ -1279,8 +1295,9 @@
     ctx.beginPath(); ctx.moveTo(3,3); ctx.lineTo(-15,22); ctx.lineTo(-20,21); ctx.lineTo(-6,3); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(-16,-2.5); ctx.lineTo(-24,-10); ctx.lineTo(-27,-9.5); ctx.lineTo(-20,-2.5); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(-16,2.5); ctx.lineTo(-24,10); ctx.lineTo(-27,9.5); ctx.lineTo(-20,2.5); ctx.closePath(); ctx.fill(); }
-  // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый
-  function drawPlaneBodyAt(x,y,ang,s,vip,emergency){
+  // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый,
+  // медицинский — белый с красным крестом на фюзеляже
+  function drawPlaneBodyAt(x,y,ang,s,vip,emergency,medical){
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     ctx.save(); ctx.translate(5,7); ctx.globalAlpha=.28; planeShape('#000'); ctx.restore();
     if(vip){ ctx.shadowColor=hexa(COL.gold,.6); ctx.shadowBlur=16; }
@@ -1291,6 +1308,7 @@
     ctx.fillStyle=hexa(COL.ink,.55);
     ctx.beginPath(); ctx.arc(-8,-12,2.4,0,7); ctx.fill();
     ctx.beginPath(); ctx.arc(-8,12,2.4,0,7); ctx.fill();
+    if(medical){ ctx.fillStyle=COL.rose; ctx.fillRect(-7,-2,14,4); ctx.fillRect(-2,-7,4,14); } // красный крест поверх
     ctx.restore();
   }
 
@@ -1508,11 +1526,11 @@
       ctx.shadowColor=rcol; ctx.shadowBlur=9; ctx.stroke();
       ctx.restore();
     }
-    // пульсирующее кольцо аварийного борта в воздухе
-    if(pl.emergency && pl.zone==='air'){
-      const p=0.5+0.5*Math.sin(nowT*0.006);
+    // пульсирующее кольцо срочного борта в воздухе (аварийный — красный, медицинский — розовый)
+    if((pl.emergency||pl.medical) && pl.zone==='air'){
+      const p=0.5+0.5*Math.sin(nowT*0.006), pc=pl.emergency?COL.life:COL.rose;
       ctx.beginPath(); ctx.arc(pl.x,pl.y,20*ui+p*3*ui,0,7);
-      ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.life,.4+.4*p); ctx.stroke();
+      ctx.lineWidth=2; ctx.strokeStyle=hexa(pc,.4+.4*p); ctx.stroke();
     }
     // выделение — пунктирное кольцо
     if(pl.selected){
@@ -1520,7 +1538,7 @@
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([4,5]); ctx.stroke(); ctx.restore();
     }
 
-    drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5, pl.vip, pl.emergency);
+    drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5, pl.vip, pl.emergency, pl.medical);
 
     // иконка текущей нужды над бортом (8.45 = прежние 6.5 +30%)
     if(pl.zone!=='bay') drawIcon(need, pl.x, pl.y-28*ui, 8.45*ui, ncol, COL.ink);
@@ -1584,8 +1602,9 @@
       ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(x0,y0,pw,44*ui,9*ui); ctx.stroke();
       const tag = selected.vip ? (t('hud.plane')+' · '+t('hud.vip'))
                 : selected.emergency ? (t('hud.plane')+' '+t('hud.sos'))
+                : selected.medical ? (t('hud.plane')+' · '+t('hud.med'))
                 : t('hud.plane');
-      ctx.fillStyle = selected.emergency?COL.life:hexa(COL.muted,.8);
+      ctx.fillStyle = selected.emergency?COL.life : selected.medical?COL.rose : hexa(COL.muted,.8);
       ctx.font=`${7.5*ui}px ${MONO}`; ctx.textAlign='left'; ctx.textBaseline='middle';
       ctx.fillText(tag, x0+8*ui, y0+8*ui);
       for(let i=0;i<n;i++){
