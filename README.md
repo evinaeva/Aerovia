@@ -26,6 +26,8 @@ python3 -m http.server 8000
   вся механика, план до Google Play, бэклог.
 - [`docs/genre_feature_ideas.md`](docs/genre_feature_ideas.md) — копилка любимых
   фишек жанра (звук, иконки, миссии, самолёты, стратегии): что брать и что любят.
+- [`docs/achievements.md`](docs/achievements.md) — список достижений/медалей (46 шт.):
+  от лайтовых до задротских и секретных.
 - [`docs/DEV.md`](docs/DEV.md) — документация разработчика (устройство кода, как войти в проект).
 - [`CHANGELOG.md`](CHANGELOG.md) — история версий: что добавлено/изменено/убрано.
 
