@@ -321,6 +321,7 @@
     if(!drag.drew && dist(p.x,p.y,drag.start.x,drag.start.y)>10){
       drag.drew=true;
       drag.plane.path=[];            // начинаем новый маршрут
+      drag.plane.moving=true;        // борт трогается сразу, как пошла линия
     }
     if(drag.drew && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
       drag.plane.path.push({x:p.x,y:p.y});
