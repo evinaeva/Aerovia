@@ -1750,7 +1750,7 @@
     document.getElementById('settingsPanel').classList.toggle('hidden'); refreshLog();
   };
   document.getElementById('menuBtn').onclick=()=>{
-    recordResult(); running=false; paused=false; showLevels();
+    recordResult(); running=false; paused=false; ACH.flushToasts(); showLevels();
   };
   document.getElementById('optLives').onchange=e=>{ debug.infiniteLives=e.target.checked; };
   document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; };
@@ -1830,9 +1830,13 @@
     ];
 
     function persist(){ save.ach=[...unlocked]; save.stats=S.stats; saveGame(); }
+    // Третья и далее медаль за раунд СГОРАЕТ: отложенной выдачи нет, в новом раунде
+    // «за прошлое» ничего не приходит. Одноразовые (за 1 действие) можно получить,
+    // только совершив действие заново; накопительные прогресса не теряют
+    // (save.stats растёт) и придут при следующем срабатывании счётчика.
     function give(id){
       if(unlocked.has(id)) return;
-      if(run.given>=RUN_CAP) return;   // лимит на раунд исчерпан — медаль доедет в одной из следующих смен
+      if(run.given>=RUN_CAP) return;
       const d=defs.find(x=>x.id===id); if(!d) return;
       run.given++;
       unlocked.add(id); persist(); toastAch(d);
@@ -1844,15 +1848,16 @@
       if(need.every(x=>unlocked.has(x.id))) give('legend');
     }
 
-    // всплывашка: очередь, по одной, не чаще раза в минуту
-    let q=[], showing=false, lastShown=-1e9;
+    // всплывашка: очередь, по одной, не чаще раза в минуту; на границе раундов
+    // остаток очереди показывается сразу (flushToasts) — в новый раунд не утекает
+    let q=[], showing=false, lastShown=-1e9, gapTimer=null;
     function toastAch(d){ q.push(d); if(!showing) pump(); }
     function pump(){
       const el=document.getElementById('achToast');
       if(!q.length){ showing=false; return; }
       showing=true;
       const wait = lastShown + TOAST_GAP_MS - performance.now();
-      if(wait>0){ setTimeout(pump, wait); return; }
+      if(wait>0){ gapTimer=setTimeout(()=>{ gapTimer=null; pump(); }, wait); return; }
       lastShown = performance.now();
       const d=q.shift();
       document.getElementById('achIc').textContent=d.ic;
@@ -1862,11 +1867,15 @@
       el.classList.add('show');
       setTimeout(()=>{ el.classList.remove('show'); setTimeout(pump, 360); }, TOAST_SHOW_MS);
     }
+    function flushToasts(){
+      lastShown=-1e9;
+      if(gapTimer){ clearTimeout(gapTimer); gapTimer=null; pump(); }
+    }
 
     return {
       defs,
       init(){ S.ach=Array.isArray(save.ach)?save.ach:[]; Object.assign(S.stats, save.stats||{}); unlocked=new Set(S.ach); },
-      onLevelStart(){ newRun(); checkLegend(); },   // отложенная лимитом «Легенда» догоняет на новом раунде
+      onLevelStart(){ flushToasts(); newRun(); },   // рестарт посреди раунда: недопоказанное — сразу, хвостов нет
       onPlaneTouched(pl){ if(pl) pl.everTouched=true; },
       onPause(){ give('pause'); },
       onLand(){
@@ -1937,7 +1946,10 @@
           S.stats.perfect=0;
         }
         persist();
+        checkLegend();    // «Легенда» (вся коллекция) — на итогах раунда, не посреди игры
+        flushToasts();    // остаток уведомлений — на экран итогов, в новый раунд не утекает
       },
+      flushToasts,
       list(){
         const out=[];
         for(const d of defs){
