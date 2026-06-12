@@ -1,6 +1,6 @@
 {
   "name": "planeflow",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "private": true,
   "description": "PlaneFlow — airport dispatcher game (single index.html). Tests are a safety net for adding mechanics without breaking old behavior.",
   "scripts": {
