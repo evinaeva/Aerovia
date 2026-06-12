@@ -1,0 +1,188 @@
+<?xml version="1.0"?>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;width:0;height:0" aria-hidden="true">
+<defs>
+  <filter id="pf-shadow" x="-40%" y="-40%" width="180%" height="180%">
+    <feDropShadow dx="0" dy="3" stdDeviation="3.2" flood-color="#0a0614" flood-opacity="0.5"></feDropShadow>
+  </filter>
+  <filter id="pf-glow" x="-70%" y="-70%" width="240%" height="240%">
+    <feGaussianBlur stdDeviation="2.4" result="b"></feGaussianBlur>
+    <feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+  </filter>
+
+  
+  <symbol id="tile-tarmac" viewBox="0 0 64 64">
+    <rect width="64" height="64" fill="#242842"></rect>
+    <path d="M0 32H64M32 0V64" stroke="#1a1d2e" stroke-width="2"></path>
+    <path d="M0 0H64M0 64H64M0 0V64M64 0V64" stroke="#1a1d2e" stroke-width="3" opacity=".7"></path>
+    <rect x="4" y="4" width="14" height="2" rx="1" fill="#2a2440" opacity=".8"></rect>
+  </symbol>
+
+  <symbol id="tile-grass" viewBox="0 0 64 64">
+    <rect width="64" height="64" fill="#38482f"></rect>
+    <ellipse cx="16" cy="22" rx="9" ry="6" fill="#2e3b27" opacity=".7"></ellipse>
+    <ellipse cx="46" cy="44" rx="11" ry="7" fill="#2e3b27" opacity=".6"></ellipse>
+    <path d="M12 40c2-5 5-5 7 0M40 18c2-5 5-5 7 0M52 30c1.5-4 4-4 5 0" stroke="#46583b" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"></path>
+  </symbol>
+
+  <symbol id="tile-water" viewBox="0 0 64 64">
+    <rect width="64" height="64" fill="#1c3a42"></rect>
+    <path d="M-4 20q12 -6 24 0t24 0 24 0" fill="none" stroke="#2a525c" stroke-width="2.4" opacity=".75"></path>
+    <path d="M-4 38q12 -6 24 0t24 0 24 0" fill="none" stroke="#2a525c" stroke-width="2.4" opacity=".55"></path>
+    <path d="M-4 52q12 -5 24 0t24 0 24 0" fill="none" stroke="#3a6b76" stroke-width="2" opacity=".45"></path>
+  </symbol>
+
+  <symbol id="shore" viewBox="0 0 64 64">
+    <rect width="64" height="64" fill="#38482f"></rect>
+    <path d="M0 64 L0 30 Q26 40 40 64 Z" fill="#1c3a42"></path>
+    <path d="M0 30 Q26 40 40 64" fill="none" stroke="#6b5c44" stroke-width="7" stroke-linecap="round"></path>
+    <path d="M0 30 Q26 40 40 64" fill="none" stroke="#e8e0cf" stroke-width="2" stroke-dasharray="2 5" opacity=".55"></path>
+  </symbol>
+
+  
+  <symbol id="terminal" viewBox="0 0 160 112">
+    <ellipse cx="82" cy="92" rx="70" ry="14" fill="#0a0614" opacity=".45"></ellipse>
+    <rect x="14" y="16" width="132" height="74" rx="12" fill="#3a3354" filter="url(#pf-shadow)"></rect>
+    <rect x="14" y="16" width="132" height="20" rx="12" fill="#46406a"></rect>
+    <rect x="22" y="44" width="116" height="6" rx="3" fill="#2a2440"></rect>
+    <rect x="26" y="58" width="30" height="20" rx="4" fill="#2a2440"></rect>
+    <rect x="104" y="58" width="30" height="20" rx="4" fill="#2a2440"></rect>
+    <g fill="#ffb84d" filter="url(#pf-glow)">
+      <rect x="64" y="60" width="10" height="8" rx="2"></rect><rect x="78" y="60" width="10" height="8" rx="2"></rect>
+      <rect x="64" y="72" width="10" height="6" rx="2" opacity=".85"></rect><rect x="78" y="72" width="10" height="6" rx="2" opacity=".85"></rect>
+    </g>
+    <rect x="70" y="86" width="20" height="18" rx="5" fill="#6b6d7a"></rect>
+    <rect x="76" y="90" width="8" height="14" rx="3" fill="#8a8c99"></rect>
+  </symbol>
+
+  
+  <symbol id="runway" viewBox="0 0 120 340">
+    <rect x="30" y="8" width="60" height="324" rx="10" fill="#1a1d2e" filter="url(#pf-shadow)"></rect>
+    <rect x="40" y="8" width="40" height="324" fill="#242842" opacity=".6"></rect>
+    <path d="M37 20V320M83 20V320" stroke="#e8e0cf" stroke-width="2.4" opacity=".5" fill="none" stroke-linecap="round"></path>
+    <path d="M60 40V300" stroke="#e8e0cf" stroke-width="3.4" stroke-dasharray="14 16" opacity=".85" fill="none" stroke-linecap="round"></path>
+    <rect x="45" y="150" width="8" height="26" rx="3" fill="#e8e0cf" opacity=".85"></rect>
+    <rect x="67" y="150" width="8" height="26" rx="3" fill="#e8e0cf" opacity=".85"></rect>
+    <g fill="#e8e0cf">
+      <rect x="42" y="16" width="5" height="22" rx="2"></rect><rect x="50" y="16" width="5" height="22" rx="2"></rect><rect x="58" y="16" width="5" height="22" rx="2"></rect><rect x="66" y="16" width="5" height="22" rx="2"></rect><rect x="74" y="16" width="5" height="22" rx="2"></rect>
+      <rect x="42" y="302" width="5" height="22" rx="2"></rect><rect x="50" y="302" width="5" height="22" rx="2"></rect><rect x="58" y="302" width="5" height="22" rx="2"></rect><rect x="66" y="302" width="5" height="22" rx="2"></rect><rect x="74" y="302" width="5" height="22" rx="2"></rect>
+    </g>
+    <text x="60" y="290" text-anchor="middle" font-family="Nunito, system-ui, sans-serif" font-weight="800" fill="#e8e0cf" font-size="26" opacity=".9">07</text>
+    <g fill="#ffb84d" filter="url(#pf-glow)">
+      <circle cx="28" cy="60" r="3"></circle><circle cx="28" cy="120" r="3"></circle><circle cx="28" cy="180" r="3"></circle><circle cx="28" cy="240" r="3"></circle><circle cx="28" cy="300" r="3"></circle>
+      <circle cx="92" cy="60" r="3"></circle><circle cx="92" cy="120" r="3"></circle><circle cx="92" cy="180" r="3"></circle><circle cx="92" cy="240" r="3"></circle><circle cx="92" cy="300" r="3"></circle>
+    </g>
+  </symbol>
+
+  <symbol id="runway-threshold" viewBox="0 0 120 72">
+    <rect x="30" y="0" width="60" height="72" rx="8" fill="#1a1d2e"></rect>
+    <g fill="#e8e0cf"><rect x="42" y="10" width="5" height="30" rx="2"></rect><rect x="50" y="10" width="5" height="30" rx="2"></rect><rect x="58" y="10" width="5" height="30" rx="2"></rect><rect x="66" y="10" width="5" height="30" rx="2"></rect><rect x="74" y="10" width="5" height="30" rx="2"></rect></g>
+    <text x="60" y="64" text-anchor="middle" font-family="Nunito, system-ui, sans-serif" font-weight="800" fill="#e8e0cf" font-size="20" opacity=".9">07</text>
+  </symbol>
+
+  <symbol id="runway-pointer" viewBox="0 0 64 64">
+    <rect x="6" y="6" width="52" height="52" rx="14" fill="#2a2440" opacity=".85"></rect>
+    <path d="M32 16 L32 48 M32 16 L22 28 M32 16 L42 28" fill="none" stroke="#e8e0cf" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"></path>
+  </symbol>
+
+  <symbol id="lamp" viewBox="0 0 16 16">
+    <circle cx="8" cy="8" r="3.2" fill="#ffb84d" filter="url(#pf-glow)"></circle>
+  </symbol>
+
+  
+  <symbol id="bay-frame" viewBox="0 0 100 100">
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="#2a2440" filter="url(#pf-shadow)"></rect>
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#6b6d7a" stroke-width="3"></rect>
+    <g stroke="#e8e0cf" stroke-width="3" opacity=".35" fill="none" stroke-linecap="round">
+      <path d="M20 20h10M20 20v10M80 20h-10M80 20v10M20 80h10M20 80v-10M80 80h-10M80 80v-10"></path>
+    </g>
+    <path d="M50 40v22M40 62h20" stroke="#e8e0cf" stroke-width="3" opacity=".3" fill="none" stroke-linecap="round"></path>
+  </symbol>
+
+  <symbol id="bay-open" viewBox="0 0 100 100">
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="#2a2440" filter="url(#pf-shadow)"></rect>
+    <rect x="12" y="12" width="76" height="76" rx="13" fill="#5dca7a" opacity=".07"></rect>
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#5dca7a" stroke-width="3" opacity=".85"></rect>
+    <path d="M50 38v24M40 62h20" stroke="#e8e0cf" stroke-width="3" opacity=".35" fill="none" stroke-linecap="round"></path>
+    <path d="M50 80 l-7 -9 h14 z" fill="#5dca7a"></path>
+  </symbol>
+
+  <symbol id="bay-locked" viewBox="0 0 100 100">
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="#1f1b2c" filter="url(#pf-shadow)"></rect>
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#6b6d7a" stroke-width="3" stroke-dasharray="7 6"></rect>
+    <rect x="38" y="50" width="24" height="20" rx="4" fill="#8a8c99"></rect>
+    <path d="M42 50v-5a8 8 0 0 1 16 0v5" fill="none" stroke="#8a8c99" stroke-width="3.5" stroke-linecap="round"></path>
+    <circle cx="50" cy="59" r="2.6" fill="#14111e"></circle>
+  </symbol>
+
+  <symbol id="bay-repair" viewBox="0 0 100 100">
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="#2a2440" filter="url(#pf-shadow)"></rect>
+    <rect x="12" y="12" width="76" height="76" rx="13" fill="#f2a93b" opacity=".08"></rect>
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#f2a93b" stroke-width="3"></rect>
+    <g transform="translate(26,26) scale(2)" fill="none" stroke="#f2a93b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+    </g>
+  </symbol>
+
+  <symbol id="bay-fuel" viewBox="0 0 100 100">
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="#2a2440" filter="url(#pf-shadow)"></rect>
+    <rect x="12" y="12" width="76" height="76" rx="13" fill="#4ab4d6" opacity=".08"></rect>
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#4ab4d6" stroke-width="3"></rect>
+    <g transform="translate(26,26) scale(2)" fill="none" stroke="#4ab4d6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path>
+    </g>
+  </symbol>
+
+  <symbol id="bay-board" viewBox="0 0 100 100">
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="#2a2440" filter="url(#pf-shadow)"></rect>
+    <rect x="12" y="12" width="76" height="76" rx="13" fill="#ef798a" opacity=".08"></rect>
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#ef798a" stroke-width="3"></rect>
+    <g transform="translate(26,26) scale(2)" fill="none" stroke="#ef798a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </g>
+  </symbol>
+
+  <symbol id="bay-occupied" viewBox="0 0 100 100">
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="#2a2440" filter="url(#pf-shadow)"></rect>
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#6b6d7a" stroke-width="3"></rect>
+    <path d="M50 28c2 0 3 3 3 9l18 11v6l-18-7v13l7 6v4l-10-3-10 3v-4l7-6V46l-18 7v-6l18-11c0-6 1-9 3-9z" fill="#e8e0cf"></path>
+    <circle cx="50" cy="46" r="3" fill="#f2a93b"></circle>
+    <circle cx="80" cy="20" r="7" fill="#ffb84d" filter="url(#pf-glow)"></circle>
+  </symbol>
+
+  <symbol id="bay-progress" viewBox="0 0 100 100">
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="#2a2440" filter="url(#pf-shadow)"></rect>
+    <rect x="8" y="8" width="84" height="84" rx="16" fill="none" stroke="#6b6d7a" stroke-width="3"></rect>
+    <circle cx="50" cy="50" r="24" fill="none" stroke="#6b6d7a" stroke-width="6" opacity=".5"></circle>
+    <circle cx="50" cy="50" r="24" fill="none" stroke="#f2a93b" stroke-width="6" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="45" transform="rotate(-90 50 50)" filter="url(#pf-glow)"></circle>
+    <circle cx="50" cy="50" r="9" fill="#f2a93b"></circle>
+  </symbol>
+
+  <symbol id="upgrade-pips" viewBox="0 0 72 24">
+    <path d="M10 16 L16 8 L22 16" fill="none" stroke="#f4cf5e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+    <path d="M30 16 L36 8 L42 16" fill="none" stroke="#f4cf5e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+    <path d="M50 16 L56 8 L62 16" fill="none" stroke="#6b6d7a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".6"></path>
+  </symbol>
+
+  
+  <symbol id="route-line" viewBox="0 0 180 70">
+    <path d="M16 22 H96 a16 16 0 0 1 16 16 V54" fill="none" stroke="#5dca7a" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" opacity=".18"></path>
+    <path d="M16 22 H96 a16 16 0 0 1 16 16 V54" fill="none" stroke="#5dca7a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
+    <circle cx="16" cy="22" r="5.5" fill="#5dca7a"></circle><circle cx="16" cy="22" r="2.4" fill="#f4eede"></circle>
+    <circle cx="112" cy="54" r="5.5" fill="#5dca7a"></circle><circle cx="112" cy="54" r="2.4" fill="#f4eede"></circle>
+  </symbol>
+
+  <symbol id="route-line-selected" viewBox="0 0 180 70">
+    <path d="M16 22 H96 a16 16 0 0 1 16 16 V54" fill="none" stroke="#5dca7a" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" opacity=".3"></path>
+    <path d="M16 22 H96 a16 16 0 0 1 16 16 V54" fill="none" stroke="#7fe098" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" filter="url(#pf-glow)"></path>
+    <circle cx="16" cy="22" r="6.5" fill="#f4eede"></circle>
+    <circle cx="112" cy="54" r="8" fill="#7fe098" filter="url(#pf-glow)"></circle><circle cx="112" cy="54" r="3.4" fill="#f4eede"></circle>
+  </symbol>
+
+  <symbol id="route-arrow" viewBox="0 0 40 40">
+    <path d="M14 8 L30 20 L14 32 a3 3 0 0 1-5 -2.4 V12.4 a3 3 0 0 1 5 -2.4 z" fill="currentColor"></path>
+  </symbol>
+</defs>
+</svg>
