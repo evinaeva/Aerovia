@@ -58,57 +58,214 @@
   вариант Б — тематический **уровень** в этом стиле. Чисто мило, без pay-to-win;
   хорошо ложится на будущую систему косметики (см. идеи жанра).
 ### 🌍 Карты / биомы аэропортов
-Уровни с разным окружением: у каждого биома свои помехи, спец-техника и
-мини-события. Объединяет их одна механика — вызвать нужную машину/бригаду
-(стоит денег и времени), иначе ВПП/гейт простаивает.
 
-- 🌲 **Forest Airport (лес).** Ветер валит **деревья на ВПП**; **бобры грызут
-  дерево** 🦫😂 — оно падает медленнее, можно успеть; олени/лоси выходят на полосу;
-  птицы → временное закрытие runway. Техника: maintenance truck, bird-scare
-  vehicle, chainsaw crew.
-- ❄️ **Arctic / Snow Airport.** **De-icing обязателен перед вылетом** ✈️🧊;
-  снегопад; обледенение ВПП; плохая видимость. Техника: снегоуборщик, anti-ice
-  truck. Подвох: борт **слишком долго ждёт → обледеневает заново**. Доп-флоу:
-  игрок сам решает, кого первым на de-icing.
-- 🏝️ **Tropical Airport.** Штормы, ветер, подтопление; чайки воруют еду 😂.
-  События: багаж сдувает ветром, осмотр ВПП после шторма, падает пальма.
-- 🐪 **Desert Airport.** Песчаная буря, перегрев бортов, уборка пыли. Техника:
-  cooling truck; падает видимость; осмотр двигателей.
-- 🏔️ **Mountain Airport.** Короткая ВПП, турбулентность, **только малые борты**.
-  События: горный туман, отложенный заход, спасательный вертолёт.
-- 🌆 **Mega City Airport.** Перегруз трафика, много терминалов, наплыв випов.
-  События: борт со звездой 😁, толпа прессы, полицейский эскорт.
+**1. 🌲 Forest Airport (лес)**
+
+Особенности:
+- ветер валит деревья на ВПП 🌪️
+- бобры грызут деревья 😂 → дерево падает медленнее, можно успеть
+- олени/лоси выходят на полосу
+- птицы → временное закрытие runway
+
+События:
+- вызвать maintenance truck
+- bird scare vehicle
+- chainsaw crew
+
+---
+
+**2. ❄️ Arctic / Snow Airport**
+
+Особенности:
+- de-icing обязательный перед вылетом ✈️🧊
+- снегопад
+- runway icing
+- плохая видимость
+
+События:
+- снеоуборщик
+- anti-ice truck
+- plane waits too long → icing returns
+
+Дополнительный flow:
+> игрок решает, кого первым на de-icing
+
+---
+
+**3. 🏝️ Tropical Airport**
+
+Особенности:
+- штормы
+- ветер
+- flooding
+- чайки воруют еду 😂
+
+События:
+- baggage blown away
+- runway inspection after storm
+- palm tree falls
+
+---
+
+**4. 🐪 Desert Airport**
+
+Особенности:
+- песчаная буря
+- overheating
+- dust cleanup
+
+События:
+- cooling truck
+- visibility reduced
+- engine inspection
+
+---
+
+**5. 🏔️ Mountain Airport**
+
+Особенности:
+- короткая ВПП
+- turbulence
+- только small aircraft
+
+События:
+- mountain fog
+- delayed approach
+- rescue helicopter
+
+---
+
+**6. 🌆 Mega City Airport**
+
+Особенности:
+- traffic overload
+- VIP overload
+- many terminals
+
+События:
+- celebrity plane 😁
+- media crowd
+- police escort
+
+---
 
 ### ✈️ Типы бортов
-> ⚠️ Дедуп: 🚑 медборт уже частично есть (v0.16), вип/частный джет — с v0.7.
-> Ниже — их развитие и новые типы.
 
-- 🚑 **Medical Flight** *(развитие v0.16).* Подъезжает **ambulance**, человечка
-  **уносят на носилках**, борт получает **priority landing**; игрок должен срочно
-  освободить gate.
-- 👑 **Super VIP Flight** *(апгрейд випа v0.7).* **Лимузин + красная дорожка**,
-  фотографы, охрана. Штраф: VIP ждёт слишком долго → растёт rage-meter.
-- 🪖 **Military Flight.** Приоритет, security lockdown, временная блокировка гейта.
-- 🐶 **Animal Transport Flight** (джем-режим 😂). Сбежавшее животное, лай из
-  багажа, ветеринарный фургон.
-- 🎸 **Rockstar Flight.** Орущая толпа, тур-автобусы, гора багажа.
-- 💰 **Billionaire Jet.** Личный терминал, приоритет на топливо, абсурдные
-  требования 😄.
+**🚑 Medical Flight**
 
-### 🚨 Динамические события
-> ⚠️ Дедуп: смена ветра / туман / час пик уже есть как события (v0.4) — ниже
-> расширение и привязка к биомам.
+Как ты придумала — супер.
 
-- 🌬️ **Strong Wind** — борт сносит на рулёжке, падает дерево, задержки.
-- 🌨️ **Snowstorm** — обязательный de-icing, уборка снега с ВПП, низкая видимость.
-- ⛈️ **Thunderstorm** — временное закрытие ВПП, задержка из-за молний.
-- 🐦 **Bird Strike Risk** — ВПП ненадолго блокируется, выезжает inspection team.
-- ⛽ **Fuel Shortage** — задержка топливозаправщика, переприоритизация бортов.
-- 🗼 **ATC overload** — «Too many aircraft!», временный panic-mode 😄.
+Сценка:
+- подъезжает ambulance
+- человечка уносят на носилках
+- самолёт получает priority landing
 
-### 🧠 «Tiny stories» — ключевая фишка
-Игрок видит **мини-сценки** на апроне, которые создают эмоцию и dopamine-loop
-(«ещё один рейс и спать» 😁): 🚑 скорая забрала человека, 👰 свадебный джет,
-🎅 рождественский чартер зимой, 🐶 сбежавшая собака с тележки багажа 😂,
-👑 ВИП-дорожка, 🦫 бобры медленно сгрызают дерево над ВПП. Сценки можно
-навешивать поверх любого биома/типа борта как косметику + микро-механику.
+Игрок:
+> должен освободить gate срочно
+
+---
+
+**👑 Super VIP Flight**
+
+😂 Это прям must-have.
+
+События:
+- limousine
+- red carpet
+- photographers
+- bodyguards
+
+Штраф:
+> VIP waiting too long = rage meter
+
+---
+
+**🪖 Military Flight**
+- priority
+- security lockdown
+- temporary gate block
+
+---
+
+**🐶 Animal Transport Flight**
+
+😂 Джемми-режим
+
+События:
+- escaped animal
+- luggage bark sounds
+- vet van
+
+---
+
+**🎸 Rockstar Flight**
+- screaming crowd
+- tour buses
+- extra luggage
+
+---
+
+**💰 Billionaire Jet**
+- private terminal
+- fuel priority
+- absurd demands 😄
+
+---
+
+### 🚨 Dynamic events
+
+**Strong Wind**
+- plane drifts on taxiway
+- tree falls
+- delays
+
+---
+
+**Snowstorm**
+- mandatory de-icing
+- runway snow cleaning
+- low visibility
+
+---
+
+**Thunderstorm**
+- temporary runway closure
+- lightning delay
+
+---
+
+**Bird Strike Risk**
+- runway blocked briefly
+- inspection team
+
+---
+
+**Fuel Shortage**
+- tanker delay
+- reprioritize planes
+
+---
+
+**ATC overload**
+> "Too many aircraft!"
+
+Временный panic mode 😄
+
+---
+
+### 🧠 Самое главное для игры
+
+Механика **"Tiny stories"** — игрок видит мини-сценки:
+- 🚑 ambulance забрала человека
+- 👰 wedding jet
+- 🎅 Santa charter in winter
+- 🐶 dog escaped baggage cart 😂
+- 👑 VIP carpet
+- 🦫 beavers destroying trees
+
+Это создаёт:
+> "ещё один рейс и пойду спать"
+
+Очень опасный dopamine loop 😁
+
+> бобры медленно сгрызают дерево, которое может упасть на runway 😂
