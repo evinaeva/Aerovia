@@ -867,13 +867,18 @@
     if(!pl.path.length){ return false; }
     const wp=pl.path[0];
     steer(pl, wp.x, wp.y, spd, dt);
-    // порог захвата масштабируем под радиус разворота (spd/TURN),
-    // чтобы борт не орбитил точку, в которую физически не может вписаться
-    const capture = Math.max(K.ARRIVE, (spd/K.TURN)*0.6);
-    // точка пройдена, если она уже позади по курсу (скалярное произведение < 0)
+    const turnR = spd/K.TURN;                       // радиус разворота
+    const capture = Math.max(K.ARRIVE, turnR*0.6);  // порог «доехал»
+    const d = dist(pl.x,pl.y,wp.x,wp.y);
+    // точка «позади по курсу» (за носом борта)
     const toX=wp.x-pl.x, toY=wp.y-pl.y;
-    const passed = (toX*Math.cos(pl.ang) + toY*Math.sin(pl.ang)) < 0;
-    if(dist(pl.x,pl.y,wp.x,wp.y)<capture || passed) pl.path.shift();
+    const behind = (toX*Math.cos(pl.ang) + toY*Math.sin(pl.ang)) < 0;
+    // Выкидываем точку только если ДОЕХАЛИ (близко) или орбитим её рядом
+    // (близкая точка позади = проскочили мимо). ДАЛЁКУЮ точку позади НЕ трогаем —
+    // к ней борт разворачивается, а не считает уже пройденной. Иначе борт,
+    // которому нужно развернуться (типично — готовый к вылету борт у бокса, а
+    // ВПП сзади), выкидывал весь нарисованный маршрут и «буксовал» на месте.
+    if(d < capture || (behind && d < turnR*1.5)) pl.path.shift();
     return true;
   }
 
