@@ -131,6 +131,219 @@
   Вариант А — косметический скин, вариант Б — тематический уровень. Без pay-to-win;
   ложится на будущую систему косметики.
 
+#### 🌍 Карты / биомы аэропортов
+
+**1. 🌲 Forest Airport (лес)**
+
+Особенности:
+- ветер валит деревья на ВПП 🌪️
+- бобры грызут деревья 😂 → дерево падает медленнее, можно успеть
+- олени/лоси выходят на полосу
+- птицы → временное закрытие runway
+
+События:
+- вызвать maintenance truck
+- bird scare vehicle
+- chainsaw crew
+
+---
+
+**2. ❄️ Arctic / Snow Airport**
+
+Особенности:
+- de-icing обязательный перед вылетом ✈️🧊
+- снегопад
+- runway icing
+- плохая видимость
+
+События:
+- снеоуборщик
+- anti-ice truck
+- plane waits too long → icing returns
+
+Дополнительный flow:
+> игрок решает, кого первым на de-icing
+
+---
+
+**3. 🏝️ Tropical Airport**
+
+Особенности:
+- штормы
+- ветер
+- flooding
+- чайки воруют еду 😂
+
+События:
+- baggage blown away
+- runway inspection after storm
+- palm tree falls
+
+---
+
+**4. 🐪 Desert Airport**
+
+Особенности:
+- песчаная буря
+- overheating
+- dust cleanup
+
+События:
+- cooling truck
+- visibility reduced
+- engine inspection
+
+---
+
+**5. 🏔️ Mountain Airport**
+
+Особенности:
+- короткая ВПП
+- turbulence
+- только small aircraft
+
+События:
+- mountain fog
+- delayed approach
+- rescue helicopter
+
+---
+
+**6. 🌆 Mega City Airport**
+
+Особенности:
+- traffic overload
+- VIP overload
+- many terminals
+
+События:
+- celebrity plane 😁
+- media crowd
+- police escort
+
+---
+
+#### ✈️ Типы бортов
+
+**🚑 Medical Flight**
+
+Как ты придумала — супер.
+
+Сценка:
+- подъезжает ambulance
+- человечка уносят на носилках
+- самолёт получает priority landing
+
+Игрок:
+> должен освободить gate срочно
+
+---
+
+**👑 Super VIP Flight**
+
+😂 Это прям must-have.
+
+События:
+- limousine
+- red carpet
+- photographers
+- bodyguards
+
+Штраф:
+> VIP waiting too long = rage meter
+
+---
+
+**🪖 Military Flight**
+- priority
+- security lockdown
+- temporary gate block
+
+---
+
+**🐶 Animal Transport Flight**
+
+😂 Джемми-режим
+
+События:
+- escaped animal
+- luggage bark sounds
+- vet van
+
+---
+
+**🎸 Rockstar Flight**
+- screaming crowd
+- tour buses
+- extra luggage
+
+---
+
+**💰 Billionaire Jet**
+- private terminal
+- fuel priority
+- absurd demands 😄
+
+---
+
+#### 🚨 Dynamic events
+
+**Strong Wind**
+- plane drifts on taxiway
+- tree falls
+- delays
+
+---
+
+**Snowstorm**
+- mandatory de-icing
+- runway snow cleaning
+- low visibility
+
+---
+
+**Thunderstorm**
+- temporary runway closure
+- lightning delay
+
+---
+
+**Bird Strike Risk**
+- runway blocked briefly
+- inspection team
+
+---
+
+**Fuel Shortage**
+- tanker delay
+- reprioritize planes
+
+---
+
+**ATC overload**
+> "Too many aircraft!"
+
+Временный panic mode 😄
+
+---
+
+#### 🧠 Самое главное для игры
+
+Механика **"Tiny stories"** — игрок видит мини-сценки:
+- 🚑 ambulance забрала человека
+- 👰 wedding jet
+- 🎅 Santa charter in winter
+- 🐶 dog escaped baggage cart 😂
+- 👑 VIP carpet
+- 🦫 beavers destroying trees
+
+Это создаёт:
+> "ещё один рейс и пойду спать"
+
+Очень опасный dopamine loop 😁
+
+> бобры медленно сгрызают дерево, которое может упасть на runway 😂
+
 ---
 
 ## Что НЕ копируем (юр. рамка из брифа)
