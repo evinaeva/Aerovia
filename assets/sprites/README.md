@@ -12,6 +12,9 @@ chips are ≥ 44 px.
 | `planeflow-aircraft.svg` | 1 | aircraft + states + service icons | `aircraft-preview.html` |
 | `planeflow-field.svg` | 2 | terrain, terminal, runway, bays, routes | `field-preview.html` |
 | `planeflow-hud.svg` | 3 | lives, coin, stars, pause, Zen, toast/float icons | `hud-preview.html` |
+| `planeflow-effects.svg` | 4 | particles + crash/landing/takeoff/service/status frames | `effects-preview.html` |
+| `planeflow-brand.svg` | 5 | wordmark, mark, lockup, main-menu background | `brand-preview.html` |
+| `assets/icon/*.png` | 5 | app icon 512 + Android adaptive bg/fg (raster) | — |
 
 ## How to use in the game
 
@@ -129,12 +132,46 @@ title `cream-100` + muted message. See `hud-preview.html`.
 | `on time!` | `green` #5dca7a | `--glow-green` |
 | `phew!` | `cream-200`, muted | none |
 
----
+## Batch 4 — `planeflow-effects.svg`
+Particles are single atoms the engine instances (scatter N, randomize angle,
+scale 0→1 then fade, gravity/drift). Composite frames are the "peak" pose —
+scale 0.4→1.3 and fade over ~0.3–0.6 s. Animate on canvas, not in the SVG.
 
-### Pending batches
-- **Batch 4 — effects:** crash, landing touch + smoke, takeoff lift, per-type
-  service anims (fuel / sparks / boarding), success / error highlight — as
-  canvas-ready frames / particles.
-- **Batch 5 — brand & screens:** PlaneFlow wordmark, main-menu background,
-  level card (preview / lock / best / stars), unified button style, plus the
-  512×512 app icon and Android adaptive (bg + foreground) — those as raster.
+| id | size (px) | colors / tokens | recipe |
+| --- | --- | --- | --- |
+| `fx-spark` | 8–16 | `amber-glow` #ffb84d | scatter + twinkle/rotate, fade |
+| `fx-smoke` | 24–48 | `gray-500` #8a8c99 | rise + grow + fade |
+| `fx-dust` | 6–12 | `cream-200` | small puff on contact |
+| `fx-droplet` | 12–20 | `teal` #4ecdc4 | fall, splash |
+| `fx-board-dot` | 14–20 | `rose` #ef798a | walk toward door |
+| `fx-crash` | 56–80 | core `red` #e0584f + `amber`/`gold` spikes | pop + shake + spark scatter |
+| `fx-touchdown` | 48–72 | smoke `gray-500` + cream skid | puff on landing, drift back |
+| `fx-takeoff` | 40–56 | speed lines `cream-100` + dust | lines streak up + fade |
+| `fx-weld` | 40–60 | `amber` #f2a93b + `gold` sparks | repair: flicker + spark burst |
+| `fx-fuel` | 40–60 | `teal` #4ecdc4 droplets | fuel: droplets fall into pool |
+| `fx-boarding` | 48–72 | `rose` #ef798a figures + arrow | boarding: figures step to door |
+| `fx-success` | 56–80 | `green` #5dca7a ring + check | pulse out + fade |
+| `fx-error` | 56–80 | `red` #e0584f ring + ✕ | pulse out + fade |
+| `fx-ripple` | 56–80 | `amber-glow` #ffb84d rings | generic ping, scale + fade |
+
+## Batch 5 — `planeflow-brand.svg` + `assets/icon/`
+| id / file | size | colors / tokens |
+| --- | --- | --- |
+| `mark` | 32–64 | side-view plane `gold` #f4cf5e, outline #caa53a |
+| `wordmark` | ~300 w | PLANEFLOW in `--font-display` (Fredoka), `cream-100` #f4eede |
+| `wordmark-lockup` | ~340 w | mark + wordmark |
+| `menu-bg` | 1280×720 | sky gradient navy→purple, `amber-glow` horizon, `purple-soft` moon, terminal/tower with amber windows |
+| `icon-512.png` | 512×512 | full-bleed store icon (raster) — cozy night + gold plane + flow swoosh |
+| `icon-adaptive-bg.png` | 512×512 | Android adaptive **background** (gradient + stars + moon; safe under any mask) |
+| `icon-adaptive-fg.png` | 512×512 | Android adaptive **foreground** (transparent; emblem inside the 62% safe zone) |
+
+**Level card** (level-select): rounded `--surface-card`, mini board thumbnail,
+`Shift` kicker, big `--font-display` number, name, `star`/`star-empty` row, and
+best score in `gold`. Locked = dimmed `#1b1726` + padlock. See `brand-preview.html`.
+
+**Buttons** — one system (`components/core/Button`): `primary` green · `build`
+amber · `ghost` outlined warm · `danger` red. Uppercase `--font-ui` 700, ≥44 px.
+
+**Wordmark font:** the symbol uses live Fredoka text — fine for HTML/menu use.
+For raster export or engines without the webfont, convert the wordmark to
+outlines (or use the live `--font-display` text layer over the menu).
