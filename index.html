@@ -1,7 +1,10 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Tower</title>
 <style>
   /* ===== облик «ночной радар» (см. CHANGELOG 0.10) ===== */
@@ -24,7 +27,7 @@
     --serif:Georgia,"Times New Roman",serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;background:#060b12;overflow:hidden}
+  html,body{margin:0;height:100%;background:#060b12;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%;inset:0}
   body{
     font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
     color:var(--paper);
@@ -148,6 +151,7 @@
       </div>
       <div class="ctarow">
         <button class="btn btn-quiet" id="medalsBtn"><span class="bglyph">🏅</span><span data-i18n="medals.btn"></span></button>
+        <button class="btn btn-quiet" id="fsBtn"><span class="bglyph">⛶</span><span data-i18n="start.fullscreen"></span></button>
       </div>
       <div class="vno"><span data-i18n="start.version"></span> <span id="ver"></span></div>
     </div>
@@ -194,6 +198,7 @@
         <button class="btn btn-primary" id="resumeBtn"><span class="bglyph">▶</span><span data-i18n="pause.resume"></span></button>
         <button class="btn btn-teal" id="restartBtn"><span class="bglyph">↻</span><span data-i18n="pause.restart"></span></button>
         <button class="btn" id="settingsBtn"><span class="bglyph">⚙</span><span data-i18n="pause.settings"></span></button>
+        <button class="btn" id="fsBtn2"><span class="bglyph">⛶</span><span data-i18n="start.fullscreen"></span></button>
         <button class="btn btn-rose" id="menuBtn"><span class="bglyph">⌂</span><span data-i18n="pause.menu"></span></button>
       </div>
     </div>
@@ -247,7 +252,7 @@
       'app.title':'Tower — air traffic control',
       'start.kicker':'Night controller · Airfield',
       'start.tagline':'Guide the planes with your finger. Calm night flow.',
-      'start.play':'Play', 'start.zen':'Zen mode', 'start.version':'ver.',
+      'start.play':'Play', 'start.zen':'Zen mode', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
       'over.next':'Next level', 'over.again':'Play again', 'over.toLevels':'Level select',
       'over.passed':'Level complete', 'over.failed':'Shift over',
       'over.result':'{reason} {desc}. Result: {n} {unit}, bank {money}.',
@@ -344,7 +349,7 @@
       'app.title':'Tower — диспетчер',
       'start.kicker':'Ночной диспетчер · Аэродром',
       'start.tagline':'Веди борта пальцем. Спокойный ночной поток.',
-      'start.play':'Играть', 'start.zen':'Zen-режим', 'start.version':'верс.',
+      'start.play':'Играть', 'start.zen':'Zen-режим', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
       'over.next':'Следующий уровень', 'over.again':'Ещё раз', 'over.toLevels':'К уровням',
       'over.passed':'Уровень пройден', 'over.failed':'Смена закрыта',
       'over.result':'{reason} {desc}. Результат: {n} {unit}, касса {money}.',
@@ -1552,6 +1557,24 @@
       list.appendChild(b);
     });
   }
+
+  // ---- полноэкранный режим (для телефона: убирает прокрутку и адресную строку) ----
+  function lockLandscape(){
+    try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
+  }
+  function inFullscreen(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function toggleFullscreen(){
+    const el = document.documentElement;
+    if(!inFullscreen()){
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;   // iOS Safari не поддерживает fullscreen для div — там помогает «Добавить на экран»
+      if(req){ try{ const r = req.call(el); if(r && r.then) r.then(lockLandscape).catch(()=>{}); else lockLandscape(); }catch(e){} }
+    } else {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if(exit){ try{ exit.call(document); }catch(e){} }
+    }
+  }
+  ['fsBtn','fsBtn2'].forEach(id=>{ const b=document.getElementById(id); if(b) b.onclick=toggleFullscreen; });
+  ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev, ()=>{ if(inFullscreen()) lockLandscape(); resize(); }));
 
   document.getElementById('startBtn').onclick=showLevels;
   document.getElementById('zenBtn').onclick=startZen;
