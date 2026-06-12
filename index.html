@@ -292,6 +292,63 @@
   const cv = document.getElementById('c');
   const ctx = cv.getContext('2d');
 
+  // ---- cozy sprite atlas (canvas) ----
+  // Sprite sheets (assets/sprites/planeflow-*.svg) are fetched once into a hidden
+  // holder; each <symbol> is rasterised into an <img> at device-pixel size, cached,
+  // and blitted per frame. Until a sprite is ready (or if COZY is off) the call
+  // returns false and the caller falls back to its procedural draw — so the game
+  // never renders blank and the look can be toggled instantly.
+  const COZY = true;
+  const SPRITES = (() => {
+    const cache = new Map();
+    const stripF = s => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)
+    function img(id, w, h){
+      const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
+      const key = id + '@' + pw + 'x' + ph;
+      let im = cache.get(key);
+      if(!im){
+        const sym = document.getElementById(id);
+        if(!sym) return null;
+        const vb = sym.getAttribute('viewBox') || '0 0 64 64';
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb +
+                    '" width="' + pw + '" height="' + ph + '">' + stripF(sym.innerHTML) + '</svg>';
+        im = new Image(); im.decoding = 'async';
+        im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+        cache.set(key, im);
+      }
+      return im;
+    }
+    const ok = im => im && im.complete && im.naturalWidth > 0;
+    const A = {
+      ready: false,
+      has(id){ return !!document.getElementById(id); },
+      blitC(id, cx, cy, dw, dh, rot){
+        if(!A.ready) return false; const im = img(id, dw, dh); if(!ok(im)) return false;
+        ctx.save(); ctx.translate(cx, cy); if(rot) ctx.rotate(rot);
+        ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh); ctx.restore(); return true;
+      },
+      blit(id, dx, dy, dw, dh){
+        if(!A.ready) return false; const im = img(id, dw, dh); if(!ok(im)) return false;
+        ctx.drawImage(im, dx, dy, dw, dh); return true;
+      }
+    };
+    // fetch sheets into a hidden holder, then go live (browser only; no-op under the test harness)
+    try {
+      if (typeof fetch !== 'undefined' && typeof Image !== 'undefined') {
+        const holder = document.createElement('div');
+        holder.id = 'pf-sprites'; holder.setAttribute('aria-hidden', 'true');
+        holder.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+        document.body.appendChild(holder);
+        const sheets = ['aircraft', 'field', 'hud', 'effects', 'brand']
+          .map(n => 'assets/sprites/planeflow-' + n + '.svg');
+        Promise.all(sheets.map(u => fetch(u).then(r => r.ok ? r.text() : '').catch(() => '')))
+          .then(parts => { holder.innerHTML = parts.join('\n'); A.ready = true; })
+          .catch(() => {});
+      }
+    } catch (e) { /* non-DOM env: stay procedural */ }
+    return A;
+  })();
+
   // ---- palette helpers ----
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const COL = {};
@@ -1836,6 +1893,11 @@
   // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый,
   // медицинский — белый с красным крестом на фюзеляже
   function drawPlaneBodyAt(x,y,ang,s,vip,emergency,medical){
+    if(COZY){
+      // sprite is authored nose-up; game heading has nose along +x → rotate ang+90°
+      const _id = medical ? 'plane-medevac' : emergency ? 'plane-emergency' : vip ? 'plane-vip' : 'plane';
+      if(SPRITES.blitC(_id, x, y, 62*s, 62*s, ang + Math.PI/2)) return;
+    }
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     ctx.save(); ctx.translate(5,7); ctx.globalAlpha=.28; planeShape('#000'); ctx.restore();
     if(vip){ ctx.shadowColor=hexa(COL.gold,.6); ctx.shadowBlur=16; }
