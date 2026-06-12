@@ -174,29 +174,40 @@
     BAY_MAX_LVL: 3,
     UP_SPEED: 0.25,       // +25% скорости за уровень
     START_LIVES: 3,
+    // комбо / экспресс
+    COMBO_MAX: 10, COMBO_STEP: 0.1,   // множитель денег до x2 за серию чистых вылетов
+    EXPRESS_TIME: 12,                 // сек от посадки до вылета для экспресс-бонуса
+    EXPRESS_BONUS: 1.5,               // x1.5 денег за быстрый цикл
+    // спец-борты / события
+    EMERGENCY_CHANCE: 0.12,           // доля бортов «топливо на нуле»
+    EMERGENCY_BONUS: 1.5,             // x1.5 денег за аварийный борт
+    RUSH_PERIOD: 35, RUSH_DUR: 8,     // «час пик»: период и длительность волны
   };
 
   // ---- level config ----
-  // objective.metric: 'served' | 'upgrades'; time (сек) — лимит для уровня на время;
-  // stars: [1★,2★,3★] пороги по метрике. Прохождение = ≥1★.
+  // objective.metric: 'served' | 'upgrades'; target — порог для прохождения (1★);
+  // time (сек) — лимит для уровня на время. Звёзды: 1★ цель выполнена, 2★ без
+  // наземных штрафов, 3★ без крушений.
   const LEVELS = [
     { name:'Уровень 1',
-      objective:{ metric:'served', desc:'Принять как можно больше бортов', stars:[5,8,12] },
+      objective:{ metric:'served', target:8, desc:'Принять 8 бортов и выжить' },
       sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
       runways:3 },
     { name:'Уровень 2',
-      objective:{ metric:'served', time:120, desc:'Принять бортов за 2:00', stars:[8,12,16] },
+      objective:{ metric:'served', target:12, time:120, desc:'Принять 12 бортов за 2:00' },
       sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
       runways:3 },
     { name:'Уровень 3',
-      objective:{ metric:'upgrades', time:150, desc:'Улучшить боксы за 2:30', stars:[2,4,6] },
+      objective:{ metric:'upgrades', target:4, time:150, desc:'Сделать 4 улучшения за 2:30' },
       sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
       runways:3 },
   ];
   let LV = LEVELS[0];
   let levelIdx = 0, levelPassed = false, upgradesDone = 0;
+  let combo = 0, runCrashes = 0, runPenalties = 0;   // серия / счётчики чистоты прохождения
+  let rushUntil = 0, nextRush = 0;                    // «час пик»
   let save = {unlocked:1, best:{}, stars:{}};
-  const SAVE_KEY = 'tower_save_v1', VERSION = '0.6';
+  const SAVE_KEY = 'tower_save_v1', VERSION = '0.7';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -296,6 +307,7 @@
       b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>r.occupied=null);
     effects=[]; selected=null; levelPassed=false; upgradesDone=0;
+    combo=0; runCrashes=0; runPenalties=0; rushUntil=0; nextRush=K.RUSH_PERIOD;
     toast={text:'Цель: '+LV.objective.desc, t:0, good:true};
     spawnPlane();
   }
@@ -304,24 +316,28 @@
 
   function spawnPlane(){
     const vip = Math.random() < K.VIP_CHANCE;
+    const emergency = !vip && Math.random() < K.EMERGENCY_CHANCE; // «топливо на нуле»
     const pool = shuffle(['repair','fuel','board']);
     const nSvc = Math.random() < 0.45 ? 2 : 1;
     const requests = pool.slice(0, nSvc).concat(['depart']);
     const waitMult = vip ? 1 : 2;
+    // у аварийного борта воздушное терпение сильно меньше — садить срочно
+    const airBase = (emergency ? K.AIR_BASE*0.4 : K.AIR_BASE) * waitMult;
+    const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1);
     // вертикальная позиция зависания — у одной из полос/между ними
     const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
     planes.push({
       x: field.hoverX, y, ang: Math.PI, // нос влево
-      vip, requests, reqIndex:0,
+      vip, emergency, requests, reqIndex:0,
       zone:'air',            // air | runway | field | bay
       path:[], moving:false, selected:false,
       landing:false, takeoff:false, exiting:false,
       runway:null, bay:null,
-      airTime: K.AIR_BASE*waitMult, airMax: K.AIR_BASE*waitMult,
+      airTime: airBase, airMax: airBase,
       groundTime:0, groundMax:0, waitMult,
-      serveTime:0, serveMax:0,
+      serveTime:0, serveMax:0, landedAt:0,
       halfPay:false, dead:false,
-      reward: nSvc * K.MONEY_SVC * (vip?2:1),
+      reward: Math.round(nSvc * K.MONEY_SVC * bonus),
       nSvc,
     });
   }
@@ -421,6 +437,7 @@
   function logLoss(pl, reason, moneyPenalty){
     if(pl.dead) return;
     pl.dead=true; boom(pl.x,pl.y); freeRes(pl);
+    combo=0; runCrashes++;          // крушение сбрасывает серию и портит «чистоту»
     if(!debug.infiniteLives) lives--;
     if(moneyPenalty) money-=pl.reward;
     lossLog.push({t:gameTime, reason});
@@ -442,16 +459,34 @@
     const rem = pl.nSvc; // число услуг (без вылета)
     pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult;
     pl.groundTime = pl.groundMax;
+    pl.landedAt = gameTime;          // для экспресс-бонуса
   }
   function serveTimeFor(b){ return K.SERVE_BASE / (1 + b.lvl*K.UP_SPEED); }
+  function comboMult(){ return 1 + Math.min(combo, K.COMBO_MAX)*K.COMBO_STEP; }
 
   function depart(pl){             // успешный вылет
     served++;
-    money += Math.round(pl.reward * (pl.halfPay?0.5:1));
+    let pay = pl.reward;
+    if(pl.halfPay){                // наземный штраф рвёт серию и режет оплату вдвое
+      combo=0; pay = Math.round(pay*0.5);
+    } else {
+      combo++;
+      const express = (gameTime - pl.landedAt) <= K.EXPRESS_TIME;
+      pay = Math.round(pay * comboMult() * (express?K.EXPRESS_BONUS:1));
+      if(express) toast={text:'ЭКСПРЕСС +'+pay+' ₿', t:0, good:true};
+    }
+    money += pay;
     pl.dead=true; freeRes(pl);
   }
   function metricValue(){ return LV.objective.metric==='upgrades' ? upgradesDone : served; }
-  function computeStars(){ const v=metricValue(); let s=0; for(const t of LV.objective.stars) if(v>=t) s++; return s; }
+  // звёзды: 1★ цель выполнена, +1★ без наземных штрафов, +1★ без крушений
+  function computeStars(){
+    if(metricValue() < LV.objective.target) return 0;
+    let s=1;
+    if(runPenalties===0) s++;
+    if(runCrashes===0) s++;
+    return s;
+  }
   function recordResult(){
     const stars=computeStars();
     if(save.best[levelIdx]==null || served>save.best[levelIdx]) save.best[levelIdx]=served;
@@ -486,9 +521,11 @@
   }
 
   function update(dt){
-    // spawn
+    // spawn (+ «час пик»)
+    if(gameTime>=nextRush){ rushUntil=gameTime+K.RUSH_DUR; nextRush=gameTime+K.RUSH_PERIOD; toast={text:'Час пик!', t:0, good:false}; }
+    const rush = gameTime<rushUntil;
     spawnTimer-=dt;
-    const interval=Math.max(K.SPAWN_MIN, K.SPAWN_BASE - served*0.05);
+    const interval = rush ? K.SPAWN_BASE*0.4 : Math.max(K.SPAWN_MIN, K.SPAWN_BASE - served*0.05);
     if(spawnTimer<=0 && planes.length<K.MAX_PLANES){ spawnPlane(); spawnTimer=interval; }
 
     for(const pl of planes){
@@ -521,13 +558,13 @@
           continue;
         }
         if(pl.takeoff){
-          pl.groundTime-=dt; if(pl.groundTime<=0) pl.halfPay=true;
+          pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; }
           steer(pl, pl.runway.exitX+200, pl.runway.cy, K.SPEED_TAKEOFF, dt);
           if(pl.x > W+30){ depart(pl); }
           continue;
         }
         // стоит на полосе, ждёт руления к боксу
-        pl.groundTime-=dt; if(pl.groundTime<=0) pl.halfPay=true;
+        pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; }
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_TAXI, dt);
           if(!rectHit(pl.x,pl.y,pl.runway)){          // съехал с полосы на поле
@@ -540,7 +577,7 @@
 
       // ---- FIELD (руление) ----
       if(pl.zone==='field'){
-        pl.groundTime-=dt; if(pl.groundTime<=0) pl.halfPay=true;
+        pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; }
         const need=curNeed(pl);
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_TAXI, dt);
@@ -578,7 +615,7 @@
 
       // ---- BAY (обслуживание) ----
       if(pl.zone==='bay'){
-        pl.groundTime-=dt; if(pl.groundTime<=0) pl.halfPay=true;
+        pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; }
         pl.serveTime-=dt;
         if(pl.serveTime<=0){
           const b=pl.bay; b.occupied=null; pl.bay=null;
@@ -616,6 +653,7 @@
     for(let i=planes.length-1;i>=0;i--) if(planes[i].dead){ if(selected===planes[i]) selected=null; planes.splice(i,1); }
 
     if(lives<=0){ endLevel('Жизни кончились.'); return; }
+    if(metricValue() >= LV.objective.target){ endLevel('Цель выполнена!'); return; }
     gameTime+=dt;
     if(LV.objective.time && gameTime>=LV.objective.time){ endLevel('Время вышло!'); return; }
   }
@@ -870,9 +908,10 @@
     ctx.fillText(money+' ₿', W - 56*ui, hud/2);
     // принято
     const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
-    const ls = computeStars();
     ctx.fillStyle=COL.coin; ctx.font=`${12*ui}px ui-monospace,monospace`; ctx.textAlign='center';
-    ctx.fillText('★'.repeat(ls)+'☆'.repeat(3-ls)+'  '+mv, W*0.62, hud/2);
+    let prog = mv+' / '+LV.objective.target;
+    if(combo>1) prog += '   серия ×'+comboMult().toFixed(1);
+    ctx.fillText(prog, W*0.62, hud/2);
     // название уровня (угол)
     ctx.fillStyle='rgba(127,155,176,.7)'; ctx.font=`${11*ui}px ui-monospace,monospace`;
     ctx.textAlign='right'; ctx.textBaseline='bottom';
