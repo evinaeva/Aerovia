@@ -1,0 +1,353 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Tower — прототип</title>
+<style>
+  :root{
+    --ink:#0a1622;
+    --ink-2:#0e2030;
+    --grid:#13354a;
+    --phosphor:#bfe9ff;
+    --paper:#e9e6dc;
+    --muted:#7f9bb0;
+    --amber:#f4a259;
+    --teal:#4ecdc4;
+    --rose:#ef798a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
+  body{
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    color:var(--paper);
+    user-select:none;-webkit-user-select:none;
+  }
+  #stage{position:fixed;inset:0}
+  canvas{position:absolute;inset:0;touch-action:none;display:block}
+
+  .hud{
+    position:absolute;top:0;left:0;right:0;
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding:16px 18px;pointer-events:none;
+    text-transform:uppercase;letter-spacing:.14em;
+  }
+  .hud .label{font-size:10px;color:var(--muted)}
+  .hud .value{font-size:30px;font-weight:600;line-height:1;margin-top:4px;color:var(--paper)}
+  .hud .right{text-align:right}
+  .hud .right .value{font-size:18px;color:var(--phosphor)}
+
+  .hint{
+    position:absolute;left:0;right:0;bottom:22px;text-align:center;
+    font-size:11px;letter-spacing:.1em;color:var(--muted);
+    pointer-events:none;transition:opacity .6s;text-transform:uppercase;
+  }
+
+  .overlay{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(120% 90% at 50% 40%, rgba(10,22,34,.72), rgba(10,22,34,.94));
+    backdrop-filter:blur(2px);
+  }
+  .panel{text-align:center;padding:34px 30px;max-width:340px}
+  .panel .kicker{font-size:11px;letter-spacing:.34em;color:var(--phosphor);text-transform:uppercase}
+  .panel h1{
+    font-family:Georgia,"Times New Roman",serif;font-weight:400;
+    font-size:40px;letter-spacing:.01em;margin:14px 0 6px;color:var(--paper);
+  }
+  .panel p{font-size:13px;line-height:1.7;color:var(--muted);margin:10px 0 0}
+  .panel .score-final{font-size:54px;color:var(--phosphor);margin:8px 0 0;letter-spacing:.02em}
+  .btn{
+    margin-top:26px;display:inline-block;cursor:pointer;
+    border:1px solid var(--phosphor);color:var(--phosphor);background:transparent;
+    font:inherit;font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    padding:13px 26px;border-radius:2px;transition:.2s;
+  }
+  .btn:hover{background:var(--phosphor);color:var(--ink)}
+  .hidden{display:none}
+  .legend{display:flex;gap:14px;justify-content:center;margin-top:20px;font-size:10px;letter-spacing:.12em;color:var(--muted)}
+  .legend span{display:flex;align-items:center;gap:6px;text-transform:uppercase}
+  .dot{width:9px;height:9px;border-radius:50%}
+</style>
+
+<div id="stage">
+  <canvas id="c"></canvas>
+
+  <div class="hud">
+    <div>
+      <div class="label">Принято бортов</div>
+      <div class="value" id="score">0</div>
+    </div>
+    <div class="right">
+      <div class="label">В небе</div>
+      <div class="value" id="traffic">0</div>
+    </div>
+  </div>
+
+  <div class="hint" id="hint">Проведи пальцем от самолёта к полосе его цвета</div>
+
+  <div class="overlay" id="startScreen">
+    <div class="panel">
+      <div class="kicker">Диспетчерская вышка</div>
+      <h1>Tower</h1>
+      <p>Веди борт пальцем к посадочной полосе того же цвета. Линии могут пересекаться — борта нет. Один контакт в воздухе закрывает смену.</p>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--amber)"></i>полоса A</span>
+        <span><i class="dot" style="background:var(--teal)"></i>полоса B</span>
+        <span><i class="dot" style="background:var(--rose)"></i>полоса C</span>
+      </div>
+      <button class="btn" id="startBtn">Заступить на смену</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overScreen">
+    <div class="panel">
+      <div class="kicker">Смена закрыта</div>
+      <div class="score-final" id="finalScore">0</div>
+      <p id="overMsg">Два борта сошлись слишком близко.</p>
+      <button class="btn" id="againBtn">Новая смена</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const COLORS = [
+    {key:0, css:getComputedStyle(document.documentElement).getPropertyValue('--amber').trim()},
+    {key:1, css:getComputedStyle(document.documentElement).getPropertyValue('--teal').trim()},
+    {key:2, css:getComputedStyle(document.documentElement).getPropertyValue('--rose').trim()},
+  ];
+
+  let W=0, H=0, dpr=1;
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio||1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W*dpr; cv.height = H*dpr;
+    cv.style.width=W+'px'; cv.style.height=H+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    layoutRunways();
+  }
+  window.addEventListener('resize', resize);
+
+  // ---- runways (positions as fractions, recomputed on resize) ----
+  const RUNWAY_DEFS = [
+    {color:0, fx:0.00, fy:0.16, fw:0.20, fh:0.085, dir:'right', label:'A'},
+    {color:1, fx:0.40, fy:0.80, fw:0.20, fh:0.20,  dir:'up',    label:'B'},
+    {color:2, fx:0.80, fy:0.58, fw:0.20, fh:0.085, dir:'left',  label:'C'},
+  ];
+  let runways=[];
+  function layoutRunways(){
+    runways = RUNWAY_DEFS.map(d=>({
+      color:d.color, label:d.label, dir:d.dir,
+      x:d.fx*W, y:d.fy*H, w:d.fw*W, h:d.fh*H
+    }));
+  }
+
+  // ---- state ----
+  let planes=[], score=0, running=false, t=0, spawnTimer=0, lastTs=0;
+  const TURN = 2.8;          // rad/sec max turn
+  const ARRIVE = 14;
+  const CRASH_DIST = 22;     // center distance for collision
+  const GRAB = 40;
+
+  function reset(){
+    planes=[]; score=0; t=0; spawnTimer=0.6; running=true;
+    document.getElementById('score').textContent='0';
+    document.getElementById('traffic').textContent='0';
+    document.getElementById('hint').style.opacity='1';
+    spawnPlane(); spawnPlane();
+  }
+
+  function spawnPlane(){
+    const edge = Math.floor(Math.random()*4);
+    let x,y,ang;
+    const m=30;
+    if(edge===0){x=Math.random()*W;y=-m;ang=Math.PI/2;}
+    else if(edge===1){x=W+m;y=Math.random()*H;ang=Math.PI;}
+    else if(edge===2){x=Math.random()*W;y=H+m;ang=-Math.PI/2;}
+    else {x=-m;y=Math.random()*H;ang=0;}
+    ang += (Math.random()-0.5)*0.7;
+    const speed = 52 + Math.min(score*1.1, 46);
+    planes.push({x,y,ang,speed,color:Math.floor(Math.random()*3),path:[],sel:false,born:t,land:0});
+  }
+
+  // ---- input ----
+  let drawing=null;
+  function pt(e){
+    const r=cv.getBoundingClientRect();
+    const s = e.touches?e.touches[0]:e;
+    return {x:s.clientX-r.left, y:s.clientY-r.top};
+  }
+  function down(e){
+    if(!running) return;
+    e.preventDefault();
+    const p=pt(e);
+    let best=null,bd=GRAB;
+    for(const pl of planes){
+      const d=Math.hypot(pl.x-p.x,pl.y-p.y);
+      if(d<bd){bd=d;best=pl;}
+    }
+    if(best){
+      planes.forEach(x=>x.sel=false);
+      best.sel=true; best.path=[];
+      drawing={plane:best,last:p};
+      document.getElementById('hint').style.opacity='0';
+    }
+  }
+  function move(e){
+    if(!drawing) return;
+    e.preventDefault();
+    const p=pt(e);
+    if(Math.hypot(p.x-drawing.last.x,p.y-drawing.last.y)>12){
+      drawing.plane.path.push({x:p.x,y:p.y});
+      drawing.last=p;
+    }
+  }
+  function up(e){
+    if(drawing){drawing.plane.sel=false;drawing=null;}
+  }
+  cv.addEventListener('pointerdown',down);
+  cv.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',up);
+  cv.addEventListener('touchstart',down,{passive:false});
+  cv.addEventListener('touchmove',move,{passive:false});
+
+  // ---- update ----
+  function rectHit(pl,r){return pl.x>r.x && pl.x<r.x+r.w && pl.y>r.y && pl.y<r.y+r.h;}
+
+  function update(dt){
+    spawnTimer-=dt;
+    const interval = Math.max(1.1, 3.2 - score*0.06);
+    if(spawnTimer<=0 && planes.length<14){ spawnPlane(); spawnTimer=interval; }
+
+    for(const pl of planes){
+      // steer toward next waypoint
+      if(pl.path.length){
+        const wp=pl.path[0];
+        const desired=Math.atan2(wp.y-pl.y, wp.x-pl.x);
+        let diff=desired-pl.ang;
+        while(diff>Math.PI)diff-=2*Math.PI;
+        while(diff<-Math.PI)diff+=2*Math.PI;
+        const max=TURN*dt;
+        pl.ang += Math.max(-max,Math.min(max,diff));
+        if(Math.hypot(wp.x-pl.x,wp.y-pl.y)<ARRIVE) pl.path.shift();
+      }
+      pl.x += Math.cos(pl.ang)*pl.speed*dt;
+      pl.y += Math.sin(pl.ang)*pl.speed*dt;
+
+      // bounce off edges when free-flying
+      if(pl.x<8){pl.x=8;pl.ang=Math.PI-pl.ang;}
+      if(pl.x>W-8){pl.x=W-8;pl.ang=Math.PI-pl.ang;}
+      if(pl.y<8){pl.y=8;pl.ang=-pl.ang;}
+      if(pl.y>H-8){pl.y=H-8;pl.ang=-pl.ang;}
+
+      // landing
+      for(const r of runways){
+        if(r.color===pl.color && rectHit(pl,r)){ pl.land=1; }
+      }
+    }
+
+    // remove landed
+    for(let i=planes.length-1;i>=0;i--){
+      if(planes[i].land){
+        planes.splice(i,1);
+        score++;
+        document.getElementById('score').textContent=score;
+      }
+    }
+
+    // collisions
+    for(let i=0;i<planes.length;i++)
+      for(let j=i+1;j<planes.length;j++){
+        if(Math.hypot(planes[i].x-planes[j].x,planes[i].y-planes[j].y)<CRASH_DIST){
+          gameOver(); return;
+        }
+      }
+
+    document.getElementById('traffic').textContent=planes.length;
+  }
+
+  // ---- render ----
+  function drawGrid(){
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--ink');
+    ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(19,53,74,.55)';ctx.lineWidth=1;
+    const step=46;
+    ctx.beginPath();
+    for(let x=0;x<W;x+=step){ctx.moveTo(x,0);ctx.lineTo(x,H);}
+    for(let y=0;y<H;y+=step){ctx.moveTo(0,y);ctx.lineTo(W,y);}
+    ctx.stroke();
+    // vignette
+    const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.2,W/2,H/2,Math.max(W,H)*0.75);
+    g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.45)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  }
+
+  function drawRunway(r){
+    const col=COLORS[r.color].css;
+    ctx.save();
+    ctx.globalAlpha=0.16;ctx.fillStyle=col;
+    ctx.fillRect(r.x,r.y,r.w,r.h);
+    ctx.globalAlpha=1;ctx.strokeStyle=col;ctx.lineWidth=1.5;
+    ctx.setLineDash([7,7]);ctx.strokeRect(r.x+3,r.y+3,r.w-6,r.h-6);ctx.setLineDash([]);
+    // label
+    ctx.fillStyle=col;ctx.font='600 13px ui-monospace,monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(r.label, r.x+r.w/2, r.y+r.h/2);
+    ctx.restore();
+  }
+
+  function drawPlane(pl){
+    const col=COLORS[pl.color].css;
+    // committed path
+    if(pl.path.length){
+      ctx.save();
+      ctx.strokeStyle=col;ctx.globalAlpha=pl.sel?0.9:0.4;ctx.lineWidth=2;
+      ctx.shadowColor=col;ctx.shadowBlur=8;
+      ctx.beginPath();ctx.moveTo(pl.x,pl.y);
+      for(const w of pl.path)ctx.lineTo(w.x,w.y);
+      ctx.stroke();ctx.restore();
+    }
+    // body
+    ctx.save();
+    ctx.translate(pl.x,pl.y);ctx.rotate(pl.ang);
+    if(pl.sel){ctx.beginPath();ctx.arc(0,0,GRAB*0.55,0,7);ctx.strokeStyle=col;ctx.globalAlpha=.5;ctx.lineWidth=1.5;ctx.stroke();ctx.globalAlpha=1;}
+    ctx.shadowColor=col;ctx.shadowBlur=10;
+    ctx.fillStyle=col;
+    ctx.beginPath();
+    ctx.moveTo(11,0);ctx.lineTo(-8,7);ctx.lineTo(-4,0);ctx.lineTo(-8,-7);
+    ctx.closePath();ctx.fill();
+    ctx.restore();
+  }
+
+  function frame(ts){
+    if(!lastTs)lastTs=ts;
+    let dt=(ts-lastTs)/1000; lastTs=ts;
+    if(dt>0.05)dt=0.05;
+    if(running){t+=dt;update(dt);}
+    drawGrid();
+    runways.forEach(drawRunway);
+    planes.forEach(drawPlane);
+    requestAnimationFrame(frame);
+  }
+
+  function gameOver(){
+    running=false;
+    document.getElementById('finalScore').textContent=score;
+    document.getElementById('overScreen').classList.remove('hidden');
+  }
+
+  document.getElementById('startBtn').onclick=()=>{
+    document.getElementById('startScreen').classList.add('hidden');
+    reset();
+  };
+  document.getElementById('againBtn').onclick=()=>{
+    document.getElementById('overScreen').classList.add('hidden');
+    reset();
+  };
+
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
