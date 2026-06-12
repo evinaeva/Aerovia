@@ -108,6 +108,14 @@
   .langbtn:hover{color:var(--phosphor);border-color:var(--phosphor)}
   .langbtn.on{color:var(--phosphor);border-color:var(--phosphor);background:rgba(191,233,255,.08)}
   .vno{margin-top:18px;font-size:10px;color:var(--muted);letter-spacing:.12em}
+  /* окно целей смены */
+  .goalrows{margin-top:18px}
+  .goalrow{display:flex;gap:14px;align-items:center;text-align:left;padding:11px 14px;margin:9px 0;
+    border:1.5px solid rgba(191,233,255,.15);border-radius:12px;background:rgba(10,22,34,.55)}
+  .goalrow .gs{color:var(--gold);font-size:15px;letter-spacing:.05em;flex:0 0 auto;min-width:48px;
+    text-shadow:0 0 10px rgba(244,207,94,.45)}
+  .goalrow .gt{font-size:12.5px;color:var(--paper);line-height:1.5}
+  .goalzen{font-size:13px;line-height:1.7;color:var(--muted);margin-top:16px}
 
   /* ---- медали ---- */
   .panel-wide{max-width:580px;width:94%;max-height:88vh;display:flex;flex-direction:column;padding:26px 24px}
@@ -217,9 +225,21 @@
       <div class="pausegrid">
         <button class="btn btn-primary" id="resumeBtn"><span class="bglyph">▶</span><span data-i18n="pause.resume"></span></button>
         <button class="btn btn-teal" id="restartBtn"><span class="bglyph">↻</span><span data-i18n="pause.restart"></span></button>
+        <button class="btn" id="goalsBtn"><span class="bglyph">◎</span><span data-i18n="pause.goals"></span></button>
         <button class="btn" id="settingsBtn"><span class="bglyph">⚙</span><span data-i18n="pause.settings"></span></button>
         <button class="btn" id="fsBtn2"><span class="bglyph">⛶</span><span data-i18n="start.fullscreen"></span></button>
         <button class="btn btn-rose" id="menuBtn"><span class="bglyph">⌂</span><span data-i18n="pause.menu"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="goalsScreen">
+    <div class="panel card">
+      <div class="kicker" id="goalsKicker"></div>
+      <h1 id="goalsTitle"></h1>
+      <div class="goalrows" id="goalsBody"></div>
+      <div class="ctarow">
+        <button class="btn btn-primary" id="goalsOk"><span class="bglyph">✓</span><span data-i18n="goals.ok"></span></button>
       </div>
     </div>
   </div>
@@ -284,7 +304,10 @@
       'obj.servedTimed':['Land {n} plane in {time}','Land {n} planes in {time}'],
       'obj.upgrades':['Make {n} upgrade in {time}','Make {n} upgrades in {time}'],
       'pause.kicker':'Paused', 'pause.resume':'Resume', 'pause.restart':'Restart',
-      'pause.settings':'Settings', 'pause.menu':'Main menu',
+      'pause.settings':'Settings', 'pause.menu':'Main menu', 'pause.goals':'Goals',
+      'goals.kicker':'Shift goals', 'goals.ok':'Got it',
+      'goals.star2':'No ground penalties', 'goals.star3':'No crashes',
+      'goals.zen':'Zen mode — endless flow. No lives, no timeouts, no stars: just guide the planes.',
       'settings.title':'Settings', 'settings.back':'Back', 'settings.language':'Language',
       'settings.sound':'Sound', 'settings.vibro':'Vibration (phone)',
       'settings.optLives':'Infinite lives (debug)', 'settings.optMoney':'Unlimited money (debug)',
@@ -301,6 +324,7 @@
       'toast.rush':'Rush hour!',
       'toast.wind':'Wind shift — runway closed',
       'toast.fog':'Fog — taxiing slowed',
+      'toast.emergency':'Fuel critical — land now!', 'toast.medical':'Medevac — straight through!',
       'float.combo':'×{x} combo', 'float.express':'on time!', 'float.nearMiss':'phew!',
       'loss.airTimeout':'Air timeout — didn\'t land in time',
       'loss.collision':'Collision',
@@ -309,7 +333,7 @@
       'loss.collisionRunway':'Collision on the runway',
       'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!',
       'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time',
-      'hud.vip':'VIP', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
+      'hud.vip':'VIP', 'hud.med':'MED', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
       'canvas.terminal':'TERMINAL', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- медали / достижения ---
@@ -387,7 +411,10 @@
       'obj.servedTimed':['Принять {n} борт за {time}','Принять {n} борта за {time}','Принять {n} бортов за {time}'],
       'obj.upgrades':['Сделать {n} улучшение за {time}','Сделать {n} улучшения за {time}','Сделать {n} улучшений за {time}'],
       'pause.kicker':'Пауза', 'pause.resume':'Играть', 'pause.restart':'Начать заново',
-      'pause.settings':'Настройки', 'pause.menu':'В главное меню',
+      'pause.settings':'Настройки', 'pause.menu':'В главное меню', 'pause.goals':'Цели',
+      'goals.kicker':'Цели смены', 'goals.ok':'Понятно',
+      'goals.star2':'Без наземных штрафов', 'goals.star3':'Без крушений',
+      'goals.zen':'Zen-режим — бесконечный поток. Без жизней, таймаутов и звёзд: просто веди борта.',
       'settings.title':'Настройки', 'settings.back':'Назад', 'settings.language':'Язык',
       'settings.sound':'Звук', 'settings.vibro':'Вибрация (телефон)',
       'settings.optLives':'Бесконечные жизни (отладка)', 'settings.optMoney':'Безлимит денег (отладка)',
@@ -404,6 +431,7 @@
       'toast.rush':'Час пик!',
       'toast.wind':'Смена ветра — полоса закрыта',
       'toast.fog':'Туман — руление замедлено',
+      'toast.emergency':'Топливо на нуле — садить срочно!', 'toast.medical':'Медицинский — вне очереди!',
       'float.combo':'×{x} комбо', 'float.express':'вовремя!', 'float.nearMiss':'уфф!',
       'loss.airTimeout':'Воздушный таймаут — не успел сесть',
       'loss.collision':'Столкновение',
@@ -412,7 +440,7 @@
       'loss.collisionRunway':'Столкновение на ВПП',
       'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!',
       'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время',
-      'hud.vip':'ВИП', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
+      'hud.vip':'ВИП', 'hud.med':'МЕД', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
       'canvas.terminal':'ТЕРМИНАЛ', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- медали / достижения ---
@@ -559,6 +587,9 @@
     // спец-борты / события
     EMERGENCY_CHANCE: 0.12,           // доля бортов «топливо на нуле»
     EMERGENCY_BONUS: 1.5,             // x1.5 денег за аварийный борт
+    MEDICAL_CHANCE: 0.10,             // доля «медицинских» бортов (приоритет)
+    MEDICAL_AIR: 0.7,                 // множитель воздушного терпения медицинского (срочный)
+    MEDICAL_BONUS: 2.5,               // x2.5 денег за медицинский (приоритетный борт)
     RUSH_PERIOD: 35, RUSH_DUR: 8,     // «час пик»: период и длительность волны
     WIND_PERIOD: 28, WIND_DUR: 12,    // смена ветра: период и длительность закрытия ВПП
     FOG_PERIOD: 45, FOG_DUR: 10,      // туман: период и длительность
@@ -597,7 +628,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.15';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.17';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -810,28 +841,33 @@
     // тихий туториал «покажи и дай сделать»: только при первом запуске и не в Zen —
     // первый борт ведём за руку (подсветка + подсказка), без стены текста
     tut = (!zen && !save.tutorialDone) ? {step:'land', plane:null} : null;
-    toast = zen ? {text:t('toast.zenStart'), t:0, good:true}
-                : {text:t('toast.goal', {desc:objectiveDesc()}), t:0, good:true};
+    showGoals(false);          // крупное окно постановки целей в начале раунда (заодно ставит на паузу)
   }
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
   function spawnPlane(){
-    const vip = Math.random() < K.VIP_CHANCE;
-    const emergency = !vip && Math.random() < K.EMERGENCY_CHANCE; // «топливо на нуле»
+    // спец-борты как мини-события (раздел 3 копилки): частный джет (вип),
+    // «топливо на нуле» (срочный + бонус), медицинский (приоритет — высадка пациента).
+    const vip = Math.random() < K.VIP_CHANCE;                            // частный джет
+    const emergency = !vip && Math.random() < K.EMERGENCY_CHANCE;        // «топливо на нуле»
+    const medical = !vip && !emergency && Math.random() < K.MEDICAL_CHANCE; // медицинский
     const pool = shuffle(['repair','fuel','board']);
-    const nSvc = Math.random() < 0.45 ? 2 : 1;
-    const requests = pool.slice(0, nSvc).concat(['depart']);
-    const waitMult = vip ? 1 : 2;
-    // у аварийного борта воздушное терпение сильно меньше — садить срочно
-    const airBase = (emergency ? K.AIR_BASE*0.4 : K.AIR_BASE) * waitMult;
-    const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1);
+    // медицинский: высаживает пациента в пассажирском боксе, затем сразу вылет
+    const nSvc = medical ? 1 : (Math.random() < 0.45 ? 2 : 1);
+    const requests = medical ? ['board','depart'] : pool.slice(0, nSvc).concat(['depart']);
+    const waitMult = (vip||medical) ? 1 : 2;                             // джет и медицинский нетерпеливы
+    // воздушное терпение: топливо-на-нуле — садить срочно; медицинский — тоже спешит
+    const airMult = emergency ? 0.4 : (medical ? K.MEDICAL_AIR : 1);
+    const airBase = K.AIR_BASE * airMult * waitMult;
+    const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1) * (medical?K.MEDICAL_BONUS:1);
+    const reward = Math.round(nSvc * K.MONEY_SVC * bonus);
     // вертикальная позиция зависания — у одной из полос/между ними
     const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
     planes.push({
       id: ++planeSeq,
       x: field.hoverX, y, ang: Math.PI, // нос влево
-      vip, emergency, requests, reqIndex:0,
+      vip, emergency, medical, requests, reqIndex:0,
       zone:'air',            // air | runway | field | bay
       path:[], moving:false, selected:false,
       landing:false, takeoff:false, exiting:false,
@@ -840,11 +876,16 @@
       groundTime:0, groundMax:0, waitMult,
       serveTime:0, serveMax:0, landedAt:0,
       halfPay:false, dead:false,
-      reward: Math.round(nSvc * K.MONEY_SVC * bonus),
+      reward,
       nSvc,
     });
     // в туториале первый прилетевший борт становится «учебным» — его и ведём
     if(tut && !tut.plane) tut.plane = planes[planes.length-1];
+    // анонс мини-события (срочные борта «ломают рутину»); не на старте/в Zen/в туториале
+    if(gameTime>0 && !zen && !tut){
+      if(emergency) toast={text:t('toast.emergency'), t:0, good:false};
+      else if(medical) toast={text:t('toast.medical'), t:0, good:false};
+    }
   }
 
   // ---- geometry ----
@@ -1335,8 +1376,9 @@
     ctx.beginPath(); ctx.moveTo(3,3); ctx.lineTo(-15,22); ctx.lineTo(-20,21); ctx.lineTo(-6,3); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(-16,-2.5); ctx.lineTo(-24,-10); ctx.lineTo(-27,-9.5); ctx.lineTo(-20,-2.5); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(-16,2.5); ctx.lineTo(-24,10); ctx.lineTo(-27,9.5); ctx.lineTo(-20,2.5); ctx.closePath(); ctx.fill(); }
-  // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый
-  function drawPlaneBodyAt(x,y,ang,s,vip,emergency){
+  // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый,
+  // медицинский — белый с красным крестом на фюзеляже
+  function drawPlaneBodyAt(x,y,ang,s,vip,emergency,medical){
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     ctx.save(); ctx.translate(5,7); ctx.globalAlpha=.28; planeShape('#000'); ctx.restore();
     if(vip){ ctx.shadowColor=hexa(COL.gold,.6); ctx.shadowBlur=16; }
@@ -1347,6 +1389,7 @@
     ctx.fillStyle=hexa(COL.ink,.55);
     ctx.beginPath(); ctx.arc(-8,-12,2.4,0,7); ctx.fill();
     ctx.beginPath(); ctx.arc(-8,12,2.4,0,7); ctx.fill();
+    if(medical){ ctx.fillStyle=COL.rose; ctx.fillRect(-7,-2,14,4); ctx.fillRect(-2,-7,4,14); } // красный крест поверх
     ctx.restore();
   }
 
@@ -1564,11 +1607,11 @@
       ctx.shadowColor=rcol; ctx.shadowBlur=9; ctx.stroke();
       ctx.restore();
     }
-    // пульсирующее кольцо аварийного борта в воздухе
-    if(pl.emergency && pl.zone==='air'){
-      const p=0.5+0.5*Math.sin(nowT*0.006);
+    // пульсирующее кольцо срочного борта в воздухе (аварийный — красный, медицинский — розовый)
+    if((pl.emergency||pl.medical) && pl.zone==='air'){
+      const p=0.5+0.5*Math.sin(nowT*0.006), pc=pl.emergency?COL.life:COL.rose;
       ctx.beginPath(); ctx.arc(pl.x,pl.y,20*ui+p*3*ui,0,7);
-      ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.life,.4+.4*p); ctx.stroke();
+      ctx.lineWidth=2; ctx.strokeStyle=hexa(pc,.4+.4*p); ctx.stroke();
     }
     // выделение — пунктирное кольцо
     if(pl.selected){
@@ -1576,7 +1619,7 @@
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([4,5]); ctx.stroke(); ctx.restore();
     }
 
-    drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5, pl.vip, pl.emergency);
+    drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5, pl.vip, pl.emergency, pl.medical);
 
     // иконка текущей нужды над бортом (8.45 = прежние 6.5 +30%)
     if(pl.zone!=='bay') drawIcon(need, pl.x, pl.y-28*ui, 8.45*ui, ncol, COL.ink);
@@ -1640,8 +1683,9 @@
       ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(x0,y0,pw,44*ui,9*ui); ctx.stroke();
       const tag = selected.vip ? (t('hud.plane')+' · '+t('hud.vip'))
                 : selected.emergency ? (t('hud.plane')+' '+t('hud.sos'))
+                : selected.medical ? (t('hud.plane')+' · '+t('hud.med'))
                 : t('hud.plane');
-      ctx.fillStyle = selected.emergency?COL.life:hexa(COL.muted,.8);
+      ctx.fillStyle = selected.emergency?COL.life : selected.medical?COL.rose : hexa(COL.muted,.8);
       ctx.font=`${7.5*ui}px ${MONO}`; ctx.textAlign='left'; ctx.textBaseline='middle';
       ctx.fillText(tag, x0+8*ui, y0+8*ui);
       for(let i=0;i<n;i++){
@@ -1887,7 +1931,7 @@
   // сброс прогресса заодно возвращает туториал — новый игрок снова увидит обучение
   function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false,tutorialDone:false}; saveGame(); renderLevels(); }
   function buildLevel(idx){ levelIdx=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
-  function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel','settingsScreen','medalScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
+  function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel','settingsScreen','medalScreen','goalsScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
   function startLevel(idx){ zen=false; buildLevel(idx); hideAllScreens(); reset(); }
   function startZen(){ zen=true; buildLevel(0); hideAllScreens(); reset(); }
@@ -1972,6 +2016,36 @@
   document.getElementById('settingsMenuBtn').onclick=openSettings;
   document.getElementById('settingsBackBtn').onclick=()=>{ hideAllScreens(); document.getElementById('startScreen').classList.remove('hidden'); };
   document.getElementById('resetProgBtn2').onclick=resetProgress;
+
+  // ---- окно постановки целей смены ----
+  // Показывается в начале каждого раунда (на паузе), а также по кнопке «Цели» в
+  // паузе. Закрыть: «Понятно» или тап мимо карточки. Звёзды: 1★ цель, 2★ без
+  // наземных штрафов, 3★ без крушений (см. computeStars). В Zen — текст без звёзд.
+  let goalsFromPause=false;
+  function buildGoalsContent(){
+    document.getElementById('goalsKicker').textContent = t('goals.kicker');
+    document.getElementById('goalsTitle').textContent = zen ? t('mode.zen') : t('level.name',{n:levelIdx+1});
+    const body=document.getElementById('goalsBody');
+    if(zen){ body.innerHTML = `<p class="goalzen">${t('goals.zen')}</p>`; return; }
+    const rows=[['★', objectiveDesc()], ['★★', t('goals.star2')], ['★★★', t('goals.star3')]];
+    body.innerHTML = rows.map(r=>`<div class="goalrow"><div class="gs">${r[0]}</div><div class="gt">${r[1]}</div></div>`).join('');
+  }
+  function showGoals(fromPause){
+    goalsFromPause=!!fromPause;
+    paused=true;                       // заморозить симуляцию, пока окно открыто
+    buildGoalsContent();
+    if(fromPause) document.getElementById('pauseScreen').classList.add('hidden');
+    document.getElementById('goalsScreen').classList.remove('hidden');
+  }
+  function closeGoals(){
+    document.getElementById('goalsScreen').classList.add('hidden');
+    if(goalsFromPause) document.getElementById('pauseScreen').classList.remove('hidden'); // вернуться в паузу
+    else paused=false;                 // продолжить игру
+    goalsFromPause=false;
+  }
+  document.getElementById('goalsOk').onclick=closeGoals;
+  document.getElementById('goalsScreen').addEventListener('pointerdown', e=>{ if(e.target.id==='goalsScreen') closeGoals(); }); // тап мимо карточки
+  document.getElementById('goalsBtn').onclick=()=>showGoals(true);
 
   // ================= ДОСТИЖЕНИЯ / МЕДАЛИ =================
   // Самодостаточный модуль: ловит игровые события через ACH.onX(...), копит
