@@ -672,6 +672,62 @@
     const has = (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null);
     return has ? t(key) : t('level.name', {n:i+1});
   }
+
+  // ---- самопроверка конфига (страховка под новые механики) ----
+  // Цель ровно та, для которой и заводили тесты: при добавлении уровня / события /
+  // механики сразу ловить нарушение старых правил, а не ловить регрессию в проде.
+  // validateGame() возвращает список проблем (пустой = всё ок). Зовётся мягко на
+  // старте (console.error) и жёстко из тестов. См. docs/DEV.md, раздел «Тесты».
+  const EVENT_KEYS = ['vip','emergency','medical','rush','fog','wind'];
+  const SVC_TYPES  = ['fuel','board','repair'];
+  function validateLevels(){
+    const p = [];
+    if(!Array.isArray(LEVELS) || !LEVELS.length){ p.push('LEVELS пуст'); return p; }
+    const firstSeen = {};   // тип события -> индекс уровня, где впервые включён
+    LEVELS.forEach((lv,i)=>{
+      const L = 'L'+(i+1)+': ';
+      const o = lv.objective;
+      if(!o){ p.push(L+'нет objective'); }
+      else {
+        if(!['served','upgrades'].includes(o.metric)) p.push(L+'неизвестная метрика "'+o.metric+'"');
+        if(!(o.target>0)) p.push(L+'objective.target должен быть > 0');
+        if(o.time!=null && !(o.time>0)) p.push(L+'objective.time должен быть > 0');
+      }
+      const sides = lv.sides || {};
+      ['top','left','bottom'].forEach(side=>{
+        const c = sides[side];
+        if(!c){ p.push(L+'нет стороны "'+side+'"'); return; }
+        if(!SVC_TYPES.includes(c.type)) p.push(L+side+': неизвестный тип бокса "'+c.type+'"');
+        if(!(c.slots>=1)) p.push(L+side+': slots должен быть >= 1');
+        if(!(c.open>=0 && c.open<=c.slots)) p.push(L+side+': open вне диапазона [0, slots]');
+      });
+      if(!(lv.runways>=1)) p.push(L+'runways должен быть >= 1');
+      if(lv.startMoney!=null && !(lv.startMoney>0)) p.push(L+'startMoney должен быть > 0');
+      const ev = lv.events || {};
+      Object.keys(ev).forEach(k=>{
+        if(!EVENT_KEYS.includes(k)) p.push(L+'неизвестное событие "'+k+'"');
+        else if(typeof ev[k]!=='boolean') p.push(L+'событие "'+k+'" должно быть boolean');
+      });
+      EVENT_KEYS.forEach(k=>{ if(ev[k] && firstSeen[k]==null) firstSeen[k]=i; });
+    });
+    // L1 — обучающий: без событий
+    const l1 = LEVELS[0].events || {};
+    if(EVENT_KEYS.some(k=>l1[k])) p.push('L1 должен быть без событий (обучение)');
+    // прогрессия: новое событие вводится только на границе блока — каждые 3 уровня
+    // (L1/L4/L7/… => индекс % 3 === 0). L1 чистый, значит реально не раньше L4.
+    Object.keys(firstSeen).forEach(k=>{
+      const i = firstSeen[k];
+      if(i % 3 !== 0) p.push('Событие "'+k+'" введено на L'+(i+1)+' — новые события только каждые 3 уровня (L4, L7, L10, …)');
+    });
+    return p;
+  }
+  function validateI18n(){
+    const p = [], langs = Object.keys(I18N), all = new Set();
+    langs.forEach(c=>Object.keys(I18N[c]).forEach(k=>{ if(k[0]!=='_') all.add(k); }));
+    langs.forEach(c=>{ all.forEach(k=>{ if(I18N[c][k]==null) p.push('i18n: в языке "'+c+'" нет ключа "'+k+'"'); }); });
+    return p;
+  }
+  function validateGame(){ return validateLevels().concat(validateI18n()); }
   let levelIdx = 0, levelPassed = false, upgradesDone = 0;
   let combo = 0, runCrashes = 0, runPenalties = 0;   // серия / счётчики чистоты прохождения
   let rushUntil = 0, nextRush = 0;                    // «час пик»
@@ -2353,10 +2409,44 @@
   ACH.init();
   lang = save.lang || detectLang();   // сохранённый выбор > автоопределение > en
   applyI18n();
+  // мягкая самопроверка конфига при загрузке: в dev сразу видно в консоли, если
+  // новая механика/уровень нарушили правила (жёстко это же проверяют тесты)
+  try{ const _pr = validateGame(); if(_pr.length) console.error('[PlaneFlow] проблемы конфига:\n  '+_pr.join('\n  ')); }catch(e){ console.error(e); }
   SND.setEnabled(save.sound!==false); HAP.on = save.vibro!==false;
   syncSettingsUI();
   document.getElementById('ver').textContent=VERSION;
   resize();
   requestAnimationFrame(frame);
+
+  // ---- тест-API (только при ?test=1) ----
+  // Даёт тестам дотянуться до чистой логики и до путей завершения уровня без
+  // рефактора всей игры и без хрупкой имитации перетаскивания. В обычном запуске
+  // (без ?test=1) ничего не выставляется — прод-поведение не меняется.
+  if(typeof location!=='undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
+    window.__GAME = {
+      VERSION, LEVELS, K, I18N, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES,
+      t, levelEvents, levelName, objectiveDesc, computeStars, metricValue,
+      validateGame, validateLevels, validateI18n,
+      saveGame, loadGame, setLang, detectLang,
+      get save(){ return save; },     set save(v){ save=v; },
+      get lang(){ return lang; },
+      get levelIdx(){ return levelIdx; },
+      get zen(){ return zen; },        set zen(v){ zen=v; },
+      // выставить текущий уровень (для проверки levelEvents/objectiveDesc/имени)
+      setLevel(i){ levelIdx=i; LV=LEVELS[i]; },
+      // прогон РЕАЛЬНОГО пути завершения смены: выставляем результат и зовём те же
+      // computeStars()/recordResult(), что и в игре — проверяем звёзды, открытие
+      // следующего уровня и сохранение, не трогая отрисовку и ввод.
+      simulateResult(opts){
+        opts = opts || {};
+        zen = false;
+        levelIdx = opts.level||0; LV = LEVELS[levelIdx];
+        served = opts.served||0; upgradesDone = opts.upgrades||0;
+        runPenalties = opts.penalties||0; runCrashes = opts.crashes||0;
+        const stars = computeStars(); recordResult();
+        return { stars, unlocked: save.unlocked, best: save.best[levelIdx], saved: save.stars[levelIdx] };
+      },
+    };
+  }
 })();
 </script>

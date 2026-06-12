@@ -11,3 +11,8 @@ Thumbs.db
 node_modules/
 dist/
 build/
+
+# тесты (Playwright)
+test-results/
+playwright-report/
+.playwright/
