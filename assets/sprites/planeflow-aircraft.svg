@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;width:0;height:0" aria-hidden="true">
+<defs>
+  <filter id="pa-shadow" x="-40%" y="-40%" width="180%" height="180%">
+    <feDropShadow dx="0" dy="2.5" stdDeviation="2.6" flood-color="#0a0614" flood-opacity="0.5"></feDropShadow>
+  </filter>
+  <filter id="pa-glow" x="-80%" y="-80%" width="260%" height="260%">
+    <feGaussianBlur stdDeviation="2.2" result="b"></feGaussianBlur>
+    <feMerge><feMergeNode in="b"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+  </filter>
+
+  
+  
+  <symbol id="plane" viewBox="0 0 100 100">
+    <path d="M50 16 C54 16 57 21 57 30 L57 40 L92 58 L92 68 L57 60 L57 72 L72 83 L72 88 L57 77 L50 87 L43 77 L28 88 L28 83 L43 72 L43 60 L8 68 L8 58 L43 40 L43 30 C43 21 46 16 50 16 Z" fill="#e8e0cf" stroke="#b9b0a0" stroke-width="2" stroke-linejoin="round" filter="url(#pa-shadow)"></path>
+    <path d="M45 26 Q50 22 55 26 L53 33 Q50 31 47 33 Z" fill="#242842" opacity=".55"></path>
+    <rect x="47" y="34" width="6" height="40" rx="3" fill="#b9b0a0" opacity=".4"></rect>
+    <rect x="34" y="54" width="6" height="8" rx="2" fill="#6b6d7a"></rect>
+    <rect x="60" y="54" width="6" height="8" rx="2" fill="#6b6d7a"></rect>
+  </symbol>
+
+  
+  <symbol id="plane-vip" viewBox="0 0 100 100">
+    <path d="M50 16 C54 16 57 21 57 30 L57 40 L92 58 L92 68 L57 60 L57 72 L72 83 L72 88 L57 77 L50 87 L43 77 L28 88 L28 83 L43 72 L43 60 L8 68 L8 58 L43 40 L43 30 C43 21 46 16 50 16 Z" fill="#f4cf5e" stroke="#caa53a" stroke-width="2" stroke-linejoin="round" filter="url(#pa-shadow)"></path>
+    <path d="M45 26 Q50 22 55 26 L53 33 Q50 31 47 33 Z" fill="#5e4a16" opacity=".5"></path>
+    <rect x="47" y="34" width="6" height="40" rx="3" fill="#caa53a" opacity=".5"></rect>
+    <rect x="34" y="54" width="6" height="8" rx="2" fill="#caa53a"></rect>
+    <rect x="60" y="54" width="6" height="8" rx="2" fill="#caa53a"></rect>
+  </symbol>
+
+  
+  <symbol id="plane-emergency" viewBox="0 0 100 100">
+    <path d="M50 16 C54 16 57 21 57 30 L57 40 L92 58 L92 68 L57 60 L57 72 L72 83 L72 88 L57 77 L50 87 L43 77 L28 88 L28 83 L43 72 L43 60 L8 68 L8 58 L43 40 L43 30 C43 21 46 16 50 16 Z" fill="#e8e0cf" stroke="#e0584f" stroke-width="2.6" stroke-linejoin="round" filter="url(#pa-shadow)"></path>
+    <path d="M45 26 Q50 22 55 26 L53 33 Q50 31 47 33 Z" fill="#242842" opacity=".55"></path>
+    <circle cx="50" cy="56" r="9" fill="#e0584f"></circle>
+    <rect x="48.5" y="50" width="3" height="9" rx="1.3" fill="#f4eede"></rect>
+    <circle cx="50" cy="62.5" r="1.8" fill="#f4eede"></circle>
+  </symbol>
+
+  
+  <symbol id="plane-medevac" viewBox="0 0 100 100">
+    <path d="M50 16 C54 16 57 21 57 30 L57 40 L92 58 L92 68 L57 60 L57 72 L72 83 L72 88 L57 77 L50 87 L43 77 L28 88 L28 83 L43 72 L43 60 L8 68 L8 58 L43 40 L43 30 C43 21 46 16 50 16 Z" fill="#f4eede" stroke="#ef798a" stroke-width="2.6" stroke-linejoin="round" filter="url(#pa-shadow)"></path>
+    <path d="M45 26 Q50 22 55 26 L53 33 Q50 31 47 33 Z" fill="#242842" opacity=".5"></path>
+    <rect x="46.5" y="48" width="7" height="20" rx="2" fill="#e0584f"></rect>
+    <rect x="40" y="54.5" width="20" height="7" rx="2" fill="#e0584f"></rect>
+  </symbol>
+
+  
+  
+  <symbol id="ring-selected" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="46" fill="none" stroke="#f4cf5e" stroke-width="2.6" stroke-dasharray="6 7" stroke-linecap="round" opacity=".9" filter="url(#pa-glow)"></circle>
+  </symbol>
+
+  
+  <symbol id="ring-patience" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="44" fill="none" stroke="#6b6d7a" stroke-width="4.5" opacity=".35"></circle>
+    <circle cx="50" cy="50" r="44" fill="none" stroke="#5dca7a" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="69" transform="rotate(-90 50 50)"></circle>
+  </symbol>
+
+  
+  <symbol id="ring-patience-low" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="44" fill="none" stroke="#6b6d7a" stroke-width="4.5" opacity=".35"></circle>
+    <circle cx="50" cy="50" r="44" fill="none" stroke="#e0584f" stroke-width="5.5" stroke-linecap="round" stroke-dasharray="276.5" stroke-dashoffset="227" transform="rotate(-90 50 50)" filter="url(#pa-glow)"></circle>
+  </symbol>
+
+  
+  
+  <symbol id="svc-repair" viewBox="0 0 64 64">
+    <rect x="4" y="4" width="56" height="56" rx="16" fill="#2a2440" stroke="#f2a93b" stroke-width="2.5" filter="url(#pa-shadow)"></rect>
+    <g transform="translate(16,16) scale(1.33)" fill="none" stroke="#f2a93b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+    </g>
+  </symbol>
+
+  
+  <symbol id="svc-fuel" viewBox="0 0 64 64">
+    <rect x="4" y="4" width="56" height="56" rx="16" fill="#2a2440" stroke="#4ecdc4" stroke-width="2.5" filter="url(#pa-shadow)"></rect>
+    <g transform="translate(16,16) scale(1.33)" fill="none" stroke="#4ecdc4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"></path>
+    </g>
+  </symbol>
+
+  
+  <symbol id="svc-board" viewBox="0 0 64 64">
+    <rect x="4" y="4" width="56" height="56" rx="16" fill="#2a2440" stroke="#ef798a" stroke-width="2.5" filter="url(#pa-shadow)"></rect>
+    <g transform="translate(16,16) scale(1.33)" fill="none" stroke="#ef798a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </g>
+  </symbol>
+
+  
+  <symbol id="svc-depart" viewBox="0 0 64 64">
+    <rect x="4" y="4" width="56" height="56" rx="16" fill="#2a2440" stroke="#f4cf5e" stroke-width="2.5" filter="url(#pa-shadow)"></rect>
+    <g transform="translate(16,16) scale(1.33)" fill="none" stroke="#f4cf5e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+    </g>
+  </symbol>
+</defs>
+</svg>

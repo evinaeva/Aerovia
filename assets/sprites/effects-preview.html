@@ -1,0 +1,86 @@
+<!-- @dsCard group="Sprites" viewport="760x680" name="Effects (Batch 4)" subtitle="Canvas-ready particles & key frames — crash, landing, takeoff, service, status" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PlaneFlow — Effects</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  html, body { margin: 0; }
+  body {
+    background: radial-gradient(120% 80% at 30% 0%, rgba(58,51,84,0.45), rgba(20,17,30,0)), var(--bg-page);
+    color: var(--text-body); font-family: var(--font-ui); padding: 26px 26px 34px;
+  }
+  h2 { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: .02em;
+    color: var(--cream-100); margin: 26px 0 12px; display: flex; align-items: center; gap: 10px; }
+  h2:first-of-type { margin-top: 4px; }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--border-soft); }
+  .grid { display: flex; flex-wrap: wrap; gap: 12px; }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 8px;
+    background: var(--surface-card); border: 1.5px solid var(--border-soft);
+    border-radius: var(--r-card); padding: 12px; box-shadow: var(--shadow-raised); }
+  .stage { width: 92px; height: 92px; border-radius: 10px; position: relative; overflow: hidden;
+    background: repeating-linear-gradient(0deg, transparent 0 22px, rgba(181,140,240,0.06) 22px 23px),
+                repeating-linear-gradient(90deg, transparent 0 22px, rgba(181,140,240,0.06) 22px 23px), var(--navy-800);
+    display: flex; align-items: center; justify-content: center; }
+  .stage svg { position: absolute; }
+  .id { font-size: 11px; color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; }
+  .lead { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; max-width: 66ch; margin: 0 0 6px; }
+  code { color: var(--cream-200); font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
+
+  @keyframes pop   { 0%{transform:scale(.3);opacity:0} 25%{opacity:1} 60%{transform:scale(1.25);opacity:1} 100%{transform:scale(1.45);opacity:0} }
+  @keyframes pulse { 0%{transform:scale(.6);opacity:.2} 50%{transform:scale(1);opacity:1} 100%{transform:scale(1.5);opacity:0} }
+  @keyframes rise  { 0%{transform:translateY(14px) scale(.5);opacity:0} 30%{opacity:.9} 100%{transform:translateY(-16px) scale(1.2);opacity:0} }
+  @keyframes fall  { 0%{transform:translateY(-14px);opacity:0} 30%{opacity:1} 100%{transform:translateY(16px);opacity:0} }
+  @keyframes liftln{ 0%{transform:translateY(16px);opacity:0} 40%{opacity:1} 100%{transform:translateY(-14px);opacity:0} }
+  @keyframes twinkle{ 0%,100%{transform:scale(.6) rotate(0);opacity:.4} 50%{transform:scale(1.1) rotate(45deg);opacity:1} }
+  @keyframes flick { 0%,100%{opacity:.55;transform:scale(.9)} 50%{opacity:1;transform:scale(1.08)} }
+  .a-pop svg{animation:pop 1.8s ease-out infinite} .a-pulse svg{animation:pulse 1.8s ease-out infinite}
+  .a-rise svg{animation:rise 2s ease-out infinite} .a-fall svg{animation:fall 1.4s ease-in infinite}
+  .a-lift svg{animation:liftln 1.6s ease-out infinite} .a-tw svg{animation:twinkle 1.6s ease-in-out infinite}
+  .a-flick svg{animation:flick 0.9s ease-in-out infinite}
+  @media (prefers-reduced-motion: reduce){ .stage svg{animation:none!important} }
+</style>
+</head>
+<body>
+  <p class="lead">Particles are single atoms the engine scatters/scales/fades; composites are the peak pose (scale-in &amp; fade). Loops below approximate the in-game motion. Recipes &amp; tokens: <code>README.md</code>.</p>
+  <div id="sprite" hidden></div>
+
+  <h2>Particle atoms</h2>
+  <div class="grid" id="atoms"></div>
+
+  <h2>Crash · landing · takeoff</h2>
+  <div class="grid" id="motion"></div>
+
+  <h2>Service animations (by type)</h2>
+  <div class="grid" id="service"></div>
+
+  <h2>Status highlights</h2>
+  <div class="grid" id="status"></div>
+
+<script>
+  const box = (id, w, h, s, anim) =>
+    '<div class="cell"><div class="stage ' + anim + '">' +
+    '<svg width="'+s+'" height="'+Math.round(h/w*s)+'" viewBox="0 0 '+w+' '+h+'"><use href="#'+id+'"></use></svg>' +
+    '</div><span class="id">'+id+'</span></div>';
+
+  fetch("planeflow-effects.svg").then(r=>r.text()).then(txt => {
+    document.getElementById("sprite").innerHTML = txt;
+    document.getElementById("atoms").innerHTML =
+      box("fx-spark",24,24,26,"a-tw") + box("fx-smoke",48,48,52,"a-rise") +
+      box("fx-dust",16,16,18,"a-rise") + box("fx-droplet",20,20,22,"a-fall") +
+      box("fx-board-dot",20,20,24,"a-flick");
+    document.getElementById("motion").innerHTML =
+      box("fx-crash",80,80,72,"a-pop") + box("fx-touchdown",72,44,72,"a-rise") +
+      box("fx-takeoff",56,64,58,"a-lift");
+    document.getElementById("service").innerHTML =
+      box("fx-weld",60,60,64,"a-flick") + box("fx-fuel",60,60,64,"a-flick") +
+      box("fx-boarding",72,44,76,"a-flick");
+    document.getElementById("status").innerHTML =
+      box("fx-success",80,80,72,"a-pulse") + box("fx-error",80,80,72,"a-pulse") +
+      box("fx-ripple",80,80,72,"a-pulse");
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!-- @dsCard group="Sprites" viewport="760x760" name="HUD & Floats (Batch 3)" subtitle="Lives, coin, stars, pause, Zen, toasts and floating feedback" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PlaneFlow — HUD & Floats</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  html, body { margin: 0; }
+  body {
+    background: radial-gradient(120% 80% at 30% 0%, rgba(58,51,84,0.45), rgba(20,17,30,0)), var(--bg-page);
+    color: var(--text-body); font-family: var(--font-ui); padding: 26px 26px 34px;
+  }
+  h2 {
+    font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: 0.02em;
+    color: var(--cream-100); margin: 26px 0 12px; display: flex; align-items: center; gap: 10px;
+  }
+  h2:first-of-type { margin-top: 4px; }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--border-soft); }
+  .grid { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+  .cell {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    background: var(--surface-card); border: 1.5px solid var(--border-soft);
+    border-radius: var(--r-card); padding: 12px; box-shadow: var(--shadow-raised);
+  }
+  .stagebox { display: flex; align-items: center; justify-content: center; }
+  .id { font-size: 11px; color: var(--text-muted); font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .lead { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; max-width: 66ch; margin: 0 0 6px; }
+  code { color: var(--cream-200); font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
+
+  /* HUD bar */
+  .hudbar {
+    display: inline-flex; align-items: center; gap: 22px;
+    background: rgba(26,19,38,0.86); border: 1.5px solid var(--border-soft);
+    border-radius: var(--r-pill); padding: 9px 20px; box-shadow: var(--shadow-raised);
+  }
+  .stat { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: 16px; color: var(--cream-100); }
+  .stat .lab { letter-spacing: .02em; }
+  .hearts { display: inline-flex; gap: 3px; }
+
+  /* toast */
+  .toast {
+    display: inline-flex; align-items: center; gap: 12px; min-width: 230px;
+    background: var(--surface-card); border-radius: var(--r-card);
+    box-shadow: var(--shadow-card); padding: 12px 16px 12px 12px;
+  }
+  .toast .chip {
+    width: 38px; height: 38px; flex: 0 0 auto; border-radius: var(--r-icon);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .toast .tt { font-size: 13px; font-weight: 800; color: var(--cream-100); letter-spacing: .02em; }
+  .toast .ms { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* floats */
+  .floats { display: flex; flex-wrap: wrap; gap: 26px; align-items: center; padding: 18px 22px;
+    background: var(--navy-800); border-radius: var(--r-card); border: 1.5px solid var(--border-soft); }
+  .float { font-family: var(--font-display); font-weight: 700; font-size: 26px; white-space: nowrap; }
+  .f-money { color: var(--gold); text-shadow: var(--text-glow-gold); }
+  .f-combo { color: var(--amber-glow); text-shadow: var(--text-glow-amber); }
+  .f-ontime { color: var(--green); text-shadow: var(--glow-green); }
+  .f-phew { color: var(--cream-200); opacity: .9; font-weight: 600; }
+  .note { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+  <p class="lead">Top-HUD icon set + the shared toast &amp; float styles. Floats are canvas-drawn text — use <code>--font-display</code> bold with the matching glow token. Interactive chips (pause, Zen) are ≥44px touch targets.</p>
+  <div id="sprite" hidden></div>
+
+  <h2>HUD bar — assembled</h2>
+  <div class="hudbar" id="hudbar"></div>
+
+  <h2>HUD icons</h2>
+  <div class="grid" id="icons"></div>
+
+  <h2>Buttons (≥44px touch target)</h2>
+  <div class="grid" id="buttons"></div>
+
+  <h2>Toasts — one shared style</h2>
+  <div class="grid" id="toasts"></div>
+
+  <h2>Floats — feedback text</h2>
+  <div class="floats">
+    <span class="float f-money">+450&#8201;₿</span>
+    <span class="float f-combo">×2 combo</span>
+    <span class="float f-ontime">on time!</span>
+    <span class="float f-phew">phew!</span>
+  </div>
+  <p class="note">Tokens: +money <code>--gold</code> + <code>--text-glow-gold</code> · combo <code>--amber-glow</code> · on time <code>--green</code> · phew <code>--cream-200</code> (muted, no glow).</p>
+
+<script>
+  const ico = (id, s) => '<svg width="'+s+'" height="'+s+'" viewBox="0 0 '+(id==="coin"?32:(id.endsWith("-btn")||id==="zen-badge")?56:24)+' '+(id==="coin"?32:(id.endsWith("-btn")||id==="zen-badge")?56:24)+'"><use href="#'+id+'"></use></svg>';
+
+  fetch("planeflow-hud.svg").then(r=>r.text()).then(txt => {
+    document.getElementById("sprite").innerHTML = txt;
+
+    document.getElementById("hudbar").innerHTML =
+      '<span class="stat"><span class="hearts">'+ico("heart",20)+ico("heart",20)+ico("heart",20)+'</span></span>' +
+      '<span class="stat">'+ico("clock",20)+'<span class="lab">02:45</span></span>' +
+      '<span class="stat">'+ico("coin",24)+'<span class="lab">12&#8201;450</span></span>' +
+      '<span class="stat">'+ico("star",20)+'<span class="lab">3 / 8</span></span>' +
+      '<span style="display:inline-flex">'+ico("pause-btn",44)+'</span>';
+
+    const icons = [
+      ["heart",24],["heart-empty",24],["coin",32],["star",28],["star-empty",28],["clock",24],["moon",24],["check",24],["heart-crack",24]
+    ];
+    document.getElementById("icons").innerHTML = icons.map(([id,s]) =>
+      '<div class="cell"><div class="stagebox" style="width:'+(s+8)+'px;height:'+(s+8)+'px">'+ico(id,s)+'</div><span class="id">'+id+'</span></div>'
+    ).join("");
+
+    document.getElementById("buttons").innerHTML = [
+      ["pause-btn","pause-btn · 56px"],["zen-badge","zen-badge · 56px"]
+    ].map(([id,lbl]) =>
+      '<div class="cell"><div class="stagebox" style="width:60px;height:60px">'+ico(id,56)+'</div><span class="id">'+lbl+'</span></div>'
+    ).join("");
+
+    const tint = (c,a)=> 'color-mix(in srgb, '+c+' '+a+'%, transparent)';
+    const toasts = [
+      { ic:"heart-crack", c:"var(--red)",  tt:"Life lost", ms:"A320 ran out of patience" },
+      { ic:"check",       c:"var(--green)",tt:"Level complete", ms:"Shift cleared · ★★☆" },
+      { ic:"coin",        c:"var(--gold)", tt:"+450 ₿", ms:"Express bonus ×1.5", coin:true },
+    ];
+    document.getElementById("toasts").innerHTML = toasts.map(t =>
+      '<div class="toast" style="border:1.5px solid '+tint(t.c,40)+'">' +
+        '<div class="chip" style="background:'+tint(t.c,16)+'">'+ico(t.coin?"coin":t.ic, t.coin?26:22)+'</div>' +
+        '<div><div class="tt">'+t.tt+'</div><div class="ms">'+t.ms+'</div></div>' +
+      '</div>'
+    ).join("");
+  });
+</script>
+</body>
+</html>
