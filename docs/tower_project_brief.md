@@ -90,9 +90,9 @@
 цель уровня).
 
 Документация проекта: `README.md`, `CHANGELOG.md`, `docs/FAQ.md` (правила для игрока),
-`docs/DEV.md` (устройство кода), `docs/backlog.md` (бэклог и идеи),
-`docs/assets.md` (арт-бэклог), `docs/achievements.md` (медали),
-`docs/genre_feature_ideas.md` (любимые фишки жанра).
+`docs/DEV.md` (устройство кода), `docs/backlog.md` (бэклог + копилка идей жанра),
+`docs/done.md` (архив сделанного), `docs/assets.md` (арт-бэклог),
+`docs/achievements.md` (медали).
 
 ---
 
@@ -151,5 +151,5 @@
 ---
 
 ## Бэклог
-Вынесен в отдельный документ — **[`docs/backlog.md`](backlog.md)** (что сделано,
-что дальше по приоритету, и копилка идей).
+Вынесен в отдельный документ — **[`docs/backlog.md`](backlog.md)** (что дальше по
+приоритету + копилка идей жанра). Уже сделанное — в **[`docs/done.md`](done.md)**.
