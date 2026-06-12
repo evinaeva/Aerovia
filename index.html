@@ -91,17 +91,26 @@
   /* выбор смены — карточки */
   .levellist{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:20px 0 8px}
   .levelcard{position:relative;overflow:hidden;text-align:left;font:inherit;color:var(--paper);cursor:pointer;
-    background:#1e2a35;border:1.5px solid rgba(191,233,255,.2);border-radius:14px;padding:14px 16px;transition:.15s}
-  .levelcard::after{content:"";position:absolute;right:-26px;bottom:-26px;width:84px;height:84px;
-    border:1.5px solid rgba(191,233,255,.07);border-radius:50%}
-  .levelcard:hover{border-color:rgba(191,233,255,.6);background:#243140;box-shadow:0 0 16px rgba(191,233,255,.25)}
-  .levelcard.locked{background:#141b23;border-color:rgba(127,155,176,.2);color:var(--muted);cursor:default}
-  .levelcard.locked:hover{border-color:rgba(127,155,176,.2);background:#141b23;box-shadow:none}
+    background:#211d33;border:1.5px solid rgba(154,111,212,.25);border-radius:14px;padding:12px 14px 13px;
+    transition:.15s;box-shadow:0 2px 8px rgba(10,8,20,.35)}
+  .levelcard:hover{border-color:rgba(181,140,240,.6);background:#2a2540;box-shadow:0 0 16px rgba(154,111,212,.3)}
+  .levelcard.locked{background:#1b1726;border-color:rgba(138,140,153,.18);color:var(--muted);cursor:default}
+  .levelcard.locked:hover{border-color:rgba(138,140,153,.18);background:#1b1726;box-shadow:0 2px 8px rgba(10,8,20,.35)}
+  .levelcard .lvthumb{height:46px;border-radius:9px;margin:-2px -3px 8px;overflow:hidden;
+    background:radial-gradient(120% 120% at 30% 20%,#2a2540,#14111e)}
+  .levelcard .lvthumb svg{display:block;width:100%;height:100%}
+  .levelcard.locked .lvthumb{opacity:.45}
   .levelcard .lvkick{font-size:9px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase}
-  .levelcard .lvnum{font-family:var(--serif);font-size:38px;line-height:1.1;margin:4px 0 2px}
-  .levelcard .lvname{font-family:var(--serif);font-size:12px;color:var(--paper);opacity:.85;margin:0 0 6px;line-height:1.15}
-  .levelcard .lvstars{font-size:14px;color:var(--gold);letter-spacing:.12em;text-shadow:0 0 10px rgba(244,207,94,.45)}
-  .levelcard.locked .lvstars{color:var(--muted);text-shadow:none;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+  .levelcard .lvnum{font-family:"Segoe UI",system-ui,sans-serif;font-weight:800;font-size:29px;line-height:1.05;margin:3px 0 1px;color:#f4eede}
+  .levelcard.locked .lvnum{color:var(--muted)}
+  .levelcard .lvname{font-size:11.5px;color:var(--paper);opacity:.85;margin:0;line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .levelcard .lvmeta{display:flex;align-items:center;justify-content:space-between;margin-top:7px;min-height:16px}
+  .levelcard .lvstars{display:inline-flex;gap:2px}
+  .levelcard .lvstars svg{width:15px;height:15px;display:block}
+  .levelcard .lvbest{font-size:10.5px;color:var(--gold);font-weight:700;letter-spacing:.02em}
+  .levelcard .lvlock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(20,17,30,.55)}
   .biomecard{min-height:120px}
   .biomecard .bioemoji{font-size:30px;line-height:1}
   .biomecard .lvkick{font-size:13px;letter-spacing:.06em;text-transform:none;color:var(--paper);margin-top:6px}
@@ -337,8 +346,25 @@
       blit(id, dx, dy, dw, dh){
         if(!A.ready) return false; const im = img(id, dw, dh); if(!ok(im)) return false;
         ctx.drawImage(im, dx, dy, dw, dh); return true;
+      },
+      // бесшовный тайл → CanvasPattern (кэш по id+размеру); null, пока спрайт не готов
+      pattern(id, tile){
+        if(!A.ready) return null;
+        const key = id + '#' + Math.round(tile * dpr);
+        let p = patterns.get(key);
+        if(p) return p;
+        const im = img(id, tile, tile);
+        if(!ok(im)) return null;
+        try{
+          p = ctx.createPattern(im, 'repeat');
+          if(p && p.setTransform && typeof DOMMatrix !== 'undefined')
+            p.setTransform(new DOMMatrix().scale(1 / dpr));
+          if(p) patterns.set(key, p);
+          return p;
+        }catch(e){ return null; }
       }
     };
+    const patterns = new Map();
     // fetch sheets into a hidden holder, then go live (browser only; no-op under the test harness)
     try {
       if (typeof fetch !== 'undefined' && typeof Image !== 'undefined') {
@@ -1930,13 +1956,26 @@
 
     const ax=field.x0, ay=field.y0, aR=field.rwR, ab=field.y1;
 
-    // вода справа за полосами (медленные волны)
-    const wg=ctx.createLinearGradient(aR,0,W,0);
-    wg.addColorStop(0,COL.water); wg.addColorStop(1,'#142e34');
-    ctx.fillStyle=wg; ctx.fillRect(aR,0,W-aR,H);
+    // вода справа за полосами: бесшовный тайл (фолбэк — градиент) + медленные волны
+    const wpat = COZY ? SPRITES.pattern('tile-water', 56*ui) : null;
+    if(wpat){ ctx.fillStyle=wpat; ctx.fillRect(aR,0,W-aR,H); }
+    else {
+      const wg=ctx.createLinearGradient(aR,0,W,0);
+      wg.addColorStop(0,COL.water); wg.addColorStop(1,'#142e34');
+      ctx.fillStyle=wg; ctx.fillRect(aR,0,W-aR,H);
+    }
     for(let i=0;i<6;i++){
       const yy=H*(i+1)/7 + Math.sin(tm*0.0015+i)*3;
-      ctx.fillStyle=hexa(COL.phosphor,.05); ctx.fillRect(aR,yy,W-aR,2);
+      ctx.fillStyle=hexa(wpat?'#9adbe8':COL.phosphor,.06); ctx.fillRect(aR,yy,W-aR,2);
+    }
+    // травяная кромка с песчаным берегом между полем и водой (cozy: трава → берег → вода)
+    if(COZY && LV.biome!=='forest'){
+      const gw=24*ui;
+      ctx.fillStyle=SPRITES.pattern('tile-grass', 56*ui)||'#38482f';
+      ctx.fillRect(aR,0,gw,H);
+      ctx.fillStyle='#6b5c44'; ctx.fillRect(aR+gw,0,3*ui,H);   // песчаная полоска
+      ctx.strokeStyle='rgba(232,224,207,.45)'; ctx.lineWidth=1.5; ctx.setLineDash([3,6]);
+      ctx.beginPath(); ctx.moveTo(aR+gw+6*ui,0); ctx.lineTo(aR+gw+6*ui,H); ctx.stroke(); ctx.setLineDash([]); // пена прибоя
     }
 
     // металлическая рама апрона с заклёпками
@@ -1948,12 +1987,18 @@
     [[fx+6*ui,fy+6*ui],[fx+fw-6*ui,fy+6*ui],[fx+6*ui,fy+fh-6*ui],[fx+fw-6*ui,fy+fh-6*ui]]
       .forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],2.5*ui,0,7); ctx.fill(); });
 
-    // тармак: вертикальный градиент + диагональная штриховка + осевая направляющая
-    const tg=ctx.createLinearGradient(0,ay,0,ab); tg.addColorStop(0,COL['tarmac-2']); tg.addColorStop(1,COL.tarmac);
-    rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.fillStyle=tg; ctx.fill();
+    // тармак: бесшовный тайл со швами плит (фолбэк — градиент + штриховка) + осевая
+    const tpat = COZY ? SPRITES.pattern('tile-tarmac', 56*ui) : null;
+    if(tpat){ rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.fillStyle=tpat; ctx.fill(); }
+    else {
+      const tg=ctx.createLinearGradient(0,ay,0,ab); tg.addColorStop(0,COL['tarmac-2']); tg.addColorStop(1,COL.tarmac);
+      rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.fillStyle=tg; ctx.fill();
+    }
     ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
-    ctx.strokeStyle=hexa(COL.ink,.5); ctx.lineWidth=1;
-    for(let xx=ax-(ab-ay); xx<aR; xx+=30*ui){ ctx.beginPath(); ctx.moveTo(xx,ay); ctx.lineTo(xx+(ab-ay),ab); ctx.stroke(); }
+    if(!tpat){
+      ctx.strokeStyle=hexa(COL.ink,.5); ctx.lineWidth=1;
+      for(let xx=ax-(ab-ay); xx<aR; xx+=30*ui){ ctx.beginPath(); ctx.moveTo(xx,ay); ctx.lineTo(xx+(ab-ay),ab); ctx.stroke(); }
+    }
     ctx.strokeStyle=hexa(COL.gold,.2); ctx.lineWidth=2.5; ctx.setLineDash([12,10]);
     ctx.beginPath(); ctx.moveTo((ax+field.x1)/2, ay+24*ui); ctx.lineTo((ax+field.x1)/2, ab-24*ui); ctx.stroke(); ctx.setLineDash([]);
     ctx.restore();
@@ -2760,19 +2805,46 @@
       list.appendChild(card);
     });
   }
+  // звезда из HUD-листа дизайна (инлайн, чтобы карточки не зависели от загрузки листов)
+  const STAR_PATH='M11.5 2.3a.53.53 0 0 1 1 0l2.3 4.68a2.1 2.1 0 0 0 1.6 1.16l5.16.75a.53.53 0 0 1 .3.91l-3.74 3.64a2.1 2.1 0 0 0-.6 1.87l.88 5.14a.53.53 0 0 1-.77.56l-4.62-2.43a2.1 2.1 0 0 0-1.97 0L6.4 21a.53.53 0 0 1-.77-.56l.88-5.14a2.1 2.1 0 0 0-.6-1.87L2.16 9.8a.53.53 0 0 1 .3-.91l5.16-.75a2.1 2.1 0 0 0 1.6-1.16z';
+  function starSvg(on){
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">'+(on
+      ? `<path d="${STAR_PATH}" fill="#f4cf5e"/>`
+      : `<path d="${STAR_PATH}" fill="none" stroke="#6b6d7a" stroke-width="1.6"/>`)+'</svg>';
+  }
+  // мини-борд для превью карточки: тармак + вода + полоса + маршрут (вариация от номера)
+  function lvThumb(i){
+    const y=12+(i*7)%14, x2=128-(i*13)%44;
+    return '<svg viewBox="0 0 168 46" preserveAspectRatio="none" aria-hidden="true">'+
+      '<rect width="168" height="46" fill="#242842"/>'+
+      '<rect x="112" width="56" height="46" fill="#1c3a42"/>'+
+      '<path d="M118 8 q6 -3 12 0 t12 0 M122 24 q6 -3 12 0 t12 0 M118 38 q6 -3 12 0 t12 0" fill="none" stroke="#2a525c" stroke-width="1.6"/>'+
+      `<rect x="12" y="${y+6}" width="66" height="12" rx="4" fill="#1a1d2e"/>`+
+      `<path d="M16 ${y+12} h58" stroke="#e8e0cf" stroke-width="1.3" stroke-dasharray="5 5" opacity=".55"/>`+
+      `<path d="M${x2} 9 C ${x2-28} 20, 64 ${y-2}, 46 ${y+12}" fill="none" stroke="#5dca7a" stroke-width="2" stroke-dasharray="4 5" opacity=".9"/>`+
+      `<circle cx="${x2}" cy="9" r="3.4" fill="#f4cf5e"/></svg>`;
+  }
   function renderLevels(){
     const list=document.getElementById('levelList'); list.innerHTML='';
     LEVELS.forEach((lv,i)=>{
-      const unlocked = i < save.unlocked, stars=save.stars[i]||0;
+      const unlocked = i < save.unlocked, stars=save.stars[i]||0, best=save.best[i];
       const b=document.createElement('button');
       b.className='levelcard'+(unlocked?'':' locked');
-      const starsHtml = unlocked
-        ? ('★'.repeat(stars)+'☆'.repeat(3-stars))
-        : ('🔒 '+t('levels.locked'));
-      b.innerHTML=`<div class="lvkick">${t('levels.shift')}</div>`+
-        `<div class="lvnum">${String(i+1).padStart(2,'0')}</div>`+
-        (unlocked ? `<div class="lvname">${levelName(i)}</div>` : '')+
-        `<div class="lvstars">${starsHtml}</div>`;
+      let html=`<div class="lvthumb">${lvThumb(i)}</div>`+
+        `<div class="lvkick">${t('levels.shift')}</div>`+
+        `<div class="lvnum">${String(i+1).padStart(2,'0')}</div>`;
+      if(unlocked){
+        html+=`<div class="lvname">${levelName(i)}</div>`+
+          `<div class="lvmeta"><span class="lvstars">${[0,1,2].map(s=>starSvg(s<stars)).join('')}</span>`+
+          (best!=null?`<span class="lvbest">✈ ${fmtNum(best)}</span>`:'<span></span>')+`</div>`;
+      } else {
+        html+=`<div class="lvname">&nbsp;</div><div class="lvmeta"></div>`+
+          `<div class="lvlock"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">`+
+          `<rect x="5" y="11" width="14" height="9" rx="2" fill="#8a8c99"/>`+
+          `<path d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="#8a8c99" stroke-width="2" stroke-linecap="round"/></svg></div>`;
+      }
+      b.innerHTML=html;
+      b.setAttribute('aria-label', t('level.name',{n:i+1})+(unlocked?'':' — '+t('levels.locked')));
       if(unlocked) b.onclick=()=>startLevel(i);
       list.appendChild(b);
     });
