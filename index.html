@@ -639,7 +639,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.18';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.18.1';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -986,11 +986,20 @@
     }
     drag=null;
   }
-  cv.addEventListener('pointerdown',down);
-  cv.addEventListener('pointermove',move);
-  window.addEventListener('pointerup',up);
-  cv.addEventListener('touchstart',down,{passive:false});
-  cv.addEventListener('touchmove',move,{passive:false});
+  // На тач-устройствах один тап порождает И pointer-, И touch-событие. Если
+  // слушать оба, down() срабатывает дважды на одно касание: для паузы (тоггл
+  // setPaused(!paused)) это значит «вкл, тут же выкл» — кнопка как будто мёртвая.
+  // Поэтому используем Pointer Events там, где они есть (везде в совр. браузерах),
+  // и только при их отсутствии откатываемся на Touch Events.
+  if(window.PointerEvent){
+    cv.addEventListener('pointerdown',down);
+    cv.addEventListener('pointermove',move);
+    window.addEventListener('pointerup',up);
+  } else {
+    cv.addEventListener('touchstart',down,{passive:false});
+    cv.addEventListener('touchmove',move,{passive:false});
+    window.addEventListener('touchend',up);
+  }
 
   // ---- crashes ----
   function freeRes(pl){
