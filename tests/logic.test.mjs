@@ -101,6 +101,34 @@ test('validateLevels ловит битый флаг weather', () => {
   assert.ok(game.validateLevels().some(p => /weather/.test(p)), 'битый флаг weather должен отлавливаться');
 });
 
+// ---------- MVP-аэропорт: лес + погода + зимний геймплей ----------
+
+test('MVP-аэропорт (forest) объединяет лес и погоду', () => {
+  const { game } = boot();
+  const forest = game.BIOMES.find(b => b.id === 'forest');
+  assert.ok(forest && forest.ready, 'лесной биом — готовый MVP-аэропорт');
+  assert.equal(forest.level.biome, 'forest', 'лесные помехи (бобёр/дерево/олень/птицы)');
+  assert.equal(forest.level.weather, true, 'на нём включён движок погоды (дождь/снег)');
+});
+
+test('снег чистит снегоуборщик (snow → plow)', () => {
+  const { game } = boot();
+  assert.equal(game.neededCrew({ kind: 'snow' }), 'plow');
+  // лесные помехи не сломаны прежним маппингом
+  assert.equal(game.neededCrew({ kind: 'tree', fallen: false }), 'chainsaw');
+  assert.equal(game.neededCrew({ kind: 'tree', fallen: true }), 'truck');
+  assert.equal(game.neededCrew({ kind: 'deer' }), 'truck');
+  assert.equal(game.neededCrew({ kind: 'birds' }), 'eagle');
+});
+
+test('у снегоуборщика и снежной помехи есть строки на обоих языках', () => {
+  const { game } = boot();
+  for (const c of ['en', 'ru']) {
+    assert.ok(game.I18N[c]['forest.snow'], `${c}: нет forest.snow`);
+    assert.ok(game.I18N[c]['forest.crew.plow'], `${c}: нет forest.crew.plow`);
+  }
+});
+
 // ---------- Уровни и прогрессия ----------
 
 test('ровно 10 уровней', () => {
