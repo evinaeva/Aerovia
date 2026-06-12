@@ -5,7 +5,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Tower</title>
+<title>PlaneFlow</title>
 <style>
   /* ===== облик «ночной радар» (см. CHANGELOG 0.10) ===== */
   :root{
@@ -251,8 +251,8 @@
     en: {
       _name:'English', _locale:'en-US',
       _plural: n => (n===1 ? 0 : 1),
-      'app.name':'Tower',
-      'app.title':'Tower — air traffic control',
+      'app.name':'PlaneFlow',
+      'app.title':'PlaneFlow — air traffic control',
       'start.kicker':'Night controller · Airfield',
       'start.tagline':'Guide the planes with your finger. Calm night flow.',
       'start.play':'Play', 'start.zen':'Zen mode', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
@@ -349,8 +349,8 @@
         if(m10===1 && m100!==11) return 0;
         if(m10>=2 && m10<=4 && (m100<12 || m100>14)) return 1;
         return 2; },
-      'app.name':'Tower',
-      'app.title':'Tower — диспетчер',
+      'app.name':'PlaneFlow',
+      'app.title':'PlaneFlow — диспетчер',
       'start.kicker':'Ночной диспетчер · Аэродром',
       'start.tagline':'Веди борта пальцем. Спокойный ночной поток.',
       'start.play':'Играть', 'start.zen':'Zen-режим', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
@@ -561,7 +561,9 @@
   let fogUntil = 0, nextFog = 0;                      // туман
   let zen = false;                                    // режим без проигрыша
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true};
-  const SAVE_KEY = 'tower_save_v1', VERSION = '0.12';
+  // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
+  // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.13';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -874,7 +876,7 @@
     lossLog.push({t:gameTime, reason});
     if(lossLog.length>12) lossLog.shift();
     toast={text:(debug.infiniteLives?'✈ ':'−1 ✈ ')+t(reason), t:0, good:false};
-    console.log('[Tower] '+(debug.infiniteLives?'(∞) ':'-1 ✈ ')+t(reason)+' | t='+fmtTime(gameTime)+' | lives='+lives);
+    console.log('[PlaneFlow] '+(debug.infiniteLives?'(∞) ':'-1 ✈ ')+t(reason)+' | t='+fmtTime(gameTime)+' | lives='+lives);
   }
   function killAir(pl){ logLoss(pl, 'loss.airTimeout', false); }
   function killCrash(pl, reason){ logLoss(pl, reason||'loss.collision', true); }
@@ -1680,7 +1682,7 @@
   }
 
   // ---- меню / уровни / сохранение ----
-  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; } }catch(e){} }
+  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)) || JSON.parse(localStorage.getItem(LEGACY_SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; } }catch(e){} }
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
   // язык, медали (ach/stats) и звук/вибро — не прогресс уровней, сохраняем при сбросе
   function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false}; saveGame(); renderLevels(); }
@@ -2003,6 +2005,7 @@
   };
 
   loadGame();
+  saveGame();                         // миграция: сейв сразу переезжает под новый ключ
   ACH.init();
   lang = save.lang || detectLang();   // сохранённый выбор > автоопределение > en
   applyI18n();
