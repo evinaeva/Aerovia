@@ -51,3 +51,19 @@ text/paper `#f4eede`, reduce `--phosphor` glow usage. Accents
 1. `node --test tests/*.test.mjs` — logic safety net stays green.
 2. Static frame render (same pipeline as the mock) for a visual check in chat.
 3. Interactive check is on the user (no browser in this environment).
+
+## Status — DONE (v0.21)
+- [x] Sprite atlas + `COZY` flag + procedural fallback.
+- [x] Planes (`drawPlaneBodyAt`) → plane/vip/emergency/medevac sprites.
+- [x] Aircraft layer: need chip (`svc-*`), selection ring, cozy-green route.
+- [x] Palette `:root` radar → cozy (env colours + `--phosphor` → cozy-purple).
+- [x] Field: terminal sprite; bays recoloured cozy (geometry stays procedural).
+- [x] HUD: hearts (`heart`/`heart-empty`) + coin sprites.
+- [x] Effects: crash → `fx-crash`, near-miss → `fx-ripple`.
+- [x] Main menu background → `menu-bg` sprite (cover-fit).
+- [x] App icon + Android adaptive shipped under `assets/icon/`.
+
+Kept procedural by design (dynamic state): patience ring, runway
+occupied/closed lights, bay gate orientation + service progress/level pips.
+Still on the backlog for a polish pass: bay/runway full sprite adoption,
+service/takeoff/touchdown effect frames, level-select card art, button system.
