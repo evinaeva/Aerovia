@@ -42,6 +42,7 @@
   }
   .panel p{font-size:13px;line-height:1.7;color:var(--muted);margin:10px 0 0}
   .panel .big{font-size:48px;color:var(--phosphor);margin:8px 0 0;letter-spacing:.02em}
+  #finalStars{color:var(--gold);font-size:52px;letter-spacing:.08em}
   .btn{
     margin-top:24px;display:inline-block;cursor:pointer;
     border:1px solid var(--phosphor);color:var(--phosphor);background:transparent;
@@ -53,6 +54,23 @@
   .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:10px;letter-spacing:.1em;color:var(--muted)}
   .legend span{display:flex;align-items:center;gap:6px;text-transform:uppercase}
   .dot{width:9px;height:9px;border-radius:50%}
+  .settings{margin-top:16px;text-align:left}
+  .opt{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--paper);margin:12px 0;letter-spacing:.04em;cursor:pointer;text-transform:none}
+  .opt input{width:16px;height:16px;accent-color:var(--phosphor)}
+  .logbox{margin-top:14px;max-height:130px;overflow:auto;border-top:1px solid rgba(127,155,176,.25);padding-top:8px}
+  .logrow{font-size:11px;color:var(--paper);padding:2px 0;letter-spacing:.03em}
+  .logrow.muted{color:var(--muted)}
+  #pauseScreen .btn{display:block;margin:14px auto 0}
+  #overScreen .btn, #levelScreen .btn{display:block;margin:12px auto 0}
+  .levellist{display:flex;flex-direction:column;gap:10px;margin:18px 0 6px}
+  .levelbtn{display:flex;justify-content:space-between;align-items:center;gap:14px;
+    border:1px solid var(--phosphor);background:transparent;color:var(--paper);
+    font:inherit;font-size:13px;padding:12px 16px;border-radius:3px;cursor:pointer;letter-spacing:.05em}
+  .levelbtn:hover{background:rgba(191,233,255,.1)}
+  .levelbtn.locked{border-color:rgba(127,155,176,.4);color:var(--muted);cursor:default}
+  .levelbtn .lvbest{font-size:11px;color:var(--muted);letter-spacing:.03em}
+  .btn-quiet{border-color:var(--muted);color:var(--muted)}
+  .vno{margin-top:16px;font-size:10px;color:var(--muted);letter-spacing:.12em}
 </style>
 
 <div id="stage">
@@ -69,16 +87,45 @@
         <span><i class="dot" style="background:var(--rose)"></i>посадка людей</span>
         <span><i class="dot" style="background:var(--gold)"></i>вип-борт</span>
       </div>
-      <button class="btn" id="startBtn">Заступить на смену</button>
+      <button class="btn" id="startBtn">Играть</button>
+      <div class="vno">верс. <span id="ver"></span></div>
     </div>
   </div>
 
   <div class="overlay hidden" id="overScreen">
     <div class="panel">
-      <div class="kicker">Смена закрыта</div>
-      <div class="big" id="finalScore">0</div>
+      <div class="kicker" id="overKicker">Смена закрыта</div>
+      <div class="big" id="finalStars">☆☆☆</div>
       <p id="overMsg">Закончились жизни.</p>
-      <button class="btn" id="againBtn">Новая смена</button>
+      <button class="btn" id="nextBtn">Следующий уровень</button>
+      <button class="btn" id="againBtn">Ещё раз</button>
+      <button class="btn" id="toLevelsBtn">К уровням</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="levelScreen">
+    <div class="panel">
+      <div class="kicker">Выбор уровня</div>
+      <h1>Уровни</h1>
+      <div class="levellist" id="levelList"></div>
+      <button class="btn" id="backBtn">Назад</button>
+      <button class="btn btn-quiet" id="resetProgBtn">Сбросить прогресс</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="pauseScreen">
+    <div class="panel">
+      <div class="kicker">Пауза</div>
+      <h1>Tower</h1>
+      <div class="settings hidden" id="settingsPanel">
+        <label class="opt"><input type="checkbox" id="optLives"> Бесконечные жизни (отладка)</label>
+        <label class="opt"><input type="checkbox" id="optMoney"> Безлимит денег (отладка)</label>
+        <div class="logbox" id="logBox"></div>
+      </div>
+      <button class="btn" id="resumeBtn">Играть</button>
+      <button class="btn" id="restartBtn">Начать заново</button>
+      <button class="btn" id="settingsBtn">Настройки</button>
+      <button class="btn" id="menuBtn">В главное меню</button>
     </div>
   </div>
 </div>
@@ -106,8 +153,8 @@
   // ---- balance knobs (дефолты, потом крутим) ----
   const K = {
     TURN: 3.2,            // rad/sec поворот в полёте
-    SPEED_AIR: 47,        // скорость захода на посадку
-    SPEED_TAXI: 35,       // скорость руления по земле
+    SPEED_AIR: 60,        // скорость захода на посадку
+    SPEED_TAXI: 45,       // скорость руления по земле
     SPEED_TAKEOFF: 150,   // разгон на взлёте
     ARRIVE: 12,
     GRAB: 42,
@@ -130,15 +177,26 @@
   };
 
   // ---- level config ----
-  const LEVEL = {
-    name: 'Уровень 1',
-    sides: {
-      top:    {type:'fuel',   slots:2, open:1},
-      left:   {type:'board',  slots:2, open:1},
-      bottom: {type:'repair', slots:2, open:1},
-    },
-    runways: 3,
-  };
+  // objective.metric: 'served' | 'upgrades'; time (сек) — лимит для уровня на время;
+  // stars: [1★,2★,3★] пороги по метрике. Прохождение = ≥1★.
+  const LEVELS = [
+    { name:'Уровень 1',
+      objective:{ metric:'served', desc:'Принять как можно больше бортов', stars:[5,8,12] },
+      sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
+      runways:3 },
+    { name:'Уровень 2',
+      objective:{ metric:'served', time:120, desc:'Принять бортов за 2:00', stars:[8,12,16] },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3 },
+    { name:'Уровень 3',
+      objective:{ metric:'upgrades', time:150, desc:'Улучшить боксы за 2:30', stars:[2,4,6] },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3 },
+  ];
+  let LV = LEVELS[0];
+  let levelIdx = 0, levelPassed = false, upgradesDone = 0;
+  let save = {unlocked:1, best:{}, stars:{}};
+  const SAVE_KEY = 'tower_save_v1', VERSION = '0.6';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -171,7 +229,7 @@
     if(!bays.length){
       bays = [];
       for(const side of ['top','left','bottom']){
-        const cfg = LEVEL.sides[side];
+        const cfg = LV.sides[side];
         for(let i=0;i<cfg.slots;i++){
           bays.push({side, type:cfg.type, slot:i,
                      open:i<cfg.open, lvl:0, occupied:null,
@@ -199,7 +257,7 @@
 
     // runways on right
     const rwL = W*0.60, rwR = W*0.85;
-    const n = LEVEL.runways;
+    const n = LV.runways;
     const top0 = hud + M, bot0 = H - M;
     const gap = 10*ui;
     const rh = ((bot0-top0) - gap*(n-1)) / n;
@@ -223,14 +281,22 @@
   // ---- game state ----
   let planes=[], money=0, lives=0, served=0, gameTime=0;
   let running=false, paused=false, lastTs=0, spawnTimer=0;
+  let effects=[];          // анимации крушений
+  let lossLog=[], toast=null;
+  const debug={infiniteLives:false, richStart:false};
+  const BIG_MONEY=999999;
 
   function reset(){
-    planes=[]; money=K.START_MONEY; lives=K.START_LIVES; served=0; gameTime=0;
+    planes=[]; money=debug.richStart?BIG_MONEY:K.START_MONEY; lives=K.START_LIVES; served=0; gameTime=0;
     spawnTimer=1.0; running=true; paused=false;
-    bays.forEach(b=>{ b.occupied=null; const cfg=LEVEL.sides[b.side];
+    lossLog=[]; toast=null;
+    document.getElementById('pauseScreen').classList.add('hidden');
+    document.getElementById('settingsPanel').classList.add('hidden');
+    bays.forEach(b=>{ b.occupied=null; const cfg=LV.sides[b.side];
       b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>r.occupied=null);
-    selected=null;
+    effects=[]; selected=null; levelPassed=false; upgradesDone=0;
+    toast={text:'Цель: '+LV.objective.desc, t:0, good:true};
     spawnPlane();
   }
 
@@ -291,7 +357,7 @@
     e.preventDefault();
     const p=pt(e);
     // pause button
-    if(rectHit(p.x,p.y,pauseBtn)){ paused=!paused; return; }
+    if(rectHit(p.x,p.y,pauseBtn)){ setPaused(!paused); return; }
     if(paused) return;
 
     // bay tap -> open / upgrade
@@ -301,6 +367,7 @@
       if(cost!=null && money>=cost){
         money-=cost;
         if(!b.open) b.open=true; else b.lvl++;
+        upgradesDone++;
       }
       return;
     }
@@ -351,18 +418,23 @@
     if(pl.runway){ if(pl.runway.occupied===pl) pl.runway.occupied=null; pl.runway=null; }
     if(pl.bay){ if(pl.bay.occupied===pl) pl.bay.occupied=null; pl.bay=null; }
   }
-  function killAir(pl){            // воздушный таймаут: -1 жизнь
-    pl.dead=true; freeRes(pl); lives--;
-  }
-  function killCrash(pl){          // столкновение: -1 жизнь и -выручка
+  function logLoss(pl, reason, moneyPenalty){
     if(pl.dead) return;
-    pl.dead=true; freeRes(pl); lives--; money-=pl.reward;
+    pl.dead=true; boom(pl.x,pl.y); freeRes(pl);
+    if(!debug.infiniteLives) lives--;
+    if(moneyPenalty) money-=pl.reward;
+    lossLog.push({t:gameTime, reason});
+    if(lossLog.length>12) lossLog.shift();
+    toast={text:(debug.infiniteLives?'✈ ':'−1 ✈ ')+reason, t:0, good:false};
+    console.log('[Tower] '+(debug.infiniteLives?'(∞) ':'-1 жизнь ')+reason+' | t='+fmtTime(gameTime)+' | жизней='+lives);
   }
+  function killAir(pl){ logLoss(pl, 'Воздушный таймаут — не успел сесть', false); }
+  function killCrash(pl, reason){ logLoss(pl, reason||'Столкновение', true); }
 
   function curNeed(pl){ return pl.requests[pl.reqIndex]; }
 
   function land(pl, r){            // начать посадку на полосу r
-    pl.zone='runway'; pl.runway=r; r.occupied=pl;
+    pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
     pl.landing=true; pl.moving=true; pl.path=[];
   }
   function startGround(pl){
@@ -377,6 +449,15 @@
     served++;
     money += Math.round(pl.reward * (pl.halfPay?0.5:1));
     pl.dead=true; freeRes(pl);
+  }
+  function metricValue(){ return LV.objective.metric==='upgrades' ? upgradesDone : served; }
+  function computeStars(){ const v=metricValue(); let s=0; for(const t of LV.objective.stars) if(v>=t) s++; return s; }
+  function recordResult(){
+    const stars=computeStars();
+    if(save.best[levelIdx]==null || served>save.best[levelIdx]) save.best[levelIdx]=served;
+    if(save.stars[levelIdx]==null || stars>save.stars[levelIdx]) save.stars[levelIdx]=stars;
+    if(stars>=1 && save.unlocked < levelIdx+2) save.unlocked = Math.min(LEVELS.length, levelIdx+2);
+    saveGame();
   }
 
   // ---- update ----
@@ -421,13 +502,11 @@
           followPath(pl, K.SPEED_AIR, dt);
         }
         // заход на посадку: пересёк правый край полос -> захват ближайшей
+        // (садимся даже на занятую — крушение только при физическом контакте)
         if(pl.x <= field.rwR){
           let best=null, bd=1e9;
           for(const r of runways){ const d=Math.abs(pl.y-r.cy); if(d<bd){bd=d;best=r;} }
-          if(best){
-            if(best.occupied && best.occupied!==pl){ killCrash(pl); killCrash(best.occupied); }
-            else land(pl, best);
-          }
+          if(best) land(pl, best);
         }
         continue;
       }
@@ -472,8 +551,9 @@
         if(need==='depart'){
           for(const r of runways){
             if(rectHit(pl.x,pl.y,r)){
-              if(r.occupied && r.occupied!==pl){ killCrash(pl); killCrash(r.occupied); }
-              else { pl.zone='runway'; pl.runway=r; r.occupied=pl; pl.takeoff=true; pl.moving=true; pl.path=[]; }
+              // выезд на полосу под взлёт (крушение — только при контакте на ВПП)
+              pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
+              pl.takeoff=true; pl.moving=true; pl.path=[];
               break;
             }
           }
@@ -483,7 +563,7 @@
             if(!b.open) continue;
             if(rectHit(pl.x,pl.y,b)){
               if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
-              if(b.occupied && b.occupied!==pl){ killCrash(pl); killCrash(b.occupied); }
+              if(b.occupied && b.occupied!==pl){ killCrash(pl,'Столкновение в боксе'); killCrash(b.occupied,'Столкновение в боксе'); }
               else {
                 pl.zone='bay'; pl.bay=b; b.occupied=pl;
                 pl.x=b.x+b.w/2; pl.y=b.y+b.h/2; pl.moving=false; pl.path=[];
@@ -518,15 +598,26 @@
     for(let i=0;i<ground.length;i++)
       for(let j=i+1;j<ground.length;j++){
         if(dist(ground[i].x,ground[i].y,ground[j].x,ground[j].y)<K.CRASH_DIST){
-          killCrash(ground[i]); killCrash(ground[j]);
+          killCrash(ground[i],'Столкновение на поле'); killCrash(ground[j],'Столкновение на поле');
+        }
+      }
+
+    // столкновения на ВПП: физический контакт (заходящий бьёт стоящего, либо
+    // садящийся пересекается со взлетающим), а не сам факт захода на полосу
+    const onrw = planes.filter(p=>!p.dead && p.zone==='runway');
+    for(let i=0;i<onrw.length;i++)
+      for(let j=i+1;j<onrw.length;j++){
+        if(dist(onrw[i].x,onrw[i].y,onrw[j].x,onrw[j].y)<K.CRASH_DIST){
+          killCrash(onrw[i],'Столкновение на ВПП'); killCrash(onrw[j],'Столкновение на ВПП');
         }
       }
 
     // уборка
     for(let i=planes.length-1;i>=0;i--) if(planes[i].dead){ if(selected===planes[i]) selected=null; planes.splice(i,1); }
 
-    if(lives<=0){ gameOver('Закончились жизни.'); return; }
+    if(lives<=0){ endLevel('Жизни кончились.'); return; }
     gameTime+=dt;
+    if(LV.objective.time && gameTime>=LV.objective.time){ endLevel('Время вышло!'); return; }
   }
   function dirOut(b){ // направление "наружу из бокса" в поле
     if(b.side==='top') return {dx:0,dy:1};
@@ -572,11 +663,13 @@
         ctx.stroke();
       }
     } else if(type==='depart'){
-      ctx.lineWidth=Math.max(2,r*0.26);
+      // взлетающий самолётик (нос вверх-вправо)
+      ctx.save(); ctx.rotate(-Math.PI/5);
+      const s=r/15;
       ctx.beginPath();
-      ctx.moveTo(-r*0.6,r*0.2); ctx.lineTo(0,-r*0.55); ctx.lineTo(r*0.6,r*0.2);
-      ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0,-r*0.4); ctx.lineTo(0,r*0.65); ctx.stroke();
+      ctx.moveTo(15*s,0); ctx.lineTo(-10*s,8*s); ctx.lineTo(-5*s,1.5*s); ctx.lineTo(-13*s,-1*s);
+      ctx.lineTo(-5*s,-3*s); ctx.lineTo(-10*s,-8*s); ctx.closePath(); ctx.fill();
+      ctx.restore();
     }
   }
 
@@ -734,9 +827,13 @@
     ctx.translate(pl.x,pl.y); ctx.rotate(pl.ang);
     if(pl.selected){ ctx.beginPath(); ctx.arc(0,0,K.GRAB*0.5,0,7); ctx.strokeStyle=ncol; ctx.globalAlpha=.5; ctx.lineWidth=1.5; ctx.stroke(); ctx.globalAlpha=1; }
     ctx.shadowColor=body; ctx.shadowBlur=8; ctx.fillStyle=body;
-    const s=ui;
+    // силуэт авиалайнера (нос по курсу, +x)
+    const s=ui*0.62;
     ctx.beginPath();
-    ctx.moveTo(12*s,0); ctx.lineTo(-8*s,7*s); ctx.lineTo(-4*s,0); ctx.lineTo(-8*s,-7*s);
+    ctx.moveTo(20*s,0);
+    ctx.lineTo(4*s,5*s); ctx.lineTo(2*s,16*s); ctx.lineTo(-3*s,16*s); ctx.lineTo(-2*s,5*s);
+    ctx.lineTo(-10*s,3*s); ctx.lineTo(-10*s,-3*s); ctx.lineTo(-2*s,-5*s);
+    ctx.lineTo(-3*s,-16*s); ctx.lineTo(2*s,-16*s); ctx.lineTo(4*s,-5*s);
     ctx.closePath(); ctx.fill();
     ctx.restore();
 
@@ -762,18 +859,25 @@
       ctx.font=`${16*ui}px ui-monospace,monospace`; ctx.textAlign='left';
       ctx.fillText('♥', hx, hy);
     }
-    // таймер
-    const mm=String(Math.floor(gameTime/60)).padStart(2,'0');
-    const ss=String(Math.floor(gameTime%60)).padStart(2,'0');
-    ctx.fillStyle=COL.phosphor; ctx.font=`${15*ui}px ui-monospace,monospace`;
-    ctx.textAlign='center'; ctx.fillText(mm+':'+ss, W*0.42, hud/2);
+    // таймер (обратный отсчёт для уровней на время)
+    const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
+    ctx.fillStyle = (LV.objective.time && tShown<=10) ? COL.life : COL.phosphor;
+    ctx.font=`${15*ui}px ui-monospace,monospace`; ctx.textAlign='center';
+    ctx.fillText(fmtTime(tShown), W*0.42, hud/2);
     // деньги
     ctx.fillStyle=money<0?COL.life:COL.coin; ctx.textAlign='right';
     ctx.font=`600 ${16*ui}px ui-monospace,monospace`;
     ctx.fillText(money+' ₿', W - 56*ui, hud/2);
     // принято
-    ctx.fillStyle=COL.muted; ctx.font=`${11*ui}px ui-monospace,monospace`; ctx.textAlign='center';
-    ctx.fillText('★ '+served, W*0.62, hud/2);
+    const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
+    const ls = computeStars();
+    ctx.fillStyle=COL.coin; ctx.font=`${12*ui}px ui-monospace,monospace`; ctx.textAlign='center';
+    ctx.fillText('★'.repeat(ls)+'☆'.repeat(3-ls)+'  '+mv, W*0.62, hud/2);
+    // название уровня (угол)
+    ctx.fillStyle='rgba(127,155,176,.7)'; ctx.font=`${11*ui}px ui-monospace,monospace`;
+    ctx.textAlign='right'; ctx.textBaseline='bottom';
+    ctx.fillText(LV.name, W-12*ui, H-8*ui);
+    ctx.textBaseline='middle';
 
     // pause button
     ctx.strokeStyle=COL.phosphor; ctx.lineWidth=1.5; ctx.globalAlpha=.9;
@@ -810,6 +914,47 @@
     }
   }
 
+  function fmtTime(s){ const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(Math.floor(s%60)).padStart(2,'0'); return m+':'+ss; }
+  function drawToast(){
+    const a = toast.t<2.0 ? 1 : (2.4-toast.t)/0.4;
+    ctx.save(); ctx.globalAlpha=Math.max(0,a);
+    ctx.font=`${13*ui}px ui-monospace,monospace`;
+    const w=ctx.measureText(toast.text).width+28*ui, h=26*ui;
+    const x=W/2-w/2, y=HUD_H()+10*ui;
+    const col = toast.good?COL.coin:COL.life;
+    ctx.fillStyle='rgba(16,18,22,.9)'; rr(x,y,w,h,6*ui); ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=1.5; rr(x,y,w,h,6*ui); ctx.stroke();
+    ctx.fillStyle=col; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(toast.text, W/2, y+h/2);
+    ctx.restore();
+  }
+  function boom(x,y){ effects.push({x,y,t:0,life:0.55}); }
+  function drawEffects(dt){
+    for(let i=effects.length-1;i>=0;i--){
+      const e=effects[i]; e.t+=dt;
+      const k=e.t/e.life;
+      if(k>=1){ effects.splice(i,1); continue; }
+      const R=10*ui + k*36*ui;
+      ctx.save(); ctx.translate(e.x,e.y);
+      // ударная волна
+      ctx.globalAlpha=(1-k)*0.9; ctx.strokeStyle=COL.amber; ctx.lineWidth=3*ui;
+      ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.stroke();
+      ctx.strokeStyle=COL.rose; ctx.lineWidth=1.5*ui;
+      ctx.beginPath(); ctx.arc(0,0,R*0.6,0,7); ctx.stroke();
+      // искры
+      ctx.globalAlpha=(1-k)*0.85; ctx.strokeStyle=COL.amber; ctx.lineWidth=2*ui;
+      for(let s=0;s<8;s++){ const a=s*Math.PI/4;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*R*0.5, Math.sin(a)*R*0.5);
+        ctx.lineTo(Math.cos(a)*R, Math.sin(a)*R); ctx.stroke(); }
+      // центральная вспышка в начале
+      if(k<0.45){ ctx.globalAlpha=(0.45-k)/0.45; ctx.fillStyle=COL.paper;
+        ctx.beginPath(); ctx.arc(0,0,9*ui*(1-k),0,7); ctx.fill(); }
+      ctx.restore();
+    }
+    ctx.globalAlpha=1;
+  }
+
   function frame(ts){
     if(!lastTs)lastTs=ts;
     let dt=(ts-lastTs)/1000; lastTs=ts;
@@ -820,33 +965,78 @@
     drawRunways();
     bays.forEach(drawBay);
     planes.forEach(p=>{ if(!p.dead) drawPlane(p); });
+    drawEffects(dt);
     drawHUD();
 
-    if(paused && running){
-      ctx.fillStyle='rgba(10,22,34,.55)'; ctx.fillRect(0,HUD_H(),W,H-HUD_H());
-      ctx.fillStyle=COL.phosphor; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.font=`${22*ui}px ui-monospace,monospace`;
-      ctx.fillText('ПАУЗА', W/2, H/2);
-    }
+    if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
     requestAnimationFrame(frame);
   }
 
-  function gameOver(msg){
-    running=false;
-    document.getElementById('finalScore').textContent=served;
-    document.getElementById('overMsg').textContent=msg+' Принято бортов: '+served+', касса: '+money+'₿.';
+  function endLevel(reason){
+    running=false; recordResult();
+    const stars=computeStars(), v=metricValue(), passed=stars>=1;
+    document.getElementById('overKicker').textContent = passed?'Уровень пройден':'Смена закрыта';
+    document.getElementById('finalStars').textContent = '★'.repeat(stars)+'☆'.repeat(3-stars);
+    const unit = LV.objective.metric==='upgrades'?' улучшений':' бортов';
+    document.getElementById('overMsg').textContent =
+      reason+' '+LV.objective.desc+'. Результат: '+v+unit+', касса '+money+'₿.';
+    const hasNext = levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
+    document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
     document.getElementById('overScreen').classList.remove('hidden');
   }
 
-  document.getElementById('startBtn').onclick=()=>{
-    document.getElementById('startScreen').classList.add('hidden');
-    reset();
-  };
-  document.getElementById('againBtn').onclick=()=>{
-    document.getElementById('overScreen').classList.add('hidden');
-    reset();
-  };
+  // ---- меню / уровни / сохранение ----
+  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; } }catch(e){} }
+  function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
+  function resetProgress(){ save={unlocked:1,best:{},stars:{}}; saveGame(); renderLevels(); }
+  function buildLevel(idx){ levelIdx=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
+  function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
+  function showLevels(){ renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
+  function startLevel(idx){ buildLevel(idx); hideAllScreens(); reset(); }
+  function renderLevels(){
+    const list=document.getElementById('levelList'); list.innerHTML='';
+    LEVELS.forEach((lv,i)=>{
+      const unlocked = i < save.unlocked, stars=save.stars[i]||0;
+      const b=document.createElement('button');
+      b.className='levelbtn'+(unlocked?'':' locked');
+      const starStr = unlocked ? ('★'.repeat(stars)+'☆'.repeat(3-stars)) : '🔒';
+      b.innerHTML=`<span class="lvname">${lv.name}</span><span class="lvbest">${starStr}</span>`;
+      if(unlocked) b.onclick=()=>startLevel(i);
+      list.appendChild(b);
+    });
+  }
 
+  document.getElementById('startBtn').onclick=showLevels;
+  document.getElementById('backBtn').onclick=()=>{ hideAllScreens(); document.getElementById('startScreen').classList.remove('hidden'); };
+  document.getElementById('resetProgBtn').onclick=resetProgress;
+  document.getElementById('againBtn').onclick=()=>{ document.getElementById('overScreen').classList.add('hidden'); reset(); };
+  document.getElementById('toLevelsBtn').onclick=showLevels;
+  document.getElementById('nextBtn').onclick=()=>{ if(levelIdx+1<LEVELS.length) startLevel(levelIdx+1); };
+
+  function setPaused(p){
+    paused=p;
+    document.getElementById('pauseScreen').classList.toggle('hidden', !p);
+    if(!p) document.getElementById('settingsPanel').classList.add('hidden');
+    else refreshLog();
+  }
+  function refreshLog(){
+    const box=document.getElementById('logBox');
+    if(!lossLog.length){ box.innerHTML='<div class="logrow muted">потерь пока нет</div>'; return; }
+    box.innerHTML=lossLog.slice().reverse().map(l=>`<div class="logrow">${fmtTime(l.t)} — ${l.reason}</div>`).join('');
+  }
+  document.getElementById('resumeBtn').onclick=()=>setPaused(false);
+  document.getElementById('restartBtn').onclick=()=>reset();
+  document.getElementById('settingsBtn').onclick=()=>{
+    document.getElementById('settingsPanel').classList.toggle('hidden'); refreshLog();
+  };
+  document.getElementById('menuBtn').onclick=()=>{
+    recordResult(); running=false; paused=false; showLevels();
+  };
+  document.getElementById('optLives').onchange=e=>{ debug.infiniteLives=e.target.checked; };
+  document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; };
+
+  loadGame();
+  document.getElementById('ver').textContent=VERSION;
   resize();
   requestAnimationFrame(frame);
 })();
