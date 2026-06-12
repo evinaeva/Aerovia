@@ -41,7 +41,18 @@ python3 -m http.server 8000
 
 - `index.html` — вся игра (Canvas + JS).
 - `docs/` — бриф, FAQ, дев-доки.
+- `tests/` — тесты (страховка под новые механики), `package.json` — раннеры.
 - `CHANGELOG.md` — версии.
+
+## Тесты
+
+Страховка от регрессий при добавлении механик/событий. Подробности — в
+[`docs/DEV.md`](docs/DEV.md), раздел «Тесты».
+
+```sh
+npm test          # юнит-логика + валидатор конфига (Node, без браузера)
+npm run test:e2e  # e2e-смоук (Playwright; нужен: npx playwright install chromium)
+```
 
 ## Дальше по плану
 
