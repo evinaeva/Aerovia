@@ -19,6 +19,7 @@
     --muted:#7f9bb0;
     --amber:#f4a259;   /* ремонт */
     --teal:#4ecdc4;    /* топливо */
+    --ice:#7fd6ff;     /* де-айсинг */
     --rose:#ef798a;    /* посадка людей */
     --gold:#f4cf5e;    /* вип / деньги / вылет */
     --life:#ef5365;
@@ -294,7 +295,7 @@
   // ---- palette helpers ----
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const COL = {};
-  ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','rose','gold','life','coin']
+  ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin']
     .forEach(n => COL[n] = css('--'+n));
 
   // service -> color (названия услуг — в i18n: svc.*)
@@ -302,6 +303,7 @@
     repair: {color: COL.amber},
     fuel:   {color: COL.teal},
     board:  {color: COL.rose},
+    deice:  {color: COL.ice},
     depart: {color: COL.gold},
   };
 
@@ -347,7 +349,7 @@
       'tut.takeoff':'All set — guide it to a runway to take off',
       'tut.done':'Nice — you’ve got the hang of it!',
       'log.empty':'no losses yet',
-      'svc.repair':'Repair', 'svc.fuel':'Fuel', 'svc.board':'Boarding', 'svc.depart':'Departure',
+      'svc.repair':'Repair', 'svc.fuel':'Fuel', 'svc.board':'Boarding', 'svc.deice':'De-ice', 'svc.depart':'Departure',
       'mode.zen':'Zen',
       'toast.zenStart':'Zen mode: just guide the planes',
       'toast.goal':'Goal: {desc}',
@@ -355,6 +357,7 @@
       'toast.rush':'Rush hour!',
       'toast.wind':'Wind shift — runway closed',
       'toast.fog':'Fog — taxiing slowed',
+      'toast.weather.rain':'Rain — taxiing slowed', 'toast.weather.snow':'Snow — taxiing slowed',
       'toast.emergency':'Fuel critical — land now!', 'toast.medical':'Medevac — straight through!',
       'float.combo':'×{x} combo', 'float.express':'on time!', 'float.nearMiss':'phew!',
       'loss.airTimeout':'Air timeout — didn\'t land in time',
@@ -380,8 +383,10 @@
       'forest.tree':'A tree is falling toward the runway!',
       'forest.deer':'Deer on the runway!',
       'forest.birds':'Birds over the runway!',
+      'forest.snow':'Snow drift on the runway!',
       'forest.cleared':'Runway clear',
       'forest.crew.truck':'Maintenance', 'forest.crew.eagle':'Bird scare', 'forest.crew.chainsaw':'Chainsaw crew',
+      'forest.crew.plow':'Snowplow',
       'canvas.service':'SERVICE',
       // --- медали / достижения ---
       'medals.btn':'Medals', 'medals.kicker':'Achievements', 'medals.title':'Medals', 'medals.back':'Back',
@@ -476,7 +481,7 @@
       'tut.takeoff':'Готово — веди на полосу, на взлёт',
       'tut.done':'Отлично — дальше сам!',
       'log.empty':'потерь пока нет',
-      'svc.repair':'Ремонт', 'svc.fuel':'Топливо', 'svc.board':'Посадка', 'svc.depart':'Вылет',
+      'svc.repair':'Ремонт', 'svc.fuel':'Топливо', 'svc.board':'Посадка', 'svc.deice':'Антилёд', 'svc.depart':'Вылет',
       'mode.zen':'Zen',
       'toast.zenStart':'Zen-режим: просто веди борта',
       'toast.goal':'Цель: {desc}',
@@ -484,6 +489,7 @@
       'toast.rush':'Час пик!',
       'toast.wind':'Смена ветра — полоса закрыта',
       'toast.fog':'Туман — руление замедлено',
+      'toast.weather.rain':'Дождь — руление замедлено', 'toast.weather.snow':'Снег — руление замедлено',
       'toast.emergency':'Топливо на нуле — садить срочно!', 'toast.medical':'Медицинский — вне очереди!',
       'float.combo':'×{x} комбо', 'float.express':'вовремя!', 'float.nearMiss':'уфф!',
       'loss.airTimeout':'Воздушный таймаут — не успел сесть',
@@ -509,8 +515,10 @@
       'forest.tree':'Дерево падает на полосу!',
       'forest.deer':'Олень на полосе!',
       'forest.birds':'Птицы над полосой!',
+      'forest.snow':'Снежный занос на полосе!',
       'forest.cleared':'Полоса свободна',
       'forest.crew.truck':'Техслужба', 'forest.crew.eagle':'Орёл-разгон', 'forest.crew.chainsaw':'Бригада с пилой',
+      'forest.crew.plow':'Снегоуборщик',
       'canvas.service':'СЛУЖБА',
       // --- медали / достижения ---
       'medals.btn':'Медали', 'medals.kicker':'Достижения', 'medals.title':'Медали', 'medals.back':'Назад',
@@ -663,6 +671,15 @@
     WIND_PERIOD: 28, WIND_DUR: 12,    // смена ветра: период и длительность закрытия ВПП
     FOG_PERIOD: 45, FOG_DUR: 10,      // туман: период и длительность
     FOG_TAXI: 0.55,                   // множитель скорости руления в тумане
+    // атмосфера (чистая логика; визуал — за слоем дизайна, рендер просто читает
+    // nightAmount/weather). day/night — фоновые «часы», на сложность не влияют.
+    DAYNIGHT_PERIOD: 150,             // сек на полный круг день→ночь→день
+    // погода — опциональный движок, включается флагом weather:true у уровня/биома
+    WEATHER_PERIOD: 40,               // период попыток смены погоды
+    WEATHER_DUR: 16,                  // длительность погодного окна
+    WEATHER_SNOW_CHANCE: 0.5,         // доля снега среди непогоды (иначе дождь)
+    WEATHER_RAIN_TAXI: 0.8,           // множитель скорости руления под дождём
+    WEATHER_SNOW_TAXI: 0.6,           // множитель скорости руления под снегом (хуже дождя)
   };
 
   // ---- лесной биом: помехи на ВПП и спец-бригады (см. docs/backlog.md) ----
@@ -737,7 +754,7 @@
   // (откуда выезжают спец-бригады) рисуется сверху поля у всех биом-карт.
   const BIOMES = [
     { id:'forest', emoji:'🌲', ready:true,
-      level:{ biome:'forest', objective:{ metric:'served', target:14 },
+      level:{ biome:'forest', weather:true, deice:true, objective:{ metric:'served', target:14 },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
         runways:3 } },
     { id:'arctic',   emoji:'❄️', ready:false },
@@ -774,6 +791,19 @@
   // старте (console.error) и жёстко из тестов. См. docs/DEV.md, раздел «Тесты».
   const EVENT_KEYS = ['vip','emergency','medical','rush','fog','wind'];
   const SVC_TYPES  = ['fuel','board','repair'];
+  const WEATHER_KINDS = ['clear','rain','snow'];
+  // «часы» суток: фаза 0..1 (0 — полдень) и «ночность» 0..1 (1 — глубокая ночь).
+  // Чистая функция времени: визуал берёт night, на саму игру это не влияет.
+  function dayCycle(time){
+    const P = K.DAYNIGHT_PERIOD;
+    const phase = ((time % P) + P) % P / P;             // 0..1, устойчиво к time<0
+    const night = (1 - Math.cos(phase * 2 * Math.PI)) / 2;  // плавно 0→1→0
+    return { phase, night };
+  }
+  // множитель скорости руления по погоде: ясно=1, дождь/снег — медленнее (снег хуже)
+  function weatherTaxiMult(w){
+    return w==='snow' ? K.WEATHER_SNOW_TAXI : w==='rain' ? K.WEATHER_RAIN_TAXI : 1;
+  }
   function validateLevels(){
     const p = [];
     if(!Array.isArray(LEVELS) || !LEVELS.length){ p.push('LEVELS пуст'); return p; }
@@ -797,6 +827,8 @@
       });
       if(!(lv.runways>=1)) p.push(L+'runways должен быть >= 1');
       if(lv.startMoney!=null && !(lv.startMoney>0)) p.push(L+'startMoney должен быть > 0');
+      if(lv.weather!=null && lv.weather!==true) p.push(L+'weather должен быть true (или отсутствовать)');
+      if(lv.deice!=null && lv.deice!==true) p.push(L+'deice должен быть true (или отсутствовать)');
       const ev = lv.events || {};
       Object.keys(ev).forEach(k=>{
         if(!EVENT_KEYS.includes(k)) p.push(L+'неизвестное событие "'+k+'"');
@@ -821,7 +853,21 @@
     langs.forEach(c=>{ all.forEach(k=>{ if(I18N[c][k]==null) p.push('i18n: в языке "'+c+'" нет ключа "'+k+'"'); }); });
     return p;
   }
-  function validateGame(){ return validateLevels().concat(validateI18n()); }
+  // проверка констант атмосферы (страховка под движки day/night и погоды)
+  function validateConfig(){
+    const p = [];
+    if(!(K.DAYNIGHT_PERIOD>0)) p.push('K.DAYNIGHT_PERIOD должен быть > 0');
+    if(!(K.WEATHER_PERIOD>0)) p.push('K.WEATHER_PERIOD должен быть > 0');
+    if(!(K.WEATHER_DUR>0)) p.push('K.WEATHER_DUR должен быть > 0');
+    if(!(K.WEATHER_SNOW_CHANCE>=0 && K.WEATHER_SNOW_CHANCE<=1)) p.push('K.WEATHER_SNOW_CHANCE вне [0,1]');
+    ['WEATHER_RAIN_TAXI','WEATHER_SNOW_TAXI'].forEach(k=>{
+      if(!(K[k]>0 && K[k]<=1)) p.push('K.'+k+' должен быть в (0,1]');
+    });
+    if(!(K.WEATHER_SNOW_TAXI < K.WEATHER_RAIN_TAXI)) p.push('снег должен мешать рулению сильнее дождя');
+    if(!WEATHER_KINDS.includes('clear')) p.push('WEATHER_KINDS должен включать "clear"');
+    return p;
+  }
+  function validateGame(){ return validateLevels().concat(validateI18n()).concat(validateConfig()); }
   let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
@@ -834,6 +880,8 @@
   let rushUntil = 0, nextRush = 0;                    // «час пик»
   let windUntil = 0, nextWind = 0;                    // смена ветра (закрытие ВПП)
   let fogUntil = 0, nextFog = 0;                      // туман
+  let weather = 'clear', weatherUntil = 0, nextWeather = 0; // погода: clear|rain|snow
+  let dayPhase = 0, nightAmount = 0;                  // «часы» суток (логика; рендер читает)
   let zen = false;                                    // режим без проигрыша
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
@@ -894,6 +942,10 @@
                      x:0,y:0,w:bw,h:bh});
         }
       }
+      // отдельный бокс де-айсинга (инфраструктура: всегда открыт, без апгрейда) —
+      // у правого края поля, ворота в поле; нужен только в снегопад (см. spawnPlane)
+      if(LV.deice) bays.push({side:'deice', type:'deice', slot:0, deice:true,
+                              open:true, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh});
     }
     // position bays
     const bySide = s => bays.filter(b=>b.side===s);
@@ -912,6 +964,9 @@
     spread(left.length, fy0+bh*0.7, fy1-bh*0.7).forEach((cy,i)=>{
       left[i].w=bw; left[i].h=bh; left[i].x=fx0; left[i].y=cy-bh/2;
     });
+    // де-айс-бокс — у правого края поля, по центру по вертикали
+    const de = bays.find(b=>b.side==='deice');
+    if(de){ de.w=bw; de.h=bh; de.x=fx1-bw; de.y=(fy0+fy1)/2-bh/2; }
 
     // runways on right
     const rwL = W*0.60, rwR = W*0.85;
@@ -1050,13 +1105,17 @@
     lossLog=[]; toast=null;
     document.getElementById('pauseScreen').classList.add('hidden');
     document.getElementById('settingsPanel').classList.add('hidden');
-    bays.forEach(b=>{ b.occupied=null; const cfg=LV.sides[b.side];
-      b.open = b.slot < cfg.open; b.lvl=0; });
+    bays.forEach(b=>{ b.occupied=null;
+      if(b.deice){ b.open=true; b.lvl=0; return; }   // де-айс — инфраструктура, всегда открыт
+      const cfg=LV.sides[b.side]; b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0;
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
+    // атмосфера: «часы» суток идут всегда; погода — опциональный движок (флаг weather)
+    dayPhase=0; nightAmount=0; weather='clear'; weatherUntil=0;
+    nextWeather = (!zen && LV.weather) ? K.WEATHER_PERIOD : Infinity;
     hazards=[]; crews=[]; hazardSeq=0;
     const forest = LV.biome==='forest';
     if(LV.biome){
@@ -1094,6 +1153,9 @@
     // медицинский: высаживает пациента в пассажирском боксе, затем сразу вылет
     const nSvc = medical ? 1 : (Math.random() < 0.45 ? 2 : 1);
     const requests = medical ? ['board','depart'] : pool.slice(0, nSvc).concat(['depart']);
+    // де-айсинг: в снегопад обычный борт обязан пройти антиобледенение перед вылетом
+    // (медицинский — «вне очереди», пропускаем). Шаг ставится прямо перед 'depart'.
+    if(LV.deice && weather==='snow' && !medical) requests.splice(requests.length-1, 0, 'deice');
     const waitMult = (vip||medical) ? 1 : 2;                             // джет и медицинский нетерпеливы
     // воздушное терпение: топливо-на-нуле — садить срочно; медицинский — тоже спешит
     const airMult = emergency ? 0.4 : (medical ? K.MEDICAL_AIR : 1);
@@ -1138,6 +1200,7 @@
   function neededCrew(h){
     if(h.kind==='tree') return h.fallen ? 'truck' : 'chainsaw';
     if(h.kind==='deer') return 'truck';
+    if(h.kind==='snow') return 'plow';
     return 'eagle';
   }
   // помеха под пальцем (для тапа): берём ближайшую ещё не обслуживаемую
@@ -1152,9 +1215,15 @@
     const free = runways.filter(r=>!r.closed && r.hazard==null);
     if(!free.length) return;
     const r = free[Math.floor(Math.random()*free.length)];
-    const kind = ['tree','deer','birds'][Math.floor(Math.random()*3)];
+    // снежный занос — только в снегопад (зимний геймплей поверх лесных помех)
+    const pool = weather==='snow' ? ['tree','deer','birds','snow'] : ['tree','deer','birds'];
+    const kind = pool[Math.floor(Math.random()*pool.length)];
     const h = { id:++hazardSeq, kind, runway:r, t:0, dispatched:false, done:false };
-    if(kind==='tree'){
+    if(kind==='snow'){
+      h.x = r.x + r.w*0.5; h.y = r.cy;
+      r.closed = true;                                  // занос на полосе — закрыта, пока не расчистит плуг
+      toast = {text:t('forest.snow'), t:0, good:false};
+    } else if(kind==='tree'){
       h.beaver = Math.random() < FOR.BEAVER_CHANCE;     // бобёр грызёт — падает медленнее
       h.fallTime = h.beaver ? FOR.TREE_FALL_BEAVER : FOR.TREE_FALL;
       h.fallen = false;
@@ -1208,9 +1277,10 @@
         if(!h.fallen && h.t>=h.fallTime){ h.fallen=true; h.runway.closed=true; } // легло поперёк полосы
       } else if(h.kind==='deer'){
         if(!h.dispatched && h.t>=FOR.DEER_LIFE) resolveHazard(h, false);          // олень сам ушёл
-      } else { // birds
+      } else if(h.kind==='birds'){
         if(!h.dispatched && h.t>=FOR.BIRD_LIFE) resolveHazard(h, false);          // птицы улетели
       }
+      // снег (kind==='snow') сам не уходит — нужен плуг (создаёт «всегда есть дело»)
     }
     // спец-авто: едут к помехе → работают → возвращаются домой
     for(const c of crews){
@@ -1255,7 +1325,7 @@
     for(const b of bays) if(rectHit(p.x,p.y,b)) return b;
     return null;
   }
-  function bayUpCost(b){ return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
+  function bayUpCost(b){ if(b.deice) return null; return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
 
   function down(e){
     if(!running) return;
@@ -1464,9 +1534,19 @@
     }
     if(windUntil>0 && gameTime>=windUntil){ runways.forEach(r=>r.closed=false); windUntil=0; }
     if(gameTime>=nextFog){ fogUntil=gameTime+K.FOG_DUR; nextFog=gameTime+K.FOG_PERIOD; toast={text:t('toast.fog'), t:0, good:false}; }
+    // «часы» суток (логика; визуал берёт nightAmount). Не влияют на сложность.
+    { const dc = dayCycle(gameTime); dayPhase = dc.phase; nightAmount = dc.night; }
+    // погода: окна rain/snow по таймеру (движок выключен, если nextWeather=Infinity)
+    if(gameTime>=nextWeather){
+      weather = Math.random()<K.WEATHER_SNOW_CHANCE ? 'snow' : 'rain';
+      weatherUntil = gameTime+K.WEATHER_DUR; nextWeather = gameTime+K.WEATHER_PERIOD;
+      toast = {text:t('toast.weather.'+weather), t:0, good:false};
+    }
+    if(weather!=='clear' && gameTime>=weatherUntil) weather='clear';
     const rush = gameTime<rushUntil;
     const fog = gameTime<fogUntil;
-    const taxiSpeed = fog ? K.SPEED_TAXI*K.FOG_TAXI : K.SPEED_TAXI;
+    // руление замедляют и туман, и непогода — берём наименьший (самый «вязкий») множитель
+    const taxiSpeed = K.SPEED_TAXI * Math.min(fog?K.FOG_TAXI:1, weatherTaxiMult(weather));
     // spawn
     spawnTimer-=dt;
     const interval = rush ? K.SPAWN_BASE*0.4 : Math.max(K.SPAWN_MIN, K.SPAWN_BASE - served*0.05);
@@ -1666,6 +1746,7 @@
   function dirOut(b){ // направление "наружу из бокса" в поле
     if(b.side==='top') return {dx:0,dy:1};
     if(b.side==='bottom') return {dx:0,dy:-1};
+    if(b.side==='deice') return {dx:-1,dy:0}; // у правого края поля, ворота влево
     return {dx:1,dy:0}; // left
   }
   const clampX = x => Math.max(field.x0+10, Math.min(field.x1-10, x));
@@ -1728,10 +1809,19 @@
     ctx.quadraticCurveTo(r*0.6,-r*0.05,r*0.62,r*0.9); ctx.closePath(); ctx.fill(); ctx.restore(); }
   function iconDepart(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/4);
     ctx.scale(r/26,r/26); planeShape(col); ctx.restore(); }
+  function iconSnow(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy);   // снежинка: 6 лучей
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(1,r*0.16); ctx.lineCap='round';
+    for(let k=0;k<6;k++){ ctx.rotate(Math.PI/3);
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-r); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-r*0.62); ctx.lineTo(r*0.26,-r*0.84); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-r*0.62); ctx.lineTo(-r*0.26,-r*0.84); ctx.stroke();
+    }
+    ctx.restore(); }
   function drawIcon(type,cx,cy,r,col,hole){
     if(type==='repair') iconGear(cx,cy,r,col,hole);
     else if(type==='fuel') iconDrop(cx,cy,r,col);
     else if(type==='board') iconPerson(cx,cy,r,col);
+    else if(type==='deice') iconSnow(cx,cy,r,col);
     else iconDepart(cx,cy,r,col);
   }
 
@@ -1915,6 +2005,8 @@
         if(h.beaver) emoji('🦫', h.x+12*ui, h.y+8*ui, 13*ui, hexa(COL.amber,.5)); // бобёр грызёт у основания
       } else if(h.kind==='deer'){
         emoji('🦌', h.x, h.y, 22*ui, hexa(COL.amber,.4));
+      } else if(h.kind==='snow'){
+        emoji('❄️', h.x, h.y, 22*ui, hexa(COL.teal,.5));   // занос на полосе (плейсхолдер под арт)
       } else { // birds
         for(let k=0;k<3;k++) emoji('🐦', h.x+(k-1)*15*ui, h.y+Math.sin(tm*0.006+k)*4*ui, 13*ui, hexa(COL.phosphor,.4));
       }
@@ -1923,13 +2015,13 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚'}[neededCrew(h)];
+        const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'}[neededCrew(h)];
         emoji(ic, h.x, h.y-32*ui, 14*ui, hexa(COL.teal,.5));
       }
     }
     // спец-авто в пути / за работой
     for(const c of crews){
-      const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚'}[c.kind];
+      const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'}[c.kind];
       emoji(ic, c.x, c.y, 16*ui, hexa(COL.amber,.4));
       if(c.phase==='work'){               // искорки работы
         const pulse=Math.abs(Math.sin(tm*0.02));
@@ -1945,6 +2037,7 @@
     ctx.beginPath();
     if(out.dy===1){ ctx.moveTo(x0,y1); ctx.arcTo(x0,y0,x1,y0,r); ctx.arcTo(x1,y0,x1,y1,r); ctx.lineTo(x1,y1); }
     else if(out.dy===-1){ ctx.moveTo(x0,y0); ctx.arcTo(x0,y1,x1,y1,r); ctx.arcTo(x1,y1,x1,y0,r); ctx.lineTo(x1,y0); }
+    else if(out.dx===-1){ ctx.moveTo(x0,y0); ctx.arcTo(x1,y0,x1,y1,r); ctx.arcTo(x1,y1,x0,y1,r); ctx.lineTo(x0,y1); } // ворота слева
     else { ctx.moveTo(x1,y0); ctx.arcTo(x0,y0,x0,y1,r); ctx.arcTo(x0,y1,x1,y1,r); ctx.lineTo(x1,y1); }
   }
 
@@ -1983,6 +2076,7 @@
     let gx0,gy0,gx1,gy1;
     if(out.dy===1){ gx0=b.x; gy0=b.y+b.h; gx1=b.x+b.w; gy1=gy0; }
     else if(out.dy===-1){ gx0=b.x; gy0=b.y; gx1=b.x+b.w; gy1=gy0; }
+    else if(out.dx===-1){ gx0=b.x; gy0=b.y; gx1=gx0; gy1=b.y+b.h; }
     else { gx0=b.x+b.w; gy0=b.y; gx1=gx0; gy1=b.y+b.h; }
     ctx.setLineDash([4*ui,5*ui]); ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.22);
     ctx.beginPath(); ctx.moveTo(gx0,gy0); ctx.lineTo(gx1,gy1); ctx.stroke(); ctx.setLineDash([]);
@@ -2913,9 +3007,11 @@
   // (без ?test=1) ничего не выставляется — прод-поведение не меняется.
   if(typeof location!=='undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
     window.__GAME = {
-      VERSION, LEVELS, K, I18N, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES,
+      VERSION, LEVELS, BIOMES, K, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
       t, levelEvents, levelName, objectiveDesc, computeStars, metricValue,
-      validateGame, validateLevels, validateI18n,
+      dayCycle, weatherTaxiMult, neededCrew,
+      get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
+      validateGame, validateLevels, validateI18n, validateConfig,
       saveGame, loadGame, setLang, detectLang,
       get save(){ return save; },     set save(v){ save=v; },
       get lang(){ return lang; },
