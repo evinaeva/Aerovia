@@ -102,6 +102,9 @@
   .stat .label{font-size:9px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
   .stat .val{font-size:17px;margin-top:4px}
   .v-phos{color:var(--phosphor)} .v-gold{color:var(--gold)} .v-life{color:var(--life)} .v-teal{color:var(--teal)}
+  /* график нагрузки/принято на экране итога смены */
+  .statgraph{width:100%;height:132px;margin-top:16px;display:block;border-radius:14px;
+    border:1.5px solid rgba(191,233,255,.15);background:rgba(10,22,34,.6)}
   .langbtns{display:flex;gap:8px;flex-wrap:wrap}
   .langbtn{border:1.5px solid rgba(127,155,176,.4);color:var(--muted);background:transparent;
     font:inherit;font-size:11px;letter-spacing:.08em;padding:6px 12px;border-radius:8px;cursor:pointer}
@@ -173,6 +176,10 @@
       <div class="big" id="finalStars">☆☆☆</div>
       <p id="overMsg"></p>
       <div class="stats" id="overStats"></div>
+      <canvas id="statGraph" class="statgraph"></canvas>
+      <div class="ctarow">
+        <button class="btn btn-quiet" id="shareBtn"><span class="bglyph">⇪</span><span data-i18n="over.share"></span></button>
+      </div>
       <div class="ctarow">
         <button class="btn btn-teal" id="toLevelsBtn"><span class="bglyph">≡</span><span data-i18n="over.toLevels"></span></button>
         <button class="btn btn-primary" id="againBtn"><span class="bglyph">↻</span><span data-i18n="over.again"></span></button>
@@ -295,7 +302,9 @@
       'start.play':'Play', 'start.zen':'Zen mode', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
       'over.next':'Next level', 'over.again':'Play again', 'over.toLevels':'Level select',
       'over.passed':'Level complete', 'over.failed':'Shift over',
+      'over.share':'Share image',
       'over.result':'{reason} {desc}. Result: {n} {unit}, bank {money}.',
+      'graph.title':'Shift over time', 'graph.load':'Load', 'graph.served':'Served',
       'unit.planes':['plane','planes'], 'unit.upgrades':['upgrade','upgrades'],
       'levels.kicker':'Shift select', 'levels.title':'Levels', 'levels.back':'Back', 'levels.reset':'Reset progress',
       'levels.shift':'Shift', 'levels.locked':'Locked',
@@ -332,7 +341,7 @@
       'loss.collisionField':'Collision on the apron',
       'loss.collisionRunway':'Collision on the runway',
       'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!',
-      'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time',
+      'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time', 'stats.peak':'Peak load',
       'hud.vip':'VIP', 'hud.med':'MED', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
       'canvas.terminal':'TERMINAL', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
@@ -402,7 +411,9 @@
       'start.play':'Играть', 'start.zen':'Zen-режим', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
       'over.next':'Следующий уровень', 'over.again':'Ещё раз', 'over.toLevels':'К уровням',
       'over.passed':'Уровень пройден', 'over.failed':'Смена закрыта',
+      'over.share':'Поделиться',
       'over.result':'{reason} {desc}. Результат: {n} {unit}, касса {money}.',
+      'graph.title':'Смена во времени', 'graph.load':'Нагрузка', 'graph.served':'Принято',
       'unit.planes':['борт','борта','бортов'], 'unit.upgrades':['улучшение','улучшения','улучшений'],
       'levels.kicker':'Выбор смены', 'levels.title':'Уровни', 'levels.back':'Назад', 'levels.reset':'Сбросить прогресс',
       'levels.shift':'Смена', 'levels.locked':'Закрыто',
@@ -439,7 +450,7 @@
       'loss.collisionField':'Столкновение на поле',
       'loss.collisionRunway':'Столкновение на ВПП',
       'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!',
-      'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время',
+      'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время', 'stats.peak':'Пик нагрузки',
       'hud.vip':'ВИП', 'hud.med':'МЕД', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
       'canvas.terminal':'ТЕРМИНАЛ', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
@@ -628,7 +639,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.17';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.18';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -731,6 +742,9 @@
   // ---- game state ----
   let planes=[], money=0, lives=0, served=0, gameTime=0;
   let running=false, paused=false, lastTs=0, spawnTimer=0;
+  // статистика смены для экрана итога: пик одновременной нагрузки + временной ряд
+  // (нагрузка/принято) для графика; lastShift — снимок последней смены для шеринга
+  let statPeak=0, statSamples=[], statStep=1.5, statNextAt=0, lastShift=null;
   let inMenu=true;         // пока открыты меню/уровни/медали — на канвасе сцена-радар, не поле
   let nowT=0;              // время кадра (мс) для анимаций отрисовки
   let effects=[];          // анимации крушений
@@ -832,6 +846,7 @@
       b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>{ r.occupied=null; r.closed=false; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
+    statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0;
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
     nextRush = zen?Infinity:K.RUSH_PERIOD;
@@ -1292,6 +1307,14 @@
     if(!zen){
       if(lives<=0){ endLevel('end.lives'); return; }
       if(metricValue() >= LV.objective.target){ endLevel('end.goal'); return; }
+    }
+    // статистика смены: пик одновременной нагрузки + редкие отсчёты для графика
+    if(planes.length>statPeak) statPeak=planes.length;
+    if(gameTime>=statNextAt){
+      statSamples.push({t:gameTime, load:planes.length, served});
+      statNextAt = gameTime + statStep;
+      // в Zen ряд может расти бесконечно — прорежаем и удваиваем шаг
+      if(statSamples.length>180){ statSamples = statSamples.filter((_,i)=>i%2===0); statStep*=2; }
     }
     gameTime+=dt;
     if(!zen && LV.objective.time && gameTime>=LV.objective.time){ endLevel('end.time'); return; }
@@ -1908,12 +1931,20 @@
     const unit = t(LV.objective.metric==='upgrades'?'unit.upgrades':'unit.planes', {n:v});
     document.getElementById('overMsg').textContent =
       t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
+    // снимок смены — для карточки статистики, графика и шеринга
+    lastShift = {
+      passed, stars, metric:LV.objective.metric, v, target:LV.objective.target,
+      money, peak:statPeak, time:gameTime,
+      levelName: zen ? t('mode.zen') : t('level.name',{n:levelIdx+1}),
+      samples: statSamples.slice(),
+    };
     // карточка статистики смены
     const statsBox=document.getElementById('overStats'); statsBox.innerHTML='';
     [[LV.objective.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), fmtNum(v)+' / '+fmtNum(LV.objective.target), 'v-phos'],
      [t('stats.money'), fmtMoney(money), 'v-gold'],
+     [t('stats.peak'), '✈ '+fmtNum(statPeak), 'v-teal'],
      [t('stats.lives'), '♥ '+fmtNum(Math.max(0,lives))+' / '+fmtNum(K.START_LIVES), 'v-life'],
-     [t('stats.time'), fmtTime(gameTime), 'v-teal']
+     [t('stats.time'), fmtTime(gameTime), 'v-phos']
     ].forEach(s2=>{
       const d=document.createElement('div'); d.className='stat';
       d.innerHTML=`<div class="label">${s2[0]}</div><div class="val ${s2[2]}">${s2[1]}</div>`;
@@ -1922,6 +1953,118 @@
     const hasNext = levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
     document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
     document.getElementById('overScreen').classList.remove('hidden');
+    // график рисуем после показа экрана — нужен реальный размер канваса
+    requestAnimationFrame(()=>renderStatGraph(document.getElementById('statGraph'), lastShift));
+  }
+
+  // ---- статистика смены: график во времени + карточка для шеринга ----
+  // Рисуем в произвольный 2D-контекст (экранный канвас или офскрин для картинки):
+  // область «нагрузка» (бирюза) + линия «принято» (золото) на общей оси времени.
+  function drawTimeline(g, x, y, w, h, shift){
+    const pad=10, gx=x+pad+18, gy=y+pad, gw=w-pad*2-18, gh=h-pad*2-14;
+    g.fillStyle=hexa(COL.phosphor,.04); g.fillRect(x,y,w,h);
+    // сетка
+    g.strokeStyle=hexa(COL.phosphor,.10); g.lineWidth=1;
+    for(let i=0;i<=3;i++){ const yy=gy+gh*i/3; g.beginPath(); g.moveTo(gx,yy); g.lineTo(gx+gw,yy); g.stroke(); }
+    const s=shift.samples||[];
+    if(s.length<2){
+      g.fillStyle=hexa(COL.muted,.7); g.font=`11px ${MONO}`; g.textAlign='center'; g.textBaseline='middle';
+      g.fillText('—', x+w/2, y+h/2); return;
+    }
+    const tMax=Math.max(shift.time, s[s.length-1].t, 1);
+    const loadMax=Math.max(2, ...s.map(p=>p.load));
+    const servMax=Math.max(1, ...s.map(p=>p.served));
+    const X=t=>gx + gw*Math.min(1,t/tMax);
+    const Yl=v=>gy+gh - gh*(v/loadMax);
+    const Ys=v=>gy+gh - gh*(v/servMax);
+    // нагрузка — заливка + линия
+    g.beginPath(); g.moveTo(X(s[0].t), gy+gh);
+    s.forEach(p=>g.lineTo(X(p.t), Yl(p.load))); g.lineTo(X(s[s.length-1].t), gy+gh); g.closePath();
+    g.fillStyle=hexa(COL.teal,.16); g.fill();
+    g.beginPath(); s.forEach((p,i)=>{ const fx=X(p.t),fy=Yl(p.load); i?g.lineTo(fx,fy):g.moveTo(fx,fy); });
+    g.strokeStyle=COL.teal; g.lineWidth=2; g.lineJoin='round'; g.stroke();
+    // принято — золотая линия (накопительно)
+    g.beginPath(); s.forEach((p,i)=>{ const fx=X(p.t),fy=Ys(p.served); i?g.lineTo(fx,fy):g.moveTo(fx,fy); });
+    g.strokeStyle=COL.gold; g.lineWidth=2; g.stroke();
+    // подписи осей: пик нагрузки слева сверху, время справа снизу
+    g.textBaseline='middle'; g.fillStyle=hexa(COL.teal,.9); g.font=`9px ${MONO}`; g.textAlign='right';
+    g.fillText(String(loadMax), gx-4, gy+2);
+    g.fillStyle=hexa(COL.muted,.8); g.textAlign='left'; g.textBaseline='alphabetic';
+    g.fillText('0:00', gx, y+h-3); g.textAlign='right'; g.fillText(fmtTime(tMax), gx+gw, y+h-3);
+    // легенда
+    g.textAlign='left'; g.textBaseline='middle'; g.font=`9px ${MONO}`;
+    g.fillStyle=COL.teal; g.fillRect(gx+2,gy+5,8,3); g.fillStyle=hexa(COL.muted,.9); g.fillText(t('graph.load'), gx+14, gy+6);
+    const lx=gx+14+g.measureText(t('graph.load')).width+12;
+    g.fillStyle=COL.gold; g.fillRect(lx,gy+5,8,3); g.fillStyle=hexa(COL.muted,.9); g.fillText(t('graph.served'), lx+12, gy+6);
+  }
+  function renderStatGraph(cv2, shift){
+    if(!cv2 || !shift) return;
+    const dpr=Math.min(window.devicePixelRatio||1, 2);
+    const cssW=cv2.clientWidth||360, cssH=cv2.clientHeight||132;
+    cv2.width=cssW*dpr; cv2.height=cssH*dpr;
+    const g=cv2.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+    g.clearRect(0,0,cssW,cssH);
+    drawTimeline(g, 0,0, cssW,cssH, shift);
+  }
+  // локальный скруглённый прямоугольник для офскрин-контекста (rr() завязан на ctx)
+  function rrp(g,x,y,w,h,r){ r=Math.min(r,w/2,h/2);
+    g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
+    g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+  // квадратная карточка для «поделиться картинкой»
+  function drawShareCard(canvas, shift){
+    const S=1080, g=canvas.getContext('2d');
+    const grad=g.createLinearGradient(0,0,0,S);
+    grad.addColorStop(0,'#0e2230'); grad.addColorStop(1,COL.ink);
+    g.fillStyle=grad; g.fillRect(0,0,S,S);
+    g.fillStyle=hexa(COL.phosphor,.06); for(let i=0;i<70;i++){ const rx=(i*173)%S, ry=(i*97)%S; g.fillRect(rx,ry,2,2); }
+    // шапка
+    g.textAlign='center';
+    g.fillStyle=COL.phosphor; g.font=`700 64px ${MONO}`; g.fillText(t('app.name'), S/2, 130);
+    g.fillStyle=hexa(COL.muted,.9); g.font=`24px ${MONO}`;
+    g.fillText((shift.passed?t('over.passed'):t('over.failed'))+' · '+shift.levelName, S/2, 178);
+    // звёзды
+    g.fillStyle=COL.gold; g.font=`80px ${MONO}`; g.shadowColor=hexa(COL.gold,.5); g.shadowBlur=24;
+    g.fillText('★'.repeat(shift.stars)+'☆'.repeat(3-shift.stars), S/2, 290); g.shadowBlur=0;
+    // плитки статистики 2×2
+    const tiles=[
+      [shift.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), fmtNum(shift.v)+' / '+fmtNum(shift.target), COL.phosphor],
+      [t('stats.money'), fmtMoney(shift.money), COL.gold],
+      [t('stats.peak'), '✈ '+fmtNum(shift.peak), COL.teal],
+      [t('stats.time'), fmtTime(shift.time), COL.phosphor],
+    ];
+    const tw=440, th=120, gap=40, ox=(S-tw*2-gap)/2, oy=340;
+    tiles.forEach((tl,i)=>{ const cx=ox+(i%2)*(tw+gap), cy=oy+Math.floor(i/2)*(th+gap);
+      rrp(g,cx,cy,tw,th,18); g.fillStyle=hexa(COL.phosphor,.05); g.fill();
+      g.lineWidth=2; g.strokeStyle=hexa(COL.phosphor,.15); rrp(g,cx,cy,tw,th,18); g.stroke();
+      g.textAlign='left'; g.textBaseline='alphabetic';
+      g.fillStyle=hexa(COL.muted,.85); g.font=`20px ${MONO}`; g.fillText(tl[0].toUpperCase(), cx+26, cy+44);
+      g.fillStyle=tl[2]; g.font=`600 46px ${MONO}`; g.fillText(tl[1], cx+26, cy+98);
+    });
+    // график во времени
+    g.textAlign='left'; g.textBaseline='alphabetic';
+    g.fillStyle=hexa(COL.muted,.85); g.font=`20px ${MONO}`; g.fillText(t('graph.title').toUpperCase(), ox, 700);
+    // drawTimeline использует пиксельные шрифты ~9-11px → масштабируем контекст
+    g.save(); g.translate(ox, 720); g.scale(2.4,2.4);
+    drawTimeline(g, 0,0, (tw*2+gap)/2.4, 230/2.4, shift); g.restore();
+    g.textAlign='center'; g.fillStyle=hexa(COL.phosphor,.5); g.font=`22px ${MONO}`;
+    g.fillText('#PlaneFlow', S/2, S-46);
+  }
+  async function shareShift(){
+    if(!lastShift) return;
+    const card=document.createElement('canvas'); card.width=1080; card.height=1080;
+    drawShareCard(card, lastShift);
+    card.toBlob(async blob=>{
+      if(!blob) return;
+      const file=new File([blob], 'planeflow-shift.png', {type:'image/png'});
+      try{
+        if(navigator.canShare && navigator.canShare({files:[file]})){
+          await navigator.share({files:[file], title:t('app.name')}); return;
+        }
+      }catch(e){ /* отмена/нет поддержки — падаем в скачивание */ }
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='planeflow-shift.png'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    }, 'image/png');
   }
 
   // ---- меню / уровни / сохранение ----
@@ -1977,6 +2120,7 @@
   document.getElementById('againBtn').onclick=()=>{ document.getElementById('overScreen').classList.add('hidden'); reset(); };
   document.getElementById('toLevelsBtn').onclick=showLevels;
   document.getElementById('nextBtn').onclick=()=>{ if(levelIdx+1<LEVELS.length) startLevel(levelIdx+1); };
+  document.getElementById('shareBtn').onclick=shareShift;
 
   function setPaused(p){
     paused=p;
