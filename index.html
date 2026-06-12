@@ -1,7 +1,8 @@
 <!doctype html>
+<html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Tower — диспетчер</title>
+<title>Tower</title>
 <style>
   :root{
     --ink:#0a1622;
@@ -71,6 +72,11 @@
   .levelbtn.locked{border-color:rgba(127,155,176,.4);color:var(--muted);cursor:default}
   .levelbtn .lvbest{font-size:11px;color:var(--muted);letter-spacing:.03em}
   .btn-quiet{border-color:var(--muted);color:var(--muted)}
+  .langbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .langbtn{border:1px solid var(--muted);color:var(--muted);background:transparent;
+    font:inherit;font-size:11px;letter-spacing:.08em;padding:6px 12px;border-radius:3px;cursor:pointer}
+  .langbtn:hover{color:var(--phosphor);border-color:var(--phosphor)}
+  .langbtn.on{color:var(--phosphor);border-color:var(--phosphor);background:rgba(191,233,255,.08)}
   .vno{margin-top:16px;font-size:10px;color:var(--muted);letter-spacing:.12em}
 </style>
 
@@ -79,55 +85,56 @@
 
   <div class="overlay" id="startScreen">
     <div class="panel">
-      <div class="kicker">Диспетчерская вышка</div>
-      <h1>Tower</h1>
-      <p>Борта прилетают справа. Проведи борт пальцем на свободную полосу — он сядет. Затем веди его по боксам в порядке очереди нужд, потом на взлёт. Один бокс — один борт. Следи за терпением и не дай бортам столкнуться.</p>
+      <div class="kicker" data-i18n="start.kicker"></div>
+      <h1 data-i18n="app.name"></h1>
+      <p data-i18n="start.intro"></p>
       <div class="legend">
-        <span><i class="dot" style="background:var(--amber)"></i>ремонт</span>
-        <span><i class="dot" style="background:var(--teal)"></i>топливо</span>
-        <span><i class="dot" style="background:var(--rose)"></i>посадка людей</span>
-        <span><i class="dot" style="background:var(--gold)"></i>вип-борт</span>
+        <span><i class="dot" style="background:var(--amber)"></i><span data-i18n="legend.repair"></span></span>
+        <span><i class="dot" style="background:var(--teal)"></i><span data-i18n="legend.fuel"></span></span>
+        <span><i class="dot" style="background:var(--rose)"></i><span data-i18n="legend.board"></span></span>
+        <span><i class="dot" style="background:var(--gold)"></i><span data-i18n="legend.vip"></span></span>
       </div>
-      <button class="btn" id="startBtn">Играть</button>
-      <button class="btn" id="zenBtn">Zen-режим</button>
-      <div class="vno">верс. <span id="ver"></span></div>
+      <button class="btn" id="startBtn" data-i18n="start.play"></button>
+      <button class="btn" id="zenBtn" data-i18n="start.zen"></button>
+      <div class="vno"><span data-i18n="start.version"></span> <span id="ver"></span></div>
     </div>
   </div>
 
   <div class="overlay hidden" id="overScreen">
     <div class="panel">
-      <div class="kicker" id="overKicker">Смена закрыта</div>
+      <div class="kicker" id="overKicker"></div>
       <div class="big" id="finalStars">☆☆☆</div>
-      <p id="overMsg">Закончились жизни.</p>
-      <button class="btn" id="nextBtn">Следующий уровень</button>
-      <button class="btn" id="againBtn">Ещё раз</button>
-      <button class="btn" id="toLevelsBtn">К уровням</button>
+      <p id="overMsg"></p>
+      <button class="btn" id="nextBtn" data-i18n="over.next"></button>
+      <button class="btn" id="againBtn" data-i18n="over.again"></button>
+      <button class="btn" id="toLevelsBtn" data-i18n="over.toLevels"></button>
     </div>
   </div>
 
   <div class="overlay hidden" id="levelScreen">
     <div class="panel">
-      <div class="kicker">Выбор уровня</div>
-      <h1>Уровни</h1>
+      <div class="kicker" data-i18n="levels.kicker"></div>
+      <h1 data-i18n="levels.title"></h1>
       <div class="levellist" id="levelList"></div>
-      <button class="btn" id="backBtn">Назад</button>
-      <button class="btn btn-quiet" id="resetProgBtn">Сбросить прогресс</button>
+      <button class="btn" id="backBtn" data-i18n="levels.back"></button>
+      <button class="btn btn-quiet" id="resetProgBtn" data-i18n="levels.reset"></button>
     </div>
   </div>
 
   <div class="overlay hidden" id="pauseScreen">
     <div class="panel">
-      <div class="kicker">Пауза</div>
-      <h1>Tower</h1>
+      <div class="kicker" data-i18n="pause.kicker"></div>
+      <h1 data-i18n="app.name"></h1>
       <div class="settings hidden" id="settingsPanel">
-        <label class="opt"><input type="checkbox" id="optLives"> Бесконечные жизни (отладка)</label>
-        <label class="opt"><input type="checkbox" id="optMoney"> Безлимит денег (отладка)</label>
+        <div class="opt" style="cursor:default"><span data-i18n="settings.language"></span><div class="langbtns" id="langBtns"></div></div>
+        <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
+        <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
         <div class="logbox" id="logBox"></div>
       </div>
-      <button class="btn" id="resumeBtn">Играть</button>
-      <button class="btn" id="restartBtn">Начать заново</button>
-      <button class="btn" id="settingsBtn">Настройки</button>
-      <button class="btn" id="menuBtn">В главное меню</button>
+      <button class="btn" id="resumeBtn" data-i18n="pause.resume"></button>
+      <button class="btn" id="restartBtn" data-i18n="pause.restart"></button>
+      <button class="btn" id="settingsBtn" data-i18n="pause.settings"></button>
+      <button class="btn" id="menuBtn" data-i18n="pause.menu"></button>
     </div>
   </div>
 </div>
@@ -144,13 +151,156 @@
   ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','rose','gold','life','coin']
     .forEach(n => COL[n] = css('--'+n));
 
-  // service -> color
+  // service -> color (названия услуг — в i18n: svc.*)
   const SVC = {
-    repair: {label:'Ремонт',   color: COL.amber},
-    fuel:   {label:'Топливо',  color: COL.teal},
-    board:  {label:'Посадка',  color: COL.rose},
-    depart: {label:'Вылет',    color: COL.phosphor},
+    repair: {color: COL.amber},
+    fuel:   {color: COL.teal},
+    board:  {color: COL.rose},
+    depart: {color: COL.phosphor},
   };
+
+  // ---- i18n ----
+  // Весь видимый игроком текст — через t(key, params). en — основной/фолбэк.
+  // Значение-массив = формы множественного числа (выбор по params.n через _plural).
+  // Добавление языка = добавить словарь (_name, _locale, _plural + ключи), логика не меняется.
+  const I18N = {
+    en: {
+      _name:'English', _locale:'en-US',
+      _plural: n => (n===1 ? 0 : 1),
+      'app.name':'Tower',
+      'app.title':'Tower — air traffic control',
+      'start.kicker':'Control tower',
+      'start.intro':'Planes arrive from the right. Drag a plane to a free runway and it will land. Then guide it through the bays in the order of its needs, and finally to takeoff. One bay — one plane. Watch the patience timers and don\'t let planes collide.',
+      'legend.repair':'repair', 'legend.fuel':'fuel', 'legend.board':'boarding', 'legend.vip':'VIP plane',
+      'start.play':'Play', 'start.zen':'Zen mode', 'start.version':'ver.',
+      'over.next':'Next level', 'over.again':'Play again', 'over.toLevels':'Level select',
+      'over.passed':'Level complete', 'over.failed':'Shift over',
+      'over.result':'{reason} {desc}. Result: {n} {unit}, bank {money}.',
+      'unit.planes':['plane','planes'], 'unit.upgrades':['upgrade','upgrades'],
+      'levels.kicker':'Level select', 'levels.title':'Levels', 'levels.back':'Back', 'levels.reset':'Reset progress',
+      'level.name':'Level {n}',
+      'obj.served':['Land {n} plane and survive','Land {n} planes and survive'],
+      'obj.servedTimed':['Land {n} plane in {time}','Land {n} planes in {time}'],
+      'obj.upgrades':['Make {n} upgrade in {time}','Make {n} upgrades in {time}'],
+      'pause.kicker':'Paused', 'pause.resume':'Resume', 'pause.restart':'Restart',
+      'pause.settings':'Settings', 'pause.menu':'Main menu',
+      'settings.language':'Language',
+      'settings.optLives':'Infinite lives (debug)', 'settings.optMoney':'Unlimited money (debug)',
+      'log.empty':'no losses yet',
+      'svc.repair':'Repair', 'svc.fuel':'Fuel', 'svc.board':'Boarding', 'svc.depart':'Departure',
+      'mode.zen':'Zen',
+      'toast.zenStart':'Zen mode: just guide the planes',
+      'toast.goal':'Goal: {desc}',
+      'toast.express':'EXPRESS +{money}',
+      'toast.rush':'Rush hour!',
+      'toast.wind':'Wind shift — runway closed',
+      'toast.fog':'Fog — taxiing slowed',
+      'loss.airTimeout':'Air timeout — didn\'t land in time',
+      'loss.collision':'Collision',
+      'loss.collisionBay':'Collision in a bay',
+      'loss.collisionField':'Collision on the apron',
+      'loss.collisionRunway':'Collision on the runway',
+      'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!',
+      'hud.vip':'VIP', 'hud.plane':'PLANE', 'hud.combo':'streak ×{x}',
+      'canvas.terminal':'TERMINAL', 'canvas.closed':'✕ CLOSED',
+      'fmt.money':'{n} ₿',
+    },
+    ru: {
+      _name:'Русский', _locale:'ru-RU',
+      _plural: n => { const m10=n%10, m100=n%100;
+        if(m10===1 && m100!==11) return 0;
+        if(m10>=2 && m10<=4 && (m100<12 || m100>14)) return 1;
+        return 2; },
+      'app.name':'Tower',
+      'app.title':'Tower — диспетчер',
+      'start.kicker':'Диспетчерская вышка',
+      'start.intro':'Борта прилетают справа. Проведи борт пальцем на свободную полосу — он сядет. Затем веди его по боксам в порядке очереди нужд, потом на взлёт. Один бокс — один борт. Следи за терпением и не дай бортам столкнуться.',
+      'legend.repair':'ремонт', 'legend.fuel':'топливо', 'legend.board':'посадка людей', 'legend.vip':'вип-борт',
+      'start.play':'Играть', 'start.zen':'Zen-режим', 'start.version':'верс.',
+      'over.next':'Следующий уровень', 'over.again':'Ещё раз', 'over.toLevels':'К уровням',
+      'over.passed':'Уровень пройден', 'over.failed':'Смена закрыта',
+      'over.result':'{reason} {desc}. Результат: {n} {unit}, касса {money}.',
+      'unit.planes':['борт','борта','бортов'], 'unit.upgrades':['улучшение','улучшения','улучшений'],
+      'levels.kicker':'Выбор уровня', 'levels.title':'Уровни', 'levels.back':'Назад', 'levels.reset':'Сбросить прогресс',
+      'level.name':'Уровень {n}',
+      'obj.served':['Принять {n} борт и выжить','Принять {n} борта и выжить','Принять {n} бортов и выжить'],
+      'obj.servedTimed':['Принять {n} борт за {time}','Принять {n} борта за {time}','Принять {n} бортов за {time}'],
+      'obj.upgrades':['Сделать {n} улучшение за {time}','Сделать {n} улучшения за {time}','Сделать {n} улучшений за {time}'],
+      'pause.kicker':'Пауза', 'pause.resume':'Играть', 'pause.restart':'Начать заново',
+      'pause.settings':'Настройки', 'pause.menu':'В главное меню',
+      'settings.language':'Язык',
+      'settings.optLives':'Бесконечные жизни (отладка)', 'settings.optMoney':'Безлимит денег (отладка)',
+      'log.empty':'потерь пока нет',
+      'svc.repair':'Ремонт', 'svc.fuel':'Топливо', 'svc.board':'Посадка', 'svc.depart':'Вылет',
+      'mode.zen':'Zen',
+      'toast.zenStart':'Zen-режим: просто веди борта',
+      'toast.goal':'Цель: {desc}',
+      'toast.express':'ЭКСПРЕСС +{money}',
+      'toast.rush':'Час пик!',
+      'toast.wind':'Смена ветра — полоса закрыта',
+      'toast.fog':'Туман — руление замедлено',
+      'loss.airTimeout':'Воздушный таймаут — не успел сесть',
+      'loss.collision':'Столкновение',
+      'loss.collisionBay':'Столкновение в боксе',
+      'loss.collisionField':'Столкновение на поле',
+      'loss.collisionRunway':'Столкновение на ВПП',
+      'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!',
+      'hud.vip':'ВИП', 'hud.plane':'БОРТ', 'hud.combo':'серия ×{x}',
+      'canvas.terminal':'ТЕРМИНАЛ', 'canvas.closed':'✕ ЗАКРЫТО',
+      'fmt.money':'{n} ₿',
+    },
+  };
+  const DEFAULT_LANG = 'en';
+  let lang = DEFAULT_LANG;
+
+  function detectLang(){
+    const cands = (navigator.languages && navigator.languages.length) ? navigator.languages
+                 : [navigator.language || DEFAULT_LANG];
+    for(const c of cands){
+      const base = String(c).toLowerCase().split('-')[0];
+      if(I18N[base]) return base;
+    }
+    return DEFAULT_LANG;
+  }
+  function t(key, params){
+    let v = I18N[lang] && I18N[lang][key];
+    if(v==null) v = I18N[DEFAULT_LANG][key];
+    if(v==null) return key;
+    if(Array.isArray(v)){
+      const pf = I18N[lang]._plural || I18N[DEFAULT_LANG]._plural;
+      const n = params && params.n!=null ? Math.abs(params.n) : 0;
+      v = v[Math.min(pf(n), v.length-1)];
+    }
+    return String(v).replace(/\{(\w+)\}/g, (m,k)=> (params && k in params) ? params[k] : m);
+  }
+  function fmtNum(n, frac){
+    const loc = (I18N[lang] && I18N[lang]._locale) || 'en-US';
+    try{ return n.toLocaleString(loc, frac!=null ? {minimumFractionDigits:frac, maximumFractionDigits:frac} : undefined); }
+    catch(e){ return String(n); }
+  }
+  function fmtMoney(n){ return t('fmt.money', {n: fmtNum(n)}); }
+  function setLang(code){
+    if(!I18N[code]) return;
+    lang = code; save.lang = code; saveGame();
+    applyI18n();
+  }
+  function applyI18n(){
+    document.documentElement.lang = lang;
+    document.title = t('app.title');
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    renderLangBtns();
+    refreshLog();
+  }
+  function renderLangBtns(){
+    const box = document.getElementById('langBtns'); box.innerHTML='';
+    for(const code of Object.keys(I18N)){
+      const b = document.createElement('button');
+      b.className = 'langbtn' + (code===lang ? ' on' : '');
+      b.textContent = I18N[code]._name || code;
+      b.onclick = () => setLang(code);
+      box.appendChild(b);
+    }
+  }
 
   // ---- balance knobs (дефолты, потом крутим) ----
   const K = {
@@ -193,29 +343,33 @@
   // objective.metric: 'served' | 'upgrades'; target — порог для прохождения (1★);
   // time (сек) — лимит для уровня на время. Звёзды: 1★ цель выполнена, 2★ без
   // наземных штрафов, 3★ без крушений.
+  // Названия/описания не хранятся: имя = t('level.name'), описание = objectiveDesc().
   const LEVELS = [
-    { name:'Уровень 1',
-      objective:{ metric:'served', target:8, desc:'Принять 8 бортов и выжить' },
+    { objective:{ metric:'served', target:8 },
       sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
       runways:3 },
-    { name:'Уровень 2',
-      objective:{ metric:'served', target:12, time:120, desc:'Принять 12 бортов за 2:00' },
+    { objective:{ metric:'served', target:12, time:120 },
       sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
       runways:3 },
-    { name:'Уровень 3',
-      objective:{ metric:'upgrades', target:4, time:150, desc:'Сделать 4 улучшения за 2:30' },
+    { objective:{ metric:'upgrades', target:4, time:150 },
       sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
       runways:3 },
   ];
   let LV = LEVELS[0];
+  function objectiveDesc(){
+    const o = LV.objective;
+    const params = {n:o.target, time:o.time ? fmtTime(o.time) : ''};
+    if(o.metric==='upgrades') return t('obj.upgrades', params);
+    return o.time ? t('obj.servedTimed', params) : t('obj.served', params);
+  }
   let levelIdx = 0, levelPassed = false, upgradesDone = 0;
   let combo = 0, runCrashes = 0, runPenalties = 0;   // серия / счётчики чистоты прохождения
   let rushUntil = 0, nextRush = 0;                    // «час пик»
   let windUntil = 0, nextWind = 0;                    // смена ветра (закрытие ВПП)
   let fogUntil = 0, nextFog = 0;                      // туман
   let zen = false;                                    // режим без проигрыша
-  let save = {unlocked:1, best:{}, stars:{}};
-  const SAVE_KEY = 'tower_save_v1', VERSION = '0.8';
+  let save = {unlocked:1, best:{}, stars:{}, lang:null};
+  const SAVE_KEY = 'tower_save_v1', VERSION = '0.9';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -320,8 +474,8 @@
     nextRush = zen?Infinity:K.RUSH_PERIOD;
     nextWind = zen?Infinity:K.WIND_PERIOD;
     nextFog  = zen?Infinity:K.FOG_PERIOD;
-    toast = zen ? {text:'Zen-режим: просто веди борта', t:0, good:true}
-                : {text:'Цель: '+LV.objective.desc, t:0, good:true};
+    toast = zen ? {text:t('toast.zenStart'), t:0, good:true}
+                : {text:t('toast.goal', {desc:objectiveDesc()}), t:0, good:true};
     spawnPlane();
   }
 
@@ -447,6 +601,7 @@
     if(pl.runway){ if(pl.runway.occupied===pl) pl.runway.occupied=null; pl.runway=null; }
     if(pl.bay){ if(pl.bay.occupied===pl) pl.bay.occupied=null; pl.bay=null; }
   }
+  // reason — ключ i18n (loss.*): в lossLog хранится ключ, перевод — при показе
   function logLoss(pl, reason, moneyPenalty){
     if(pl.dead) return;
     pl.dead=true; boom(pl.x,pl.y); freeRes(pl);
@@ -455,11 +610,11 @@
     if(moneyPenalty) money-=pl.reward;
     lossLog.push({t:gameTime, reason});
     if(lossLog.length>12) lossLog.shift();
-    toast={text:(debug.infiniteLives?'✈ ':'−1 ✈ ')+reason, t:0, good:false};
-    console.log('[Tower] '+(debug.infiniteLives?'(∞) ':'-1 жизнь ')+reason+' | t='+fmtTime(gameTime)+' | жизней='+lives);
+    toast={text:(debug.infiniteLives?'✈ ':'−1 ✈ ')+t(reason), t:0, good:false};
+    console.log('[Tower] '+(debug.infiniteLives?'(∞) ':'-1 ✈ ')+t(reason)+' | t='+fmtTime(gameTime)+' | lives='+lives);
   }
-  function killAir(pl){ logLoss(pl, 'Воздушный таймаут — не успел сесть', false); }
-  function killCrash(pl, reason){ logLoss(pl, reason||'Столкновение', true); }
+  function killAir(pl){ logLoss(pl, 'loss.airTimeout', false); }
+  function killCrash(pl, reason){ logLoss(pl, reason||'loss.collision', true); }
 
   function curNeed(pl){ return pl.requests[pl.reqIndex]; }
 
@@ -486,7 +641,7 @@
       combo++;
       const express = (gameTime - pl.landedAt) <= K.EXPRESS_TIME;
       pay = Math.round(pay * comboMult() * (express?K.EXPRESS_BONUS:1));
-      if(express) toast={text:'ЭКСПРЕСС +'+pay+' ₿', t:0, good:true};
+      if(express) toast={text:t('toast.express', {money:fmtMoney(pay)}), t:0, good:true};
     }
     money += pay;
     pl.dead=true; freeRes(pl);
@@ -536,14 +691,14 @@
 
   function update(dt){
     // динамические события (в Zen отключены: next* = Infinity)
-    if(gameTime>=nextRush){ rushUntil=gameTime+K.RUSH_DUR; nextRush=gameTime+K.RUSH_PERIOD; toast={text:'Час пик!', t:0, good:false}; }
+    if(gameTime>=nextRush){ rushUntil=gameTime+K.RUSH_DUR; nextRush=gameTime+K.RUSH_PERIOD; toast={text:t('toast.rush'), t:0, good:false}; }
     if(gameTime>=nextWind){
       const open=runways.filter(r=>!r.closed);
-      if(open.length>1){ open[Math.floor(Math.random()*open.length)].closed=true; windUntil=gameTime+K.WIND_DUR; toast={text:'Смена ветра — полоса закрыта', t:0, good:false}; }
+      if(open.length>1){ open[Math.floor(Math.random()*open.length)].closed=true; windUntil=gameTime+K.WIND_DUR; toast={text:t('toast.wind'), t:0, good:false}; }
       nextWind=gameTime+K.WIND_PERIOD;
     }
     if(windUntil>0 && gameTime>=windUntil){ runways.forEach(r=>r.closed=false); windUntil=0; }
-    if(gameTime>=nextFog){ fogUntil=gameTime+K.FOG_DUR; nextFog=gameTime+K.FOG_PERIOD; toast={text:'Туман — руление замедлено', t:0, good:false}; }
+    if(gameTime>=nextFog){ fogUntil=gameTime+K.FOG_DUR; nextFog=gameTime+K.FOG_PERIOD; toast={text:t('toast.fog'), t:0, good:false}; }
     const rush = gameTime<rushUntil;
     const fog = gameTime<fogUntil;
     const taxiSpeed = fog ? K.SPEED_TAXI*K.FOG_TAXI : K.SPEED_TAXI;
@@ -623,7 +778,7 @@
             if(!b.open) continue;
             if(rectHit(pl.x,pl.y,b)){
               if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
-              if(b.occupied && b.occupied!==pl){ if(!zen){ killCrash(pl,'Столкновение в боксе'); killCrash(b.occupied,'Столкновение в боксе'); } }
+              if(b.occupied && b.occupied!==pl){ if(!zen){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
               else {
                 pl.zone='bay'; pl.bay=b; b.occupied=pl;
                 pl.x=b.x+b.w/2; pl.y=b.y+b.h/2; pl.moving=false; pl.path=[];
@@ -660,7 +815,7 @@
       for(let i=0;i<ground.length;i++)
         for(let j=i+1;j<ground.length;j++){
           if(dist(ground[i].x,ground[i].y,ground[j].x,ground[j].y)<K.CRASH_DIST){
-            killCrash(ground[i],'Столкновение на поле'); killCrash(ground[j],'Столкновение на поле');
+            killCrash(ground[i],'loss.collisionField'); killCrash(ground[j],'loss.collisionField');
           }
         }
       // на ВПП: физический контакт (заходящий бьёт стоящего, либо садящийся
@@ -669,7 +824,7 @@
       for(let i=0;i<onrw.length;i++)
         for(let j=i+1;j<onrw.length;j++){
           if(dist(onrw[i].x,onrw[i].y,onrw[j].x,onrw[j].y)<K.CRASH_DIST){
-            killCrash(onrw[i],'Столкновение на ВПП'); killCrash(onrw[j],'Столкновение на ВПП');
+            killCrash(onrw[i],'loss.collisionRunway'); killCrash(onrw[j],'loss.collisionRunway');
           }
         }
     }
@@ -678,11 +833,11 @@
     for(let i=planes.length-1;i>=0;i--) if(planes[i].dead){ if(selected===planes[i]) selected=null; planes.splice(i,1); }
 
     if(!zen){
-      if(lives<=0){ endLevel('Жизни кончились.'); return; }
-      if(metricValue() >= LV.objective.target){ endLevel('Цель выполнена!'); return; }
+      if(lives<=0){ endLevel('end.lives'); return; }
+      if(metricValue() >= LV.objective.target){ endLevel('end.goal'); return; }
     }
     gameTime+=dt;
-    if(!zen && LV.objective.time && gameTime>=LV.objective.time){ endLevel('Время вышло!'); return; }
+    if(!zen && LV.objective.time && gameTime>=LV.objective.time){ endLevel('end.time'); return; }
   }
   function dirOut(b){ // направление "наружу из бокса" в поле
     if(b.side==='top') return {dx:0,dy:1};
@@ -774,7 +929,7 @@
     ctx.strokeStyle='rgba(191,233,255,.18)'; ctx.lineWidth=1.5; rr(ix,iy,iw,ih,10*ui); ctx.stroke();
     ctx.fillStyle='rgba(191,233,255,.30)'; ctx.font=`${11*ui}px ui-monospace,monospace`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('ТЕРМИНАЛ', ix+iw/2, iy+ih/2);
+    ctx.fillText(t('canvas.terminal'), ix+iw/2, iy+ih/2);
   }
 
   function drawRunways(){
@@ -803,7 +958,7 @@
         rr(r.x+2*ui,r.y+2*ui,r.w-4*ui,r.h-4*ui,5*ui); ctx.stroke(); ctx.setLineDash([]);
         ctx.fillStyle=COL.life; ctx.font=`700 ${Math.min(13,r.h*0.4)*ui}px ui-monospace,monospace`;
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('✕ ЗАКРЫТО', r.x+r.w/2, r.cy);
+        ctx.fillText(t('canvas.closed'), r.x+r.w/2, r.cy);
       }
     }
   }
@@ -831,7 +986,7 @@
       // цена
       ctx.fillStyle = enough?COL.coin:COL.muted; ctx.font=`${10*ui}px ui-monospace,monospace`;
       ctx.textAlign='center'; ctx.textBaseline='top';
-      ctx.fillText(K.BAY_OPEN_COST+' ₿', b.x+b.w/2, b.y+b.h+4*ui);
+      ctx.fillText(fmtMoney(K.BAY_OPEN_COST), b.x+b.w/2, b.y+b.h+4*ui);
       ctx.restore(); return;
     }
 
@@ -864,7 +1019,7 @@
       const enough = money>=up;
       ctx.fillStyle = enough?COL.coin:COL.muted; ctx.font=`${9.5*ui}px ui-monospace,monospace`;
       ctx.textAlign='center'; ctx.textBaseline='top';
-      ctx.fillText('↑ '+up+' ₿', b.x+b.w/2, b.y+b.h+4*ui);
+      ctx.fillText('↑ '+fmtMoney(up), b.x+b.w/2, b.y+b.h+4*ui);
     }
     ctx.restore();
   }
@@ -941,17 +1096,17 @@
     // деньги
     ctx.fillStyle=money<0?COL.life:COL.coin; ctx.textAlign='right';
     ctx.font=`600 ${16*ui}px ui-monospace,monospace`;
-    ctx.fillText(money+' ₿', W - 56*ui, hud/2);
+    ctx.fillText(fmtMoney(money), W - 56*ui, hud/2);
     // принято
     const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
     ctx.fillStyle=COL.coin; ctx.font=`${12*ui}px ui-monospace,monospace`; ctx.textAlign='center';
-    let prog = zen ? ('✈ '+served) : (mv+' / '+LV.objective.target);
-    if(combo>1) prog += '   серия ×'+comboMult().toFixed(1);
+    let prog = zen ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target));
+    if(combo>1) prog += '   '+t('hud.combo', {x:fmtNum(comboMult(),1)});
     ctx.fillText(prog, W*0.62, hud/2);
     // название режима/уровня (угол)
     ctx.fillStyle='rgba(127,155,176,.7)'; ctx.font=`${11*ui}px ui-monospace,monospace`;
     ctx.textAlign='right'; ctx.textBaseline='bottom';
-    ctx.fillText(zen?'Zen':LV.name, W-12*ui, H-8*ui);
+    ctx.fillText(zen?t('mode.zen'):t('level.name',{n:levelIdx+1}), W-12*ui, H-8*ui);
     ctx.textBaseline='middle';
 
     // pause button
@@ -973,12 +1128,12 @@
       const cy2=hud+18*ui; let cx2=18*ui;
       ctx.fillStyle=COL.muted; ctx.font=`${9*ui}px ui-monospace,monospace`;
       ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillText(selected.vip?'ВИП':'БОРТ', cx2, cy2-14*ui);
+      ctx.fillText(selected.vip?t('hud.vip'):t('hud.plane'), cx2, cy2-14*ui);
       for(let i=0;i<chain.length;i++){
-        const t=chain[i], c=SVC[t].color;
+        const ty=chain[i], c=SVC[ty].color;   // ty, не t — не затенять t() из i18n
         ctx.globalAlpha = i<selected.reqIndex ? 0.3 : (i===selected.reqIndex?1:0.7);
         ctx.fillStyle=c; ctx.strokeStyle=c;
-        ctx.save(); ctx.translate(cx2+9*ui, cy2+4*ui); glyph(t, 8*ui); ctx.restore();
+        ctx.save(); ctx.translate(cx2+9*ui, cy2+4*ui); glyph(ty, 8*ui); ctx.restore();
         if(i===selected.reqIndex){
           ctx.globalAlpha=1; ctx.strokeStyle=c; ctx.lineWidth=1.5;
           ctx.beginPath(); ctx.arc(cx2+9*ui, cy2+4*ui, 13*ui,0,7); ctx.stroke();
@@ -1047,23 +1202,23 @@
     requestAnimationFrame(frame);
   }
 
-  function endLevel(reason){
+  function endLevel(reasonKey){          // reasonKey — ключ i18n (end.*)
     running=false; recordResult();
     const stars=computeStars(), v=metricValue(), passed=stars>=1;
-    document.getElementById('overKicker').textContent = passed?'Уровень пройден':'Смена закрыта';
+    document.getElementById('overKicker').textContent = t(passed?'over.passed':'over.failed');
     document.getElementById('finalStars').textContent = '★'.repeat(stars)+'☆'.repeat(3-stars);
-    const unit = LV.objective.metric==='upgrades'?' улучшений':' бортов';
+    const unit = t(LV.objective.metric==='upgrades'?'unit.upgrades':'unit.planes', {n:v});
     document.getElementById('overMsg').textContent =
-      reason+' '+LV.objective.desc+'. Результат: '+v+unit+', касса '+money+'₿.';
+      t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
     const hasNext = levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
     document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
     document.getElementById('overScreen').classList.remove('hidden');
   }
 
   // ---- меню / уровни / сохранение ----
-  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; } }catch(e){} }
+  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang])?s.lang:null; } }catch(e){} }
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
-  function resetProgress(){ save={unlocked:1,best:{},stars:{}}; saveGame(); renderLevels(); }
+  function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang}; saveGame(); renderLevels(); }  // язык — не прогресс, сохраняем
   function buildLevel(idx){ levelIdx=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
   function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   function showLevels(){ renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
@@ -1076,7 +1231,7 @@
       const b=document.createElement('button');
       b.className='levelbtn'+(unlocked?'':' locked');
       const starStr = unlocked ? ('★'.repeat(stars)+'☆'.repeat(3-stars)) : '🔒';
-      b.innerHTML=`<span class="lvname">${lv.name}</span><span class="lvbest">${starStr}</span>`;
+      b.innerHTML=`<span class="lvname">${t('level.name',{n:i+1})}</span><span class="lvbest">${starStr}</span>`;
       if(unlocked) b.onclick=()=>startLevel(i);
       list.appendChild(b);
     });
@@ -1098,8 +1253,8 @@
   }
   function refreshLog(){
     const box=document.getElementById('logBox');
-    if(!lossLog.length){ box.innerHTML='<div class="logrow muted">потерь пока нет</div>'; return; }
-    box.innerHTML=lossLog.slice().reverse().map(l=>`<div class="logrow">${fmtTime(l.t)} — ${l.reason}</div>`).join('');
+    if(!lossLog.length){ box.innerHTML=`<div class="logrow muted">${t('log.empty')}</div>`; return; }
+    box.innerHTML=lossLog.slice().reverse().map(l=>`<div class="logrow">${fmtTime(l.t)} — ${t(l.reason)}</div>`).join('');
   }
   document.getElementById('resumeBtn').onclick=()=>setPaused(false);
   document.getElementById('restartBtn').onclick=()=>reset();
@@ -1113,6 +1268,8 @@
   document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; };
 
   loadGame();
+  lang = save.lang || detectLang();   // сохранённый выбор > автоопределение > en
+  applyI18n();
   document.getElementById('ver').textContent=VERSION;
   resize();
   requestAnimationFrame(frame);
