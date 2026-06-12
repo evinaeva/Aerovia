@@ -4,6 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Tower</title>
 <style>
+  /* ===== облик «ночной радар» (см. CHANGELOG 0.10) ===== */
   :root{
     --ink:#0a1622;
     --tarmac:#1b2530;
@@ -16,12 +17,14 @@
     --amber:#f4a259;   /* ремонт */
     --teal:#4ecdc4;    /* топливо */
     --rose:#ef798a;    /* посадка людей */
-    --gold:#f4cf5e;    /* вип */
+    --gold:#f4cf5e;    /* вип / деньги / вылет */
     --life:#ef5365;
     --coin:#f4cf5e;
+    --panel:rgba(16,26,38,.96);
+    --serif:Georgia,"Times New Roman",serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
+  html,body{margin:0;height:100%;background:#060b12;overflow:hidden}
   body{
     font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
     color:var(--paper);
@@ -33,51 +36,102 @@
   .overlay{
     position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;
     overflow-y:auto;-webkit-overflow-scrolling:touch;
-    background:radial-gradient(120% 90% at 50% 40%, rgba(10,22,34,.74), rgba(10,22,34,.95));
+    background:radial-gradient(120% 90% at 50% 40%, rgba(6,11,18,.55), rgba(6,11,18,.92));
     backdrop-filter:blur(2px);z-index:5;
   }
-  .panel{text-align:center;padding:34px 30px;max-width:380px;margin:auto;flex:0 0 auto}
-  .panel .kicker{font-size:11px;letter-spacing:.34em;color:var(--phosphor);text-transform:uppercase}
+  /* меню: сцена-радар на канвасе видна целиком */
+  #startScreen{background:none;backdrop-filter:none}
+  .panel{text-align:center;padding:30px 26px;max-width:420px;margin:auto;flex:0 0 auto}
+  .panel.wide{max-width:740px}
+  .panel.card{background:var(--panel);border:1.5px solid rgba(191,233,255,.2);border-radius:16px}
+  .panel .kicker{font-size:11px;letter-spacing:.34em;color:var(--muted);text-transform:uppercase}
   .panel h1{
-    font-family:Georgia,"Times New Roman",serif;font-weight:400;
-    font-size:40px;letter-spacing:.01em;margin:14px 0 6px;color:var(--paper);
+    font-family:var(--serif);font-weight:400;
+    font-size:46px;letter-spacing:.04em;margin:12px 0 6px;color:var(--phosphor);
+    text-shadow:0 0 26px rgba(191,233,255,.45);
   }
   .panel p{font-size:13px;line-height:1.7;color:var(--muted);margin:10px 0 0}
-  .panel .big{font-size:48px;color:var(--phosphor);margin:8px 0 0;letter-spacing:.02em}
-  #finalStars{color:var(--gold);font-size:52px;letter-spacing:.08em}
+  .panel .big{font-size:48px;margin:8px 0 0;letter-spacing:.02em}
+  #finalStars{color:var(--gold);font-size:52px;letter-spacing:.08em;text-shadow:0 0 24px rgba(244,207,94,.5)}
   .btn{
-    margin-top:24px;display:inline-block;cursor:pointer;
-    border:1px solid var(--phosphor);color:var(--phosphor);background:transparent;
-    font:inherit;font-size:12px;letter-spacing:.22em;text-transform:uppercase;
-    padding:13px 26px;border-radius:3px;transition:.2s;
+    display:inline-block;cursor:pointer;
+    border:1.5px solid rgba(191,233,255,.32);color:var(--paper);
+    background:rgba(127,155,176,.06);
+    font:inherit;font-size:13px;letter-spacing:.12em;text-transform:uppercase;
+    padding:13px 22px;border-radius:10px;transition:.15s;
   }
-  .btn:hover{background:var(--phosphor);color:var(--ink)}
+  .btn:hover{color:var(--phosphor);border-color:rgba(191,233,255,.7);background:rgba(191,233,255,.12)}
+  .btn-primary{background:var(--phosphor);border-color:var(--phosphor);color:var(--ink);box-shadow:0 0 16px rgba(191,233,255,.35)}
+  .btn-primary:hover{background:var(--phosphor);color:var(--ink);box-shadow:0 0 26px rgba(191,233,255,.55)}
+  .btn-teal{border-color:rgba(78,205,196,.45);color:var(--teal)}
+  .btn-teal:hover{color:var(--teal);border-color:var(--teal);background:rgba(78,205,196,.10)}
+  .btn-rose{border-color:rgba(239,121,138,.45);color:var(--rose)}
+  .btn-rose:hover{color:var(--rose);border-color:var(--rose);background:rgba(239,121,138,.10)}
+  .btn-quiet{border-color:rgba(127,155,176,.35);color:var(--muted)}
+  .bglyph{margin-right:7px}
+  .ctarow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
   .hidden{display:none}
-  .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:10px;letter-spacing:.1em;color:var(--muted)}
-  .legend span{display:flex;align-items:center;gap:6px;text-transform:uppercase}
-  .dot{width:9px;height:9px;border-radius:50%}
   .settings{margin-top:16px;text-align:left}
   .opt{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--paper);margin:12px 0;letter-spacing:.04em;cursor:pointer;text-transform:none}
   .opt input{width:16px;height:16px;accent-color:var(--phosphor)}
   .logbox{margin-top:14px;max-height:130px;overflow:auto;border-top:1px solid rgba(127,155,176,.25);padding-top:8px}
   .logrow{font-size:11px;color:var(--paper);padding:2px 0;letter-spacing:.03em}
   .logrow.muted{color:var(--muted)}
-  #pauseScreen .btn{display:block;margin:14px auto 0}
-  #overScreen .btn, #levelScreen .btn, #startScreen .btn{display:block;margin:12px auto 0}
-  .levellist{display:flex;flex-direction:column;gap:10px;margin:18px 0 6px}
-  .levelbtn{display:flex;justify-content:space-between;align-items:center;gap:14px;
-    border:1px solid var(--phosphor);background:transparent;color:var(--paper);
-    font:inherit;font-size:13px;padding:12px 16px;border-radius:3px;cursor:pointer;letter-spacing:.05em}
-  .levelbtn:hover{background:rgba(191,233,255,.1)}
-  .levelbtn.locked{border-color:rgba(127,155,176,.4);color:var(--muted);cursor:default}
-  .levelbtn .lvbest{font-size:11px;color:var(--muted);letter-spacing:.03em}
-  .btn-quiet{border-color:var(--muted);color:var(--muted)}
+  .pausegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+  .pausegrid .btn{width:100%}
+  /* выбор смены — карточки */
+  .levellist{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:20px 0 8px}
+  .levelcard{position:relative;overflow:hidden;text-align:left;font:inherit;color:var(--paper);cursor:pointer;
+    background:#1e2a35;border:1.5px solid rgba(191,233,255,.2);border-radius:14px;padding:14px 16px;transition:.15s}
+  .levelcard::after{content:"";position:absolute;right:-26px;bottom:-26px;width:84px;height:84px;
+    border:1.5px solid rgba(191,233,255,.07);border-radius:50%}
+  .levelcard:hover{border-color:rgba(191,233,255,.6);background:#243140;box-shadow:0 0 16px rgba(191,233,255,.25)}
+  .levelcard.locked{background:#141b23;border-color:rgba(127,155,176,.2);color:var(--muted);cursor:default}
+  .levelcard.locked:hover{border-color:rgba(127,155,176,.2);background:#141b23;box-shadow:none}
+  .levelcard .lvkick{font-size:9px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase}
+  .levelcard .lvnum{font-family:var(--serif);font-size:38px;line-height:1.1;margin:4px 0 2px}
+  .levelcard .lvstars{font-size:14px;color:var(--gold);letter-spacing:.12em;text-shadow:0 0 10px rgba(244,207,94,.45)}
+  .levelcard.locked .lvstars{color:var(--muted);text-shadow:none;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+  /* статистика на экране итога */
+  .stats{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:18px;padding:14px 18px;
+    border:1.5px solid rgba(191,233,255,.15);border-radius:14px;background:rgba(10,22,34,.6)}
+  .stat{text-align:left}
+  .stat .label{font-size:9px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+  .stat .val{font-size:17px;margin-top:4px}
+  .v-phos{color:var(--phosphor)} .v-gold{color:var(--gold)} .v-life{color:var(--life)} .v-teal{color:var(--teal)}
   .langbtns{display:flex;gap:8px;flex-wrap:wrap}
-  .langbtn{border:1px solid var(--muted);color:var(--muted);background:transparent;
-    font:inherit;font-size:11px;letter-spacing:.08em;padding:6px 12px;border-radius:3px;cursor:pointer}
+  .langbtn{border:1.5px solid rgba(127,155,176,.4);color:var(--muted);background:transparent;
+    font:inherit;font-size:11px;letter-spacing:.08em;padding:6px 12px;border-radius:8px;cursor:pointer}
   .langbtn:hover{color:var(--phosphor);border-color:var(--phosphor)}
   .langbtn.on{color:var(--phosphor);border-color:var(--phosphor);background:rgba(191,233,255,.08)}
-  .vno{margin-top:16px;font-size:10px;color:var(--muted);letter-spacing:.12em}
+  .vno{margin-top:18px;font-size:10px;color:var(--muted);letter-spacing:.12em}
+
+  /* ---- медали ---- */
+  .panel-wide{max-width:580px;width:94%;max-height:88vh;display:flex;flex-direction:column;padding:26px 24px}
+  .medalcount{font-size:12px;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin-top:4px}
+  .medalgrid{overflow:auto;text-align:left;margin:14px 0 6px;padding-right:6px}
+  .tierhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--phosphor);margin:14px 0 6px;border-bottom:1px solid rgba(191,233,255,.18);padding-bottom:4px}
+  .tierhead:first-child{margin-top:0}
+  .medal{display:flex;gap:11px;align-items:flex-start;padding:8px 10px;margin:6px 0;
+    border:1.5px solid rgba(127,155,176,.22);border-radius:10px;background:rgba(127,155,176,.04)}
+  .medal.got{border-color:rgba(244,207,94,.55);background:rgba(244,207,94,.06);box-shadow:0 0 12px rgba(244,207,94,.12)}
+  .medal .ic{font-size:21px;line-height:1.1;filter:grayscale(1);opacity:.45;flex:0 0 auto;width:26px;text-align:center}
+  .medal.got .ic{filter:none;opacity:1}
+  .medal .mt{font-size:12.5px;color:var(--paper);letter-spacing:.02em}
+  .medal.locked .mt{color:var(--muted)}
+  .medal .md{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+  .medal .mp{font-size:10px;color:var(--phosphor);margin-top:3px;letter-spacing:.04em}
+
+  /* ---- всплывашка получения медали ---- */
+  #achToast{position:fixed;left:50%;top:13%;transform:translateX(-50%) translateY(-22px);
+    z-index:9;display:flex;gap:13px;align-items:center;padding:12px 20px;border-radius:12px;
+    background:rgba(10,22,34,.95);border:1.5px solid var(--gold);color:var(--paper);
+    box-shadow:0 0 18px rgba(244,207,94,.35), 0 6px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;
+    transition:opacity .32s ease, transform .32s ease;max-width:86%}
+  #achToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #achToast .ic{font-size:28px}
+  #achToast .lbl{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+  #achToast .ttl{font-size:14px;margin-top:3px;color:var(--paper)}
 </style>
 
 <div id="stage">
@@ -87,55 +141,77 @@
     <div class="panel">
       <div class="kicker" data-i18n="start.kicker"></div>
       <h1 data-i18n="app.name"></h1>
-      <p data-i18n="start.intro"></p>
-      <div class="legend">
-        <span><i class="dot" style="background:var(--amber)"></i><span data-i18n="legend.repair"></span></span>
-        <span><i class="dot" style="background:var(--teal)"></i><span data-i18n="legend.fuel"></span></span>
-        <span><i class="dot" style="background:var(--rose)"></i><span data-i18n="legend.board"></span></span>
-        <span><i class="dot" style="background:var(--gold)"></i><span data-i18n="legend.vip"></span></span>
+      <p data-i18n="start.tagline"></p>
+      <div class="ctarow">
+        <button class="btn btn-teal" id="zenBtn"><span class="bglyph">☾</span><span data-i18n="start.zen"></span></button>
+        <button class="btn btn-primary" id="startBtn"><span class="bglyph">▶</span><span data-i18n="start.play"></span></button>
       </div>
-      <button class="btn" id="startBtn" data-i18n="start.play"></button>
-      <button class="btn" id="zenBtn" data-i18n="start.zen"></button>
+      <div class="ctarow">
+        <button class="btn btn-quiet" id="medalsBtn"><span class="bglyph">🏅</span><span data-i18n="medals.btn"></span></button>
+      </div>
       <div class="vno"><span data-i18n="start.version"></span> <span id="ver"></span></div>
     </div>
   </div>
 
   <div class="overlay hidden" id="overScreen">
-    <div class="panel">
+    <div class="panel card">
       <div class="kicker" id="overKicker"></div>
       <div class="big" id="finalStars">☆☆☆</div>
       <p id="overMsg"></p>
-      <button class="btn" id="nextBtn" data-i18n="over.next"></button>
-      <button class="btn" id="againBtn" data-i18n="over.again"></button>
-      <button class="btn" id="toLevelsBtn" data-i18n="over.toLevels"></button>
+      <div class="stats" id="overStats"></div>
+      <div class="ctarow">
+        <button class="btn btn-teal" id="toLevelsBtn"><span class="bglyph">≡</span><span data-i18n="over.toLevels"></span></button>
+        <button class="btn btn-primary" id="againBtn"><span class="bglyph">↻</span><span data-i18n="over.again"></span></button>
+        <button class="btn btn-primary" id="nextBtn"><span class="bglyph">⏭</span><span data-i18n="over.next"></span></button>
+      </div>
     </div>
   </div>
 
   <div class="overlay hidden" id="levelScreen">
-    <div class="panel">
+    <div class="panel wide">
       <div class="kicker" data-i18n="levels.kicker"></div>
       <h1 data-i18n="levels.title"></h1>
       <div class="levellist" id="levelList"></div>
-      <button class="btn" id="backBtn" data-i18n="levels.back"></button>
-      <button class="btn btn-quiet" id="resetProgBtn" data-i18n="levels.reset"></button>
+      <div class="ctarow">
+        <button class="btn" id="backBtn"><span class="bglyph">←</span><span data-i18n="levels.back"></span></button>
+        <button class="btn" id="medalsBtn2"><span class="bglyph">🏅</span><span data-i18n="medals.btn"></span></button>
+        <button class="btn btn-quiet" id="resetProgBtn" data-i18n="levels.reset"></button>
+      </div>
     </div>
   </div>
 
   <div class="overlay hidden" id="pauseScreen">
-    <div class="panel">
-      <div class="kicker" data-i18n="pause.kicker"></div>
-      <h1 data-i18n="app.name"></h1>
+    <div class="panel card">
+      <div class="kicker">II</div>
+      <h1 data-i18n="pause.kicker"></h1>
       <div class="settings hidden" id="settingsPanel">
         <div class="opt" style="cursor:default"><span data-i18n="settings.language"></span><div class="langbtns" id="langBtns"></div></div>
         <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
         <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
         <div class="logbox" id="logBox"></div>
       </div>
-      <button class="btn" id="resumeBtn" data-i18n="pause.resume"></button>
-      <button class="btn" id="restartBtn" data-i18n="pause.restart"></button>
-      <button class="btn" id="settingsBtn" data-i18n="pause.settings"></button>
-      <button class="btn" id="menuBtn" data-i18n="pause.menu"></button>
+      <div class="pausegrid">
+        <button class="btn btn-primary" id="resumeBtn"><span class="bglyph">▶</span><span data-i18n="pause.resume"></span></button>
+        <button class="btn btn-teal" id="restartBtn"><span class="bglyph">↻</span><span data-i18n="pause.restart"></span></button>
+        <button class="btn" id="settingsBtn"><span class="bglyph">⚙</span><span data-i18n="pause.settings"></span></button>
+        <button class="btn btn-rose" id="menuBtn"><span class="bglyph">⌂</span><span data-i18n="pause.menu"></span></button>
+      </div>
     </div>
+  </div>
+
+  <div class="overlay hidden" id="medalScreen">
+    <div class="panel panel-wide">
+      <div class="kicker" data-i18n="medals.kicker"></div>
+      <h1 data-i18n="medals.title"></h1>
+      <div class="medalcount" id="medalCount"></div>
+      <div class="medalgrid" id="medalGrid"></div>
+      <button class="btn" id="medalsBackBtn" data-i18n="medals.back"></button>
+    </div>
+  </div>
+
+  <div id="achToast">
+    <div class="ic" id="achIc">🏅</div>
+    <div><div class="lbl" data-i18n="ach.toastLabel"></div><div class="ttl" id="achTtl"></div></div>
   </div>
 </div>
 
@@ -156,7 +232,7 @@
     repair: {color: COL.amber},
     fuel:   {color: COL.teal},
     board:  {color: COL.rose},
-    depart: {color: COL.phosphor},
+    depart: {color: COL.gold},
   };
 
   // ---- i18n ----
@@ -169,15 +245,15 @@
       _plural: n => (n===1 ? 0 : 1),
       'app.name':'Tower',
       'app.title':'Tower — air traffic control',
-      'start.kicker':'Control tower',
-      'start.intro':'Planes arrive from the right. Drag a plane to a free runway and it will land. Then guide it through the bays in the order of its needs, and finally to takeoff. One bay — one plane. Watch the patience timers and don\'t let planes collide.',
-      'legend.repair':'repair', 'legend.fuel':'fuel', 'legend.board':'boarding', 'legend.vip':'VIP plane',
+      'start.kicker':'Night controller · Airfield',
+      'start.tagline':'Guide the planes with your finger. Calm night flow.',
       'start.play':'Play', 'start.zen':'Zen mode', 'start.version':'ver.',
       'over.next':'Next level', 'over.again':'Play again', 'over.toLevels':'Level select',
       'over.passed':'Level complete', 'over.failed':'Shift over',
       'over.result':'{reason} {desc}. Result: {n} {unit}, bank {money}.',
       'unit.planes':['plane','planes'], 'unit.upgrades':['upgrade','upgrades'],
-      'levels.kicker':'Level select', 'levels.title':'Levels', 'levels.back':'Back', 'levels.reset':'Reset progress',
+      'levels.kicker':'Shift select', 'levels.title':'Levels', 'levels.back':'Back', 'levels.reset':'Reset progress',
+      'levels.shift':'Shift', 'levels.locked':'Locked',
       'level.name':'Level {n}',
       'obj.served':['Land {n} plane and survive','Land {n} planes and survive'],
       'obj.servedTimed':['Land {n} plane in {time}','Land {n} planes in {time}'],
@@ -201,9 +277,62 @@
       'loss.collisionField':'Collision on the apron',
       'loss.collisionRunway':'Collision on the runway',
       'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!',
-      'hud.vip':'VIP', 'hud.plane':'PLANE', 'hud.combo':'streak ×{x}',
-      'canvas.terminal':'TERMINAL', 'canvas.closed':'✕ CLOSED',
+      'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time',
+      'hud.vip':'VIP', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
+      'canvas.terminal':'TERMINAL', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
+      // --- медали / достижения ---
+      'medals.btn':'Medals', 'medals.kicker':'Achievements', 'medals.title':'Medals', 'medals.back':'Back',
+      'medals.count':'{got} / {total} medals',
+      'medals.tier1':'Light', 'medals.tier2':'Regular', 'medals.tier3':'Hard', 'medals.tier4':'Hardcore', 'medals.tier5':'Secret',
+      'medals.secretTitle':'Secret medal', 'medals.secretDesc':'Unlocks as you play.', 'medals.pendingNote':' (for a future mode)',
+      'ach.toastLabel':'Medal unlocked',
+      'ach.land1.t':'First Contact', 'ach.land1.d':'Land your first plane.',
+      'ach.svc1.t':'Hands On', 'ach.svc1.d':'Complete your first service.',
+      'ach.takeoff1.t':'Bon Voyage', 'ach.takeoff1.d':'Send off your first plane.',
+      'ach.money1.t':'First Coin', 'ach.money1.d':'Earn your first money.',
+      'ach.bayopen1.t':'Grand Opening', 'ach.bayopen1.d':'Open your first bay.',
+      'ach.upg1.t':'Leveling Up', 'ach.upg1.d':'Upgrade a bay for the first time.',
+      'ach.pause.t':'Coffee Break', 'ach.pause.d':'Pause the shift.',
+      'ach.level1.t':'Shift Done', 'ach.level1.d':'Clear your first level.',
+      'ach.vip1.t':'Special Guest', 'ach.vip1.d':'Send off your first VIP plane.',
+      'ach.land10.t':'Tower Trainee', 'ach.land10.d':'Land 10 planes total.',
+      'ach.land100.t':'Air Traffic', 'ach.land100.d':'Land 100 planes total.',
+      'ach.svc100.t':'Hard Worker', 'ach.svc100.d':'Complete 100 services total.',
+      'ach.earn1000.t':'Cha-Ching', 'ach.earn1000.d':'Earn 1,000 total.',
+      'ach.fullchain.t':'Full Service', 'ach.fullchain.d':'Take a plane with two services (the max) from landing to takeoff.',
+      'ach.nopenalty.t':'Smooth Operator', 'ach.nopenalty.d':'Clear a level with no ground penalties.',
+      'ach.nolife.t':'No Casualties', 'ach.nolife.d':'Clear a level without losing a life.',
+      'ach.air5.t':'Rush Hour', 'ach.air5.d':'Keep 5 planes airborne at once.',
+      'ach.star3.t':'First Three', 'ach.star3.d':'Clear any level with 3 stars.',
+      'ach.vip25.t':'Business Class', 'ach.vip25.d':'Serve 25 VIP planes total.',
+      'ach.baymax.t':'Jack of All Trades', 'ach.baymax.d':'Upgrade a bay to its max level.',
+      'ach.nocrash.t':'Clear Skies', 'ach.nocrash.d':'Clear a level with no crashes at all.',
+      'ach.perfect.t':'Perfect Shift', 'ach.perfect.d':'A level with 0 crashes, 0 penalties and all lives intact.',
+      'ach.air8.t':'Juggler', 'ach.air8.d':'Keep 8 planes airborne at once.',
+      'ach.speed20.t':'Fast Lane', 'ach.speed20.d':'Land 20 planes in 60 seconds.',
+      'ach.minimalist.t':'Minimalist', 'ach.minimalist.d':'Clear a level using only the starting bays.',
+      'ach.millionaire.t':'Millionaire', 'ach.millionaire.d':'Earn 1,000,000 total.',
+      'ach.combo10.t':'Combo Master', 'ach.combo10.d':'10 clean departures in a row (the streak boosts your cash multiplier).',
+      'ach.marathon.t':'Marathoner', 'ach.marathon.d':'Last 15 minutes in a single run.',
+      'ach.streak1000.t':'Nerves of Steel', 'ach.streak1000.d':'Land 1,000 planes in a row with no crash.',
+      'ach.land10000.t':'Tower Veteran', 'ach.land10000.d':'Land 10,000 planes total.',
+      'ach.all3star.t':'Three Stars Everywhere', 'ach.all3star.d':'Clear every level with 3 stars.',
+      'ach.ascetic.t':'Asceticism', 'ach.ascetic.d':'3 stars with no upgrades and no new bays.',
+      'ach.perfectionist.t':'Perfectionist', 'ach.perfectionist.d':'10 perfect shifts in a row.',
+      'ach.daily7.t':'Perfect Week', 'ach.daily7.d':'Complete the Daily Challenge 7 days in a row.',
+      'ach.sleepless.t':'Sleepless Tower', 'ach.sleepless.d':'Last 60 minutes in a single run.',
+      'ach.zen500.t':'Total Zen', 'ach.zen500.d':'Land 500 planes in one session.',
+      'ach.combo50.t':'Combo God', 'ach.combo50.d':'50 clean departures in a row.',
+      'ach.legend.t':'Control Room Legend', 'ach.legend.d':'Unlock all other available medals.',
+      'ach.crash10s.t':'That\'s Not Flying', 'ach.crash10s.d':'Lose a plane in the first 10 seconds of a level.',
+      'ach.asleep.t':'Controller Asleep', 'ach.asleep.d':'Let a plane crash from air timeout without ever touching it.',
+      'ach.crashbay.t':'Bay Pileup', 'ach.crashbay.d':'Crash two planes in the same bay.',
+      'ach.crashrw.t':'Head-On', 'ach.crashrw.d':'Crash two planes on the same runway.',
+      'ach.groundto.t':'Patience Snapped', 'ach.groundto.d':'Let a plane hit its ground timeout.',
+      'ach.moneyneg.t':'In the Red', 'ach.moneyneg.d':'Go negative on money.',
+      'ach.longshift.t':'Overstayed', 'ach.longshift.d':'Play a single shift longer than 30 minutes.',
+      'ach.zoo.t':'Sky Zoo', 'ach.zoo.d':'Send off a normal, a VIP and an emergency plane in one shift.',
     },
     ru: {
       _name:'Русский', _locale:'ru-RU',
@@ -213,15 +342,15 @@
         return 2; },
       'app.name':'Tower',
       'app.title':'Tower — диспетчер',
-      'start.kicker':'Диспетчерская вышка',
-      'start.intro':'Борта прилетают справа. Проведи борт пальцем на свободную полосу — он сядет. Затем веди его по боксам в порядке очереди нужд, потом на взлёт. Один бокс — один борт. Следи за терпением и не дай бортам столкнуться.',
-      'legend.repair':'ремонт', 'legend.fuel':'топливо', 'legend.board':'посадка людей', 'legend.vip':'вип-борт',
+      'start.kicker':'Ночной диспетчер · Аэродром',
+      'start.tagline':'Веди борта пальцем. Спокойный ночной поток.',
       'start.play':'Играть', 'start.zen':'Zen-режим', 'start.version':'верс.',
       'over.next':'Следующий уровень', 'over.again':'Ещё раз', 'over.toLevels':'К уровням',
       'over.passed':'Уровень пройден', 'over.failed':'Смена закрыта',
       'over.result':'{reason} {desc}. Результат: {n} {unit}, касса {money}.',
       'unit.planes':['борт','борта','бортов'], 'unit.upgrades':['улучшение','улучшения','улучшений'],
-      'levels.kicker':'Выбор уровня', 'levels.title':'Уровни', 'levels.back':'Назад', 'levels.reset':'Сбросить прогресс',
+      'levels.kicker':'Выбор смены', 'levels.title':'Уровни', 'levels.back':'Назад', 'levels.reset':'Сбросить прогресс',
+      'levels.shift':'Смена', 'levels.locked':'Закрыто',
       'level.name':'Уровень {n}',
       'obj.served':['Принять {n} борт и выжить','Принять {n} борта и выжить','Принять {n} бортов и выжить'],
       'obj.servedTimed':['Принять {n} борт за {time}','Принять {n} борта за {time}','Принять {n} бортов за {time}'],
@@ -245,9 +374,62 @@
       'loss.collisionField':'Столкновение на поле',
       'loss.collisionRunway':'Столкновение на ВПП',
       'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!',
-      'hud.vip':'ВИП', 'hud.plane':'БОРТ', 'hud.combo':'серия ×{x}',
-      'canvas.terminal':'ТЕРМИНАЛ', 'canvas.closed':'✕ ЗАКРЫТО',
+      'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время',
+      'hud.vip':'ВИП', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
+      'canvas.terminal':'ТЕРМИНАЛ', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
+      // --- медали / достижения ---
+      'medals.btn':'Медали', 'medals.kicker':'Достижения', 'medals.title':'Медали', 'medals.back':'Назад',
+      'medals.count':'{got} / {total} медалей',
+      'medals.tier1':'Лайтовые', 'medals.tier2':'Обычные', 'medals.tier3':'Сложные', 'medals.tier4':'Задротские', 'medals.tier5':'Секретные',
+      'medals.secretTitle':'Секретная медаль', 'medals.secretDesc':'Откроется по ходу игры.', 'medals.pendingNote':' (для будущего режима)',
+      'ach.toastLabel':'Медаль получена',
+      'ach.land1.t':'Первый контакт', 'ach.land1.d':'Посади свой первый борт.',
+      'ach.svc1.t':'Руки на месте', 'ach.svc1.d':'Заверши первое обслуживание.',
+      'ach.takeoff1.t':'Счастливого пути', 'ach.takeoff1.d':'Отправь первый борт на взлёт.',
+      'ach.money1.t':'Первая копейка', 'ach.money1.d':'Заработай первые деньги.',
+      'ach.bayopen1.t':'Новоселье', 'ach.bayopen1.d':'Открой первый бокс.',
+      'ach.upg1.t':'Прокачка пошла', 'ach.upg1.d':'Сделай первый апгрейд бокса.',
+      'ach.pause.t':'Перекур', 'ach.pause.d':'Поставь смену на паузу.',
+      'ach.level1.t':'Смена сдана', 'ach.level1.d':'Пройди первый уровень.',
+      'ach.vip1.t':'Особый гость', 'ach.vip1.d':'Отправь в полёт первый вип-борт.',
+      'ach.land10.t':'Стажёр вышки', 'ach.land10.d':'Посади 10 бортов всего.',
+      'ach.land100.t':'Воздушный поток', 'ach.land100.d':'Посади 100 бортов всего.',
+      'ach.svc100.t':'Работяга', 'ach.svc100.d':'Сделай 100 обслуживаний всего.',
+      'ach.earn1000.t':'Касса звенит', 'ach.earn1000.d':'Заработай 1 000 денег всего.',
+      'ach.fullchain.t':'Полный сервис', 'ach.fullchain.d':'Доведи борт с двумя услугами от посадки до вылета.',
+      'ach.nopenalty.t':'Без нервотрёпки', 'ach.nopenalty.d':'Пройди уровень без единого наземного штрафа.',
+      'ach.nolife.t':'Все живы', 'ach.nolife.d':'Пройди уровень, не потеряв ни одной жизни.',
+      'ach.air5.t':'Час пик', 'ach.air5.d':'Удержи 5 бортов в воздухе одновременно.',
+      'ach.star3.t':'Первая тройка', 'ach.star3.d':'Пройди любой уровень на 3 звезды.',
+      'ach.vip25.t':'Бизнес-класс', 'ach.vip25.d':'Обслужи 25 вип-бортов всего.',
+      'ach.baymax.t':'Мастер на все руки', 'ach.baymax.d':'Прокачай бокс до максимального уровня.',
+      'ach.nocrash.t':'Чистое небо', 'ach.nocrash.d':'Пройди уровень вообще без крушений.',
+      'ach.perfect.t':'Идеальная смена', 'ach.perfect.d':'Уровень: 0 крашей, 0 штрафов, все жизни целы.',
+      'ach.air8.t':'Жонглёр', 'ach.air8.d':'Удержи 8 бортов в воздухе одновременно.',
+      'ach.speed20.t':'Скоростная полоса', 'ach.speed20.d':'Посади 20 бортов за 60 секунд.',
+      'ach.minimalist.t':'Минималист', 'ach.minimalist.d':'Пройди уровень только на стартовых боксах.',
+      'ach.millionaire.t':'Миллионер', 'ach.millionaire.d':'Накопи 1 000 000 денег всего.',
+      'ach.combo10.t':'Комбо-мастер', 'ach.combo10.d':'Сделай 10 чистых вылетов подряд (серия растит множитель денег).',
+      'ach.marathon.t':'Марафонец', 'ach.marathon.d':'Продержись 15 минут за один заход.',
+      'ach.streak1000.t':'Железные нервы', 'ach.streak1000.d':'Посади 1 000 бортов подряд без крушения.',
+      'ach.land10000.t':'Ветеран вышки', 'ach.land10000.d':'Посади 10 000 бортов всего.',
+      'ach.all3star.t':'Три звезды везде', 'ach.all3star.d':'Пройди все уровни на 3 звезды.',
+      'ach.ascetic.t':'Аскеза', 'ach.ascetic.d':'3 звезды без апгрейдов и без новых боксов.',
+      'ach.perfectionist.t':'Перфекционист', 'ach.perfectionist.d':'10 идеальных смен подряд.',
+      'ach.daily7.t':'Идеальная неделя', 'ach.daily7.d':'Пройди Daily Challenge 7 дней подряд.',
+      'ach.sleepless.t':'Бессонная вышка', 'ach.sleepless.d':'Продержись 60 минут за один заход.',
+      'ach.zen500.t':'Абсолютный дзен', 'ach.zen500.d':'Посади 500 бортов за один сеанс.',
+      'ach.combo50.t':'Комбо-бог', 'ach.combo50.d':'Сделай 50 чистых вылетов подряд.',
+      'ach.legend.t':'Легенда диспетчерской', 'ach.legend.d':'Открой все остальные доступные медали.',
+      'ach.crash10s.t':'Так не летают', 'ach.crash10s.d':'Потеряй борт в первые 10 секунд уровня.',
+      'ach.asleep.t':'Диспетчер уснул', 'ach.asleep.d':'Дай борту разбиться по воздушному таймауту, ни разу его не тронув.',
+      'ach.crashbay.t':'Пробка в боксе', 'ach.crashbay.d':'Устрой крушение двух бортов в одном боксе.',
+      'ach.crashrw.t':'Лобовое', 'ach.crashrw.d':'Устрой крушение двух бортов на одной ВПП.',
+      'ach.groundto.t':'Терпение лопнуло', 'ach.groundto.d':'Доведи борт до наземного таймаута.',
+      'ach.moneyneg.t':'Минус на табло', 'ach.moneyneg.d':'Уйди в минус по деньгам.',
+      'ach.longshift.t':'Засиделся', 'ach.longshift.d':'Сыграй одну смену дольше 30 минут.',
+      'ach.zoo.t':'Зоопарк в небе', 'ach.zoo.d':'Обслужи обычный, вип и аварийный борт за одну смену.',
     },
   };
   const DEFAULT_LANG = 'en';
@@ -368,8 +550,8 @@
   let windUntil = 0, nextWind = 0;                    // смена ветра (закрытие ВПП)
   let fogUntil = 0, nextFog = 0;                      // туман
   let zen = false;                                    // режим без проигрыша
-  let save = {unlocked:1, best:{}, stars:{}, lang:null};
-  const SAVE_KEY = 'tower_save_v1', VERSION = '0.9';
+  let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}};
+  const SAVE_KEY = 'tower_save_v1', VERSION = '0.10';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -454,6 +636,8 @@
   // ---- game state ----
   let planes=[], money=0, lives=0, served=0, gameTime=0;
   let running=false, paused=false, lastTs=0, spawnTimer=0;
+  let inMenu=true;         // пока открыты меню/уровни/медали — на канвасе сцена-радар, не поле
+  let nowT=0;              // время кадра (мс) для анимаций отрисовки
   let effects=[];          // анимации крушений
   let lossLog=[], toast=null;
   const debug={infiniteLives:false, richStart:false};
@@ -461,7 +645,7 @@
 
   function reset(){
     planes=[]; money=debug.richStart?BIG_MONEY:K.START_MONEY; lives=K.START_LIVES; served=0; gameTime=0;
-    spawnTimer=1.0; running=true; paused=false;
+    spawnTimer=1.0; running=true; paused=false; inMenu=false;
     lossLog=[]; toast=null;
     document.getElementById('pauseScreen').classList.add('hidden');
     document.getElementById('settingsPanel').classList.add('hidden');
@@ -474,6 +658,7 @@
     nextRush = zen?Infinity:K.RUSH_PERIOD;
     nextWind = zen?Infinity:K.WIND_PERIOD;
     nextFog  = zen?Infinity:K.FOG_PERIOD;
+    ACH.onLevelStart();
     toast = zen ? {text:t('toast.zenStart'), t:0, good:true}
                 : {text:t('toast.goal', {desc:objectiveDesc()}), t:0, good:true};
     spawnPlane();
@@ -549,7 +734,7 @@
       const cost=bayUpCost(b);
       if(cost!=null && money>=cost){
         money-=cost;
-        if(!b.open) b.open=true; else b.lvl++;
+        if(!b.open){ b.open=true; ACH.onBayOpen(b); } else { b.lvl++; ACH.onBayUpgrade(b); }
         upgradesDone++;
       }
       return;
@@ -557,7 +742,7 @@
     // plane
     const pl=pickPlane(p);
     if(pl){
-      selected=pl;
+      selected=pl; ACH.onPlaneTouched(pl);
       planes.forEach(x=>x.selected=false); pl.selected=true;
       drag={plane:pl, start:p, last:p, drew:false};
     } else {
@@ -606,6 +791,7 @@
     if(pl.dead) return;
     pl.dead=true; boom(pl.x,pl.y); freeRes(pl);
     combo=0; runCrashes++;          // крушение сбрасывает серию и портит «чистоту»
+    ACH.onCrash(pl, reason);
     if(!debug.infiniteLives) lives--;
     if(moneyPenalty) money-=pl.reward;
     lossLog.push({t:gameTime, reason});
@@ -628,6 +814,7 @@
     pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult;
     pl.groundTime = pl.groundMax;
     pl.landedAt = gameTime;          // для экспресс-бонуса
+    ACH.onLand(pl);
   }
   function serveTimeFor(b){ return K.SERVE_BASE / (1 + b.lvl*K.UP_SPEED); }
   function comboMult(){ return 1 + Math.min(combo, K.COMBO_MAX)*K.COMBO_STEP; }
@@ -644,6 +831,7 @@
       if(express) toast={text:t('toast.express', {money:fmtMoney(pay)}), t:0, good:true};
     }
     money += pay;
+    ACH.onDepart(pl, pay);
     pl.dead=true; freeRes(pl);
   }
   function metricValue(){ return LV.objective.metric==='upgrades' ? upgradesDone : served; }
@@ -707,6 +895,8 @@
     const interval = rush ? K.SPAWN_BASE*0.4 : Math.max(K.SPAWN_MIN, K.SPAWN_BASE - served*0.05);
     if(spawnTimer<=0 && planes.length<K.MAX_PLANES){ spawnPlane(); spawnTimer=interval; }
 
+    ACH.onTick(dt);
+
     for(const pl of planes){
       if(pl.dead) continue;
 
@@ -736,13 +926,13 @@
           continue;
         }
         if(pl.takeoff){
-          if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; } }
+          if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl); } }
           steer(pl, pl.runway.exitX+200, pl.runway.cy, K.SPEED_TAKEOFF, dt);
           if(pl.x > W+30){ depart(pl); }
           continue;
         }
         // стоит на полосе, ждёт руления к боксу
-        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; } }
+        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl); } }
         if(pl.moving && pl.path.length){
           followPath(pl, taxiSpeed, dt);
           if(!rectHit(pl.x,pl.y,pl.runway)){          // съехал с полосы на поле
@@ -755,7 +945,7 @@
 
       // ---- FIELD (руление) ----
       if(pl.zone==='field'){
-        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; } }
+        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl); } }
         const need=curNeed(pl);
         if(pl.moving && pl.path.length){
           followPath(pl, taxiSpeed, dt);
@@ -793,11 +983,11 @@
 
       // ---- BAY (обслуживание) ----
       if(pl.zone==='bay'){
-        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; } }
+        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl); } }
         pl.serveTime-=dt;
         if(pl.serveTime<=0){
           const b=pl.bay; b.occupied=null; pl.bay=null;
-          pl.reqIndex++;
+          pl.reqIndex++; ACH.onService(pl);
           // выезд из бокса на поле
           pl.zone='field';
           const ex = clampX(b.x+b.w/2 + dirOut(b).dx*(b.w*0.6+24*ui));
@@ -858,166 +1048,227 @@
     ctx.arcTo(x,y,x+w,y,r);
     ctx.closePath();
   }
-  function glyph(type, r){ // нарисовать иконку услуги в (0,0), размер r; цвет = текущий fill/stroke
-    ctx.lineCap='round'; ctx.lineJoin='round';
-    if(type==='fuel'){
-      ctx.beginPath();
-      ctx.moveTo(0,-r);
-      ctx.bezierCurveTo(r,-r*0.1, r*0.7,r, 0,r);
-      ctx.bezierCurveTo(-r*0.7,r, -r,-r*0.1, 0,-r);
-      ctx.fill();
-    } else if(type==='board'){
-      ctx.beginPath(); ctx.arc(0,-r*0.45,r*0.36,0,7); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(-r*0.5,r*0.75); ctx.lineTo(-r*0.32,-r*0.02);
-      ctx.lineTo(r*0.32,-r*0.02); ctx.lineTo(r*0.5,r*0.75);
-      ctx.closePath(); ctx.fill();
-    } else if(type==='repair'){
-      ctx.lineWidth=Math.max(2,r*0.26);
-      ctx.beginPath(); ctx.arc(0,0,r*0.5,0,7); ctx.stroke();
-      for(let k=0;k<8;k++){
-        const a=k*Math.PI/4;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(a)*r*0.5, Math.sin(a)*r*0.5);
-        ctx.lineTo(Math.cos(a)*r*0.95, Math.sin(a)*r*0.95);
-        ctx.stroke();
-      }
-    } else if(type==='depart'){
-      // взлетающий самолётик (нос вверх-вправо)
-      ctx.save(); ctx.rotate(-Math.PI/5);
-      const s=r/15;
-      ctx.beginPath();
-      ctx.moveTo(15*s,0); ctx.lineTo(-10*s,8*s); ctx.lineTo(-5*s,1.5*s); ctx.lineTo(-13*s,-1*s);
-      ctx.lineTo(-5*s,-3*s); ctx.lineTo(-10*s,-8*s); ctx.closePath(); ctx.fill();
-      ctx.restore();
+  // ---- облик «ночной радар»: помощники ----
+  const MONO='ui-monospace,"SF Mono",Menlo,Consolas,monospace';
+  function hexa(c,a){ if(!c || c[0]!=='#') return c;
+    const n=parseInt(c.slice(1),16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+
+  function starfield(tm){ // мерцающие звёзды в верхней части неба
+    for(let i=0;i<55;i++){
+      const x=(i*97.13)%W, y=(i*53.7)%(H*0.6);
+      const tw=0.3+0.7*Math.abs(Math.sin(tm*0.0008+i));
+      ctx.fillStyle=hexa(COL.phosphor, 0.05+0.10*tw);
+      ctx.fillRect(x,y,1.5,1.5);
     }
   }
-
-  function drawField(){
-    // трава
-    const g=ctx.createLinearGradient(0,0,W,H);
-    g.addColorStop(0,'#39482a'); g.addColorStop(1,'#28341f');
+  function vignette(){ // мягкое затемнение краёв
+    const g=ctx.createRadialGradient(W/2,H*0.4,H*0.2,W/2,H/2,W*0.7);
+    g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.42)');
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  }
+  function heart(x,y,r,fill){ // жизни в HUD
+    ctx.save(); ctx.translate(x,y); ctx.beginPath(); ctx.moveTo(0,r*0.7);
+    ctx.bezierCurveTo(-r*1.3,-r*0.4,-r*0.5,-r*1.1,0,-r*0.35);
+    ctx.bezierCurveTo(r*0.5,-r*1.1,r*1.3,-r*0.4,0,r*0.7); ctx.closePath();
+    if(fill){ ctx.fillStyle=fill; ctx.shadowColor=hexa(fill,.6); ctx.shadowBlur=7; ctx.fill(); ctx.shadowBlur=0; }
+    else { ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.45); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  // иконки услуг (центр в (cx,cy), размер r)
+  function iconGear(cx,cy,r,col,hole){ ctx.save(); ctx.translate(cx,cy); ctx.fillStyle=col;
+    const teeth=8, ro=r, ri=r*0.74, tw=0.2; ctx.beginPath();
+    for(let i=0;i<teeth;i++){ const a=i/teeth*Math.PI*2, a0=a-tw,a1=a+tw,a2=a+Math.PI/teeth-tw,a3=a+Math.PI/teeth+tw;
+      ctx.lineTo(Math.cos(a0)*ro,Math.sin(a0)*ro); ctx.lineTo(Math.cos(a1)*ro,Math.sin(a1)*ro);
+      ctx.lineTo(Math.cos(a2)*ri,Math.sin(a2)*ri); ctx.lineTo(Math.cos(a3)*ri,Math.sin(a3)*ri); }
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(0,0,r*0.34,0,7); ctx.fillStyle=hole||COL.tarmac; ctx.fill(); ctx.restore(); }
+  function iconDrop(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy-r*0.1); ctx.fillStyle=col;
+    ctx.beginPath(); ctx.moveTo(0,-r); ctx.bezierCurveTo(r*0.9,-r*0.1,r*0.85,r*0.9,0,r);
+    ctx.bezierCurveTo(-r*0.85,r*0.9,-r*0.9,-r*0.1,0,-r); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(-r*0.22,r*0.28,r*0.22,0,7); ctx.fillStyle=hexa('#ffffff',.4); ctx.fill(); ctx.restore(); }
+  function iconPerson(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy); ctx.fillStyle=col;
+    ctx.beginPath(); ctx.arc(0,-r*0.5,r*0.34,0,7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-r*0.62,r*0.9); ctx.quadraticCurveTo(-r*0.6,-r*0.05,0,-r*0.05);
+    ctx.quadraticCurveTo(r*0.6,-r*0.05,r*0.62,r*0.9); ctx.closePath(); ctx.fill(); ctx.restore(); }
+  function iconDepart(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/4);
+    ctx.scale(r/26,r/26); planeShape(col); ctx.restore(); }
+  function drawIcon(type,cx,cy,r,col,hole){
+    if(type==='repair') iconGear(cx,cy,r,col,hole);
+    else if(type==='fuel') iconDrop(cx,cy,r,col);
+    else if(type==='board') iconPerson(cx,cy,r,col);
+    else iconDepart(cx,cy,r,col);
+  }
+
+  // силуэт авиалайнера (нос по курсу, +x; габарит ~48 единиц)
+  function planeShape(col){ ctx.fillStyle=col;
+    ctx.beginPath(); ctx.moveTo(26,0); ctx.quadraticCurveTo(14,-5,-6,-5); ctx.lineTo(-22,-3.5);
+    ctx.lineTo(-22,3.5); ctx.lineTo(-6,5); ctx.quadraticCurveTo(14,5,26,0); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(3,-3); ctx.lineTo(-15,-22); ctx.lineTo(-20,-21); ctx.lineTo(-6,-3); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(3,3); ctx.lineTo(-15,22); ctx.lineTo(-20,21); ctx.lineTo(-6,3); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-16,-2.5); ctx.lineTo(-24,-10); ctx.lineTo(-27,-9.5); ctx.lineTo(-20,-2.5); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-16,2.5); ctx.lineTo(-24,10); ctx.lineTo(-27,9.5); ctx.lineTo(-20,2.5); ctx.closePath(); ctx.fill(); }
+  // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый
+  function drawPlaneBodyAt(x,y,ang,s,vip,emergency){
+    ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
+    ctx.save(); ctx.translate(5,7); ctx.globalAlpha=.28; planeShape('#000'); ctx.restore();
+    if(vip){ ctx.shadowColor=hexa(COL.gold,.6); ctx.shadowBlur=16; }
+    planeShape(vip?COL.gold:(emergency?'#e7d8cf':COL.paper));
+    ctx.shadowBlur=0;
+    ctx.fillStyle=hexa(COL.phosphor,.55); ctx.fillRect(-2,-1.2,18,2.4);
+    ctx.fillStyle=hexa(COL.ink,.5); ctx.beginPath(); ctx.moveTo(26,0); ctx.lineTo(16,-3.2); ctx.lineTo(16,3.2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=hexa(COL.ink,.55);
+    ctx.beginPath(); ctx.arc(-8,-12,2.4,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(-8,12,2.4,0,7); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawField(tm){
+    // ночное небо + звёзды
+    ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
+    starfield(tm);
 
     const ax=field.x0, ay=field.y0, aR=field.rwR, ab=field.y1;
 
-    // вода справа за полосами
+    // вода справа за полосами (медленные волны)
     const wg=ctx.createLinearGradient(aR,0,W,0);
-    wg.addColorStop(0,'#13414a'); wg.addColorStop(1,'#0c2d36');
+    wg.addColorStop(0,COL.water); wg.addColorStop(1,'#0b242c');
     ctx.fillStyle=wg; ctx.fillRect(aR,0,W-aR,H);
-    ctx.strokeStyle='rgba(120,190,200,.10)'; ctx.lineWidth=1.4;
-    for(let i=0;i<5;i++){ const yy=H*(i+1)/6; ctx.beginPath();
-      for(let xx=aR+8; xx<W; xx+=20){ ctx.lineTo(xx, yy+Math.sin((xx+i*40)/26)*3); } ctx.stroke(); }
+    for(let i=0;i<6;i++){
+      const yy=H*(i+1)/7 + Math.sin(tm*0.0015+i)*3;
+      ctx.fillStyle=hexa(COL.phosphor,.05); ctx.fillRect(aR,yy,W-aR,2);
+    }
 
-    // металлическая рама апрона (фаска)
-    const fx=ax-10*ui, fy=ay-10*ui, fw=(aR-ax)+20*ui, fh=(ab-ay)+20*ui;
-    ctx.fillStyle='#5d4a31'; rr(fx,fy,fw,fh,18*ui); ctx.fill();
-    ctx.fillStyle='#7a6342'; rr(fx+4*ui,fy+4*ui,fw-8*ui,fh-8*ui,15*ui); ctx.fill();
+    // металлическая рама апрона с заклёпками
+    const fx=ax-8*ui, fy=ay-8*ui, fw=(aR-ax)+16*ui, fh=(ab-ay)+16*ui;
+    const mg=ctx.createLinearGradient(0,fy,0,fy+fh); mg.addColorStop(0,'#2c3a48'); mg.addColorStop(1,'#1a242f');
+    rr(fx,fy,fw,fh,14*ui); ctx.fillStyle=mg; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(fx,fy,fw,fh,14*ui); ctx.stroke();
+    ctx.fillStyle=hexa(COL.muted,.5);
+    [[fx+6*ui,fy+6*ui],[fx+fw-6*ui,fy+6*ui],[fx+6*ui,fy+fh-6*ui],[fx+fw-6*ui,fy+fh-6*ui]]
+      .forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],2.5*ui,0,7); ctx.fill(); });
 
-    // тармак
-    ctx.fillStyle=COL.tarmac; rr(ax,ay,aR-ax,ab-ay,12*ui); ctx.fill();
-    ctx.save();
-    rr(ax,ay,aR-ax,ab-ay,12*ui); ctx.clip();
-    ctx.strokeStyle='rgba(0,0,0,.12)'; ctx.lineWidth=1;
-    for(let xx=ax+50*ui; xx<aR; xx+=50*ui){ ctx.beginPath(); ctx.moveTo(xx,ay); ctx.lineTo(xx,ab); ctx.stroke(); }
+    // тармак: вертикальный градиент + диагональная штриховка + осевая направляющая
+    const tg=ctx.createLinearGradient(0,ay,0,ab); tg.addColorStop(0,COL['tarmac-2']); tg.addColorStop(1,COL.tarmac);
+    rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.fillStyle=tg; ctx.fill();
+    ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
+    ctx.strokeStyle=hexa(COL.ink,.5); ctx.lineWidth=1;
+    for(let xx=ax-(ab-ay); xx<aR; xx+=30*ui){ ctx.beginPath(); ctx.moveTo(xx,ay); ctx.lineTo(xx+(ab-ay),ab); ctx.stroke(); }
+    ctx.strokeStyle=hexa(COL.gold,.2); ctx.lineWidth=2.5; ctx.setLineDash([12,10]);
+    ctx.beginPath(); ctx.moveTo((ax+field.x1)/2, ay+24*ui); ctx.lineTo((ax+field.x1)/2, ab-24*ui); ctx.stroke(); ctx.setLineDash([]);
     ctx.restore();
 
-    // центральный терминал (декор)
+    // терминал с подсвеченными окнами
     const ix=ax+(field.x1-ax)*0.28, iy=ay+(ab-ay)*0.34;
     const iw=(field.x1-ax)*0.42, ih=(ab-ay)*0.32;
-    ctx.fillStyle=COL['tarmac-2']; rr(ix,iy,iw,ih,10*ui); ctx.fill();
-    ctx.strokeStyle='rgba(191,233,255,.18)'; ctx.lineWidth=1.5; rr(ix,iy,iw,ih,10*ui); ctx.stroke();
-    ctx.fillStyle='rgba(191,233,255,.30)'; ctx.font=`${11*ui}px ui-monospace,monospace`;
+    rr(ix,iy,iw,ih,8*ui); ctx.fillStyle='#26323e'; ctx.fill();
+    ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.15); rr(ix,iy,iw,ih,8*ui); ctx.stroke();
+    const wcols=7, wrows=2, wx0=ix+iw*0.09, wy0=iy+ih*0.14, wxs=(iw*0.86)/wcols, wys=ih*0.30;
+    for(let r2=0;r2<wrows;r2++) for(let c2=0;c2<wcols;c2++){
+      const lit=0.25+0.6*Math.abs(Math.sin(tm*0.001+r2*2+c2));
+      ctx.fillStyle=hexa(COL.phosphor,0.10+0.18*lit);
+      ctx.fillRect(wx0+c2*wxs, wy0+r2*wys, wxs*0.62, wys*0.5);
+    }
+    ctx.fillStyle=hexa(COL.muted,.6); ctx.font=`${9*ui}px ${MONO}`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(t('canvas.terminal'), ix+iw/2, iy+ih/2);
+    ctx.fillText(t('canvas.terminal'), ix+iw/2, iy+ih-9*ui);
   }
 
-  function drawRunways(){
-    for(const r of runways){
-      ctx.fillStyle='#161e26'; rr(r.x,r.y,r.w,r.h,5*ui); ctx.fill();
-      // пороговые полосы (полевой край)
-      ctx.fillStyle='rgba(233,230,220,.5)';
-      const n=4, sh=(r.h-12*ui)/(n*2);
-      for(let k=0;k<n;k++) ctx.fillRect(r.x+6*ui, r.y+6*ui+k*sh*2, 11*ui, sh);
+  function drawRunways(tm){
+    runways.forEach((r,i)=>{
+      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle='#161f29'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
       // осевая пунктирная
-      ctx.strokeStyle=r.occupied?'rgba(244,162,89,.6)':'rgba(233,230,220,.6)';
-      ctx.lineWidth=2; ctx.setLineDash([12,10]);
-      ctx.beginPath(); ctx.moveTo(r.x+24*ui,r.cy); ctx.lineTo(r.x+r.w-8*ui,r.cy); ctx.stroke(); ctx.setLineDash([]);
-      // бортовые огни
-      const lc=r.occupied?COL.amber:COL.phosphor;
-      ctx.fillStyle=lc; ctx.globalAlpha=.7;
-      for(let xx=r.x+12*ui; xx<r.x+r.w-6*ui; xx+=22*ui){
-        ctx.beginPath(); ctx.arc(xx, r.y+3.5*ui, 1.6*ui,0,7); ctx.fill();
-        ctx.beginPath(); ctx.arc(xx, r.y+r.h-3.5*ui, 1.6*ui,0,7); ctx.fill();
+      ctx.strokeStyle=hexa(COL.paper, r.occupied?0.35:0.5);
+      ctx.lineWidth=2.5; ctx.setLineDash([18,15]);
+      ctx.beginPath(); ctx.moveTo(r.x+12*ui,r.cy); ctx.lineTo(r.x+r.w-12*ui,r.cy); ctx.stroke(); ctx.setLineDash([]);
+      // пороговые отметки с обоих торцов
+      ctx.fillStyle=hexa(COL.paper,.4);
+      for(let k=0;k<3;k++){
+        ctx.fillRect(r.x+7*ui, r.cy-14*ui+k*11*ui, 5*ui, 4*ui);
+        ctx.fillRect(r.x+r.w-12*ui, r.cy-14*ui+k*11*ui, 5*ui, 4*ui);
       }
-      ctx.globalAlpha=1;
-      // закрытая полоса (смена ветра): красный оверлей + ✕ + ЗАКРЫТО
+      // огни кромок: золотые / янтарные (занята) / красные (закрыта), мерцают
+      const blink=0.4+0.6*Math.abs(Math.sin(tm*0.004+i));
+      const lc = r.closed?COL.life:(r.occupied?COL.amber:COL.gold);
+      for(let k=0;k<=8;k++){
+        const lx=r.x+9*ui+k*(r.w-18*ui)/8;
+        ctx.fillStyle=hexa(lc,blink);
+        ctx.beginPath(); ctx.arc(lx,r.y+5*ui,2*ui,0,7); ctx.fill();
+        ctx.beginPath(); ctx.arc(lx,r.y+r.h-5*ui,2*ui,0,7); ctx.fill();
+      }
       if(r.closed){
-        ctx.fillStyle='rgba(239,83,101,.18)'; rr(r.x,r.y,r.w,r.h,5*ui); ctx.fill();
-        ctx.strokeStyle=COL.life; ctx.lineWidth=2; ctx.setLineDash([6,5]);
-        rr(r.x+2*ui,r.y+2*ui,r.w-4*ui,r.h-4*ui,5*ui); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle=COL.life; ctx.font=`700 ${Math.min(13,r.h*0.4)*ui}px ui-monospace,monospace`;
+        rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=hexa(COL.life,.16); ctx.fill();
+        const cx=r.x+r.w/2, s=Math.min(r.w,r.h)*0.16;
+        ctx.strokeStyle=hexa(COL.life,.8); ctx.lineWidth=3.5; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(cx-s,r.cy-s); ctx.lineTo(cx+s,r.cy+s);
+        ctx.moveTo(cx+s,r.cy-s); ctx.lineTo(cx-s,r.cy+s); ctx.stroke();
+        ctx.fillStyle=hexa(COL.life,.85); ctx.font=`${10*ui}px ${MONO}`;
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(t('canvas.closed'), r.x+r.w/2, r.cy);
+        ctx.fillText(t('canvas.closed'), cx, r.y+r.h-12*ui);
+      } else {
+        ctx.fillStyle=hexa(COL.muted,.7); ctx.font=`${9*ui}px ${MONO}`;
+        ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.fillText(t('canvas.rwy',{n:'0'+(i+1)}), r.x+12*ui, r.y+12*ui);
       }
-    }
+    });
   }
 
   function drawBay(b){
-    const c=SVC[b.type].color;
+    const col=SVC[b.type].color;
+    const busy=!!b.occupied;
     ctx.save();
-    // металлическая рама
-    ctx.fillStyle='#3b3020'; rr(b.x-3*ui,b.y-3*ui,b.w+6*ui,b.h+6*ui,9*ui); ctx.fill();
-    ctx.strokeStyle='#7a6342'; ctx.lineWidth=2*ui; rr(b.x-3*ui,b.y-3*ui,b.w+6*ui,b.h+6*ui,9*ui); ctx.stroke();
-
     if(!b.open){
       const enough = money>=K.BAY_OPEN_COST;
-      ctx.fillStyle='#241d14'; rr(b.x,b.y,b.w,b.h,7*ui); ctx.fill();
-      // замок
-      const lx=b.x+b.w/2, ly=b.y+b.h/2-2*ui;
-      ctx.fillStyle = enough?COL.coin:COL.muted;
-      ctx.fillRect(lx-7*ui, ly, 14*ui, 11*ui);
-      ctx.lineWidth=2.4*ui; ctx.strokeStyle = enough?COL.coin:COL.muted;
-      ctx.beginPath(); ctx.arc(lx, ly, 5*ui, Math.PI, 2*Math.PI); ctx.stroke();
-      // приглушённая иконка типа
-      ctx.globalAlpha=0.35; ctx.fillStyle=c; ctx.strokeStyle=c;
-      ctx.save(); ctx.translate(b.x+b.w/2, b.y+11*ui); glyph(b.type, 7*ui); ctx.restore();
-      ctx.globalAlpha=1;
-      // цена
-      ctx.fillStyle = enough?COL.coin:COL.muted; ctx.font=`${10*ui}px ui-monospace,monospace`;
-      ctx.textAlign='center'; ctx.textBaseline='top';
-      ctx.fillText(fmtMoney(K.BAY_OPEN_COST), b.x+b.w/2, b.y+b.h+4*ui);
+      rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle='#161d25'; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.muted,.25); rr(b.x,b.y,b.w,b.h,9*ui); ctx.stroke();
+      // приглушённая иконка типа + замок
+      ctx.globalAlpha=.35; drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.28, 8*ui, COL.muted, '#161d25'); ctx.globalAlpha=1;
+      const lx=b.x+b.w/2, ly=b.y+b.h*0.52;
+      ctx.fillStyle=hexa(COL.muted,.8); rr(lx-7*ui,ly-4*ui,14*ui,11*ui,2.5*ui); ctx.fill();
+      ctx.beginPath(); ctx.arc(lx,ly-4*ui,5*ui,Math.PI,0);
+      ctx.lineWidth=2*ui; ctx.strokeStyle=hexa(COL.muted,.8); ctx.stroke();
+      // ценник-чип
+      const chW=Math.min(b.w-10*ui,56*ui);
+      rr(b.x+b.w/2-chW/2, b.y+b.h-19*ui, chW, 14*ui, 7*ui);
+      ctx.fillStyle=hexa(COL.gold, enough?.16:.07); ctx.fill();
+      ctx.fillStyle=enough?COL.coin:COL.muted; ctx.font=`${9*ui}px ${MONO}`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(fmtMoney(K.BAY_OPEN_COST), b.x+b.w/2, b.y+b.h-12*ui);
       ctx.restore(); return;
     }
 
-    // открытый бокс
-    ctx.fillStyle=COL.tarmac; rr(b.x,b.y,b.w,b.h,7*ui); ctx.fill();
-    ctx.globalAlpha=0.18; ctx.fillStyle=c; rr(b.x,b.y,b.w,b.h,7*ui); ctx.fill(); ctx.globalAlpha=1;
-    ctx.strokeStyle=c; ctx.lineWidth=2; rr(b.x,b.y,b.w,b.h,7*ui); ctx.stroke();
-    // иконка услуги
-    ctx.fillStyle=c; ctx.strokeStyle=c;
-    ctx.save(); ctx.translate(b.x+b.w/2, b.y+b.h*0.40); glyph(b.type, 13*ui); ctx.restore();
-    // прогресс обслуживания
-    if(b.occupied){
-      const p=b.occupied;
-      const frac=1-Math.max(0,p.serveTime)/p.serveMax;
-      ctx.strokeStyle=c; ctx.lineWidth=3*ui;
-      ctx.beginPath();
-      ctx.arc(b.x+b.w/2, b.y+b.h*0.40, 18*ui, -Math.PI/2, -Math.PI/2+frac*Math.PI*2);
-      ctx.stroke();
-    }
-    // пипсы апгрейда
-    const pip=5*ui, gap=4*ui, total=K.BAY_MAX_LVL;
+    // открытый бокс: тёмная карточка, рамка цвета услуги (ярче и со свечением, когда занят)
+    rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle='#202c38'; ctx.fill();
+    ctx.lineWidth=2;
+    if(busy){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=12; }
+    ctx.strokeStyle=hexa(col, busy?0.9:0.45); rr(b.x,b.y,b.w,b.h,9*ui); ctx.stroke(); ctx.shadowBlur=0;
+    drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 12*ui, col, '#202c38');
+    // подпись услуги
+    ctx.fillStyle=hexa(col,.85); ctx.font=`${8*ui}px ${MONO}`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(t('svc.'+b.type).toUpperCase(), b.x+b.w/2, b.y+b.h-18*ui);
+    // пипсы уровня
+    const total=K.BAY_MAX_LVL, pip=5.2*ui, gap=4.5*ui;
     const startX=b.x+b.w/2-(total*(pip+gap)-gap)/2;
     for(let i=0;i<total;i++){
-      ctx.fillStyle = i<b.lvl ? c : 'rgba(127,155,176,.35)';
-      ctx.beginPath(); ctx.arc(startX+i*(pip+gap)+pip/2, b.y+b.h-7*ui, pip/2, 0,7); ctx.fill();
+      ctx.fillStyle = i<b.lvl ? col : hexa(COL.muted,.18);
+      ctx.beginPath(); ctx.arc(startX+i*(pip+gap)+pip/2, b.y+b.h-8*ui, pip/2, 0,7); ctx.fill();
     }
-    // подсказка цены апгрейда (зелёным если хватает)
+    // прогресс обслуживания — кружок в правом верхнем углу
+    if(busy){
+      const p=b.occupied, frac=1-Math.max(0,p.serveTime)/p.serveMax;
+      const ccx=b.x+b.w-12*ui, ccy=b.y+12*ui;
+      ctx.beginPath(); ctx.arc(ccx,ccy,7*ui,0,7); ctx.lineWidth=2.5*ui; ctx.strokeStyle=hexa(COL.ink,.6); ctx.stroke();
+      ctx.beginPath(); ctx.arc(ccx,ccy,7*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
+      ctx.lineWidth=2.5*ui; ctx.lineCap='round'; ctx.strokeStyle=col; ctx.stroke();
+    }
+    // подсказка цены апгрейда (жёлтым, если хватает)
     const up=bayUpCost(b);
     if(up!=null){
       const enough = money>=up;
-      ctx.fillStyle = enough?COL.coin:COL.muted; ctx.font=`${9.5*ui}px ui-monospace,monospace`;
+      ctx.fillStyle = enough?COL.coin:COL.muted; ctx.font=`${9*ui}px ${MONO}`;
       ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText('↑ '+fmtMoney(up), b.x+b.w/2, b.y+b.h+4*ui);
     }
@@ -1027,135 +1278,144 @@
   function drawPlane(pl){
     const need=curNeed(pl);
     const ncol=SVC[need].color;
-    const body=pl.vip?COL.gold:COL.paper;
 
-    // committed path
+    // маршрут — фосфорная пунктирная с «бегущими» штрихами
     if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
       ctx.save();
-      ctx.strokeStyle=pl.selected?ncol:'rgba(191,233,255,.5)';
-      ctx.globalAlpha=pl.selected?0.95:0.5; ctx.lineWidth=2;
+      ctx.strokeStyle=hexa(COL.phosphor, pl.selected?0.85:0.45);
+      ctx.lineWidth=2.5; ctx.setLineDash([9,11]); ctx.lineDashOffset=-nowT*0.05;
+      if(pl.selected){ ctx.shadowColor=hexa(COL.phosphor,.7); ctx.shadowBlur=10; }
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
       for(const w of pl.path) ctx.lineTo(w.x,w.y);
       ctx.stroke(); ctx.restore();
     }
 
-    // patience ring (воздух/земля)
+    // кольцо терпения: бирюза → янтарь → красный (аварийный всегда красный)
     let frac=null;
     if(pl.zone==='air') frac=Math.max(0,pl.airTime)/pl.airMax;
     else if(pl.zone!=='bay') frac=Math.max(0,pl.groundTime)/Math.max(1,pl.groundMax);
     if(frac!=null){
+      const rcol = pl.emergency ? COL.life : (frac>0.5 ? COL.teal : frac>0.25 ? COL.amber : COL.life);
       ctx.save(); ctx.translate(pl.x,pl.y);
-      ctx.strokeStyle = frac<0.3 ? COL.life : ncol;
-      ctx.globalAlpha=0.7; ctx.lineWidth=2.5*ui;
-      ctx.beginPath(); ctx.arc(0,0,15*ui, -Math.PI/2, -Math.PI/2+frac*Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,16*ui,0,7); ctx.lineWidth=3; ctx.strokeStyle=hexa(COL.ink,.6); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,16*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
+      ctx.lineWidth=3; ctx.lineCap='round'; ctx.strokeStyle=rcol;
+      ctx.shadowColor=rcol; ctx.shadowBlur=9; ctx.stroke();
       ctx.restore();
     }
+    // пульсирующее кольцо аварийного борта в воздухе
+    if(pl.emergency && pl.zone==='air'){
+      const p=0.5+0.5*Math.sin(nowT*0.006);
+      ctx.beginPath(); ctx.arc(pl.x,pl.y,20*ui+p*3*ui,0,7);
+      ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.life,.4+.4*p); ctx.stroke();
+    }
+    // выделение — пунктирное кольцо
+    if(pl.selected){
+      ctx.save(); ctx.beginPath(); ctx.arc(pl.x,pl.y,K.GRAB*0.5,0,7);
+      ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([4,5]); ctx.stroke(); ctx.restore();
+    }
 
-    // body
-    ctx.save();
-    ctx.translate(pl.x,pl.y); ctx.rotate(pl.ang);
-    if(pl.selected){ ctx.beginPath(); ctx.arc(0,0,K.GRAB*0.5,0,7); ctx.strokeStyle=ncol; ctx.globalAlpha=.5; ctx.lineWidth=1.5; ctx.stroke(); ctx.globalAlpha=1; }
-    ctx.shadowColor=body; ctx.shadowBlur=8; ctx.fillStyle=body;
-    // силуэт авиалайнера (нос по курсу, +x)
-    const s=ui*0.62;
-    ctx.beginPath();
-    ctx.moveTo(20*s,0);
-    ctx.lineTo(4*s,5*s); ctx.lineTo(2*s,16*s); ctx.lineTo(-3*s,16*s); ctx.lineTo(-2*s,5*s);
-    ctx.lineTo(-10*s,3*s); ctx.lineTo(-10*s,-3*s); ctx.lineTo(-2*s,-5*s);
-    ctx.lineTo(-3*s,-16*s); ctx.lineTo(2*s,-16*s); ctx.lineTo(4*s,-5*s);
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
+    drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5, pl.vip, pl.emergency);
 
     // иконка текущей нужды над бортом
-    if(pl.zone!=='bay'){
-      ctx.save(); ctx.translate(pl.x, pl.y-24*ui);
-      ctx.fillStyle=ncol; ctx.strokeStyle=ncol; glyph(need, 6.5*ui);
-      ctx.restore();
-    }
+    if(pl.zone!=='bay') drawIcon(need, pl.x, pl.y-26*ui, 6.5*ui, ncol, COL.ink);
   }
 
   function drawHUD(){
     const hud=HUD_H();
-    ctx.fillStyle='rgba(10,22,34,.82)'; ctx.fillRect(0,0,W,hud);
-    ctx.strokeStyle='rgba(127,155,176,.2)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(0,hud); ctx.lineTo(W,hud); ctx.stroke();
-
-    // жизни (сердца)
-    ctx.textBaseline='middle';
-    for(let i=0;i<K.START_LIVES;i++){
-      ctx.fillStyle = i<lives ? COL.life : 'rgba(239,83,101,.22)';
-      const hx=14*ui+i*20*ui, hy=hud/2;
-      ctx.font=`${16*ui}px ui-monospace,monospace`; ctx.textAlign='left';
-      ctx.fillText('♥', hx, hy);
-    }
+    // плавающая панель
+    rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui);
+    ctx.fillStyle='rgba(13,28,43,.85)'; ctx.fill();
+    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui); ctx.stroke();
+    const cy=hud/2;
+    // жизни-сердечки
+    for(let i=0;i<K.START_LIVES;i++) heart(28*ui+i*20*ui, cy, 6.5*ui, i<lives?COL.life:null);
     // таймер (обратный отсчёт для уровней на время)
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
-    ctx.fillStyle = (LV.objective.time && tShown<=10) ? COL.life : COL.phosphor;
-    ctx.font=`${15*ui}px ui-monospace,monospace`; ctx.textAlign='center';
-    ctx.fillText(fmtTime(tShown), W*0.42, hud/2);
-    // деньги
-    ctx.fillStyle=money<0?COL.life:COL.coin; ctx.textAlign='right';
-    ctx.font=`600 ${16*ui}px ui-monospace,monospace`;
-    ctx.fillText(fmtMoney(money), W - 56*ui, hud/2);
-    // принято
+    const urgent = LV.objective.time && tShown<=10;
+    ctx.textBaseline='middle'; ctx.textAlign='left';
+    ctx.fillStyle=hexa(COL.phosphor,.9); ctx.font=`${13*ui}px ${MONO}`;
+    ctx.fillText('◷', 96*ui, cy);
+    ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`${14*ui}px ${MONO}`;
+    ctx.fillText(fmtTime(tShown), 112*ui, cy);
+    // деньги — по центру, с лёгким золотым свечением
+    ctx.textAlign='center'; ctx.font=`600 ${15*ui}px ${MONO}`;
+    ctx.fillStyle=money<0?COL.life:COL.coin;
+    ctx.shadowColor=hexa(COL.gold,.45); ctx.shadowBlur=10*ui;
+    ctx.fillText(fmtMoney(money), W*0.46, cy); ctx.shadowBlur=0;
+    // прогресс цели: подпись + значение
     const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
-    ctx.fillStyle=COL.coin; ctx.font=`${12*ui}px ui-monospace,monospace`; ctx.textAlign='center';
+    ctx.textAlign='left';
+    ctx.fillStyle=COL.muted; ctx.font=`${7.5*ui}px ${MONO}`;
+    ctx.fillText(t('hud.served'), W*0.58, cy-7*ui);
     let prog = zen ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target));
     if(combo>1) prog += '   '+t('hud.combo', {x:fmtNum(comboMult(),1)});
-    ctx.fillText(prog, W*0.62, hud/2);
-    // название режима/уровня (угол)
-    ctx.fillStyle='rgba(127,155,176,.7)'; ctx.font=`${11*ui}px ui-monospace,monospace`;
-    ctx.textAlign='right'; ctx.textBaseline='bottom';
-    ctx.fillText(zen?t('mode.zen'):t('level.name',{n:levelIdx+1}), W-12*ui, H-8*ui);
-    ctx.textBaseline='middle';
+    ctx.fillStyle=COL.phosphor; ctx.font=`${12.5*ui}px ${MONO}`;
+    ctx.fillText(prog, W*0.58, cy+6*ui);
+    // уровень/режим — справа перед паузой
+    ctx.textAlign='right'; ctx.fillStyle=hexa(COL.muted,.7); ctx.font=`${9.5*ui}px ${MONO}`;
+    ctx.fillText(zen?t('mode.zen'):t('level.name',{n:levelIdx+1}), pauseBtn.x-12*ui, cy);
 
-    // pause button
-    ctx.strokeStyle=COL.phosphor; ctx.lineWidth=1.5; ctx.globalAlpha=.9;
-    rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,4*ui); ctx.stroke();
-    ctx.fillStyle=COL.phosphor;
-    const cx=pauseBtn.x+pauseBtn.w/2, cy=pauseBtn.y+pauseBtn.h/2;
+    // кнопка паузы — скруглённая карточка
+    rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui);
+    ctx.fillStyle='rgba(127,155,176,.06)'; ctx.fill();
+    ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.4);
+    rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui); ctx.stroke();
+    ctx.fillStyle=COL.paper;
+    const pcx=pauseBtn.x+pauseBtn.w/2, pcy=pauseBtn.y+pauseBtn.h/2;
     if(!paused){
-      ctx.fillRect(cx-6*ui,cy-7*ui,4*ui,14*ui);
-      ctx.fillRect(cx+2*ui,cy-7*ui,4*ui,14*ui);
+      ctx.fillRect(pcx-6*ui,pcy-6*ui,4*ui,12*ui);
+      ctx.fillRect(pcx+2*ui,pcy-6*ui,4*ui,12*ui);
     } else {
-      ctx.beginPath(); ctx.moveTo(cx-5*ui,cy-7*ui); ctx.lineTo(cx+7*ui,cy); ctx.lineTo(cx-5*ui,cy+7*ui); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(pcx-5*ui,pcy-6*ui); ctx.lineTo(pcx+7*ui,pcy); ctx.lineTo(pcx-5*ui,pcy+6*ui); ctx.closePath(); ctx.fill();
     }
-    ctx.globalAlpha=1;
 
-    // цепочка операций выбранного борта (слева сверху, под HUD)
+    // цепочка операций выбранного борта — карточка под HUD
     if(selected && !selected.dead){
-      const chain=selected.requests;
-      const cy2=hud+18*ui; let cx2=18*ui;
-      ctx.fillStyle=COL.muted; ctx.font=`${9*ui}px ui-monospace,monospace`;
-      ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillText(selected.vip?t('hud.vip'):t('hud.plane'), cx2, cy2-14*ui);
-      for(let i=0;i<chain.length;i++){
+      const chain=selected.requests, n=chain.length;
+      const bw2=30*ui, gap2=16*ui, x0=14*ui, y0=hud+10*ui;
+      const pw=n*bw2+(n-1)*gap2+16*ui;
+      rr(x0,y0,pw,44*ui,9*ui); ctx.fillStyle='rgba(13,28,43,.72)'; ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(x0,y0,pw,44*ui,9*ui); ctx.stroke();
+      const tag = selected.vip ? (t('hud.plane')+' · '+t('hud.vip'))
+                : selected.emergency ? (t('hud.plane')+' '+t('hud.sos'))
+                : t('hud.plane');
+      ctx.fillStyle = selected.emergency?COL.life:hexa(COL.muted,.8);
+      ctx.font=`${7.5*ui}px ${MONO}`; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText(tag, x0+8*ui, y0+8*ui);
+      for(let i=0;i<n;i++){
         const ty=chain[i], c=SVC[ty].color;   // ty, не t — не затенять t() из i18n
-        ctx.globalAlpha = i<selected.reqIndex ? 0.3 : (i===selected.reqIndex?1:0.7);
-        ctx.fillStyle=c; ctx.strokeStyle=c;
-        ctx.save(); ctx.translate(cx2+9*ui, cy2+4*ui); glyph(ty, 8*ui); ctx.restore();
-        if(i===selected.reqIndex){
-          ctx.globalAlpha=1; ctx.strokeStyle=c; ctx.lineWidth=1.5;
-          ctx.beginPath(); ctx.arc(cx2+9*ui, cy2+4*ui, 13*ui,0,7); ctx.stroke();
+        const bx=x0+8*ui+i*(bw2+gap2), bcy=y0+26*ui;
+        if(i>0){
+          ctx.strokeStyle=hexa(COL.muted,.4); ctx.lineWidth=2; ctx.setLineDash([3,4]);
+          ctx.beginPath(); ctx.moveTo(bx-gap2+3*ui,bcy); ctx.lineTo(bx-3*ui,bcy); ctx.stroke(); ctx.setLineDash([]);
         }
-        cx2+=26*ui;
+        const active = i===selected.reqIndex;
+        ctx.globalAlpha = i<selected.reqIndex ? 0.3 : 1;
+        rr(bx,y0+15*ui,bw2,22*ui,6*ui);
+        ctx.fillStyle=active?hexa(c,.16):'rgba(127,155,176,.05)'; ctx.fill();
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(c,active?.9:.4);
+        rr(bx,y0+15*ui,bw2,22*ui,6*ui); ctx.stroke();
+        drawIcon(ty, bx+bw2/2, bcy, 8*ui, c, '#0f1d2b');
+        ctx.globalAlpha=1;
       }
-      ctx.globalAlpha=1;
     }
   }
 
   function fmtTime(s){ const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(Math.floor(s%60)).padStart(2,'0'); return m+':'+ss; }
   function drawToast(){
     const a = toast.t<2.0 ? 1 : (2.4-toast.t)/0.4;
-    ctx.save(); ctx.globalAlpha=Math.max(0,a);
-    ctx.font=`${13*ui}px ui-monospace,monospace`;
-    const w=ctx.measureText(toast.text).width+28*ui, h=26*ui;
-    const x=W/2-w/2, y=HUD_H()+10*ui;
     const col = toast.good?COL.coin:COL.life;
-    ctx.fillStyle='rgba(16,18,22,.9)'; rr(x,y,w,h,6*ui); ctx.fill();
-    ctx.strokeStyle=col; ctx.lineWidth=1.5; rr(x,y,w,h,6*ui); ctx.stroke();
-    ctx.fillStyle=col; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(toast.text, W/2, y+h/2);
+    ctx.save(); ctx.globalAlpha=Math.max(0,a);
+    ctx.font=`${12*ui}px ${MONO}`;
+    const w=ctx.measureText(toast.text).width+44*ui, h=24*ui;
+    const x=W/2-w/2, y=HUD_H()+12*ui;
+    rr(x,y,w,h,12*ui); ctx.fillStyle='rgba(10,22,34,.92)'; ctx.fill();
+    ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.7);
+    ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=10; rr(x,y,w,h,12*ui); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.beginPath(); ctx.arc(x+13*ui,y+h/2,3.5*ui,0,7); ctx.fillStyle=col; ctx.fill();
+    ctx.fillStyle=COL.paper; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(toast.text, x+26*ui, y+h/2);
     ctx.restore();
   }
   function boom(x,y){ effects.push({x,y,t:0,life:0.55}); }
@@ -1164,64 +1424,111 @@
       const e=effects[i]; e.t+=dt;
       const k=e.t/e.life;
       if(k>=1){ effects.splice(i,1); continue; }
-      const R=10*ui + k*36*ui;
+      const a=1-k;
       ctx.save(); ctx.translate(e.x,e.y);
       // ударная волна
-      ctx.globalAlpha=(1-k)*0.9; ctx.strokeStyle=COL.amber; ctx.lineWidth=3*ui;
-      ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.stroke();
-      ctx.strokeStyle=COL.rose; ctx.lineWidth=1.5*ui;
-      ctx.beginPath(); ctx.arc(0,0,R*0.6,0,7); ctx.stroke();
-      // искры
-      ctx.globalAlpha=(1-k)*0.85; ctx.strokeStyle=COL.amber; ctx.lineWidth=2*ui;
-      for(let s=0;s<8;s++){ const a=s*Math.PI/4;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(a)*R*0.5, Math.sin(a)*R*0.5);
-        ctx.lineTo(Math.cos(a)*R, Math.sin(a)*R); ctx.stroke(); }
-      // центральная вспышка в начале
-      if(k<0.45){ ctx.globalAlpha=(0.45-k)/0.45; ctx.fillStyle=COL.paper;
-        ctx.beginPath(); ctx.arc(0,0,9*ui*(1-k),0,7); ctx.fill(); }
+      ctx.beginPath(); ctx.arc(0,0,(6+k*44)*ui,0,7);
+      ctx.lineWidth=3*a+0.5; ctx.strokeStyle=hexa(COL.life,.6*a); ctx.stroke();
+      // разлетающиеся искры
+      for(let s2=0;s2<8;s2++){
+        const ang=s2/8*Math.PI*2, d=(10+k*40)*ui;
+        ctx.fillStyle=hexa(s2%2?COL.amber:COL.gold, a);
+        ctx.beginPath(); ctx.arc(Math.cos(ang)*d,Math.sin(ang)*d,(2.5*a+1)*ui,0,7); ctx.fill();
+      }
+      // вспышка в центре
+      ctx.beginPath(); ctx.arc(0,0,8*(1-k)*ui,0,7); ctx.fillStyle=hexa('#ffffff',.7*a); ctx.fill();
       ctx.restore();
     }
     ctx.globalAlpha=1;
+  }
+
+  // сцена главного меню: радар с разверткой, дрейфующий борт, свечение горизонта
+  function drawMenuScene(tm){
+    ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
+    starfield(tm);
+    const rx=W*0.74, ry=H*0.52, R=Math.min(W,H)*0.42;
+    ctx.save(); ctx.translate(rx,ry);
+    for(let i=1;i<=4;i++){ ctx.beginPath(); ctx.arc(0,0,R*i/4,0,7);
+      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.08+i*0.01); ctx.stroke(); }
+    ctx.strokeStyle=hexa(COL.phosphor,.07); ctx.lineWidth=1;
+    for(let i=0;i<8;i++){ const a=i*Math.PI/4;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*R,Math.sin(a)*R); ctx.stroke(); }
+    ctx.save(); ctx.rotate(tm*0.0013);
+    const grad=ctx.createLinearGradient(0,0,R,0);
+    grad.addColorStop(0,hexa(COL.phosphor,.28)); grad.addColorStop(1,hexa(COL.phosphor,0));
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R,-0.5,0); ctx.closePath();
+    ctx.fillStyle=grad; ctx.fill(); ctx.restore();
+    [[0.55,1.1],[0.8,3.0],[0.35,4.6],[0.62,5.6]].forEach((b2,i)=>{
+      const x=Math.cos(b2[1])*R*b2[0], y=Math.sin(b2[1])*R*b2[0];
+      const f=0.4+0.6*Math.abs(Math.sin(tm*0.002+i));
+      ctx.fillStyle=hexa(COL.phosphor,f); ctx.beginPath(); ctx.arc(x,y,2.5,0,7); ctx.fill();
+    });
+    ctx.restore();
+    // дрейфующий борт по небу
+    const px=((tm*0.025)%(W+240))-120, py=H*0.24+Math.sin(tm*0.0008)*14;
+    drawPlaneBodyAt(px,py,Math.sin(tm*0.0008)*0.06,ui*0.6,false,false);
+    // бирюзовое свечение горизонта
+    const hg=ctx.createLinearGradient(0,H-120*ui,0,H);
+    hg.addColorStop(0,'rgba(16,48,58,0)'); hg.addColorStop(1,hexa(COL.teal,.10));
+    ctx.fillStyle=hg; ctx.fillRect(0,H-120*ui,W,120*ui);
+    vignette();
   }
 
   function frame(ts){
     if(!lastTs)lastTs=ts;
     let dt=(ts-lastTs)/1000; lastTs=ts;
     if(dt>0.05)dt=0.05;
+    nowT=ts;
     if(running && !paused) update(dt);
 
-    drawField();
-    drawRunways();
-    bays.forEach(drawBay);
-    planes.forEach(p=>{ if(!p.dead) drawPlane(p); });
-    drawEffects(dt);
-    drawHUD();
-
-    if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
+    if(inMenu){
+      drawMenuScene(ts);
+    } else {
+      drawField(ts);
+      drawRunways(ts);
+      bays.forEach(drawBay);
+      planes.forEach(p=>{ if(!p.dead) drawPlane(p); });
+      drawEffects(dt);
+      vignette();
+      drawHUD();
+      if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
+    }
     requestAnimationFrame(frame);
   }
 
   function endLevel(reasonKey){          // reasonKey — ключ i18n (end.*)
     running=false; recordResult();
     const stars=computeStars(), v=metricValue(), passed=stars>=1;
+    ACH.onLevelEnd(passed, stars, lives>=K.START_LIVES);
     document.getElementById('overKicker').textContent = t(passed?'over.passed':'over.failed');
     document.getElementById('finalStars').textContent = '★'.repeat(stars)+'☆'.repeat(3-stars);
     const unit = t(LV.objective.metric==='upgrades'?'unit.upgrades':'unit.planes', {n:v});
     document.getElementById('overMsg').textContent =
       t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
+    // карточка статистики смены
+    const statsBox=document.getElementById('overStats'); statsBox.innerHTML='';
+    [[LV.objective.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), fmtNum(v)+' / '+fmtNum(LV.objective.target), 'v-phos'],
+     [t('stats.money'), fmtMoney(money), 'v-gold'],
+     [t('stats.lives'), '♥ '+fmtNum(Math.max(0,lives))+' / '+fmtNum(K.START_LIVES), 'v-life'],
+     [t('stats.time'), fmtTime(gameTime), 'v-teal']
+    ].forEach(s2=>{
+      const d=document.createElement('div'); d.className='stat';
+      d.innerHTML=`<div class="label">${s2[0]}</div><div class="val ${s2[2]}">${s2[1]}</div>`;
+      statsBox.appendChild(d);
+    });
     const hasNext = levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
     document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
     document.getElementById('overScreen').classList.remove('hidden');
   }
 
   // ---- меню / уровни / сохранение ----
-  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang])?s.lang:null; } }catch(e){} }
+  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; } }catch(e){} }
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
-  function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang}; saveGame(); renderLevels(); }  // язык — не прогресс, сохраняем
+  // язык и медали (ach/stats) — не прогресс уровней, сохраняем при сбросе
+  function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{}}; saveGame(); renderLevels(); }
   function buildLevel(idx){ levelIdx=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
-  function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
-  function showLevels(){ renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
+  function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel','medalScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
+  function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
   function startLevel(idx){ zen=false; buildLevel(idx); hideAllScreens(); reset(); }
   function startZen(){ zen=true; buildLevel(0); hideAllScreens(); reset(); }
   function renderLevels(){
@@ -1229,9 +1536,13 @@
     LEVELS.forEach((lv,i)=>{
       const unlocked = i < save.unlocked, stars=save.stars[i]||0;
       const b=document.createElement('button');
-      b.className='levelbtn'+(unlocked?'':' locked');
-      const starStr = unlocked ? ('★'.repeat(stars)+'☆'.repeat(3-stars)) : '🔒';
-      b.innerHTML=`<span class="lvname">${t('level.name',{n:i+1})}</span><span class="lvbest">${starStr}</span>`;
+      b.className='levelcard'+(unlocked?'':' locked');
+      const starsHtml = unlocked
+        ? ('★'.repeat(stars)+'☆'.repeat(3-stars))
+        : ('🔒 '+t('levels.locked'));
+      b.innerHTML=`<div class="lvkick">${t('levels.shift')}</div>`+
+        `<div class="lvnum">${String(i+1).padStart(2,'0')}</div>`+
+        `<div class="lvstars">${starsHtml}</div>`;
       if(unlocked) b.onclick=()=>startLevel(i);
       list.appendChild(b);
     });
@@ -1247,6 +1558,7 @@
 
   function setPaused(p){
     paused=p;
+    if(p) ACH.onPause();
     document.getElementById('pauseScreen').classList.toggle('hidden', !p);
     if(!p) document.getElementById('settingsPanel').classList.add('hidden');
     else refreshLog();
@@ -1267,7 +1579,226 @@
   document.getElementById('optLives').onchange=e=>{ debug.infiniteLives=e.target.checked; };
   document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; };
 
+  // ================= ДОСТИЖЕНИЯ / МЕДАЛИ =================
+  // Самодостаточный модуль: ловит игровые события через ACH.onX(...), копит
+  // прогресс в save.ach (список открытых) и save.stats (накопительные счётчики).
+  // ⏳ pending:true — медали под фичи, которых пока нет (бесконечный режим, Daily) —
+  // крючки есть, но в текущих уровнях не срабатывают и не нужны для «Легенды».
+  const ACH = (() => {
+    const S = { ach:[], stats:{landed:0,services:0,departed:0,earned:0,vip:0,noCrashStreak:0,perfect:0} };
+    let unlocked = new Set();
+    let run = null;
+    function newRun(){ run = {landed:0,services:0,departed:0,opens:0,upgrades:0,peakAir:0,
+      landTimes:[], types:new Set(), debug:false, time:0}; }
+    newRun();
+
+    const defs = [
+      // --- Тир 1: лайтовые ---
+      {id:'land1',   tier:1, ic:'🛬'},
+      {id:'svc1',    tier:1, ic:'🧰'},
+      {id:'takeoff1',tier:1, ic:'🛫'},
+      {id:'money1',  tier:1, ic:'🪙'},
+      {id:'bayopen1',tier:1, ic:'🏗️'},
+      {id:'upg1',    tier:1, ic:'⬆️'},
+      {id:'pause',   tier:1, ic:'⏸️'},
+      {id:'level1',  tier:1, ic:'✅'},
+      {id:'vip1',    tier:1, ic:'💛'},
+      {id:'land10',  tier:1, ic:'🎓', prog:S=>[S.landed,10]},
+      // --- Тир 2: обычные ---
+      {id:'land100', tier:2, ic:'🌊', prog:S=>[S.landed,100]},
+      {id:'svc100',  tier:2, ic:'🔧', prog:S=>[S.services,100]},
+      {id:'earn1000',tier:2, ic:'💵', prog:S=>[S.earned,1000]},
+      {id:'fullchain',tier:2,ic:'🎯'},
+      {id:'nopenalty',tier:2,ic:'🧊'},
+      {id:'nolife',  tier:2, ic:'❤️'},
+      {id:'air5',    tier:2, ic:'🛫'},
+      {id:'star3',   tier:2, ic:'🌟'},
+      {id:'vip25',   tier:2, ic:'💼', prog:S=>[S.vip,25]},
+      {id:'baymax',  tier:2, ic:'🛠️'},
+      // --- Тир 3: сложные ---
+      {id:'nocrash', tier:3, ic:'☁️'},
+      {id:'perfect', tier:3, ic:'💎'},
+      {id:'air8',    tier:3, ic:'🤹'},
+      {id:'speed20', tier:3, ic:'⚡'},
+      {id:'minimalist',tier:3,ic:'🪨'},
+      {id:'millionaire',tier:3,ic:'💰', prog:S=>[S.earned,1000000]},
+      {id:'combo10', tier:3, ic:'🔥'},
+      {id:'marathon',tier:3, ic:'🏃', pending:true},
+      // --- Тир 4: задротские ---
+      {id:'streak1000',tier:4,ic:'🧠', prog:S=>[S.noCrashStreak,1000]},
+      {id:'land10000',tier:4,ic:'🎖️', prog:S=>[S.landed,10000]},
+      {id:'all3star',tier:4, ic:'⭐'},
+      {id:'ascetic', tier:4, ic:'🧘'},
+      {id:'perfectionist',tier:4,ic:'🥇', prog:S=>[S.perfect,10]},
+      {id:'daily7',  tier:4, ic:'📅', pending:true},
+      {id:'sleepless',tier:4,ic:'🌙', pending:true},
+      {id:'zen500',  tier:4, ic:'🧘', pending:true},
+      {id:'combo50', tier:4, ic:'🔥', pending:true},
+      {id:'legend',  tier:4, ic:'🛐'},
+      // --- Тир 5: секретные / фановые (скрыты до получения) ---
+      {id:'crash10s',tier:5, ic:'💥', hidden:true},
+      {id:'asleep',  tier:5, ic:'😴', hidden:true},
+      {id:'crashbay',tier:5, ic:'🅿️', hidden:true},
+      {id:'crashrw', tier:5, ic:'💢', hidden:true},
+      {id:'groundto',tier:5, ic:'⌛', hidden:true},
+      {id:'moneyneg',tier:5, ic:'🤑', hidden:true},
+      {id:'longshift',tier:5,ic:'🕰️', hidden:true, pending:true},
+      {id:'zoo',     tier:5, ic:'🦁', hidden:true},
+    ];
+
+    function persist(){ save.ach=[...unlocked]; save.stats=S.stats; saveGame(); }
+    function give(id){
+      if(unlocked.has(id)) return;
+      const d=defs.find(x=>x.id===id); if(!d) return;
+      unlocked.add(id); persist(); toastAch(d);
+      if(id!=='legend'){
+        const need=defs.filter(x=>x.id!=='legend' && !x.pending);
+        if(need.every(x=>unlocked.has(x.id))) give('legend');
+      }
+    }
+
+    // всплывашка (очередь, по одной)
+    let q=[], showing=false;
+    function toastAch(d){ q.push(d); if(!showing) pump(); }
+    function pump(){
+      const el=document.getElementById('achToast');
+      if(!q.length){ showing=false; return; }
+      showing=true; const d=q.shift();
+      document.getElementById('achIc').textContent=d.ic;
+      document.getElementById('achTtl').textContent=t('ach.'+d.id+'.t');
+      el.classList.add('show');
+      setTimeout(()=>{ el.classList.remove('show'); setTimeout(pump, 360); }, 2200);
+    }
+
+    return {
+      defs,
+      init(){ S.ach=Array.isArray(save.ach)?save.ach:[]; Object.assign(S.stats, save.stats||{}); unlocked=new Set(S.ach); },
+      onLevelStart(){ newRun(); },
+      onPlaneTouched(pl){ if(pl) pl.everTouched=true; },
+      onPause(){ give('pause'); },
+      onLand(){
+        S.stats.landed++; run.landed++; S.stats.noCrashStreak++;
+        run.landTimes.push(gameTime);
+        give('land1');
+        if(S.stats.landed>=10) give('land10');
+        if(S.stats.landed>=100) give('land100');
+        if(S.stats.landed>=10000) give('land10000');
+        if(S.stats.noCrashStreak>=1000) give('streak1000');
+        if(run.landed>=500) give('zen500');
+        const cut=gameTime-60; while(run.landTimes.length && run.landTimes[0]<cut) run.landTimes.shift();
+        if(run.landTimes.length>=20) give('speed20');
+      },
+      onService(){ S.stats.services++; run.services++; give('svc1'); if(S.stats.services>=100) give('svc100'); },
+      onDepart(pl, pay){
+        S.stats.departed++; run.departed++; S.stats.earned+=Math.max(0,pay);
+        run.types.add(pl.emergency?'emg':(pl.vip?'vip':'std'));
+        give('takeoff1'); if(S.stats.earned>=1) give('money1');
+        if(S.stats.earned>=1000) give('earn1000');
+        if(S.stats.earned>=1000000) give('millionaire');
+        if(pl.vip){ S.stats.vip++; give('vip1'); if(S.stats.vip>=25) give('vip25'); }
+        if(pl.nSvc>=2) give('fullchain');
+        if(combo>=10) give('combo10');
+        if(combo>=50) give('combo50');
+        if(run.types.has('std')&&run.types.has('vip')&&run.types.has('emg')) give('zoo');
+        persist();
+      },
+      onBayOpen(){ run.opens++; give('bayopen1'); },
+      onBayUpgrade(b){ run.upgrades++; give('upg1'); if(b.lvl>=K.BAY_MAX_LVL) give('baymax'); },
+      onGroundTimeout(){ give('groundto'); },
+      onCrash(pl, reason){
+        S.stats.noCrashStreak=0; persist();
+        if(gameTime<10) give('crash10s');
+        if(reason==='loss.collisionBay') give('crashbay');
+        if(reason==='loss.collisionRunway') give('crashrw');
+        if(reason==='loss.airTimeout' && !pl.everTouched) give('asleep');
+      },
+      onTick(dt){
+        if(debug.infiniteLives||debug.richStart) run.debug=true;
+        run.time+=dt;
+        let air=0; for(const p of planes) if(!p.dead && p.zone==='air') air++;
+        if(air>run.peakAir) run.peakAir=air;
+        if(run.peakAir>=5) give('air5');
+        if(run.peakAir>=8) give('air8');
+        if(money<0) give('moneyneg');
+        if(run.time>=900) give('marathon');
+        if(run.time>=1800) give('longshift');
+        if(run.time>=3600) give('sleepless');
+      },
+      onLevelEnd(passed, stars, livesFull){
+        const clean=!run.debug;
+        if(passed){
+          give('level1');
+          if(clean && livesFull) give('nolife');
+          if(clean && runPenalties===0) give('nopenalty');
+          if(clean && runCrashes===0) give('nocrash');
+          if(clean && run.opens===0) give('minimalist');
+        }
+        if(stars>=3){
+          give('star3');
+          if(clean && livesFull) give('perfect');
+          if(clean && run.opens===0 && run.upgrades===0) give('ascetic');
+          S.stats.perfect++; if(S.stats.perfect>=10) give('perfectionist');
+          let all=LEVELS.length>0; for(let i=0;i<LEVELS.length;i++) if((save.stars[i]||0)<3) all=false;
+          if(all) give('all3star');
+        } else {
+          S.stats.perfect=0;
+        }
+        persist();
+      },
+      list(){
+        const out=[];
+        for(const d of defs){
+          let prog=null;
+          if(d.prog) prog=d.prog(S.stats);
+          else if(d.id==='all3star'){ let c=0; for(let i=0;i<LEVELS.length;i++) if((save.stars[i]||0)>=3)c++; prog=[c,LEVELS.length]; }
+          else if(d.id==='legend'){ const tot=defs.filter(x=>x.id!=='legend'&&!x.pending); prog=[tot.filter(x=>unlocked.has(x.id)).length, tot.length]; }
+          out.push({id:d.id,tier:d.tier,ic:d.ic,title:t('ach.'+d.id+'.t'),desc:t('ach.'+d.id+'.d'),hidden:!!d.hidden,pending:!!d.pending,got:unlocked.has(d.id),prog});
+        }
+        return out;
+      },
+    };
+  })();
+
+  // ---- экран медалей ----
+  let medalFrom='start';
+  function renderMedals(){
+    const list=ACH.list();
+    document.getElementById('medalCount').textContent =
+      t('medals.count', {got:list.filter(m=>m.got).length, total:list.length});
+    const grid=document.getElementById('medalGrid'); grid.innerHTML='';
+    for(const tier of [1,2,3,4,5]){
+      const head=document.createElement('div'); head.className='tierhead';
+      head.textContent=t('medals.tier'+tier); grid.appendChild(head);
+      for(const m of list.filter(x=>x.tier===tier)){
+        const masked = m.hidden && !m.got;             // секретная и ещё не открыта
+        const el=document.createElement('div');
+        el.className='medal'+(m.got?' got':' locked');
+        const ic = masked ? '❔' : m.ic;
+        const title = masked ? t('medals.secretTitle') : m.title;
+        let desc = masked ? t('medals.secretDesc') : m.desc;
+        if(m.pending && !m.got && !masked) desc += t('medals.pendingNote');
+        let prog='';
+        if(m.prog && !m.got && !masked){
+          const c=Math.min(m.prog[0],m.prog[1]);
+          prog=`<div class="mp">${fmtNum(c)} / ${fmtNum(m.prog[1])}</div>`;
+        }
+        el.innerHTML=`<div class="ic">${ic}</div><div><div class="mt">${title}</div><div class="md">${desc}</div>${prog}</div>`;
+        grid.appendChild(el);
+      }
+    }
+  }
+  function openMedals(from){ medalFrom=from||'start'; renderMedals(); hideAllScreens();
+    document.getElementById('medalScreen').classList.remove('hidden'); }
+  document.getElementById('medalsBtn').onclick=()=>openMedals('start');
+  document.getElementById('medalsBtn2').onclick=()=>openMedals('levels');
+  document.getElementById('medalsBackBtn').onclick=()=>{
+    hideAllScreens();
+    if(medalFrom==='levels') showLevels();
+    else document.getElementById('startScreen').classList.remove('hidden');
+  };
+
   loadGame();
+  ACH.init();
   lang = save.lang || detectLang();   // сохранённый выбор > автоопределение > en
   applyI18n();
   document.getElementById('ver').textContent=VERSION;
