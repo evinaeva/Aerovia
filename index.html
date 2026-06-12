@@ -191,6 +191,8 @@
       <h1 data-i18n="pause.kicker"></h1>
       <div class="settings hidden" id="settingsPanel">
         <div class="opt" style="cursor:default"><span data-i18n="settings.language"></span><div class="langbtns" id="langBtns"></div></div>
+        <label class="opt"><input type="checkbox" id="optSound"> <span data-i18n="settings.sound"></span></label>
+        <label class="opt"><input type="checkbox" id="optVibro"> <span data-i18n="settings.vibro"></span></label>
         <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
         <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
         <div class="logbox" id="logBox"></div>
@@ -267,6 +269,7 @@
       'pause.kicker':'Paused', 'pause.resume':'Resume', 'pause.restart':'Restart',
       'pause.settings':'Settings', 'pause.menu':'Main menu',
       'settings.language':'Language',
+      'settings.sound':'Sound', 'settings.vibro':'Vibration (phone)',
       'settings.optLives':'Infinite lives (debug)', 'settings.optMoney':'Unlimited money (debug)',
       'log.empty':'no losses yet',
       'svc.repair':'Repair', 'svc.fuel':'Fuel', 'svc.board':'Boarding', 'svc.depart':'Departure',
@@ -364,6 +367,7 @@
       'pause.kicker':'Пауза', 'pause.resume':'Играть', 'pause.restart':'Начать заново',
       'pause.settings':'Настройки', 'pause.menu':'В главное меню',
       'settings.language':'Язык',
+      'settings.sound':'Звук', 'settings.vibro':'Вибрация (телефон)',
       'settings.optLives':'Бесконечные жизни (отладка)', 'settings.optMoney':'Безлимит денег (отладка)',
       'log.empty':'потерь пока нет',
       'svc.repair':'Ремонт', 'svc.fuel':'Топливо', 'svc.board':'Посадка', 'svc.depart':'Вылет',
@@ -556,8 +560,8 @@
   let windUntil = 0, nextWind = 0;                    // смена ветра (закрытие ВПП)
   let fogUntil = 0, nextFog = 0;                      // туман
   let zen = false;                                    // режим без проигрыша
-  let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}};
-  const SAVE_KEY = 'tower_save_v1', VERSION = '0.11';
+  let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true};
+  const SAVE_KEY = 'tower_save_v1', VERSION = '0.12';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -648,6 +652,70 @@
   let lossLog=[], toast=null;
   const debug={infiniteLives:false, richStart:false};
   const BIG_MONEY=999999;
+  let floaters=[];         // плавающие награды «+N ₿» / «−50%» над полем
+  let alarmAt=0;           // антидребезг тревожного бипа терпения
+  function addFloat(x,y,text,col){ floaters.push({x,y,text,col,t:0,life:1.15}); }
+
+  // ---- звук и вибрация (идеи из копилки: раздел 1) ----
+  // Весь звук — синтез Web Audio, без файлов: события игры рождают мягкие ноты
+  // одной гаммы (пентатоника ля-минор), краш — шумовой удар. Контекст создаётся
+  // по первому жесту (autoplay-политика). Звук необязателен: всё дублируется
+  // визуалом, выключатели — в настройках паузы (save.sound / save.vibro).
+  const SND = (() => {
+    const SCALE=[220,261.63,293.66,329.63,392,440,523.25,587.33,659.25]; // A3..E5
+    let ac=null, master=null, enabled=true;
+    function ensure(){
+      if(!enabled) return null;
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) return null;
+      if(!ac){ ac=new AC(); master=ac.createGain(); master.gain.value=0.5; master.connect(ac.destination); }
+      if(ac.state==='suspended') ac.resume();
+      return ac;
+    }
+    function tone(freq,dur,type,vol,delay){
+      if(!ensure()) return;
+      const t0=ac.currentTime+(delay||0);
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type=type||'sine'; o.frequency.value=freq;
+      g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(vol||0.3,t0+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+(dur||0.18));
+      o.connect(g); g.connect(master);
+      o.start(t0); o.stop(t0+(dur||0.18)+0.05);
+    }
+    function thud(){ // шумовой удар (крушение)
+      if(!ensure()) return;
+      const t0=ac.currentTime, dur=0.35;
+      const buf=ac.createBuffer(1,Math.floor(ac.sampleRate*dur),ac.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+      const src=ac.createBufferSource(); src.buffer=buf;
+      const f=ac.createBiquadFilter(); f.type='lowpass';
+      f.frequency.setValueAtTime(900,t0); f.frequency.exponentialRampToValueAtTime(120,t0+dur);
+      const g=ac.createGain(); g.gain.setValueAtTime(0.65,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+      src.connect(f); f.connect(g); g.connect(master); src.start(t0);
+    }
+    const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); // случайный индекс ноты гаммы
+    return {
+      setEnabled(v){ enabled=v; },
+      pick(){ tone(SCALE[ri(5,6)],0.05,'triangle',0.10); },                     // выделение борта
+      land(){ const i=ri(0,2); tone(SCALE[i],0.22,'sine',0.32); tone(SCALE[i]/2,0.30,'sine',0.18); },
+      dock(){ tone(SCALE[ri(2,4)],0.10,'triangle',0.20); },                     // заехал в бокс
+      served(){ const i=ri(3,5); tone(SCALE[i],0.14,'sine',0.26); tone(SCALE[i+2],0.18,'sine',0.20,0.07); },
+      depart(express){ tone(SCALE[4],0.12,'triangle',0.30); tone(SCALE[6],0.12,'triangle',0.30,0.08);
+        tone(SCALE[express?8:7],0.22,'triangle',0.34,0.16); },                  // арпеджио вверх
+      build(){ tone(196,0.09,'square',0.16); tone(246.9,0.12,'square',0.16,0.07); }, // открыть/прокачать бокс
+      penalty(){ tone(155.6,0.25,'sawtooth',0.18); },                           // наземный штраф
+      crash(){ thud(); tone(98,0.4,'sawtooth',0.22); },
+      medal(){ tone(1046.5,0.12,'sine',0.24); tone(1568,0.22,'sine',0.22,0.10); },
+      alarm(){ tone(880,0.06,'square',0.10); },                                 // терпение на исходе
+    };
+  })();
+  const HAP = { // вибрация: Android — да, iOS веб — молча игнорирует (в обёртке будет плагин)
+    on:true,
+    v(p){ if(this.on && navigator.vibrate){ try{ navigator.vibrate(p); }catch(e){} } },
+    tap(){ this.v(12); }, ok(){ this.v([18,40,24]); }, penalty(){ this.v(35); }, crash(){ this.v([60,40,90]); },
+  };
 
   function reset(){
     planes=[]; money=debug.richStart?BIG_MONEY:K.START_MONEY; lives=K.START_LIVES; served=0; gameTime=0;
@@ -658,7 +726,7 @@
     bays.forEach(b=>{ b.occupied=null; const cfg=LV.sides[b.side];
       b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>{ r.occupied=null; r.closed=false; });
-    effects=[]; selected=null; levelPassed=false; upgradesDone=0;
+    effects=[]; floaters=[]; alarmAt=0; selected=null; levelPassed=false; upgradesDone=0;
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
     nextRush = zen?Infinity:K.RUSH_PERIOD;
@@ -742,6 +810,7 @@
         money-=cost;
         if(!b.open){ b.open=true; ACH.onBayOpen(b); } else { b.lvl++; ACH.onBayUpgrade(b); }
         upgradesDone++;
+        SND.build(); HAP.tap();
       }
       return;
     }
@@ -749,6 +818,7 @@
     const pl=pickPlane(p);
     if(pl){
       selected=pl; ACH.onPlaneTouched(pl);
+      SND.pick(); HAP.tap();
       planes.forEach(x=>x.selected=false); pl.selected=true;
       drag={plane:pl, start:p, last:p, drew:false};
     } else {
@@ -796,10 +866,11 @@
   function logLoss(pl, reason, moneyPenalty){
     if(pl.dead) return;
     pl.dead=true; boom(pl.x,pl.y); freeRes(pl);
+    SND.crash(); HAP.crash();
     combo=0; runCrashes++;          // крушение сбрасывает серию и портит «чистоту»
     ACH.onCrash(pl, reason);
     if(!debug.infiniteLives) lives--;
-    if(moneyPenalty) money-=pl.reward;
+    if(moneyPenalty){ money-=pl.reward; addFloat(pl.x, pl.y-24*ui, '−'+fmtMoney(pl.reward), COL.life); }
     lossLog.push({t:gameTime, reason});
     if(lossLog.length>12) lossLog.shift();
     toast={text:(debug.infiniteLives?'✈ ':'−1 ✈ ')+t(reason), t:0, good:false};
@@ -820,23 +891,34 @@
     pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult;
     pl.groundTime = pl.groundMax;
     pl.landedAt = gameTime;          // для экспресс-бонуса
+    SND.land(); HAP.tap();
     ACH.onLand(pl);
+  }
+  // наземный таймаут: −50% оплаты (звук/вибро/всплывающий «−50%» — в одном месте)
+  function groundPenalty(pl){
+    pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl);
+    SND.penalty(); HAP.penalty();
+    addFloat(pl.x, pl.y-20*ui, '−50%', COL.amber);
   }
   function serveTimeFor(b){ return K.SERVE_BASE / (1 + b.lvl*K.UP_SPEED); }
   function comboMult(){ return 1 + Math.min(combo, K.COMBO_MAX)*K.COMBO_STEP; }
 
   function depart(pl){             // успешный вылет
     served++;
-    let pay = pl.reward;
+    let pay = pl.reward, express=false;
     if(pl.halfPay){                // наземный штраф рвёт серию и режет оплату вдвое
       combo=0; pay = Math.round(pay*0.5);
     } else {
       combo++;
-      const express = (gameTime - pl.landedAt) <= K.EXPRESS_TIME;
+      express = (gameTime - pl.landedAt) <= K.EXPRESS_TIME;
       pay = Math.round(pay * comboMult() * (express?K.EXPRESS_BONUS:1));
       if(express) toast={text:t('toast.express', {money:fmtMoney(pay)}), t:0, good:true};
     }
     money += pay;
+    SND.depart(express); HAP.ok();
+    addFloat(pl.runway ? pl.runway.x+pl.runway.w-34*ui : Math.min(pl.x, W-40*ui),
+             pl.runway ? pl.runway.cy : pl.y,
+             '+'+fmtMoney(pay), pl.halfPay?COL.muted:COL.coin);
     ACH.onDepart(pl, pay);
     pl.dead=true; freeRes(pl);
   }
@@ -937,13 +1019,13 @@
           continue;
         }
         if(pl.takeoff){
-          if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl); } }
+          if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
           steer(pl, pl.runway.exitX+200, pl.runway.cy, K.SPEED_TAKEOFF, dt);
           if(pl.x > W+30){ depart(pl); }
           continue;
         }
         // стоит на полосе, ждёт руления к боксу
-        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl); } }
+        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
         if(pl.moving && pl.path.length){
           followPath(pl, taxiSpeed, dt);
           if(!rectHit(pl.x,pl.y,pl.runway)){          // съехал с полосы на поле
@@ -956,7 +1038,7 @@
 
       // ---- FIELD (руление) ----
       if(pl.zone==='field'){
-        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl); } }
+        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
         const need=curNeed(pl);
         if(pl.moving && pl.path.length){
           followPath(pl, taxiSpeed, dt);
@@ -985,6 +1067,7 @@
                 pl.x=b.x+b.w/2; pl.y=b.y+b.h/2; pl.moving=false; pl.path=[];
                 const o=dirOut(b); pl.ang=Math.atan2(-o.dy,-o.dx); // паркуем носом внутрь — борт виден в открытом боксе
                 pl.serveMax=serveTimeFor(b); pl.serveTime=pl.serveMax;
+                SND.dock();
               }
               break;
             }
@@ -995,11 +1078,11 @@
 
       // ---- BAY (обслуживание) ----
       if(pl.zone==='bay'){
-        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay){ pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl); } }
+        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
         pl.serveTime-=dt;
         if(pl.serveTime<=0){
           const b=pl.bay; b.occupied=null; pl.bay=null;
-          pl.reqIndex++; ACH.onService(pl);
+          pl.reqIndex++; ACH.onService(pl); SND.served();
           // выезд из бокса на поле
           pl.zone='field';
           const ex = clampX(b.x+b.w/2 + dirOut(b).dx*(b.w*0.6+24*ui));
@@ -1033,6 +1116,20 @@
 
     // уборка
     for(let i=planes.length-1;i>=0;i--) if(planes[i].dead){ if(selected===planes[i]) selected=null; planes.splice(i,1); }
+
+    // тревожный бип: у кого-то терпение на исходе (дублирует красное кольцо звуком;
+    // чем меньше осталось — тем чаще бип)
+    if(!zen && gameTime>=alarmAt){
+      let mf=1;
+      for(const pl of planes){
+        if(pl.dead) continue;
+        let fr=null;
+        if(pl.zone==='air') fr=Math.max(0,pl.airTime)/pl.airMax;
+        else if(pl.zone!=='bay') fr=Math.max(0,pl.groundTime)/Math.max(1,pl.groundMax);
+        if(fr!=null && fr<mf) mf=fr;
+      }
+      if(mf<0.25){ SND.alarm(); alarmAt=gameTime+0.45+mf*2.4; }
+    }
 
     if(!zen){
       if(lives<=0){ endLevel('end.lives'); return; }
@@ -1326,7 +1423,15 @@
       if(pl.selected){ ctx.shadowColor=hexa(COL.phosphor,.7); ctx.shadowBlur=10; }
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
       for(const w of pl.path) ctx.lineTo(w.x,w.y);
-      ctx.stroke(); ctx.restore();
+      ctx.stroke();
+      // пульсирующая точка-цель на конце маршрута выбранного борта
+      if(pl.selected){
+        const tp=pl.path[pl.path.length-1];
+        const p2=0.5+0.5*Math.sin(nowT*0.005);
+        ctx.beginPath(); ctx.arc(tp.x,tp.y,(6+p2*4)*ui,0,7);
+        ctx.setLineDash([]); ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.35+.4*p2); ctx.stroke();
+      }
+      ctx.restore();
     }
 
     // кольцо терпения: бирюза → янтарь → красный (аварийный всегда красный)
@@ -1480,6 +1585,19 @@
     }
     ctx.globalAlpha=1;
   }
+  // плавающие награды: «+N ₿» при вылете, «−50%» при штрафе, «−N ₿» при краше
+  function drawFloaters(dt){
+    for(let i=floaters.length-1;i>=0;i--){
+      const f=floaters[i]; f.t+=dt;
+      const k=f.t/f.life;
+      if(k>=1){ floaters.splice(i,1); continue; }
+      ctx.globalAlpha=1-k*k;
+      ctx.font=`600 ${13*ui}px ${MONO}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle=f.col; ctx.shadowColor=f.col; ctx.shadowBlur=8;
+      ctx.fillText(f.text, f.x, f.y - k*26*ui);
+    }
+    ctx.globalAlpha=1; ctx.shadowBlur=0;
+  }
 
   // сцена главного меню: радар с разверткой, дрейфующий борт, свечение горизонта
   function drawMenuScene(tm){
@@ -1529,6 +1647,7 @@
       planes.forEach(p=>{ if(!p.dead) drawPlane(p); });
       drawEffects(dt);
       vignette();
+      drawFloaters(dt);
       drawHUD();
       if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
     }
@@ -1561,10 +1680,10 @@
   }
 
   // ---- меню / уровни / сохранение ----
-  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; } }catch(e){} }
+  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; } }catch(e){} }
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
-  // язык и медали (ach/stats) — не прогресс уровней, сохраняем при сбросе
-  function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{}}; saveGame(); renderLevels(); }
+  // язык, медали (ach/stats) и звук/вибро — не прогресс уровней, сохраняем при сбросе
+  function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false}; saveGame(); renderLevels(); }
   function buildLevel(idx){ levelIdx=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
   function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel','medalScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
@@ -1635,6 +1754,8 @@
   };
   document.getElementById('optLives').onchange=e=>{ debug.infiniteLives=e.target.checked; };
   document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; };
+  document.getElementById('optSound').onchange=e=>{ save.sound=e.target.checked; saveGame(); SND.setEnabled(save.sound); };
+  document.getElementById('optVibro').onchange=e=>{ save.vibro=e.target.checked; saveGame(); HAP.on=save.vibro; };
 
   // ================= ДОСТИЖЕНИЯ / МЕДАЛИ =================
   // Самодостаточный модуль: ловит игровые события через ACH.onX(...), копит
@@ -1737,6 +1858,7 @@
       document.getElementById('achIc').textContent=d.ic;
       document.getElementById('achTtl').textContent=t('ach.'+d.id+'.t');
       document.getElementById('achDsc').textContent=t('ach.'+d.id+'.d');
+      SND.medal();
       el.classList.add('show');
       setTimeout(()=>{ el.classList.remove('show'); setTimeout(pump, 360); }, TOAST_SHOW_MS);
     }
@@ -1872,6 +1994,9 @@
   ACH.init();
   lang = save.lang || detectLang();   // сохранённый выбор > автоопределение > en
   applyI18n();
+  SND.setEnabled(save.sound!==false); HAP.on = save.vibro!==false;
+  document.getElementById('optSound').checked = save.sound!==false;
+  document.getElementById('optVibro').checked = save.vibro!==false;
   document.getElementById('ver').textContent=VERSION;
   resize();
   requestAnimationFrame(frame);
