@@ -93,6 +93,7 @@
   .levelcard.locked:hover{border-color:rgba(127,155,176,.2);background:#141b23;box-shadow:none}
   .levelcard .lvkick{font-size:9px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase}
   .levelcard .lvnum{font-family:var(--serif);font-size:38px;line-height:1.1;margin:4px 0 2px}
+  .levelcard .lvname{font-family:var(--serif);font-size:12px;color:var(--paper);opacity:.85;margin:0 0 6px;line-height:1.15}
   .levelcard .lvstars{font-size:14px;color:var(--gold);letter-spacing:.12em;text-shadow:0 0 10px rgba(244,207,94,.45)}
   .levelcard.locked .lvstars{color:var(--muted);text-shadow:none;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
   /* статистика на экране итога */
@@ -300,6 +301,10 @@
       'levels.kicker':'Shift select', 'levels.title':'Levels', 'levels.back':'Back', 'levels.reset':'Reset progress',
       'levels.shift':'Shift', 'levels.locked':'Locked',
       'level.name':'Level {n}',
+      'level.t.1':'Training', 'level.t.2':'First shift', 'level.t.3':'Money matters',
+      'level.t.4':'Special guest', 'level.t.5':'No breather', 'level.t.6':'Big spenders',
+      'level.t.7':'Rush hour', 'level.t.8':'The surge', 'level.t.9':'Hot shift',
+      'level.t.10':'Dispatcher’s exam',
       'obj.served':['Land {n} plane and survive','Land {n} planes and survive'],
       'obj.servedTimed':['Land {n} plane in {time}','Land {n} planes in {time}'],
       'obj.upgrades':['Make {n} upgrade in {time}','Make {n} upgrades in {time}'],
@@ -407,6 +412,10 @@
       'levels.kicker':'Выбор смены', 'levels.title':'Уровни', 'levels.back':'Назад', 'levels.reset':'Сбросить прогресс',
       'levels.shift':'Смена', 'levels.locked':'Закрыто',
       'level.name':'Уровень {n}',
+      'level.t.1':'Обучение', 'level.t.2':'Первая смена', 'level.t.3':'Деньги решают',
+      'level.t.4':'Особый гость', 'level.t.5':'Без передышки', 'level.t.6':'Дорогие клиенты',
+      'level.t.7':'Час пик', 'level.t.8':'Наплыв', 'level.t.9':'Горячая смена',
+      'level.t.10':'Скорая вне очереди',
       'obj.served':['Принять {n} борт и выжить','Принять {n} борта и выжить','Принять {n} бортов и выжить'],
       'obj.servedTimed':['Принять {n} борт за {time}','Принять {n} борта за {time}','Принять {n} бортов за {time}'],
       'obj.upgrades':['Сделать {n} улучшение за {time}','Сделать {n} улучшения за {time}','Сделать {n} улучшений за {time}'],
@@ -600,17 +609,50 @@
   // objective.metric: 'served' | 'upgrades'; target — порог для прохождения (1★);
   // time (сек) — лимит для уровня на время. Звёзды: 1★ цель выполнена, 2★ без
   // наземных штрафов, 3★ без крушений.
-  // Названия/описания не хранятся: имя = t('level.name'), описание = objectiveDesc().
+  // events — какие события/спецборты разрешены на уровне (по умолчанию всё выкл.):
+  //   спецборты vip / emergency («топливо на нуле») / medical (приоритетный),
+  //   динамические rush (час пик) / fog (туман) / wind (смена ветра).
+  //   Прогрессия: новое событие открывается каждые 3 уровня (vip→L4, rush→L7,
+  //   medical→L10). Включать все разрешённые на каждом уровне не обязательно —
+  //   набор комбинируется для разнообразия (напр., L7 — только час пик, без VIP).
+  //   Туман / топливо-на-нуле / смена ветра приберегаются для будущих L11+.
+  // startMoney — стартовые деньги уровня (по умолчанию K.START_MONEY).
+  // Названия/описания не хранятся: имя = levelName(), описание = objectiveDesc().
   const LEVELS = [
-    { objective:{ metric:'served', target:8 },
+    // — Блок 1 (L1–L3): база, без событий —
+    { objective:{ metric:'served', target:6 },
       sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
-      runways:3 },
-    { objective:{ metric:'served', target:12, time:120 },
+      runways:3, events:{} },
+    { objective:{ metric:'served', target:10, time:120 },
       sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
-      runways:3 },
+      runways:3, events:{} },
     { objective:{ metric:'upgrades', target:4, time:150 },
       sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
-      runways:3 },
+      runways:3, events:{} },
+    // — Блок 2 (L4–L6): + VIP —
+    { objective:{ metric:'served', target:12 },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3, events:{ vip:true } },
+    { objective:{ metric:'served', target:14, time:130 },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3, events:{ vip:true } },
+    { objective:{ metric:'upgrades', target:5, time:150 },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3, events:{ vip:true } },
+    // — Блок 3 (L7–L9): + Час пик —
+    { objective:{ metric:'served', target:18 },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3, events:{ rush:true } },               // намеренно без VIP — даём событию «прозвучать»
+    { objective:{ metric:'served', target:20, time:140 },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3, events:{ vip:true, rush:true } },
+    { objective:{ metric:'upgrades', target:6, time:160 },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3, events:{ vip:true, rush:true }, startMoney:90 },
+    // — Блок 4 (L10): + Медицинский (капстоун: всё сразу, зажатые ресурсы) —
+    { objective:{ metric:'served', target:24 },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3, events:{ vip:true, rush:true, medical:true }, startMoney:80 },
   ];
   let LV = LEVELS[0];
   function objectiveDesc(){
@@ -618,6 +660,17 @@
     const params = {n:o.target, time:o.time ? fmtTime(o.time) : ''};
     if(o.metric==='upgrades') return t('obj.upgrades', params);
     return o.time ? t('obj.servedTimed', params) : t('obj.served', params);
+  }
+  // какие события активны на текущем уровне (Zen — все спецборты, без динамических)
+  function levelEvents(){
+    return zen ? { vip:true, emergency:true, medical:true, rush:false, fog:false, wind:false }
+               : (LV.events || {});
+  }
+  // имя уровня: t('level.t.<n>') если задано, иначе общий «Уровень N»
+  function levelName(idx){
+    const i = (idx==null ? levelIdx : idx), key = 'level.t.'+(i+1);
+    const has = (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null);
+    return has ? t(key) : t('level.name', {n:i+1});
   }
   let levelIdx = 0, levelPassed = false, upgradesDone = 0;
   let combo = 0, runCrashes = 0, runPenalties = 0;   // серия / счётчики чистоты прохождения
@@ -628,7 +681,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.17';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.18';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -822,7 +875,7 @@
   };
 
   function reset(){
-    planes=[]; money=debug.richStart?BIG_MONEY:K.START_MONEY; lives=K.START_LIVES; served=0; gameTime=0;
+    planes=[]; money=debug.richStart?BIG_MONEY:(LV.startMoney||K.START_MONEY); lives=K.START_LIVES; served=0; gameTime=0;
     // раунд начинается с пустого неба: первый борт прилетает через 1–3 секунды
     spawnTimer=1 + Math.random()*2; running=true; paused=false; inMenu=false;
     lossLog=[]; toast=null;
@@ -834,9 +887,10 @@
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
-    nextRush = zen?Infinity:K.RUSH_PERIOD;
-    nextWind = zen?Infinity:K.WIND_PERIOD;
-    nextFog  = zen?Infinity:K.FOG_PERIOD;
+    const evs = levelEvents();   // динамические события включаются только если разрешены уровнем
+    nextRush = evs.rush ? K.RUSH_PERIOD : Infinity;
+    nextWind = evs.wind ? K.WIND_PERIOD : Infinity;
+    nextFog  = evs.fog  ? K.FOG_PERIOD  : Infinity;
     ACH.onLevelStart();
     // тихий туториал «покажи и дай сделать»: только при первом запуске и не в Zen —
     // первый борт ведём за руку (подсветка + подсказка), без стены текста
@@ -849,9 +903,10 @@
   function spawnPlane(){
     // спец-борты как мини-события (раздел 3 копилки): частный джет (вип),
     // «топливо на нуле» (срочный + бонус), медицинский (приоритет — высадка пациента).
-    const vip = Math.random() < K.VIP_CHANCE;                            // частный джет
-    const emergency = !vip && Math.random() < K.EMERGENCY_CHANCE;        // «топливо на нуле»
-    const medical = !vip && !emergency && Math.random() < K.MEDICAL_CHANCE; // медицинский
+    const evs = levelEvents();                                           // какие спецборты разрешены уровнем
+    const vip = evs.vip && Math.random() < K.VIP_CHANCE;                 // частный джет
+    const emergency = evs.emergency && !vip && Math.random() < K.EMERGENCY_CHANCE;        // «топливо на нуле»
+    const medical = evs.medical && !vip && !emergency && Math.random() < K.MEDICAL_CHANCE; // медицинский
     const pool = shuffle(['repair','fuel','board']);
     // медицинский: высаживает пациента в пассажирском боксе, затем сразу вылет
     const nSvc = medical ? 1 : (Math.random() < 0.45 ? 2 : 1);
@@ -1946,6 +2001,7 @@
         : ('🔒 '+t('levels.locked'));
       b.innerHTML=`<div class="lvkick">${t('levels.shift')}</div>`+
         `<div class="lvnum">${String(i+1).padStart(2,'0')}</div>`+
+        (unlocked ? `<div class="lvname">${levelName(i)}</div>` : '')+
         `<div class="lvstars">${starsHtml}</div>`;
       if(unlocked) b.onclick=()=>startLevel(i);
       list.appendChild(b);
@@ -2024,7 +2080,7 @@
   let goalsFromPause=false;
   function buildGoalsContent(){
     document.getElementById('goalsKicker').textContent = t('goals.kicker');
-    document.getElementById('goalsTitle').textContent = zen ? t('mode.zen') : t('level.name',{n:levelIdx+1});
+    document.getElementById('goalsTitle').textContent = zen ? t('mode.zen') : levelName();
     const body=document.getElementById('goalsBody');
     if(zen){ body.innerHTML = `<p class="goalzen">${t('goals.zen')}</p>`; return; }
     const rows=[['★', objectiveDesc()], ['★★', t('goals.star2')], ['★★★', t('goals.star3')]];
