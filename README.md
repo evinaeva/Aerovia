@@ -27,7 +27,9 @@ python3 -m http.server 8000
 
 - [`docs/FAQ.md`](docs/FAQ.md) — правила игры простыми словами (для игрока).
 - [`docs/tower_project_brief.md`](docs/tower_project_brief.md) — бриф: цель, роли,
-  вся механика, план до Google Play, бэклог.
+  решения и план до Google Play (без правил и бэклога — они отдельно).
+- [`docs/backlog.md`](docs/backlog.md) — бэклог и копилка идей: что сделано, что
+  дальше по приоритету, фан-идеи.
 - [`docs/genre_feature_ideas.md`](docs/genre_feature_ideas.md) — копилка любимых
   фишек жанра (звук, иконки, миссии, самолёты, стратегии): что брать и что любят.
 - [`docs/achievements.md`](docs/achievements.md) — список достижений/медалей (46 шт.):
