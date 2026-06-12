@@ -96,6 +96,11 @@
   .levelcard .lvname{font-family:var(--serif);font-size:12px;color:var(--paper);opacity:.85;margin:0 0 6px;line-height:1.15}
   .levelcard .lvstars{font-size:14px;color:var(--gold);letter-spacing:.12em;text-shadow:0 0 10px rgba(244,207,94,.45)}
   .levelcard.locked .lvstars{color:var(--muted);text-shadow:none;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+  .biomecard{min-height:120px}
+  .biomecard .bioemoji{font-size:30px;line-height:1}
+  .biomecard .lvkick{font-size:13px;letter-spacing:.06em;text-transform:none;color:var(--paper);margin-top:6px}
+  .biomecard .biotag{font-size:10.5px;line-height:1.5;color:var(--muted);margin:4px 0 8px}
+  .biomecard.locked .bioemoji{filter:grayscale(1);opacity:.55}
   /* статистика на экране итога */
   .stats{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:18px;padding:14px 18px;
     border:1.5px solid rgba(191,233,255,.15);border-radius:14px;background:rgba(10,22,34,.6)}
@@ -103,6 +108,9 @@
   .stat .label{font-size:9px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
   .stat .val{font-size:17px;margin-top:4px}
   .v-phos{color:var(--phosphor)} .v-gold{color:var(--gold)} .v-life{color:var(--life)} .v-teal{color:var(--teal)}
+  /* график нагрузки/принято на экране итога смены */
+  .statgraph{width:100%;height:132px;margin-top:16px;display:block;border-radius:14px;
+    border:1.5px solid rgba(191,233,255,.15);background:rgba(10,22,34,.6)}
   .langbtns{display:flex;gap:8px;flex-wrap:wrap}
   .langbtn{border:1.5px solid rgba(127,155,176,.4);color:var(--muted);background:transparent;
     font:inherit;font-size:11px;letter-spacing:.08em;padding:6px 12px;border-radius:8px;cursor:pointer}
@@ -160,6 +168,7 @@
         <button class="btn btn-primary" id="startBtn"><span class="bglyph">▶</span><span data-i18n="start.play"></span></button>
       </div>
       <div class="ctarow">
+        <button class="btn" id="biomesBtn"><span class="bglyph">🌲</span><span data-i18n="menu.biomes"></span></button>
         <button class="btn btn-quiet" id="medalsBtn"><span class="bglyph">🏅</span><span data-i18n="medals.btn"></span></button>
         <button class="btn btn-quiet" id="settingsMenuBtn"><span class="bglyph">⚙</span><span data-i18n="pause.settings"></span></button>
         <button class="btn btn-quiet" id="fsBtn"><span class="bglyph">⛶</span><span data-i18n="start.fullscreen"></span></button>
@@ -174,6 +183,10 @@
       <div class="big" id="finalStars">☆☆☆</div>
       <p id="overMsg"></p>
       <div class="stats" id="overStats"></div>
+      <canvas id="statGraph" class="statgraph"></canvas>
+      <div class="ctarow">
+        <button class="btn btn-quiet" id="shareBtn"><span class="bglyph">⇪</span><span data-i18n="over.share"></span></button>
+      </div>
       <div class="ctarow">
         <button class="btn btn-teal" id="toLevelsBtn"><span class="bglyph">≡</span><span data-i18n="over.toLevels"></span></button>
         <button class="btn btn-primary" id="againBtn"><span class="bglyph">↻</span><span data-i18n="over.again"></span></button>
@@ -191,6 +204,17 @@
         <button class="btn" id="backBtn"><span class="bglyph">←</span><span data-i18n="levels.back"></span></button>
         <button class="btn" id="medalsBtn2"><span class="bglyph">🏅</span><span data-i18n="medals.btn"></span></button>
         <button class="btn btn-quiet" id="resetProgBtn" data-i18n="levels.reset"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="biomeScreen">
+    <div class="panel wide">
+      <div class="kicker" data-i18n="biomes.kicker"></div>
+      <h1 data-i18n="biomes.title"></h1>
+      <div class="levellist" id="biomeList"></div>
+      <div class="ctarow">
+        <button class="btn" id="biomesBackBtn"><span class="bglyph">←</span><span data-i18n="biomes.back"></span></button>
       </div>
     </div>
   </div>
@@ -296,7 +320,9 @@
       'start.play':'Play', 'start.zen':'Zen mode', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
       'over.next':'Next level', 'over.again':'Play again', 'over.toLevels':'Level select',
       'over.passed':'Level complete', 'over.failed':'Shift over',
+      'over.share':'Share image',
       'over.result':'{reason} {desc}. Result: {n} {unit}, bank {money}.',
+      'graph.title':'Shift over time', 'graph.load':'Load', 'graph.served':'Served',
       'unit.planes':['plane','planes'], 'unit.upgrades':['upgrade','upgrades'],
       'levels.kicker':'Shift select', 'levels.title':'Levels', 'levels.back':'Back', 'levels.reset':'Reset progress',
       'levels.shift':'Shift', 'levels.locked':'Locked',
@@ -337,10 +363,26 @@
       'loss.collisionField':'Collision on the apron',
       'loss.collisionRunway':'Collision on the runway',
       'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!',
-      'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time',
+      'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time', 'stats.peak':'Peak load',
       'hud.vip':'VIP', 'hud.med':'MED', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
       'canvas.terminal':'TERMINAL', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
+      // --- biomes / maps + forest biome ---
+      'menu.biomes':'Maps',
+      'biomes.kicker':'Airport maps', 'biomes.title':'Biomes', 'biomes.back':'Back', 'biomes.soon':'Coming soon',
+      'biome.forest.name':'Forest Airport', 'biome.forest.tag':'Wind, wildlife and trees falling on the strip.',
+      'biome.forest.hint':'Keep the runways clear — tap a hazard to send the right crew.',
+      'biome.arctic.name':'Arctic Airport', 'biome.arctic.tag':'De-icing, snow and runway ice.',
+      'biome.tropical.name':'Tropical Airport', 'biome.tropical.tag':'Storms, wind and thieving gulls.',
+      'biome.desert.name':'Desert Airport', 'biome.desert.tag':'Sandstorms and overheating engines.',
+      'biome.mountain.name':'Mountain Airport', 'biome.mountain.tag':'Short strip, fog and turbulence.',
+      'biome.megacity.name':'Mega City Airport', 'biome.megacity.tag':'Traffic overload and VIPs.',
+      'forest.tree':'A tree is falling toward the runway!',
+      'forest.deer':'Deer on the runway!',
+      'forest.birds':'Birds over the runway!',
+      'forest.cleared':'Runway clear',
+      'forest.crew.truck':'Maintenance', 'forest.crew.eagle':'Bird scare', 'forest.crew.chainsaw':'Chainsaw crew',
+      'canvas.service':'SERVICE',
       // --- медали / достижения ---
       'medals.btn':'Medals', 'medals.kicker':'Achievements', 'medals.title':'Medals', 'medals.back':'Back',
       'medals.count':'{got} / {total} medals',
@@ -407,7 +449,9 @@
       'start.play':'Играть', 'start.zen':'Zen-режим', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
       'over.next':'Следующий уровень', 'over.again':'Ещё раз', 'over.toLevels':'К уровням',
       'over.passed':'Уровень пройден', 'over.failed':'Смена закрыта',
+      'over.share':'Поделиться',
       'over.result':'{reason} {desc}. Результат: {n} {unit}, касса {money}.',
+      'graph.title':'Смена во времени', 'graph.load':'Нагрузка', 'graph.served':'Принято',
       'unit.planes':['борт','борта','бортов'], 'unit.upgrades':['улучшение','улучшения','улучшений'],
       'levels.kicker':'Выбор смены', 'levels.title':'Уровни', 'levels.back':'Назад', 'levels.reset':'Сбросить прогресс',
       'levels.shift':'Смена', 'levels.locked':'Закрыто',
@@ -448,10 +492,26 @@
       'loss.collisionField':'Столкновение на поле',
       'loss.collisionRunway':'Столкновение на ВПП',
       'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!',
-      'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время',
+      'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время', 'stats.peak':'Пик нагрузки',
       'hud.vip':'ВИП', 'hud.med':'МЕД', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
       'canvas.terminal':'ТЕРМИНАЛ', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
+      // --- биомы / карты + лесной биом ---
+      'menu.biomes':'Карты',
+      'biomes.kicker':'Карты аэропортов', 'biomes.title':'Биомы', 'biomes.back':'Назад', 'biomes.soon':'Скоро',
+      'biome.forest.name':'Лесной аэропорт', 'biome.forest.tag':'Ветер, звери и падающие на полосу деревья.',
+      'biome.forest.hint':'Держи полосы свободными — тапни по помехе, чтобы выслать нужную бригаду.',
+      'biome.arctic.name':'Арктический аэропорт', 'biome.arctic.tag':'Обледенение, снег и лёд на полосе.',
+      'biome.tropical.name':'Тропический аэропорт', 'biome.tropical.tag':'Штормы, ветер и наглые чайки.',
+      'biome.desert.name':'Пустынный аэропорт', 'biome.desert.tag':'Песчаные бури и перегрев двигателей.',
+      'biome.mountain.name':'Горный аэропорт', 'biome.mountain.tag':'Короткая полоса, туман и турбулентность.',
+      'biome.megacity.name':'Мегаполис', 'biome.megacity.tag':'Перегрузка трафика и ВИП-борта.',
+      'forest.tree':'Дерево падает на полосу!',
+      'forest.deer':'Олень на полосе!',
+      'forest.birds':'Птицы над полосой!',
+      'forest.cleared':'Полоса свободна',
+      'forest.crew.truck':'Техслужба', 'forest.crew.eagle':'Орёл-разгон', 'forest.crew.chainsaw':'Бригада с пилой',
+      'canvas.service':'СЛУЖБА',
       // --- медали / достижения ---
       'medals.btn':'Медали', 'medals.kicker':'Достижения', 'medals.title':'Медали', 'medals.back':'Назад',
       'medals.count':'{got} / {total} медалей',
@@ -605,6 +665,23 @@
     FOG_TAXI: 0.55,                   // множитель скорости руления в тумане
   };
 
+  // ---- лесной биом: помехи на ВПП и спец-бригады (см. docs/backlog.md) ----
+  // Идея: на полосу лезут природные помехи (падающее дерево, олень, птицы), игрок
+  // тапает по помехе — из сервисного здания выезжает нужная бригада и убирает её.
+  // Деревья грызут бобры → дерево падает медленнее, можно успеть прислать пилу.
+  const FOR = {
+    SPAWN_FIRST: 7,        // первая помеха через N сек после старта
+    SPAWN_MIN: 9, SPAWN_MAX: 17,   // интервал между помехами
+    TREE_FALL: 6.0,        // сек падения дерева до перекрытия полосы
+    TREE_FALL_BEAVER: 11,  // бобёр грызёт — дерево падает медленнее (больше времени)
+    BEAVER_CHANCE: 0.5,    // доля деревьев с бобром
+    DEER_LIFE: 14,         // олень сам уходит, если не отреагировать
+    BIRD_LIFE: 9,          // птицы сами улетают
+    CREW_SPEED: 260,       // скорость спец-авто, px/сек
+    WORK_TIME: 1.4,        // сек работы бригады на месте
+    REWARD: 12,            // премия за устранённую помеху
+  };
+
   // ---- level config ----
   // objective.metric: 'served' | 'upgrades'; target — порог для прохождения (1★);
   // time (сек) — лимит для уровня на время. Звёзды: 1★ цель выполнена, 2★ без
@@ -654,19 +731,36 @@
       sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
       runways:3, events:{ vip:true, rush:true, medical:true }, startMoney:80 },
   ];
-  let LV = LEVELS[0];
+  // ---- biome maps (отдельная от кампании ветка карт) ----
+  // Каждый биом — это конфиг уровня (как в LEVELS) + флаг biome для темы/помех.
+  // ready:false — биом в работе, на экране показан как «скоро». Сервисное здание
+  // (откуда выезжают спец-бригады) рисуется сверху поля у всех биом-карт.
+  const BIOMES = [
+    { id:'forest', emoji:'🌲', ready:true,
+      level:{ biome:'forest', objective:{ metric:'served', target:14 },
+        sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
+        runways:3 } },
+    { id:'arctic',   emoji:'❄️', ready:false },
+    { id:'tropical', emoji:'🏝️', ready:false },
+    { id:'desert',   emoji:'🐪', ready:false },
+    { id:'mountain', emoji:'🏔️', ready:false },
+    { id:'megacity', emoji:'🌆', ready:false },
+  ];
+  let LV = LEVELS[0], curBiome = null;
   function objectiveDesc(){
     const o = LV.objective;
     const params = {n:o.target, time:o.time ? fmtTime(o.time) : ''};
     if(o.metric==='upgrades') return t('obj.upgrades', params);
     return o.time ? t('obj.servedTimed', params) : t('obj.served', params);
   }
-  // какие события активны на текущем уровне (Zen — все спецборты, без динамических)
+  // какие события активны на текущем уровне. Кампания — по конфигу уровня
+  // (LV.events). Zen и биом-карты — все спецборты включены, а динамические события
+  // для них настраиваются отдельно в reset() (у леса — свои помехи вместо ветра/тумана).
   function levelEvents(){
-    return zen ? { vip:true, emergency:true, medical:true, rush:false, fog:false, wind:false }
-               : (LV.events || {});
+    return (zen || LV.biome) ? { vip:true, emergency:true, medical:true, rush:false, fog:false, wind:false }
+                             : (LV.events || {});
   }
-  // имя уровня: t('level.t.<n>') если задано, иначе общий «Уровень N»
+  // имя уровня кампании: t('level.t.<n>') если задано, иначе общий «Уровень N»
   function levelName(idx){
     const i = (idx==null ? levelIdx : idx), key = 'level.t.'+(i+1);
     const has = (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null);
@@ -728,7 +822,14 @@
     return p;
   }
   function validateGame(){ return validateLevels().concat(validateI18n()); }
-  let levelIdx = 0, levelPassed = false, upgradesDone = 0;
+  let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
+  // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
+  // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
+  function currentLevelName(){
+    if(zen) return t('mode.zen');
+    if(LV.biome) return t('biome.'+LV.biome+'.name');
+    return levelName();      // кампания: красивое имя уровня (level.t.<n>) с фолбэком
+  }
   let combo = 0, runCrashes = 0, runPenalties = 0;   // серия / счётчики чистоты прохождения
   let rushUntil = 0, nextRush = 0;                    // «час пик»
   let windUntil = 0, nextWind = 0;                    // смена ветра (закрытие ВПП)
@@ -737,7 +838,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.18';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.20';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -835,11 +936,21 @@
     // кнопка паузы отодвинута от правого края на запас + safe-area, чтобы не
     // оказаться под скруглением/вырезом телефона и нормально нажиматься
     pauseBtn = {x: W - safe.r - 16*ui - 36*ui, y: 6*ui, w: 36*ui, h: 30*ui};
+
+    // сервисное здание биом-карт — сверху по центру апрона, между верхними боксами;
+    // отсюда выезжают спец-бригады. У классических уровней его нет.
+    if(LV.biome){
+      const sw=Math.min(88*ui, (field.x1-field.x0)*0.32), sh=28*ui;
+      field.service={ x:(field.x0+field.x1)/2 - sw/2, y:fy0+2*ui, w:sw, h:sh };
+    } else field.service=null;
   }
 
   // ---- game state ----
   let planes=[], money=0, lives=0, served=0, gameTime=0;
   let running=false, paused=false, lastTs=0, spawnTimer=0;
+  // статистика смены для экрана итога: пик одновременной нагрузки + временной ряд
+  // (нагрузка/принято) для графика; lastShift — снимок последней смены для шеринга
+  let statPeak=0, statSamples=[], statStep=1.5, statNextAt=0, lastShift=null;
   let inMenu=true;         // пока открыты меню/уровни/медали — на канвасе сцена-радар, не поле
   let nowT=0;              // время кадра (мс) для анимаций отрисовки
   let effects=[];          // анимации крушений
@@ -852,6 +963,8 @@
   let nearMissPairs={};    // key «idA-idB» → время, до которого пара «остыла»
   let planeSeq=0;          // id бортов для антидребезга near-miss
   let tut=null;            // состояние тихого туториала: {step:'land'|'service'|'takeoff', plane}
+  // лесной биом: активные помехи на полосах + выехавшие бригады + таймер спавна
+  let hazards=[], crews=[], hazardSeq=0, nextHazard=0;
   function addFloat(x,y,text,col){ floaters.push({x,y,text,col,t:0,life:1.15}); }
 
   // ---- звук и вибрация (идеи из копилки: раздел 1) ----
@@ -939,18 +1052,32 @@
     document.getElementById('settingsPanel').classList.add('hidden');
     bays.forEach(b=>{ b.occupied=null; const cfg=LV.sides[b.side];
       b.open = b.slot < cfg.open; b.lvl=0; });
-    runways.forEach(r=>{ r.occupied=null; r.closed=false; });
+    runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
+    statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0;
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
-    const evs = levelEvents();   // динамические события включаются только если разрешены уровнем
-    nextRush = evs.rush ? K.RUSH_PERIOD : Infinity;
-    nextWind = evs.wind ? K.WIND_PERIOD : Infinity;
-    nextFog  = evs.fog  ? K.FOG_PERIOD  : Infinity;
+    hazards=[]; crews=[]; hazardSeq=0;
+    const forest = LV.biome==='forest';
+    if(LV.biome){
+      // биом-карты сохраняют исходное поведение динамических событий; у леса — свои
+      // помехи на полосах вместо «ветра/тумана»
+      nextRush = zen?Infinity:K.RUSH_PERIOD;
+      nextWind = (zen||forest)?Infinity:K.WIND_PERIOD;
+      nextFog  = (zen||forest)?Infinity:K.FOG_PERIOD;
+      nextHazard = (zen||!forest)?Infinity:FOR.SPAWN_FIRST;
+    } else {
+      // кампания: динамические события включаются только если разрешены уровнем
+      const evs = levelEvents();
+      nextRush = evs.rush ? K.RUSH_PERIOD : Infinity;
+      nextWind = evs.wind ? K.WIND_PERIOD : Infinity;
+      nextFog  = evs.fog  ? K.FOG_PERIOD  : Infinity;
+      nextHazard = Infinity;
+    }
     ACH.onLevelStart();
     // тихий туториал «покажи и дай сделать»: только при первом запуске и не в Zen —
     // первый борт ведём за руку (подсветка + подсказка), без стены текста
-    tut = (!zen && !save.tutorialDone) ? {step:'land', plane:null} : null;
+    tut = (!zen && !save.tutorialDone && !LV.biome) ? {step:'land', plane:null} : null;
     showGoals(false);          // крупное окно постановки целей в начале раунда (заодно ставит на паузу)
   }
 
@@ -999,6 +1126,111 @@
     }
   }
 
+  // ---- лесной биом: помехи на ВПП и спец-бригады ----
+  // Точка выезда бригад — низ сервисного здания (рисуется сверху поля).
+  function serviceHome(){
+    const s=field.service;
+    if(s) return {x:s.x+s.w/2, y:s.y+s.h};
+    return {x:(field.x0+field.x1)/2, y:field.y0};
+  }
+  // какая бригада нужна на помеху: пила на падающее дерево (срубить, пока не легло),
+  // техслужба на лежащее дерево/оленя, орёл — разогнать птиц.
+  function neededCrew(h){
+    if(h.kind==='tree') return h.fallen ? 'truck' : 'chainsaw';
+    if(h.kind==='deer') return 'truck';
+    return 'eagle';
+  }
+  // помеха под пальцем (для тапа): берём ближайшую ещё не обслуживаемую
+  function hazardAt(p){
+    let best=null, bd=46*ui;
+    for(const h of hazards){ if(h.dispatched) continue; const d=dist(h.x,h.y,p.x,p.y); if(d<bd){bd=d;best=h;} }
+    return best;
+  }
+  function spawnHazard(){
+    // оставляем хотя бы одну полосу открытой; на полосу — не больше одной помехи
+    if(hazards.length >= Math.max(1, runways.length-1)) return;
+    const free = runways.filter(r=>!r.closed && r.hazard==null);
+    if(!free.length) return;
+    const r = free[Math.floor(Math.random()*free.length)];
+    const kind = ['tree','deer','birds'][Math.floor(Math.random()*3)];
+    const h = { id:++hazardSeq, kind, runway:r, t:0, dispatched:false, done:false };
+    if(kind==='tree'){
+      h.beaver = Math.random() < FOR.BEAVER_CHANCE;     // бобёр грызёт — падает медленнее
+      h.fallTime = h.beaver ? FOR.TREE_FALL_BEAVER : FOR.TREE_FALL;
+      h.fallen = false;
+      h.x = r.x + 12*ui; h.y = r.cy;                    // у полевого торца полосы
+      toast = {text:t('forest.tree'), t:0, good:false};
+    } else if(kind==='deer'){
+      h.x = r.x + r.w*0.42; h.y = r.cy;
+      r.closed = true;                                  // зверь на полосе — сразу закрыта
+      toast = {text:t('forest.deer'), t:0, good:false};
+    } else {
+      h.x = r.x + r.w*0.5; h.y = r.y + 8*ui;
+      r.closed = true;                                  // птицы над полосой — закрыта
+      toast = {text:t('forest.birds'), t:0, good:false};
+    }
+    r.hazard = h.id;
+    hazards.push(h);
+    SND.penalty();
+  }
+  // выслать бригаду из сервисного здания к помехе (по тапу игрока)
+  function dispatchCrew(h){
+    if(h.dispatched || h.done) return;
+    h.dispatched = true;
+    const home = serviceHome();
+    crews.push({ kind:neededCrew(h), hazard:h, phase:'out',
+                 x:home.x, y:home.y, hx:home.x, hy:home.y,
+                 tx:h.x, ty:h.y, workT:0, done:false });
+    addFloat(home.x, home.y-14*ui, t('forest.crew.'+neededCrew(h)), COL.teal);
+    SND.build(); HAP.tap();
+  }
+  // помеха устранена: открыть полосу, убрать помеху, премия (если убрала бригада)
+  function resolveHazard(h, rewarded){
+    if(!h || h.done) return;
+    h.done = true;
+    if(h.runway.hazard===h.id) h.runway.hazard=null;
+    h.runway.closed = false;
+    hazards = hazards.filter(x=>x!==h);
+    if(rewarded && !zen){
+      money += FOR.REWARD;
+      addFloat(h.x, h.y-18*ui, '+'+fmtMoney(FOR.REWARD), COL.coin);
+      SND.served(); HAP.ok();
+      toast = {text:t('forest.cleared'), t:0, good:true};
+    }
+  }
+  function updateForest(dt){
+    if(gameTime>=nextHazard){ spawnHazard(); nextHazard = gameTime + FOR.SPAWN_MIN + Math.random()*(FOR.SPAWN_MAX-FOR.SPAWN_MIN); }
+    // помехи
+    for(const h of hazards){
+      if(h.done) continue;
+      h.t += dt;
+      if(h.kind==='tree'){
+        if(!h.fallen && h.t>=h.fallTime){ h.fallen=true; h.runway.closed=true; } // легло поперёк полосы
+      } else if(h.kind==='deer'){
+        if(!h.dispatched && h.t>=FOR.DEER_LIFE) resolveHazard(h, false);          // олень сам ушёл
+      } else { // birds
+        if(!h.dispatched && h.t>=FOR.BIRD_LIFE) resolveHazard(h, false);          // птицы улетели
+      }
+    }
+    // спец-авто: едут к помехе → работают → возвращаются домой
+    for(const c of crews){
+      if(c.phase==='work'){
+        c.workT -= dt;
+        if(c.workT<=0){ resolveHazard(c.hazard, true); c.phase='home'; c.tx=c.hx; c.ty=c.hy; }
+        continue;
+      }
+      const d = dist(c.x,c.y,c.tx,c.ty);
+      if(d<=4){
+        if(c.phase==='out'){ c.phase='work'; c.workT=FOR.WORK_TIME; }
+        else c.done=true;
+      } else {
+        const step = Math.min(FOR.CREW_SPEED*dt, d);
+        c.x += (c.tx-c.x)/d*step; c.y += (c.ty-c.y)/d*step;
+      }
+    }
+    crews = crews.filter(c=>!c.done);
+  }
+
   // ---- geometry ----
   const rectHit = (px,py,r) => px>r.x && px<r.x+r.w && py>r.y && py<r.y+r.h;
   const dist = (ax,ay,bx,by) => Math.hypot(ax-bx, ay-by);
@@ -1045,6 +1277,11 @@
       }
       return;
     }
+    // лесной биом: тап по помехе высылает нужную спец-бригаду из сервисного здания
+    if(LV.biome){
+      const h=hazardAt(p);
+      if(h){ dispatchCrew(h); return; }
+    }
     // plane
     const pl=pickPlane(p);
     if(pl){
@@ -1082,11 +1319,20 @@
     }
     drag=null;
   }
-  cv.addEventListener('pointerdown',down);
-  cv.addEventListener('pointermove',move);
-  window.addEventListener('pointerup',up);
-  cv.addEventListener('touchstart',down,{passive:false});
-  cv.addEventListener('touchmove',move,{passive:false});
+  // На тач-устройствах один тап порождает И pointer-, И touch-событие. Если
+  // слушать оба, down() срабатывает дважды на одно касание: для паузы (тоггл
+  // setPaused(!paused)) это значит «вкл, тут же выкл» — кнопка как будто мёртвая.
+  // Поэтому используем Pointer Events там, где они есть (везде в совр. браузерах),
+  // и только при их отсутствии откатываемся на Touch Events.
+  if(window.PointerEvent){
+    cv.addEventListener('pointerdown',down);
+    cv.addEventListener('pointermove',move);
+    window.addEventListener('pointerup',up);
+  } else {
+    cv.addEventListener('touchstart',down,{passive:false});
+    cv.addEventListener('touchmove',move,{passive:false});
+    window.addEventListener('touchend',up);
+  }
 
   // ---- crashes ----
   function freeRes(pl){
@@ -1171,9 +1417,10 @@
   function recordResult(){
     if(zen) return;                  // Zen не влияет на звёзды/прогресс
     const stars=computeStars();
-    if(save.best[levelIdx]==null || served>save.best[levelIdx]) save.best[levelIdx]=served;
-    if(save.stars[levelIdx]==null || stars>save.stars[levelIdx]) save.stars[levelIdx]=stars;
-    if(stars>=1 && save.unlocked < levelIdx+2) save.unlocked = Math.min(LEVELS.length, levelIdx+2);
+    if(save.best[levelKey]==null || served>save.best[levelKey]) save.best[levelKey]=served;
+    if(save.stars[levelKey]==null || stars>save.stars[levelKey]) save.stars[levelKey]=stars;
+    // прогресс кампании двигают только её уровни (числовой ключ); биом-карты — нет
+    if(typeof levelKey==='number' && stars>=1 && save.unlocked < levelIdx+2) save.unlocked = Math.min(LEVELS.length, levelIdx+2);
     saveGame();
   }
 
@@ -1229,6 +1476,7 @@
 
     updateTutorial();
     ACH.onTick(dt);
+    if(LV.biome==='forest' && !zen) updateForest(dt);
 
     for(const pl of planes){
       if(pl.dead) continue;
@@ -1404,6 +1652,14 @@
       if(lives<=0){ endLevel('end.lives'); return; }
       if(metricValue() >= LV.objective.target){ endLevel('end.goal'); return; }
     }
+    // статистика смены: пик одновременной нагрузки + редкие отсчёты для графика
+    if(planes.length>statPeak) statPeak=planes.length;
+    if(gameTime>=statNextAt){
+      statSamples.push({t:gameTime, load:planes.length, served});
+      statNextAt = gameTime + statStep;
+      // в Zen ряд может расти бесконечно — прорежаем и удваиваем шаг
+      if(statSamples.length>180){ statSamples = statSamples.filter((_,i)=>i%2===0); statStep*=2; }
+    }
     gameTime+=dt;
     if(!zen && LV.objective.time && gameTime>=LV.objective.time){ endLevel('end.time'); return; }
   }
@@ -1553,6 +1809,8 @@
     ctx.fillStyle=hexa(COL.muted,.6); ctx.font=`${9*ui}px ${MONO}`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(t('canvas.terminal'), ix+iw/2, iy+ih-9*ui);
+
+    if(LV.biome==='forest') drawForestDecor(tm, ax, ay, aR, ab);
   }
 
   function drawRunways(tm){
@@ -1593,6 +1851,92 @@
         ctx.fillText(t('canvas.rwy',{n:'0'+(i+1)}), r.x+12*ui, r.y+12*ui);
       }
     });
+  }
+
+  // ---- лесной биом: отрисовка ----
+  const FCOL = {edge:'#1d3a28', tree:'#2f7d4f', tree2:'#3fa15f', trunk:'#6b4f2a'};
+  function pineTree(x,y,h,col){            // силуэт ёлки (вершина в y, основание ниже)
+    const w=h*0.62;
+    ctx.fillStyle=col;
+    for(let k=0;k<3;k++){
+      const ty=y+h*0.18*k, by=ty+h*0.42, ww=w*(0.6+0.2*k);
+      ctx.beginPath(); ctx.moveTo(x,ty); ctx.lineTo(x-ww/2,by); ctx.lineTo(x+ww/2,by); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle=FCOL.trunk; ctx.fillRect(x-h*0.05, y+h*0.78, h*0.1, h*0.18);
+  }
+  function emoji(g,x,y,size,glow){          // эмодзи-глиф по центру (x,y)
+    ctx.save();
+    ctx.font=`${size}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle=COL.paper;                // фолбэк-цвет, если у системы нет цветных эмодзи
+    if(glow){ ctx.shadowColor=glow; ctx.shadowBlur=9; }
+    ctx.fillText(g,x,y); ctx.restore();
+  }
+  // зелёный лесной антураж поверх фона апрона (вода справа → лесная кромка)
+  function drawForestDecor(tm, ax, ay, aR, ab){
+    // лесная кромка вместо воды за полосами
+    ctx.fillStyle=FCOL.edge; ctx.fillRect(aR,0,W-aR,H);
+    const cols=Math.max(2,Math.round((W-aR)/(34*ui)));
+    for(let r2=0;r2<6;r2++) for(let c2=0;c2<cols;c2++){
+      const tx=aR+18*ui+c2*((W-aR-24*ui)/Math.max(1,cols-1));
+      const ty=18*ui + r2*(H-36*ui)/6 + (c2%2)*9*ui + Math.sin(tm*0.0006+c2)*1.5;
+      pineTree(tx,ty,26*ui, r2%2?FCOL.tree:FCOL.tree2);
+    }
+    // лёгкий зелёный налёт на тармак
+    ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
+    ctx.fillStyle=hexa(FCOL.tree,.06); ctx.fillRect(ax,ay,aR-ax,ab-ay); ctx.restore();
+  }
+  // сервисное здание + помехи на полосах + спец-бригады
+  function drawForest(tm){
+    const sv=field.service;
+    if(sv){
+      // здание: корпус + крыша + гаражные ворота + эмблема
+      rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.fillStyle='#243b2d'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(FCOL.tree2,.6); rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.stroke();
+      ctx.fillStyle=hexa(FCOL.tree2,.5);
+      ctx.beginPath(); ctx.moveTo(sv.x-2*ui,sv.y); ctx.lineTo(sv.x+sv.w/2,sv.y-7*ui); ctx.lineTo(sv.x+sv.w+2*ui,sv.y); ctx.closePath(); ctx.fill();
+      // гаражные ворота (выезд бригад)
+      const dw=sv.w*0.4, dh=sv.h*0.5;
+      rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#16241b'; ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.amber,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
+      emoji('🔧', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      ctx.fillStyle=hexa(COL.amber,.8); ctx.font=`${7*ui}px ${MONO}`;
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
+    }
+    // помехи
+    for(const h of hazards){
+      if(h.kind==='tree'){
+        const ang = (h.fallen?1:Math.min(1,h.t/h.fallTime)) * (Math.PI*0.46); // 0 → стоит, ~83° → лежит поперёк
+        ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(ang);
+        // ствол растёт «вверх» (−y) от основания у поля; при падении поворачивается на полосу
+        ctx.fillStyle=FCOL.trunk; ctx.fillRect(-3*ui, -10*ui, 6*ui, 10*ui);
+        pineTree(0, -40*ui, 34*ui, FCOL.tree2);
+        ctx.restore();
+        if(h.beaver) emoji('🦫', h.x+12*ui, h.y+8*ui, 13*ui, hexa(COL.amber,.5)); // бобёр грызёт у основания
+      } else if(h.kind==='deer'){
+        emoji('🦌', h.x, h.y, 22*ui, hexa(COL.amber,.4));
+      } else { // birds
+        for(let k=0;k<3;k++) emoji('🐦', h.x+(k-1)*15*ui, h.y+Math.sin(tm*0.006+k)*4*ui, 13*ui, hexa(COL.phosphor,.4));
+      }
+      // подсказка «тапни — вышлю бригаду»: пульсирующее кольцо + иконка нужной бригады
+      if(!h.dispatched){
+        const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
+        ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.3+0.4*pulse);
+        ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
+        const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚'}[neededCrew(h)];
+        emoji(ic, h.x, h.y-32*ui, 14*ui, hexa(COL.teal,.5));
+      }
+    }
+    // спец-авто в пути / за работой
+    for(const c of crews){
+      const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚'}[c.kind];
+      emoji(ic, c.x, c.y, 16*ui, hexa(COL.amber,.4));
+      if(c.phase==='work'){               // искорки работы
+        const pulse=Math.abs(Math.sin(tm*0.02));
+        ctx.fillStyle=hexa(COL.gold,.4+0.4*pulse);
+        ctx.beginPath(); ctx.arc(c.x+8*ui, c.y-6*ui, 2*ui*(1+pulse), 0, 7); ctx.fill();
+      }
+    }
   }
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
@@ -1769,7 +2113,7 @@
     ctx.fillText(prog, W*0.58, cy+6*ui);
     // уровень/режим — справа перед паузой
     ctx.textAlign='right'; ctx.fillStyle=hexa(COL.muted,.7); ctx.font=`${9.5*ui}px ${MONO}`;
-    ctx.fillText(zen?t('mode.zen'):t('level.name',{n:levelIdx+1}), pauseBtn.x-12*ui, cy);
+    ctx.fillText(currentLevelName(), pauseBtn.x-12*ui, cy);
 
     // кнопка паузы — скруглённая карточка
     rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui);
@@ -1998,6 +2342,7 @@
     } else {
       drawField(ts);
       drawRunways(ts);
+      if(LV.biome) drawForest(ts);
       bays.forEach(drawBay);
       planes.forEach(p=>{ if(!p.dead) drawPlane(p); });
       drawEffects(dt);
@@ -2019,20 +2364,140 @@
     const unit = t(LV.objective.metric==='upgrades'?'unit.upgrades':'unit.planes', {n:v});
     document.getElementById('overMsg').textContent =
       t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
+    // снимок смены — для карточки статистики, графика и шеринга
+    lastShift = {
+      passed, stars, metric:LV.objective.metric, v, target:LV.objective.target,
+      money, peak:statPeak, time:gameTime,
+      levelName: currentLevelName(),
+      samples: statSamples.slice(),
+    };
     // карточка статистики смены
     const statsBox=document.getElementById('overStats'); statsBox.innerHTML='';
     [[LV.objective.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), fmtNum(v)+' / '+fmtNum(LV.objective.target), 'v-phos'],
      [t('stats.money'), fmtMoney(money), 'v-gold'],
+     [t('stats.peak'), '✈ '+fmtNum(statPeak), 'v-teal'],
      [t('stats.lives'), '♥ '+fmtNum(Math.max(0,lives))+' / '+fmtNum(K.START_LIVES), 'v-life'],
-     [t('stats.time'), fmtTime(gameTime), 'v-teal']
+     [t('stats.time'), fmtTime(gameTime), 'v-phos']
     ].forEach(s2=>{
       const d=document.createElement('div'); d.className='stat';
       d.innerHTML=`<div class="label">${s2[0]}</div><div class="val ${s2[2]}">${s2[1]}</div>`;
       statsBox.appendChild(d);
     });
-    const hasNext = levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
+    const hasNext = !LV.biome && levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
     document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
     document.getElementById('overScreen').classList.remove('hidden');
+    // график рисуем после показа экрана — нужен реальный размер канваса
+    requestAnimationFrame(()=>renderStatGraph(document.getElementById('statGraph'), lastShift));
+  }
+
+  // ---- статистика смены: график во времени + карточка для шеринга ----
+  // Рисуем в произвольный 2D-контекст (экранный канвас или офскрин для картинки):
+  // область «нагрузка» (бирюза) + линия «принято» (золото) на общей оси времени.
+  function drawTimeline(g, x, y, w, h, shift){
+    const pad=10, gx=x+pad+18, gy=y+pad, gw=w-pad*2-18, gh=h-pad*2-14;
+    g.fillStyle=hexa(COL.phosphor,.04); g.fillRect(x,y,w,h);
+    // сетка
+    g.strokeStyle=hexa(COL.phosphor,.10); g.lineWidth=1;
+    for(let i=0;i<=3;i++){ const yy=gy+gh*i/3; g.beginPath(); g.moveTo(gx,yy); g.lineTo(gx+gw,yy); g.stroke(); }
+    const s=shift.samples||[];
+    if(s.length<2){
+      g.fillStyle=hexa(COL.muted,.7); g.font=`11px ${MONO}`; g.textAlign='center'; g.textBaseline='middle';
+      g.fillText('—', x+w/2, y+h/2); return;
+    }
+    const tMax=Math.max(shift.time, s[s.length-1].t, 1);
+    const loadMax=Math.max(2, ...s.map(p=>p.load));
+    const servMax=Math.max(1, ...s.map(p=>p.served));
+    const X=t=>gx + gw*Math.min(1,t/tMax);
+    const Yl=v=>gy+gh - gh*(v/loadMax);
+    const Ys=v=>gy+gh - gh*(v/servMax);
+    // нагрузка — заливка + линия
+    g.beginPath(); g.moveTo(X(s[0].t), gy+gh);
+    s.forEach(p=>g.lineTo(X(p.t), Yl(p.load))); g.lineTo(X(s[s.length-1].t), gy+gh); g.closePath();
+    g.fillStyle=hexa(COL.teal,.16); g.fill();
+    g.beginPath(); s.forEach((p,i)=>{ const fx=X(p.t),fy=Yl(p.load); i?g.lineTo(fx,fy):g.moveTo(fx,fy); });
+    g.strokeStyle=COL.teal; g.lineWidth=2; g.lineJoin='round'; g.stroke();
+    // принято — золотая линия (накопительно)
+    g.beginPath(); s.forEach((p,i)=>{ const fx=X(p.t),fy=Ys(p.served); i?g.lineTo(fx,fy):g.moveTo(fx,fy); });
+    g.strokeStyle=COL.gold; g.lineWidth=2; g.stroke();
+    // подписи осей: пик нагрузки слева сверху, время справа снизу
+    g.textBaseline='middle'; g.fillStyle=hexa(COL.teal,.9); g.font=`9px ${MONO}`; g.textAlign='right';
+    g.fillText(String(loadMax), gx-4, gy+2);
+    g.fillStyle=hexa(COL.muted,.8); g.textAlign='left'; g.textBaseline='alphabetic';
+    g.fillText('0:00', gx, y+h-3); g.textAlign='right'; g.fillText(fmtTime(tMax), gx+gw, y+h-3);
+    // легенда
+    g.textAlign='left'; g.textBaseline='middle'; g.font=`9px ${MONO}`;
+    g.fillStyle=COL.teal; g.fillRect(gx+2,gy+5,8,3); g.fillStyle=hexa(COL.muted,.9); g.fillText(t('graph.load'), gx+14, gy+6);
+    const lx=gx+14+g.measureText(t('graph.load')).width+12;
+    g.fillStyle=COL.gold; g.fillRect(lx,gy+5,8,3); g.fillStyle=hexa(COL.muted,.9); g.fillText(t('graph.served'), lx+12, gy+6);
+  }
+  function renderStatGraph(cv2, shift){
+    if(!cv2 || !shift) return;
+    const dpr=Math.min(window.devicePixelRatio||1, 2);
+    const cssW=cv2.clientWidth||360, cssH=cv2.clientHeight||132;
+    cv2.width=cssW*dpr; cv2.height=cssH*dpr;
+    const g=cv2.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+    g.clearRect(0,0,cssW,cssH);
+    drawTimeline(g, 0,0, cssW,cssH, shift);
+  }
+  // локальный скруглённый прямоугольник для офскрин-контекста (rr() завязан на ctx)
+  function rrp(g,x,y,w,h,r){ r=Math.min(r,w/2,h/2);
+    g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
+    g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+  // квадратная карточка для «поделиться картинкой»
+  function drawShareCard(canvas, shift){
+    const S=1080, g=canvas.getContext('2d');
+    const grad=g.createLinearGradient(0,0,0,S);
+    grad.addColorStop(0,'#0e2230'); grad.addColorStop(1,COL.ink);
+    g.fillStyle=grad; g.fillRect(0,0,S,S);
+    g.fillStyle=hexa(COL.phosphor,.06); for(let i=0;i<70;i++){ const rx=(i*173)%S, ry=(i*97)%S; g.fillRect(rx,ry,2,2); }
+    // шапка
+    g.textAlign='center';
+    g.fillStyle=COL.phosphor; g.font=`700 64px ${MONO}`; g.fillText(t('app.name'), S/2, 130);
+    g.fillStyle=hexa(COL.muted,.9); g.font=`24px ${MONO}`;
+    g.fillText((shift.passed?t('over.passed'):t('over.failed'))+' · '+shift.levelName, S/2, 178);
+    // звёзды
+    g.fillStyle=COL.gold; g.font=`80px ${MONO}`; g.shadowColor=hexa(COL.gold,.5); g.shadowBlur=24;
+    g.fillText('★'.repeat(shift.stars)+'☆'.repeat(3-shift.stars), S/2, 290); g.shadowBlur=0;
+    // плитки статистики 2×2
+    const tiles=[
+      [shift.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), fmtNum(shift.v)+' / '+fmtNum(shift.target), COL.phosphor],
+      [t('stats.money'), fmtMoney(shift.money), COL.gold],
+      [t('stats.peak'), '✈ '+fmtNum(shift.peak), COL.teal],
+      [t('stats.time'), fmtTime(shift.time), COL.phosphor],
+    ];
+    const tw=440, th=120, gap=40, ox=(S-tw*2-gap)/2, oy=340;
+    tiles.forEach((tl,i)=>{ const cx=ox+(i%2)*(tw+gap), cy=oy+Math.floor(i/2)*(th+gap);
+      rrp(g,cx,cy,tw,th,18); g.fillStyle=hexa(COL.phosphor,.05); g.fill();
+      g.lineWidth=2; g.strokeStyle=hexa(COL.phosphor,.15); rrp(g,cx,cy,tw,th,18); g.stroke();
+      g.textAlign='left'; g.textBaseline='alphabetic';
+      g.fillStyle=hexa(COL.muted,.85); g.font=`20px ${MONO}`; g.fillText(tl[0].toUpperCase(), cx+26, cy+44);
+      g.fillStyle=tl[2]; g.font=`600 46px ${MONO}`; g.fillText(tl[1], cx+26, cy+98);
+    });
+    // график во времени
+    g.textAlign='left'; g.textBaseline='alphabetic';
+    g.fillStyle=hexa(COL.muted,.85); g.font=`20px ${MONO}`; g.fillText(t('graph.title').toUpperCase(), ox, 700);
+    // drawTimeline использует пиксельные шрифты ~9-11px → масштабируем контекст
+    g.save(); g.translate(ox, 720); g.scale(2.4,2.4);
+    drawTimeline(g, 0,0, (tw*2+gap)/2.4, 230/2.4, shift); g.restore();
+    g.textAlign='center'; g.fillStyle=hexa(COL.phosphor,.5); g.font=`22px ${MONO}`;
+    g.fillText('#PlaneFlow', S/2, S-46);
+  }
+  async function shareShift(){
+    if(!lastShift) return;
+    const card=document.createElement('canvas'); card.width=1080; card.height=1080;
+    drawShareCard(card, lastShift);
+    card.toBlob(async blob=>{
+      if(!blob) return;
+      const file=new File([blob], 'planeflow-shift.png', {type:'image/png'});
+      try{
+        if(navigator.canShare && navigator.canShare({files:[file]})){
+          await navigator.share({files:[file], title:t('app.name')}); return;
+        }
+      }catch(e){ /* отмена/нет поддержки — падаем в скачивание */ }
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='planeflow-shift.png'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    }, 'image/png');
   }
 
   // ---- меню / уровни / сохранение ----
@@ -2041,11 +2506,30 @@
   // язык, медали (ach/stats) и звук/вибро — не прогресс уровней, сохраняем при сбросе
   // сброс прогресса заодно возвращает туториал — новый игрок снова увидит обучение
   function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false,tutorialDone:false}; saveGame(); renderLevels(); }
-  function buildLevel(idx){ levelIdx=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
-  function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel','settingsScreen','medalScreen','goalsScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
+  function buildLevel(idx){ curBiome=null; levelIdx=idx; levelKey=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
+  function buildBiome(b){ curBiome=b; levelIdx=-1; levelKey='b_'+b.id; LV=b.level; bays=[]; runways=[]; layout(); }
+  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsPanel','settingsScreen','medalScreen','goalsScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
   function startLevel(idx){ zen=false; buildLevel(idx); hideAllScreens(); reset(); }
   function startZen(){ zen=true; buildLevel(0); hideAllScreens(); reset(); }
+  // карты биомов: отдельный экран выбора (доступен из главного меню)
+  function showBiomes(){ inMenu=true; renderBiomes(); hideAllScreens(); document.getElementById('biomeScreen').classList.remove('hidden'); }
+  function startBiome(b){ if(!b.ready) return; zen=false; buildBiome(b); hideAllScreens(); reset(); }
+  function renderBiomes(){
+    const list=document.getElementById('biomeList'); list.innerHTML='';
+    BIOMES.forEach(b=>{
+      const stars=save.stars['b_'+b.id]||0;
+      const card=document.createElement('button');
+      card.className='levelcard biomecard'+(b.ready?'':' locked');
+      const foot = b.ready ? ('★'.repeat(stars)+'☆'.repeat(3-stars)) : ('🔒 '+t('biomes.soon'));
+      card.innerHTML=`<div class="bioemoji">${b.emoji}</div>`+
+        `<div class="lvkick">${t('biome.'+b.id+'.name')}</div>`+
+        `<div class="biotag">${t('biome.'+b.id+'.tag')}</div>`+
+        `<div class="lvstars">${foot}</div>`;
+      if(b.ready) card.onclick=()=>startBiome(b);
+      list.appendChild(card);
+    });
+  }
   function renderLevels(){
     const list=document.getElementById('levelList'); list.innerHTML='';
     LEVELS.forEach((lv,i)=>{
@@ -2087,8 +2571,12 @@
   document.getElementById('backBtn').onclick=()=>{ hideAllScreens(); document.getElementById('startScreen').classList.remove('hidden'); };
   document.getElementById('resetProgBtn').onclick=resetProgress;
   document.getElementById('againBtn').onclick=()=>{ document.getElementById('overScreen').classList.add('hidden'); reset(); };
-  document.getElementById('toLevelsBtn').onclick=showLevels;
+  function backToSelect(){ if(curBiome) showBiomes(); else showLevels(); }
+  document.getElementById('toLevelsBtn').onclick=backToSelect;
+  document.getElementById('biomesBtn').onclick=showBiomes;
+  document.getElementById('biomesBackBtn').onclick=()=>{ hideAllScreens(); document.getElementById('startScreen').classList.remove('hidden'); };
   document.getElementById('nextBtn').onclick=()=>{ if(levelIdx+1<LEVELS.length) startLevel(levelIdx+1); };
+  document.getElementById('shareBtn').onclick=shareShift;
 
   function setPaused(p){
     paused=p;
@@ -2108,7 +2596,7 @@
     document.getElementById('settingsPanel').classList.toggle('hidden'); refreshLog();
   };
   document.getElementById('menuBtn').onclick=()=>{
-    recordResult(); running=false; paused=false; ACH.flushToasts(); showLevels();
+    recordResult(); running=false; paused=false; ACH.flushToasts(); backToSelect();
   };
   document.getElementById('optLives').onchange=e=>{ debug.infiniteLives=e.target.checked; };
   document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; };
@@ -2136,10 +2624,11 @@
   let goalsFromPause=false;
   function buildGoalsContent(){
     document.getElementById('goalsKicker').textContent = t('goals.kicker');
-    document.getElementById('goalsTitle').textContent = zen ? t('mode.zen') : levelName();
+    document.getElementById('goalsTitle').textContent = currentLevelName();
     const body=document.getElementById('goalsBody');
     if(zen){ body.innerHTML = `<p class="goalzen">${t('goals.zen')}</p>`; return; }
     const rows=[['★', objectiveDesc()], ['★★', t('goals.star2')], ['★★★', t('goals.star3')]];
+    if(LV.biome) rows.push(['🌲', t('biome.'+LV.biome+'.hint')]);
     body.innerHTML = rows.map(r=>`<div class="goalrow"><div class="gs">${r[0]}</div><div class="gt">${r[1]}</div></div>`).join('');
   }
   function showGoals(fromPause){
@@ -2432,19 +2921,19 @@
       get lang(){ return lang; },
       get levelIdx(){ return levelIdx; },
       get zen(){ return zen; },        set zen(v){ zen=v; },
-      // выставить текущий уровень (для проверки levelEvents/objectiveDesc/имени)
-      setLevel(i){ levelIdx=i; LV=LEVELS[i]; },
+      // выставить текущий уровень кампании (levelKey=индекс — как в buildLevel)
+      setLevel(i){ levelIdx=i; levelKey=i; LV=LEVELS[i]; },
       // прогон РЕАЛЬНОГО пути завершения смены: выставляем результат и зовём те же
       // computeStars()/recordResult(), что и в игре — проверяем звёзды, открытие
       // следующего уровня и сохранение, не трогая отрисовку и ввод.
       simulateResult(opts){
         opts = opts || {};
         zen = false;
-        levelIdx = opts.level||0; LV = LEVELS[levelIdx];
+        levelIdx = opts.level||0; levelKey = levelIdx; LV = LEVELS[levelIdx];
         served = opts.served||0; upgradesDone = opts.upgrades||0;
         runPenalties = opts.penalties||0; runCrashes = opts.crashes||0;
         const stars = computeStars(); recordResult();
-        return { stars, unlocked: save.unlocked, best: save.best[levelIdx], saved: save.stars[levelIdx] };
+        return { stars, unlocked: save.unlocked, best: save.best[levelKey], saved: save.stars[levelKey] };
       },
     };
   }
