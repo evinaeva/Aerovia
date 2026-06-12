@@ -1,18 +1,23 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Tower — прототип</title>
+<title>Tower — диспетчер</title>
 <style>
   :root{
     --ink:#0a1622;
-    --ink-2:#0e2030;
+    --tarmac:#1b2530;
+    --tarmac-2:#222e3b;
+    --water:#10303a;
     --grid:#13354a;
     --phosphor:#bfe9ff;
     --paper:#e9e6dc;
     --muted:#7f9bb0;
-    --amber:#f4a259;
-    --teal:#4ecdc4;
-    --rose:#ef798a;
+    --amber:#f4a259;   /* ремонт */
+    --teal:#4ecdc4;    /* топливо */
+    --rose:#ef798a;    /* посадка людей */
+    --gold:#f4cf5e;    /* вип */
+    --life:#ef5365;
+    --coin:#f4cf5e;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:var(--ink);overflow:hidden}
@@ -24,45 +29,28 @@
   #stage{position:fixed;inset:0}
   canvas{position:absolute;inset:0;touch-action:none;display:block}
 
-  .hud{
-    position:absolute;top:0;left:0;right:0;
-    display:flex;justify-content:space-between;align-items:flex-start;
-    padding:16px 18px;pointer-events:none;
-    text-transform:uppercase;letter-spacing:.14em;
-  }
-  .hud .label{font-size:10px;color:var(--muted)}
-  .hud .value{font-size:30px;font-weight:600;line-height:1;margin-top:4px;color:var(--paper)}
-  .hud .right{text-align:right}
-  .hud .right .value{font-size:18px;color:var(--phosphor)}
-
-  .hint{
-    position:absolute;left:0;right:0;bottom:22px;text-align:center;
-    font-size:11px;letter-spacing:.1em;color:var(--muted);
-    pointer-events:none;transition:opacity .6s;text-transform:uppercase;
-  }
-
   .overlay{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(120% 90% at 50% 40%, rgba(10,22,34,.72), rgba(10,22,34,.94));
-    backdrop-filter:blur(2px);
+    background:radial-gradient(120% 90% at 50% 40%, rgba(10,22,34,.74), rgba(10,22,34,.95));
+    backdrop-filter:blur(2px);z-index:5;
   }
-  .panel{text-align:center;padding:34px 30px;max-width:340px}
+  .panel{text-align:center;padding:34px 30px;max-width:380px}
   .panel .kicker{font-size:11px;letter-spacing:.34em;color:var(--phosphor);text-transform:uppercase}
   .panel h1{
     font-family:Georgia,"Times New Roman",serif;font-weight:400;
     font-size:40px;letter-spacing:.01em;margin:14px 0 6px;color:var(--paper);
   }
   .panel p{font-size:13px;line-height:1.7;color:var(--muted);margin:10px 0 0}
-  .panel .score-final{font-size:54px;color:var(--phosphor);margin:8px 0 0;letter-spacing:.02em}
+  .panel .big{font-size:48px;color:var(--phosphor);margin:8px 0 0;letter-spacing:.02em}
   .btn{
-    margin-top:26px;display:inline-block;cursor:pointer;
+    margin-top:24px;display:inline-block;cursor:pointer;
     border:1px solid var(--phosphor);color:var(--phosphor);background:transparent;
     font:inherit;font-size:12px;letter-spacing:.22em;text-transform:uppercase;
-    padding:13px 26px;border-radius:2px;transition:.2s;
+    padding:13px 26px;border-radius:3px;transition:.2s;
   }
   .btn:hover{background:var(--phosphor);color:var(--ink)}
   .hidden{display:none}
-  .legend{display:flex;gap:14px;justify-content:center;margin-top:20px;font-size:10px;letter-spacing:.12em;color:var(--muted)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:10px;letter-spacing:.1em;color:var(--muted)}
   .legend span{display:flex;align-items:center;gap:6px;text-transform:uppercase}
   .dot{width:9px;height:9px;border-radius:50%}
 </style>
@@ -70,28 +58,16 @@
 <div id="stage">
   <canvas id="c"></canvas>
 
-  <div class="hud">
-    <div>
-      <div class="label">Принято бортов</div>
-      <div class="value" id="score">0</div>
-    </div>
-    <div class="right">
-      <div class="label">В небе</div>
-      <div class="value" id="traffic">0</div>
-    </div>
-  </div>
-
-  <div class="hint" id="hint">Проведи пальцем от самолёта к полосе его цвета</div>
-
   <div class="overlay" id="startScreen">
     <div class="panel">
       <div class="kicker">Диспетчерская вышка</div>
       <h1>Tower</h1>
-      <p>Веди борт пальцем к посадочной полосе того же цвета. Линии могут пересекаться — борта нет. Один контакт в воздухе закрывает смену.</p>
+      <p>Борта прилетают справа. Проведи борт пальцем на свободную полосу — он сядет. Затем веди его по боксам в порядке очереди нужд, потом на взлёт. Один бокс — один борт. Следи за терпением и не дай бортам столкнуться.</p>
       <div class="legend">
-        <span><i class="dot" style="background:var(--amber)"></i>полоса A</span>
-        <span><i class="dot" style="background:var(--teal)"></i>полоса B</span>
-        <span><i class="dot" style="background:var(--rose)"></i>полоса C</span>
+        <span><i class="dot" style="background:var(--amber)"></i>ремонт</span>
+        <span><i class="dot" style="background:var(--teal)"></i>топливо</span>
+        <span><i class="dot" style="background:var(--rose)"></i>посадка людей</span>
+        <span><i class="dot" style="background:var(--gold)"></i>вип-борт</span>
       </div>
       <button class="btn" id="startBtn">Заступить на смену</button>
     </div>
@@ -100,8 +76,8 @@
   <div class="overlay hidden" id="overScreen">
     <div class="panel">
       <div class="kicker">Смена закрыта</div>
-      <div class="score-final" id="finalScore">0</div>
-      <p id="overMsg">Два борта сошлись слишком близко.</p>
+      <div class="big" id="finalScore">0</div>
+      <p id="overMsg">Закончились жизни.</p>
       <button class="btn" id="againBtn">Новая смена</button>
     </div>
   </div>
@@ -109,103 +85,259 @@
 
 <script>
 (() => {
+  "use strict";
   const cv = document.getElementById('c');
   const ctx = cv.getContext('2d');
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const COLORS = [
-    {key:0, css:getComputedStyle(document.documentElement).getPropertyValue('--amber').trim()},
-    {key:1, css:getComputedStyle(document.documentElement).getPropertyValue('--teal').trim()},
-    {key:2, css:getComputedStyle(document.documentElement).getPropertyValue('--rose').trim()},
-  ];
+  // ---- palette helpers ----
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const COL = {};
+  ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','rose','gold','life','coin']
+    .forEach(n => COL[n] = css('--'+n));
 
-  let W=0, H=0, dpr=1;
+  // service -> color
+  const SVC = {
+    repair: {label:'Ремонт',   color: COL.amber},
+    fuel:   {label:'Топливо',  color: COL.teal},
+    board:  {label:'Посадка',  color: COL.rose},
+    depart: {label:'Вылет',    color: COL.phosphor},
+  };
+
+  // ---- balance knobs (дефолты, потом крутим) ----
+  const K = {
+    TURN: 3.2,            // rad/sec поворот в полёте
+    SPEED_AIR: 95,        // скорость захода на посадку
+    SPEED_TAXI: 70,       // скорость руления по земле
+    SPEED_TAKEOFF: 150,   // разгон на взлёте
+    ARRIVE: 12,
+    GRAB: 42,
+    CRASH_DIST: 24,       // столкновение на поле
+    AIR_BASE: 14,         // базовое воздушное терпение, сек
+    GROUND_BASE: 6,       // базовое наземное терпение, сек
+    GROUND_STEP: 3,       // + за каждую услугу
+    SERVE_BASE: 3.0,      // базовое время обслуживания в боксе
+    MONEY_SVC: 10,        // деньги за услугу (вип x2)
+    VIP_CHANCE: 0.25,
+    SPAWN_BASE: 4.2,      // интервал спавна
+    SPAWN_MIN: 2.2,
+    MAX_PLANES: 9,
+    START_MONEY: 100,
+    BAY_OPEN_COST: 100,
+    BAY_UP_COST: [80,160,320], // апгрейд до ур.1/2/3
+    BAY_MAX_LVL: 3,
+    UP_SPEED: 0.25,       // +25% скорости за уровень
+    START_LIVES: 3,
+  };
+
+  // ---- level config ----
+  const LEVEL = {
+    name: 'Уровень 1',
+    sides: {
+      top:    {type:'fuel',   slots:2, open:1},
+      left:   {type:'board',  slots:2, open:1},
+      bottom: {type:'repair', slots:2, open:1},
+    },
+    runways: 3,
+  };
+
+  // ---- canvas sizing ----
+  let W=0, H=0, dpr=1, ui=1;
+  const HUD_H = () => Math.round(44*ui);
   function resize(){
     dpr = Math.min(window.devicePixelRatio||1, 2);
     W = window.innerWidth; H = window.innerHeight;
     cv.width = W*dpr; cv.height = H*dpr;
     cv.style.width=W+'px'; cv.style.height=H+'px';
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    layoutRunways();
+    ui = Math.max(0.7, Math.min(1.5, Math.min(W/1100, H/620)));
+    layout();
   }
   window.addEventListener('resize', resize);
 
-  // ---- runways (positions as fractions, recomputed on resize) ----
-  const RUNWAY_DEFS = [
-    {color:0, fx:0.00, fy:0.16, fw:0.20, fh:0.085, dir:'right', label:'A'},
-    {color:1, fx:0.40, fy:0.80, fw:0.20, fh:0.20,  dir:'up',    label:'B'},
-    {color:2, fx:0.80, fy:0.58, fw:0.20, fh:0.085, dir:'left',  label:'C'},
-  ];
-  let runways=[];
-  function layoutRunways(){
-    runways = RUNWAY_DEFS.map(d=>({
-      color:d.color, label:d.label, dir:d.dir,
-      x:d.fx*W, y:d.fy*H, w:d.fw*W, h:d.fh*H
-    }));
+  // ---- layout: bays, runways, hover slots ----
+  let bays=[], runways=[], field={}, pauseBtn={};
+  function layout(){
+    const hud = HUD_H();
+    const M = 12*ui;
+    // field taxi area (left ~60%); runways on right
+    const fx0 = M, fy0 = hud + M;
+    const fx1 = W*0.58, fy1 = H - M;
+    field = {x0:fx0, y0:fy0, x1:fx1, y1:fy1};
+
+    const bw = Math.min(96*ui, (fx1-fx0)/2.4);
+    const bh = bw*0.72;
+
+    // build bays once (preserve open/level state across resize)
+    if(!bays.length){
+      bays = [];
+      for(const side of ['top','left','bottom']){
+        const cfg = LEVEL.sides[side];
+        for(let i=0;i<cfg.slots;i++){
+          bays.push({side, type:cfg.type, slot:i,
+                     open:i<cfg.open, lvl:0, occupied:null,
+                     x:0,y:0,w:bw,h:bh});
+        }
+      }
+    }
+    // position bays
+    const bySide = s => bays.filter(b=>b.side===s);
+    function spread(n, a, b){ // n centers within [a,b]
+      const out=[]; const span=b-a; const step=span/(n+1);
+      for(let i=0;i<n;i++) out.push(a+step*(i+1));
+      return out;
+    }
+    const top=bySide('top'), left=bySide('left'), bot=bySide('bottom');
+    spread(top.length, fx0+bw*0.6, fx1-bw*0.6).forEach((cx,i)=>{
+      top[i].w=bw; top[i].h=bh; top[i].x=cx-bw/2; top[i].y=fy0;
+    });
+    spread(bot.length, fx0+bw*0.6, fx1-bw*0.6).forEach((cx,i)=>{
+      bot[i].w=bw; bot[i].h=bh; bot[i].x=cx-bw/2; bot[i].y=fy1-bh;
+    });
+    spread(left.length, fy0+bh*0.7, fy1-bh*0.7).forEach((cy,i)=>{
+      left[i].w=bw; left[i].h=bh; left[i].x=fx0; left[i].y=cy-bh/2;
+    });
+
+    // runways on right
+    const rwL = W*0.60, rwR = W*0.85;
+    const n = LEVEL.runways;
+    const top0 = hud + M, bot0 = H - M;
+    const gap = 10*ui;
+    const rh = ((bot0-top0) - gap*(n-1)) / n;
+    if(!runways.length || runways.length!==n){
+      runways = []; for(let i=0;i<n;i++) runways.push({occupied:null});
+    }
+    for(let i=0;i<n;i++){
+      const r=runways[i];
+      r.x=rwL; r.y=top0 + i*(rh+gap); r.w=rwR-rwL; r.h=rh;
+      r.cy = r.y + r.h/2;
+      r.stopX = rwL + 26*ui;   // куда докатывается севший борт (полевой край)
+      r.exitX = rwR + 10*ui;   // правый (водный) край
+    }
+    // hover x для прилетающих
+    field.hoverX = W*0.93;
+    field.rwL = rwL; field.rwR = rwR;
+
+    pauseBtn = {x: W - 44*ui, y: 6*ui, w: 36*ui, h: 30*ui};
   }
 
-  // ---- state ----
-  let planes=[], score=0, running=false, t=0, spawnTimer=0, lastTs=0;
-  const TURN = 2.8;          // rad/sec max turn
-  const ARRIVE = 14;
-  const CRASH_DIST = 22;     // center distance for collision
-  const GRAB = 40;
+  // ---- game state ----
+  let planes=[], money=0, lives=0, served=0, gameTime=0;
+  let running=false, paused=false, lastTs=0, spawnTimer=0;
 
   function reset(){
-    planes=[]; score=0; t=0; spawnTimer=0.6; running=true;
-    document.getElementById('score').textContent='0';
-    document.getElementById('traffic').textContent='0';
-    document.getElementById('hint').style.opacity='1';
-    spawnPlane(); spawnPlane();
+    planes=[]; money=K.START_MONEY; lives=K.START_LIVES; served=0; gameTime=0;
+    spawnTimer=1.0; running=true; paused=false;
+    bays.forEach(b=>{ b.occupied=null; const cfg=LEVEL.sides[b.side];
+      b.open = b.slot < cfg.open; b.lvl=0; });
+    runways.forEach(r=>r.occupied=null);
+    selected=null;
+    spawnPlane();
   }
+
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
   function spawnPlane(){
-    const edge = Math.floor(Math.random()*4);
-    let x,y,ang;
-    const m=30;
-    if(edge===0){x=Math.random()*W;y=-m;ang=Math.PI/2;}
-    else if(edge===1){x=W+m;y=Math.random()*H;ang=Math.PI;}
-    else if(edge===2){x=Math.random()*W;y=H+m;ang=-Math.PI/2;}
-    else {x=-m;y=Math.random()*H;ang=0;}
-    ang += (Math.random()-0.5)*0.7;
-    const speed = 52 + Math.min(score*1.1, 46);
-    planes.push({x,y,ang,speed,color:Math.floor(Math.random()*3),path:[],sel:false,born:t,land:0});
+    const vip = Math.random() < K.VIP_CHANCE;
+    const pool = shuffle(['repair','fuel','board']);
+    const nSvc = Math.random() < 0.45 ? 2 : 1;
+    const requests = pool.slice(0, nSvc).concat(['depart']);
+    const waitMult = vip ? 1 : 2;
+    // вертикальная позиция зависания — у одной из полос/между ними
+    const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
+    planes.push({
+      x: field.hoverX, y, ang: Math.PI, // нос влево
+      vip, requests, reqIndex:0,
+      zone:'air',            // air | runway | field | bay
+      path:[], moving:false, selected:false,
+      landing:false, takeoff:false, exiting:false,
+      runway:null, bay:null,
+      airTime: K.AIR_BASE*waitMult, airMax: K.AIR_BASE*waitMult,
+      groundTime:0, groundMax:0, waitMult,
+      serveTime:0, serveMax:0,
+      halfPay:false, dead:false,
+      reward: nSvc * K.MONEY_SVC * (vip?2:1),
+      nSvc,
+    });
   }
 
+  // ---- geometry ----
+  const rectHit = (px,py,r) => px>r.x && px<r.x+r.w && py>r.y && py<r.y+r.h;
+  const dist = (ax,ay,bx,by) => Math.hypot(ax-bx, ay-by);
+
   // ---- input ----
-  let drawing=null;
+  let selected=null, drag=null;
   function pt(e){
     const r=cv.getBoundingClientRect();
-    const s = e.touches?e.touches[0]:e;
+    const s=e.touches?e.touches[0]:e;
     return {x:s.clientX-r.left, y:s.clientY-r.top};
   }
+  function pickPlane(p){
+    let best=null, bd=K.GRAB;
+    for(const pl of planes){
+      if(pl.zone==='bay') continue;
+      const d=dist(pl.x,pl.y,p.x,p.y);
+      if(d<bd){bd=d;best=pl;}
+    }
+    return best;
+  }
+  function pickBay(p){
+    for(const b of bays) if(rectHit(p.x,p.y,b)) return b;
+    return null;
+  }
+  function bayUpCost(b){ return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
+
   function down(e){
     if(!running) return;
     e.preventDefault();
     const p=pt(e);
-    let best=null,bd=GRAB;
-    for(const pl of planes){
-      const d=Math.hypot(pl.x-p.x,pl.y-p.y);
-      if(d<bd){bd=d;best=pl;}
+    // pause button
+    if(rectHit(p.x,p.y,pauseBtn)){ paused=!paused; return; }
+    if(paused) return;
+
+    // bay tap -> open / upgrade
+    const b=pickBay(p);
+    if(b){
+      const cost=bayUpCost(b);
+      if(cost!=null && money>=cost){
+        money-=cost;
+        if(!b.open) b.open=true; else b.lvl++;
+      }
+      return;
     }
-    if(best){
-      planes.forEach(x=>x.sel=false);
-      best.sel=true; best.path=[];
-      drawing={plane:best,last:p};
-      document.getElementById('hint').style.opacity='0';
+    // plane
+    const pl=pickPlane(p);
+    if(pl){
+      selected=pl;
+      planes.forEach(x=>x.selected=false); pl.selected=true;
+      drag={plane:pl, start:p, last:p, drew:false};
+    } else {
+      selected=null; planes.forEach(x=>x.selected=false);
     }
   }
   function move(e){
-    if(!drawing) return;
+    if(!drag||paused) return;
     e.preventDefault();
     const p=pt(e);
-    if(Math.hypot(p.x-drawing.last.x,p.y-drawing.last.y)>12){
-      drawing.plane.path.push({x:p.x,y:p.y});
-      drawing.last=p;
+    if(!drag.drew && dist(p.x,p.y,drag.start.x,drag.start.y)>10){
+      drag.drew=true;
+      drag.plane.path=[];            // начинаем новый маршрут
+    }
+    if(drag.drew && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
+      drag.plane.path.push({x:p.x,y:p.y});
+      drag.last=p;
     }
   }
-  function up(e){
-    if(drawing){drawing.plane.sel=false;drawing=null;}
+  function up(){
+    if(!drag) return;
+    const pl=drag.plane;
+    if(drag.drew){
+      pl.moving = pl.path.length>0;        // поехали по маршруту
+      pl.exiting=false;
+    } else {
+      // тап: если есть маршрут — переключаем стоп/движение
+      if(pl.path.length) pl.moving = !pl.moving;
+    }
+    drag=null;
   }
   cv.addEventListener('pointerdown',down);
   cv.addEventListener('pointermove',move);
@@ -213,128 +345,454 @@
   cv.addEventListener('touchstart',down,{passive:false});
   cv.addEventListener('touchmove',move,{passive:false});
 
+  // ---- crashes ----
+  function freeRes(pl){
+    if(pl.runway){ if(pl.runway.occupied===pl) pl.runway.occupied=null; pl.runway=null; }
+    if(pl.bay){ if(pl.bay.occupied===pl) pl.bay.occupied=null; pl.bay=null; }
+  }
+  function killAir(pl){            // воздушный таймаут: -1 жизнь
+    pl.dead=true; freeRes(pl); lives--;
+  }
+  function killCrash(pl){          // столкновение: -1 жизнь и -выручка
+    if(pl.dead) return;
+    pl.dead=true; freeRes(pl); lives--; money-=pl.reward;
+  }
+
+  function curNeed(pl){ return pl.requests[pl.reqIndex]; }
+
+  function land(pl, r){            // начать посадку на полосу r
+    pl.zone='runway'; pl.runway=r; r.occupied=pl;
+    pl.landing=true; pl.moving=true; pl.path=[];
+  }
+  function startGround(pl){
+    pl.landing=false; pl.moving=false; pl.zone='runway'; // стоит на полосе, ждёт руления
+    const rem = pl.nSvc; // число услуг (без вылета)
+    pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult;
+    pl.groundTime = pl.groundMax;
+  }
+  function serveTimeFor(b){ return K.SERVE_BASE / (1 + b.lvl*K.UP_SPEED); }
+
+  function depart(pl){             // успешный вылет
+    served++;
+    money += Math.round(pl.reward * (pl.halfPay?0.5:1));
+    pl.dead=true; freeRes(pl);
+  }
+
   // ---- update ----
-  function rectHit(pl,r){return pl.x>r.x && pl.x<r.x+r.w && pl.y>r.y && pl.y<r.y+r.h;}
+  function steer(pl, tx, ty, spd, dt){
+    const desired=Math.atan2(ty-pl.y, tx-pl.x);
+    let diff=desired-pl.ang;
+    while(diff>Math.PI)diff-=2*Math.PI;
+    while(diff<-Math.PI)diff+=2*Math.PI;
+    const max=K.TURN*dt;
+    pl.ang += Math.max(-max,Math.min(max,diff));
+    pl.x += Math.cos(pl.ang)*spd*dt;
+    pl.y += Math.sin(pl.ang)*spd*dt;
+  }
+  function followPath(pl, spd, dt){
+    if(!pl.path.length){ return false; }
+    const wp=pl.path[0];
+    steer(pl, wp.x, wp.y, spd, dt);
+    if(dist(pl.x,pl.y,wp.x,wp.y)<K.ARRIVE) pl.path.shift();
+    return true;
+  }
 
   function update(dt){
+    // spawn
     spawnTimer-=dt;
-    const interval = Math.max(1.1, 3.2 - score*0.06);
-    if(spawnTimer<=0 && planes.length<14){ spawnPlane(); spawnTimer=interval; }
+    const interval=Math.max(K.SPAWN_MIN, K.SPAWN_BASE - served*0.05);
+    if(spawnTimer<=0 && planes.length<K.MAX_PLANES){ spawnPlane(); spawnTimer=interval; }
 
     for(const pl of planes){
-      // steer toward next waypoint
-      if(pl.path.length){
-        const wp=pl.path[0];
-        const desired=Math.atan2(wp.y-pl.y, wp.x-pl.x);
-        let diff=desired-pl.ang;
-        while(diff>Math.PI)diff-=2*Math.PI;
-        while(diff<-Math.PI)diff+=2*Math.PI;
-        const max=TURN*dt;
-        pl.ang += Math.max(-max,Math.min(max,diff));
-        if(Math.hypot(wp.x-pl.x,wp.y-pl.y)<ARRIVE) pl.path.shift();
+      if(pl.dead) continue;
+
+      // ---- AIR ----
+      if(pl.zone==='air'){
+        pl.airTime-=dt;
+        if(pl.airTime<=0){ killAir(pl); continue; }
+        if(pl.moving && pl.path.length){
+          followPath(pl, K.SPEED_AIR, dt);
+        }
+        // заход на посадку: пересёк правый край полос -> захват ближайшей
+        if(pl.x <= field.rwR){
+          let best=null, bd=1e9;
+          for(const r of runways){ const d=Math.abs(pl.y-r.cy); if(d<bd){bd=d;best=r;} }
+          if(best){
+            if(best.occupied && best.occupied!==pl){ killCrash(pl); killCrash(best.occupied); }
+            else land(pl, best);
+          }
+        }
+        continue;
       }
-      pl.x += Math.cos(pl.ang)*pl.speed*dt;
-      pl.y += Math.sin(pl.ang)*pl.speed*dt;
 
-      // bounce off edges when free-flying
-      if(pl.x<8){pl.x=8;pl.ang=Math.PI-pl.ang;}
-      if(pl.x>W-8){pl.x=W-8;pl.ang=Math.PI-pl.ang;}
-      if(pl.y<8){pl.y=8;pl.ang=-pl.ang;}
-      if(pl.y>H-8){pl.y=H-8;pl.ang=-pl.ang;}
+      // ---- RUNWAY ----
+      if(pl.zone==='runway'){
+        if(pl.landing){
+          // докатываемся до полевого края, выравниваясь по оси полосы
+          const r=pl.runway;
+          steer(pl, r.stopX, r.cy, K.SPEED_AIR*0.8, dt);
+          if(pl.x <= r.stopX+2){ pl.x=r.stopX; pl.y=r.cy; startGround(pl); }
+          continue;
+        }
+        if(pl.takeoff){
+          pl.groundTime-=dt; if(pl.groundTime<=0) pl.halfPay=true;
+          steer(pl, pl.runway.exitX+200, pl.runway.cy, K.SPEED_TAKEOFF, dt);
+          if(pl.x > W+30){ depart(pl); }
+          continue;
+        }
+        // стоит на полосе, ждёт руления к боксу
+        pl.groundTime-=dt; if(pl.groundTime<=0) pl.halfPay=true;
+        if(pl.moving && pl.path.length){
+          followPath(pl, K.SPEED_TAXI, dt);
+          if(!rectHit(pl.x,pl.y,pl.runway)){          // съехал с полосы на поле
+            if(pl.runway.occupied===pl) pl.runway.occupied=null;
+            pl.runway=null; pl.zone='field';
+          }
+        }
+        continue;
+      }
 
-      // landing
-      for(const r of runways){
-        if(r.color===pl.color && rectHit(pl,r)){ pl.land=1; }
+      // ---- FIELD (руление) ----
+      if(pl.zone==='field'){
+        pl.groundTime-=dt; if(pl.groundTime<=0) pl.halfPay=true;
+        const need=curNeed(pl);
+        if(pl.moving && pl.path.length){
+          followPath(pl, K.SPEED_TAXI, dt);
+        } else if(pl.exiting){
+          pl.exiting=false; pl.moving=false;
+        }
+        // вылет: все услуги сделаны -> заезд на полосу
+        if(need==='depart'){
+          for(const r of runways){
+            if(rectHit(pl.x,pl.y,r)){
+              if(r.occupied && r.occupied!==pl){ killCrash(pl); killCrash(r.occupied); }
+              else { pl.zone='runway'; pl.runway=r; r.occupied=pl; pl.takeoff=true; pl.moving=true; pl.path=[]; }
+              break;
+            }
+          }
+        } else {
+          // заезд в бокс
+          for(const b of bays){
+            if(!b.open) continue;
+            if(rectHit(pl.x,pl.y,b)){
+              if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
+              if(b.occupied && b.occupied!==pl){ killCrash(pl); killCrash(b.occupied); }
+              else {
+                pl.zone='bay'; pl.bay=b; b.occupied=pl;
+                pl.x=b.x+b.w/2; pl.y=b.y+b.h/2; pl.moving=false; pl.path=[];
+                pl.serveMax=serveTimeFor(b); pl.serveTime=pl.serveMax;
+              }
+              break;
+            }
+          }
+        }
+        continue;
+      }
+
+      // ---- BAY (обслуживание) ----
+      if(pl.zone==='bay'){
+        pl.groundTime-=dt; if(pl.groundTime<=0) pl.halfPay=true;
+        pl.serveTime-=dt;
+        if(pl.serveTime<=0){
+          const b=pl.bay; b.occupied=null; pl.bay=null;
+          pl.reqIndex++;
+          // выезд из бокса на поле
+          pl.zone='field';
+          const ex = clampX(b.x+b.w/2 + dirOut(b).dx*(b.w*0.6+24*ui));
+          const ey = clampY(b.y+b.h/2 + dirOut(b).dy*(b.h*0.6+24*ui));
+          pl.x=ex; pl.y=ey; pl.moving=false; pl.path=[];
+        }
+        continue;
       }
     }
 
-    // remove landed
-    for(let i=planes.length-1;i>=0;i--){
-      if(planes[i].land){
-        planes.splice(i,1);
-        score++;
-        document.getElementById('score').textContent=score;
-      }
-    }
-
-    // collisions
-    for(let i=0;i<planes.length;i++)
-      for(let j=i+1;j<planes.length;j++){
-        if(Math.hypot(planes[i].x-planes[j].x,planes[i].y-planes[j].y)<CRASH_DIST){
-          gameOver(); return;
+    // столкновения на поле (оба свободно рулят)
+    const ground = planes.filter(p=>!p.dead && p.zone==='field');
+    for(let i=0;i<ground.length;i++)
+      for(let j=i+1;j<ground.length;j++){
+        if(dist(ground[i].x,ground[i].y,ground[j].x,ground[j].y)<K.CRASH_DIST){
+          killCrash(ground[i]); killCrash(ground[j]);
         }
       }
 
-    document.getElementById('traffic').textContent=planes.length;
+    // уборка
+    for(let i=planes.length-1;i>=0;i--) if(planes[i].dead){ if(selected===planes[i]) selected=null; planes.splice(i,1); }
+
+    if(lives<=0){ gameOver('Закончились жизни.'); return; }
+    gameTime+=dt;
   }
+  function dirOut(b){ // направление "наружу из бокса" в поле
+    if(b.side==='top') return {dx:0,dy:1};
+    if(b.side==='bottom') return {dx:0,dy:-1};
+    return {dx:1,dy:0}; // left
+  }
+  const clampX = x => Math.max(field.x0+10, Math.min(field.x1-10, x));
+  const clampY = y => Math.max(field.y0+10, Math.min(field.y1-10, y));
 
   // ---- render ----
-  function drawGrid(){
-    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--ink');
-    ctx.fillRect(0,0,W,H);
-    ctx.strokeStyle='rgba(19,53,74,.55)';ctx.lineWidth=1;
-    const step=46;
+  function rr(x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);
     ctx.beginPath();
-    for(let x=0;x<W;x+=step){ctx.moveTo(x,0);ctx.lineTo(x,H);}
-    for(let y=0;y<H;y+=step){ctx.moveTo(0,y);ctx.lineTo(W,y);}
-    ctx.stroke();
-    // vignette
-    const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.2,W/2,H/2,Math.max(W,H)*0.75);
-    g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.45)');
-    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+  function glyph(type, r){ // нарисовать иконку услуги в (0,0), размер r; цвет = текущий fill/stroke
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    if(type==='fuel'){
+      ctx.beginPath();
+      ctx.moveTo(0,-r);
+      ctx.bezierCurveTo(r,-r*0.1, r*0.7,r, 0,r);
+      ctx.bezierCurveTo(-r*0.7,r, -r,-r*0.1, 0,-r);
+      ctx.fill();
+    } else if(type==='board'){
+      ctx.beginPath(); ctx.arc(0,-r*0.45,r*0.36,0,7); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-r*0.5,r*0.75); ctx.lineTo(-r*0.32,-r*0.02);
+      ctx.lineTo(r*0.32,-r*0.02); ctx.lineTo(r*0.5,r*0.75);
+      ctx.closePath(); ctx.fill();
+    } else if(type==='repair'){
+      ctx.lineWidth=Math.max(2,r*0.26);
+      ctx.beginPath(); ctx.arc(0,0,r*0.5,0,7); ctx.stroke();
+      for(let k=0;k<8;k++){
+        const a=k*Math.PI/4;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*r*0.5, Math.sin(a)*r*0.5);
+        ctx.lineTo(Math.cos(a)*r*0.95, Math.sin(a)*r*0.95);
+        ctx.stroke();
+      }
+    } else if(type==='depart'){
+      ctx.lineWidth=Math.max(2,r*0.26);
+      ctx.beginPath();
+      ctx.moveTo(-r*0.6,r*0.2); ctx.lineTo(0,-r*0.55); ctx.lineTo(r*0.6,r*0.2);
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-r*0.4); ctx.lineTo(0,r*0.65); ctx.stroke();
+    }
   }
 
-  function drawRunway(r){
-    const col=COLORS[r.color].css;
+  function drawField(){
+    ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
+    // water on far right
+    ctx.fillStyle=COL.water; ctx.fillRect(W*0.85,0,W*0.15,H);
+    // taxi field
+    ctx.fillStyle=COL.tarmac;
+    rr(field.x0,field.y0,field.x1-field.x0,field.y1-field.y0,14*ui); ctx.fill();
+    // central island (декор)
+    ctx.fillStyle=COL['tarmac-2'];
+    const ix=field.x0+(field.x1-field.x0)*0.30, iy=field.y0+(field.y1-field.y0)*0.34;
+    rr(ix,iy,(field.x1-field.x0)*0.40,(field.y1-field.y0)*0.32,10*ui); ctx.fill();
+    ctx.strokeStyle='rgba(127,155,176,.25)'; ctx.lineWidth=1.5;
+    rr(ix,iy,(field.x1-field.x0)*0.40,(field.y1-field.y0)*0.32,10*ui); ctx.stroke();
+  }
+
+  function drawRunways(){
+    for(let i=0;i<runways.length;i++){
+      const r=runways[i];
+      ctx.fillStyle=COL['tarmac-2'];
+      rr(r.x,r.y,r.w,r.h,6*ui); ctx.fill();
+      // центральная пунктирная линия
+      ctx.strokeStyle=r.occupied?'rgba(244,162,89,.5)':'rgba(191,233,255,.45)';
+      ctx.lineWidth=2; ctx.setLineDash([10,9]);
+      ctx.beginPath(); ctx.moveTo(r.x+10*ui,r.cy); ctx.lineTo(r.x+r.w-6*ui,r.cy); ctx.stroke();
+      ctx.setLineDash([]);
+      // метка порога (полевой край)
+      ctx.fillStyle='rgba(191,233,255,.55)';
+      ctx.fillRect(r.x+4*ui, r.y+4*ui, 4*ui, r.h-8*ui);
+    }
+  }
+
+  function drawBay(b){
+    const c=SVC[b.type].color;
     ctx.save();
-    ctx.globalAlpha=0.16;ctx.fillStyle=col;
-    ctx.fillRect(r.x,r.y,r.w,r.h);
-    ctx.globalAlpha=1;ctx.strokeStyle=col;ctx.lineWidth=1.5;
-    ctx.setLineDash([7,7]);ctx.strokeRect(r.x+3,r.y+3,r.w-6,r.h-6);ctx.setLineDash([]);
-    // label
-    ctx.fillStyle=col;ctx.font='600 13px ui-monospace,monospace';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(r.label, r.x+r.w/2, r.y+r.h/2);
+    if(!b.open){
+      ctx.globalAlpha=0.9; ctx.fillStyle='#2a2118';
+      rr(b.x,b.y,b.w,b.h,8*ui); ctx.fill();
+      ctx.globalAlpha=1; ctx.strokeStyle=COL.coin; ctx.lineWidth=2;
+      rr(b.x,b.y,b.w,b.h,8*ui); ctx.stroke();
+      // замок
+      ctx.fillStyle=COL.coin;
+      const lx=b.x+b.w/2, ly=b.y+b.h/2;
+      ctx.fillRect(lx-7*ui, ly-1*ui, 14*ui, 11*ui);
+      ctx.lineWidth=2.4*ui; ctx.strokeStyle=COL.coin;
+      ctx.beginPath(); ctx.arc(lx, ly-1*ui, 5*ui, Math.PI, 2*Math.PI); ctx.stroke();
+      // цена
+      ctx.fillStyle=COL.muted; ctx.font=`${10*ui}px ui-monospace,monospace`;
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(K.BAY_OPEN_COST+'₿', b.x+b.w/2, b.y+b.h+3*ui);
+      // тип (приглушённо)
+      ctx.globalAlpha=0.4; ctx.fillStyle=c;
+      ctx.save(); ctx.translate(b.x+b.w/2, b.y+12*ui); glyph(b.type, 7*ui); ctx.restore();
+      ctx.restore(); return;
+    }
+    // открытый бокс
+    ctx.globalAlpha=0.16; ctx.fillStyle=c;
+    rr(b.x,b.y,b.w,b.h,8*ui); ctx.fill(); ctx.globalAlpha=1;
+    ctx.strokeStyle=c; ctx.lineWidth=2;
+    rr(b.x,b.y,b.w,b.h,8*ui); ctx.stroke();
+    // иконка услуги
+    ctx.fillStyle=c; ctx.strokeStyle=c;
+    ctx.save(); ctx.translate(b.x+b.w/2, b.y+b.h*0.42); glyph(b.type, 13*ui); ctx.restore();
+    // прогресс обслуживания
+    if(b.occupied){
+      const p=b.occupied;
+      const frac=1-Math.max(0,p.serveTime)/p.serveMax;
+      ctx.strokeStyle=c; ctx.lineWidth=3*ui;
+      ctx.beginPath();
+      ctx.arc(b.x+b.w/2, b.y+b.h*0.42, 18*ui, -Math.PI/2, -Math.PI/2+frac*Math.PI*2);
+      ctx.stroke();
+    }
+    // пипсы апгрейда + подсказка цены
+    const pip=5*ui, gap=4*ui, total=K.BAY_MAX_LVL;
+    const startX=b.x+b.w/2-(total*(pip+gap)-gap)/2;
+    for(let i=0;i<total;i++){
+      ctx.fillStyle = i<b.lvl ? c : 'rgba(127,155,176,.35)';
+      ctx.beginPath(); ctx.arc(startX+i*(pip+gap)+pip/2, b.y+b.h-7*ui, pip/2, 0,7); ctx.fill();
+    }
+    const up=bayUpCost(b);
+    if(up!=null){
+      ctx.fillStyle=COL.muted; ctx.font=`${9.5*ui}px ui-monospace,monospace`;
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText('↑'+up+'₿', b.x+b.w/2, b.y+b.h+3*ui);
+    }
     ctx.restore();
   }
 
   function drawPlane(pl){
-    const col=COLORS[pl.color].css;
+    const need=curNeed(pl);
+    const ncol=SVC[need].color;
+    const body=pl.vip?COL.gold:COL.paper;
+
     // committed path
-    if(pl.path.length){
+    if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
       ctx.save();
-      ctx.strokeStyle=col;ctx.globalAlpha=pl.sel?0.9:0.4;ctx.lineWidth=2;
-      ctx.shadowColor=col;ctx.shadowBlur=8;
-      ctx.beginPath();ctx.moveTo(pl.x,pl.y);
-      for(const w of pl.path)ctx.lineTo(w.x,w.y);
-      ctx.stroke();ctx.restore();
+      ctx.strokeStyle=pl.selected?ncol:'rgba(191,233,255,.5)';
+      ctx.globalAlpha=pl.selected?0.95:0.5; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
+      for(const w of pl.path) ctx.lineTo(w.x,w.y);
+      ctx.stroke(); ctx.restore();
     }
+
+    // patience ring (воздух/земля)
+    let frac=null;
+    if(pl.zone==='air') frac=Math.max(0,pl.airTime)/pl.airMax;
+    else if(pl.zone!=='bay') frac=Math.max(0,pl.groundTime)/Math.max(1,pl.groundMax);
+    if(frac!=null){
+      ctx.save(); ctx.translate(pl.x,pl.y);
+      ctx.strokeStyle = frac<0.3 ? COL.life : ncol;
+      ctx.globalAlpha=0.7; ctx.lineWidth=2.5*ui;
+      ctx.beginPath(); ctx.arc(0,0,15*ui, -Math.PI/2, -Math.PI/2+frac*Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+
     // body
     ctx.save();
-    ctx.translate(pl.x,pl.y);ctx.rotate(pl.ang);
-    if(pl.sel){ctx.beginPath();ctx.arc(0,0,GRAB*0.55,0,7);ctx.strokeStyle=col;ctx.globalAlpha=.5;ctx.lineWidth=1.5;ctx.stroke();ctx.globalAlpha=1;}
-    ctx.shadowColor=col;ctx.shadowBlur=10;
-    ctx.fillStyle=col;
+    ctx.translate(pl.x,pl.y); ctx.rotate(pl.ang);
+    if(pl.selected){ ctx.beginPath(); ctx.arc(0,0,K.GRAB*0.5,0,7); ctx.strokeStyle=ncol; ctx.globalAlpha=.5; ctx.lineWidth=1.5; ctx.stroke(); ctx.globalAlpha=1; }
+    ctx.shadowColor=body; ctx.shadowBlur=8; ctx.fillStyle=body;
+    const s=ui;
     ctx.beginPath();
-    ctx.moveTo(11,0);ctx.lineTo(-8,7);ctx.lineTo(-4,0);ctx.lineTo(-8,-7);
-    ctx.closePath();ctx.fill();
+    ctx.moveTo(12*s,0); ctx.lineTo(-8*s,7*s); ctx.lineTo(-4*s,0); ctx.lineTo(-8*s,-7*s);
+    ctx.closePath(); ctx.fill();
     ctx.restore();
+
+    // иконка текущей нужды над бортом
+    if(pl.zone!=='bay'){
+      ctx.save(); ctx.translate(pl.x, pl.y-24*ui);
+      ctx.fillStyle=ncol; ctx.strokeStyle=ncol; glyph(need, 6.5*ui);
+      ctx.restore();
+    }
+  }
+
+  function drawHUD(){
+    const hud=HUD_H();
+    ctx.fillStyle='rgba(10,22,34,.82)'; ctx.fillRect(0,0,W,hud);
+    ctx.strokeStyle='rgba(127,155,176,.2)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,hud); ctx.lineTo(W,hud); ctx.stroke();
+
+    // жизни (сердца)
+    ctx.textBaseline='middle';
+    for(let i=0;i<K.START_LIVES;i++){
+      ctx.fillStyle = i<lives ? COL.life : 'rgba(239,83,101,.22)';
+      const hx=14*ui+i*20*ui, hy=hud/2;
+      ctx.font=`${16*ui}px ui-monospace,monospace`; ctx.textAlign='left';
+      ctx.fillText('♥', hx, hy);
+    }
+    // таймер
+    const mm=String(Math.floor(gameTime/60)).padStart(2,'0');
+    const ss=String(Math.floor(gameTime%60)).padStart(2,'0');
+    ctx.fillStyle=COL.phosphor; ctx.font=`${15*ui}px ui-monospace,monospace`;
+    ctx.textAlign='center'; ctx.fillText(mm+':'+ss, W*0.42, hud/2);
+    // деньги
+    ctx.fillStyle=money<0?COL.life:COL.coin; ctx.textAlign='right';
+    ctx.font=`600 ${16*ui}px ui-monospace,monospace`;
+    ctx.fillText(money+' ₿', W - 56*ui, hud/2);
+    // принято
+    ctx.fillStyle=COL.muted; ctx.font=`${11*ui}px ui-monospace,monospace`; ctx.textAlign='center';
+    ctx.fillText('★ '+served, W*0.62, hud/2);
+
+    // pause button
+    ctx.strokeStyle=COL.phosphor; ctx.lineWidth=1.5; ctx.globalAlpha=.9;
+    rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,4*ui); ctx.stroke();
+    ctx.fillStyle=COL.phosphor;
+    const cx=pauseBtn.x+pauseBtn.w/2, cy=pauseBtn.y+pauseBtn.h/2;
+    if(!paused){
+      ctx.fillRect(cx-6*ui,cy-7*ui,4*ui,14*ui);
+      ctx.fillRect(cx+2*ui,cy-7*ui,4*ui,14*ui);
+    } else {
+      ctx.beginPath(); ctx.moveTo(cx-5*ui,cy-7*ui); ctx.lineTo(cx+7*ui,cy); ctx.lineTo(cx-5*ui,cy+7*ui); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+
+    // цепочка операций выбранного борта (слева сверху, под HUD)
+    if(selected && !selected.dead){
+      const chain=selected.requests;
+      const cy2=hud+18*ui; let cx2=18*ui;
+      ctx.fillStyle=COL.muted; ctx.font=`${9*ui}px ui-monospace,monospace`;
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText(selected.vip?'ВИП':'БОРТ', cx2, cy2-14*ui);
+      for(let i=0;i<chain.length;i++){
+        const t=chain[i], c=SVC[t].color;
+        ctx.globalAlpha = i<selected.reqIndex ? 0.3 : (i===selected.reqIndex?1:0.7);
+        ctx.fillStyle=c; ctx.strokeStyle=c;
+        ctx.save(); ctx.translate(cx2+9*ui, cy2+4*ui); glyph(t, 8*ui); ctx.restore();
+        if(i===selected.reqIndex){
+          ctx.globalAlpha=1; ctx.strokeStyle=c; ctx.lineWidth=1.5;
+          ctx.beginPath(); ctx.arc(cx2+9*ui, cy2+4*ui, 13*ui,0,7); ctx.stroke();
+        }
+        cx2+=26*ui;
+      }
+      ctx.globalAlpha=1;
+    }
   }
 
   function frame(ts){
     if(!lastTs)lastTs=ts;
     let dt=(ts-lastTs)/1000; lastTs=ts;
     if(dt>0.05)dt=0.05;
-    if(running){t+=dt;update(dt);}
-    drawGrid();
-    runways.forEach(drawRunway);
-    planes.forEach(drawPlane);
+    if(running && !paused) update(dt);
+
+    drawField();
+    drawRunways();
+    bays.forEach(drawBay);
+    planes.forEach(p=>{ if(!p.dead) drawPlane(p); });
+    drawHUD();
+
+    if(paused && running){
+      ctx.fillStyle='rgba(10,22,34,.55)'; ctx.fillRect(0,HUD_H(),W,H-HUD_H());
+      ctx.fillStyle=COL.phosphor; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font=`${22*ui}px ui-monospace,monospace`;
+      ctx.fillText('ПАУЗА', W/2, H/2);
+    }
     requestAnimationFrame(frame);
   }
 
-  function gameOver(){
+  function gameOver(msg){
     running=false;
-    document.getElementById('finalScore').textContent=score;
+    document.getElementById('finalScore').textContent=served;
+    document.getElementById('overMsg').textContent=msg+' Принято бортов: '+served+', касса: '+money+'₿.';
     document.getElementById('overScreen').classList.remove('hidden');
   }
 
