@@ -53,6 +53,13 @@
   .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:18px;font-size:10px;letter-spacing:.1em;color:var(--muted)}
   .legend span{display:flex;align-items:center;gap:6px;text-transform:uppercase}
   .dot{width:9px;height:9px;border-radius:50%}
+  .settings{margin-top:16px;text-align:left}
+  .opt{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--paper);margin:12px 0;letter-spacing:.04em;cursor:pointer;text-transform:none}
+  .opt input{width:16px;height:16px;accent-color:var(--phosphor)}
+  .logbox{margin-top:14px;max-height:130px;overflow:auto;border-top:1px solid rgba(127,155,176,.25);padding-top:8px}
+  .logrow{font-size:11px;color:var(--paper);padding:2px 0;letter-spacing:.03em}
+  .logrow.muted{color:var(--muted)}
+  #pauseScreen .btn{display:block;margin:14px auto 0}
 </style>
 
 <div id="stage">
@@ -79,6 +86,22 @@
       <div class="big" id="finalScore">0</div>
       <p id="overMsg">Закончились жизни.</p>
       <button class="btn" id="againBtn">Новая смена</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="pauseScreen">
+    <div class="panel">
+      <div class="kicker">Пауза</div>
+      <h1>Tower</h1>
+      <div class="settings hidden" id="settingsPanel">
+        <label class="opt"><input type="checkbox" id="optLives"> Бесконечные жизни (отладка)</label>
+        <label class="opt"><input type="checkbox" id="optMoney"> Безлимит денег (отладка)</label>
+        <div class="logbox" id="logBox"></div>
+      </div>
+      <button class="btn" id="resumeBtn">Играть</button>
+      <button class="btn" id="restartBtn">Начать заново</button>
+      <button class="btn" id="settingsBtn">Настройки</button>
+      <button class="btn" id="menuBtn">В главное меню</button>
     </div>
   </div>
 </div>
@@ -224,10 +247,16 @@
   let planes=[], money=0, lives=0, served=0, gameTime=0;
   let running=false, paused=false, lastTs=0, spawnTimer=0;
   let effects=[];          // анимации крушений
+  let lossLog=[], toast=null;
+  const debug={infiniteLives:false, richStart:false};
+  const BIG_MONEY=999999;
 
   function reset(){
-    planes=[]; money=K.START_MONEY; lives=K.START_LIVES; served=0; gameTime=0;
+    planes=[]; money=debug.richStart?BIG_MONEY:K.START_MONEY; lives=K.START_LIVES; served=0; gameTime=0;
     spawnTimer=1.0; running=true; paused=false;
+    lossLog=[]; toast=null;
+    document.getElementById('pauseScreen').classList.add('hidden');
+    document.getElementById('settingsPanel').classList.add('hidden');
     bays.forEach(b=>{ b.occupied=null; const cfg=LEVEL.sides[b.side];
       b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>r.occupied=null);
@@ -292,7 +321,7 @@
     e.preventDefault();
     const p=pt(e);
     // pause button
-    if(rectHit(p.x,p.y,pauseBtn)){ paused=!paused; return; }
+    if(rectHit(p.x,p.y,pauseBtn)){ setPaused(!paused); return; }
     if(paused) return;
 
     // bay tap -> open / upgrade
@@ -352,14 +381,18 @@
     if(pl.runway){ if(pl.runway.occupied===pl) pl.runway.occupied=null; pl.runway=null; }
     if(pl.bay){ if(pl.bay.occupied===pl) pl.bay.occupied=null; pl.bay=null; }
   }
-  function killAir(pl){            // воздушный таймаут: -1 жизнь
+  function logLoss(pl, reason, moneyPenalty){
     if(pl.dead) return;
-    pl.dead=true; boom(pl.x,pl.y); freeRes(pl); lives--;
+    pl.dead=true; boom(pl.x,pl.y); freeRes(pl);
+    if(!debug.infiniteLives) lives--;
+    if(moneyPenalty) money-=pl.reward;
+    lossLog.push({t:gameTime, reason});
+    if(lossLog.length>12) lossLog.shift();
+    toast={text:(debug.infiniteLives?'✈ ':'−1 ✈ ')+reason, t:0};
+    console.log('[Tower] '+(debug.infiniteLives?'(∞) ':'-1 жизнь ')+reason+' | t='+fmtTime(gameTime)+' | жизней='+lives);
   }
-  function killCrash(pl){          // столкновение: -1 жизнь и -выручка
-    if(pl.dead) return;
-    pl.dead=true; boom(pl.x,pl.y); freeRes(pl); lives--; money-=pl.reward;
-  }
+  function killAir(pl){ logLoss(pl, 'Воздушный таймаут — не успел сесть', false); }
+  function killCrash(pl, reason){ logLoss(pl, reason||'Столкновение', true); }
 
   function curNeed(pl){ return pl.requests[pl.reqIndex]; }
 
@@ -484,7 +517,7 @@
             if(!b.open) continue;
             if(rectHit(pl.x,pl.y,b)){
               if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
-              if(b.occupied && b.occupied!==pl){ killCrash(pl); killCrash(b.occupied); }
+              if(b.occupied && b.occupied!==pl){ killCrash(pl,'Столкновение в боксе'); killCrash(b.occupied,'Столкновение в боксе'); }
               else {
                 pl.zone='bay'; pl.bay=b; b.occupied=pl;
                 pl.x=b.x+b.w/2; pl.y=b.y+b.h/2; pl.moving=false; pl.path=[];
@@ -519,7 +552,7 @@
     for(let i=0;i<ground.length;i++)
       for(let j=i+1;j<ground.length;j++){
         if(dist(ground[i].x,ground[i].y,ground[j].x,ground[j].y)<K.CRASH_DIST){
-          killCrash(ground[i]); killCrash(ground[j]);
+          killCrash(ground[i],'Столкновение на поле'); killCrash(ground[j],'Столкновение на поле');
         }
       }
 
@@ -529,7 +562,7 @@
     for(let i=0;i<onrw.length;i++)
       for(let j=i+1;j<onrw.length;j++){
         if(dist(onrw[i].x,onrw[i].y,onrw[j].x,onrw[j].y)<K.CRASH_DIST){
-          killCrash(onrw[i]); killCrash(onrw[j]);
+          killCrash(onrw[i],'Столкновение на ВПП'); killCrash(onrw[j],'Столкновение на ВПП');
         }
       }
 
@@ -821,6 +854,19 @@
     }
   }
 
+  function fmtTime(s){ const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(Math.floor(s%60)).padStart(2,'0'); return m+':'+ss; }
+  function drawToast(){
+    const a = toast.t<2.0 ? 1 : (2.4-toast.t)/0.4;
+    ctx.save(); ctx.globalAlpha=Math.max(0,a);
+    ctx.font=`${13*ui}px ui-monospace,monospace`;
+    const w=ctx.measureText(toast.text).width+28*ui, h=26*ui;
+    const x=W/2-w/2, y=HUD_H()+10*ui;
+    ctx.fillStyle='rgba(28,14,16,.9)'; rr(x,y,w,h,6*ui); ctx.fill();
+    ctx.strokeStyle=COL.life; ctx.lineWidth=1.5; rr(x,y,w,h,6*ui); ctx.stroke();
+    ctx.fillStyle=COL.life; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(toast.text, W/2, y+h/2);
+    ctx.restore();
+  }
   function boom(x,y){ effects.push({x,y,t:0,life:0.55}); }
   function drawEffects(dt){
     for(let i=effects.length-1;i>=0;i--){
@@ -861,12 +907,7 @@
     drawEffects(dt);
     drawHUD();
 
-    if(paused && running){
-      ctx.fillStyle='rgba(10,22,34,.55)'; ctx.fillRect(0,HUD_H(),W,H-HUD_H());
-      ctx.fillStyle=COL.phosphor; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.font=`${22*ui}px ui-monospace,monospace`;
-      ctx.fillText('ПАУЗА', W/2, H/2);
-    }
+    if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
     requestAnimationFrame(frame);
   }
 
@@ -885,6 +926,31 @@
     document.getElementById('overScreen').classList.add('hidden');
     reset();
   };
+
+  function setPaused(p){
+    paused=p;
+    document.getElementById('pauseScreen').classList.toggle('hidden', !p);
+    if(!p) document.getElementById('settingsPanel').classList.add('hidden');
+    else refreshLog();
+  }
+  function refreshLog(){
+    const box=document.getElementById('logBox');
+    if(!lossLog.length){ box.innerHTML='<div class="logrow muted">потерь пока нет</div>'; return; }
+    box.innerHTML=lossLog.slice().reverse().map(l=>`<div class="logrow">${fmtTime(l.t)} — ${l.reason}</div>`).join('');
+  }
+  document.getElementById('resumeBtn').onclick=()=>setPaused(false);
+  document.getElementById('restartBtn').onclick=()=>reset();
+  document.getElementById('settingsBtn').onclick=()=>{
+    document.getElementById('settingsPanel').classList.toggle('hidden'); refreshLog();
+  };
+  document.getElementById('menuBtn').onclick=()=>{
+    running=false; paused=false;
+    document.getElementById('pauseScreen').classList.add('hidden');
+    document.getElementById('settingsPanel').classList.add('hidden');
+    document.getElementById('startScreen').classList.remove('hidden');
+  };
+  document.getElementById('optLives').onchange=e=>{ debug.infiniteLives=e.target.checked; };
+  document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; };
 
   resize();
   requestAnimationFrame(frame);
