@@ -135,6 +135,7 @@
   #achToast .ic{font-size:28px}
   #achToast .lbl{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
   #achToast .ttl{font-size:14px;margin-top:3px;color:var(--paper)}
+  #achToast .dsc{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.45}
 </style>
 
 <div id="stage">
@@ -216,7 +217,7 @@
 
   <div id="achToast">
     <div class="ic" id="achIc">🏅</div>
-    <div><div class="lbl" data-i18n="ach.toastLabel"></div><div class="ttl" id="achTtl"></div></div>
+    <div><div class="lbl" data-i18n="ach.toastLabel"></div><div class="ttl" id="achTtl"></div><div class="dsc" id="achDsc"></div></div>
   </div>
 </div>
 
@@ -556,7 +557,7 @@
   let fogUntil = 0, nextFog = 0;                      // туман
   let zen = false;                                    // режим без проигрыша
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}};
-  const SAVE_KEY = 'tower_save_v1', VERSION = '0.10';
+  const SAVE_KEY = 'tower_save_v1', VERSION = '0.11';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -982,6 +983,7 @@
               else {
                 pl.zone='bay'; pl.bay=b; b.occupied=pl;
                 pl.x=b.x+b.w/2; pl.y=b.y+b.h/2; pl.moving=false; pl.path=[];
+                const o=dirOut(b); pl.ang=Math.atan2(-o.dy,-o.dx); // паркуем носом внутрь — борт виден в открытом боксе
                 pl.serveMax=serveTimeFor(b); pl.serveTime=pl.serveMax;
               }
               break;
@@ -1225,6 +1227,15 @@
     });
   }
 
+  // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
+  function bayWalls(b,out,r){
+    const x0=b.x, y0=b.y, x1=b.x+b.w, y1=b.y+b.h;
+    ctx.beginPath();
+    if(out.dy===1){ ctx.moveTo(x0,y1); ctx.arcTo(x0,y0,x1,y0,r); ctx.arcTo(x1,y0,x1,y1,r); ctx.lineTo(x1,y1); }
+    else if(out.dy===-1){ ctx.moveTo(x0,y0); ctx.arcTo(x0,y1,x1,y1,r); ctx.arcTo(x1,y1,x1,y0,r); ctx.lineTo(x1,y0); }
+    else { ctx.moveTo(x1,y0); ctx.arcTo(x0,y0,x0,y1,r); ctx.arcTo(x0,y1,x1,y1,r); ctx.lineTo(x1,y1); }
+  }
+
   function drawBay(b){
     const col=SVC[b.type].color;
     const busy=!!b.occupied;
@@ -1249,16 +1260,34 @@
       ctx.restore(); return;
     }
 
-    // открытый бокс: тёмная карточка, рамка цвета услуги (ярче и со свечением, когда занят)
+    // открытый бокс-«стойло»: пол + стены с трёх сторон, ворота в сторону поля,
+    // рамка цвета услуги (ярче и со свечением, когда занят) — борт внутри виден
+    const out=dirOut(b);
     rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle='#202c38'; ctx.fill();
     ctx.lineWidth=2;
     if(busy){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=12; }
-    ctx.strokeStyle=hexa(col, busy?0.9:0.45); rr(b.x,b.y,b.w,b.h,9*ui); ctx.stroke(); ctx.shadowBlur=0;
-    drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 12*ui, col, '#202c38');
-    // подпись услуги
-    ctx.fillStyle=hexa(col,.85); ctx.font=`${8*ui}px ${MONO}`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(t('svc.'+b.type).toUpperCase(), b.x+b.w/2, b.y+b.h-18*ui);
+    ctx.strokeStyle=hexa(col, busy?0.9:0.45); bayWalls(b,out,9*ui); ctx.stroke(); ctx.shadowBlur=0;
+    // проём ворот: пунктирный порог + габаритные огни по углам
+    let gx0,gy0,gx1,gy1;
+    if(out.dy===1){ gx0=b.x; gy0=b.y+b.h; gx1=b.x+b.w; gy1=gy0; }
+    else if(out.dy===-1){ gx0=b.x; gy0=b.y; gx1=b.x+b.w; gy1=gy0; }
+    else { gx0=b.x+b.w; gy0=b.y; gx1=gx0; gy1=b.y+b.h; }
+    ctx.setLineDash([4*ui,5*ui]); ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.22);
+    ctx.beginPath(); ctx.moveTo(gx0,gy0); ctx.lineTo(gx1,gy1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=hexa(col,.8);
+    [[gx0,gy0],[gx1,gy1]].forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],2*ui,0,7); ctx.fill(); });
+    if(busy){
+      // центр отдан припаркованному борту (рисуется поверх) —
+      // тип услуги мелкой пиктограммой у дальней от ворот стены
+      const iy = out.dy===-1 ? b.y+b.h-13*ui : b.y+13*ui;
+      drawIcon(b.type, b.x+13*ui, iy, 6*ui, col, '#202c38');
+    } else {
+      drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 12*ui, col, '#202c38');
+      // подпись услуги
+      ctx.fillStyle=hexa(col,.85); ctx.font=`${8*ui}px ${MONO}`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(t('svc.'+b.type).toUpperCase(), b.x+b.w/2, b.y+b.h-18*ui);
+    }
     // пипсы уровня
     const total=K.BAY_MAX_LVL, pip=5.2*ui, gap=4.5*ui;
     const startX=b.x+b.w/2-(total*(pip+gap)-gap)/2;
@@ -1327,8 +1356,8 @@
 
     drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5, pl.vip, pl.emergency);
 
-    // иконка текущей нужды над бортом
-    if(pl.zone!=='bay') drawIcon(need, pl.x, pl.y-26*ui, 6.5*ui, ncol, COL.ink);
+    // иконка текущей нужды над бортом (8.45 = прежние 6.5 +30%)
+    if(pl.zone!=='bay') drawIcon(need, pl.x, pl.y-28*ui, 8.45*ui, ncol, COL.ink);
   }
 
   function drawHUD(){
@@ -1610,14 +1639,19 @@
   // ================= ДОСТИЖЕНИЯ / МЕДАЛИ =================
   // Самодостаточный модуль: ловит игровые события через ACH.onX(...), копит
   // прогресс в save.ach (список открытых) и save.stats (накопительные счётчики).
+  // Шум ограничен: максимум 2 медали за раунд, всплывашки не чаще раза в минуту
+  // (см. RUN_CAP/TOAST_GAP_MS); во всплывашке — название и за что дана.
   // ⏳ pending:true — медали под фичи, которых пока нет (бесконечный режим, Daily) —
   // крючки есть, но в текущих уровнях не срабатывают и не нужны для «Легенды».
   const ACH = (() => {
+    // анти-шум: не больше RUN_CAP медалей за раунд (остальные придут в следующих
+    // сменах — условия перепроверяются), уведомления не чаще TOAST_GAP_MS
+    const RUN_CAP=2, TOAST_GAP_MS=60000, TOAST_SHOW_MS=4000;
     const S = { ach:[], stats:{landed:0,services:0,departed:0,earned:0,vip:0,noCrashStreak:0,perfect:0} };
     let unlocked = new Set();
     let run = null;
     function newRun(){ run = {landed:0,services:0,departed:0,opens:0,upgrades:0,peakAir:0,
-      landTimes:[], types:new Set(), debug:false, time:0}; }
+      landTimes:[], types:new Set(), debug:false, time:0, given:0}; }
     newRun();
 
     const defs = [
@@ -1677,31 +1711,40 @@
     function persist(){ save.ach=[...unlocked]; save.stats=S.stats; saveGame(); }
     function give(id){
       if(unlocked.has(id)) return;
+      if(run.given>=RUN_CAP) return;   // лимит на раунд исчерпан — медаль доедет в одной из следующих смен
       const d=defs.find(x=>x.id===id); if(!d) return;
+      run.given++;
       unlocked.add(id); persist(); toastAch(d);
-      if(id!=='legend'){
-        const need=defs.filter(x=>x.id!=='legend' && !x.pending);
-        if(need.every(x=>unlocked.has(x.id))) give('legend');
-      }
+      checkLegend();
+    }
+    function checkLegend(){
+      if(unlocked.has('legend')) return;
+      const need=defs.filter(x=>x.id!=='legend' && !x.pending);
+      if(need.every(x=>unlocked.has(x.id))) give('legend');
     }
 
-    // всплывашка (очередь, по одной)
-    let q=[], showing=false;
+    // всплывашка: очередь, по одной, не чаще раза в минуту
+    let q=[], showing=false, lastShown=-1e9;
     function toastAch(d){ q.push(d); if(!showing) pump(); }
     function pump(){
       const el=document.getElementById('achToast');
       if(!q.length){ showing=false; return; }
-      showing=true; const d=q.shift();
+      showing=true;
+      const wait = lastShown + TOAST_GAP_MS - performance.now();
+      if(wait>0){ setTimeout(pump, wait); return; }
+      lastShown = performance.now();
+      const d=q.shift();
       document.getElementById('achIc').textContent=d.ic;
       document.getElementById('achTtl').textContent=t('ach.'+d.id+'.t');
+      document.getElementById('achDsc').textContent=t('ach.'+d.id+'.d');
       el.classList.add('show');
-      setTimeout(()=>{ el.classList.remove('show'); setTimeout(pump, 360); }, 2200);
+      setTimeout(()=>{ el.classList.remove('show'); setTimeout(pump, 360); }, TOAST_SHOW_MS);
     }
 
     return {
       defs,
       init(){ S.ach=Array.isArray(save.ach)?save.ach:[]; Object.assign(S.stats, save.stats||{}); unlocked=new Set(S.ach); },
-      onLevelStart(){ newRun(); },
+      onLevelStart(){ newRun(); checkLegend(); },   // отложенная лимитом «Легенда» догоняет на новом раунде
       onPlaneTouched(pl){ if(pl) pl.everTouched=true; },
       onPause(){ give('pause'); },
       onLand(){
