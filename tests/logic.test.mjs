@@ -54,6 +54,53 @@ test('validateI18n ловит ключ, забытый в одном из язы
   assert.ok(problems.some(p => /ru.*level\.t\.5/.test(p)), 'недостающий перевод должен отлавливаться');
 });
 
+// ---------- Атмосфера: «часы» суток + движок погоды (чистая логика) ----------
+
+test('validateConfig() не находит проблем в текущих константах атмосферы', () => {
+  const { game } = boot();
+  assert.deepEqual([...game.validateConfig()], []);
+});
+
+test('dayCycle: фаза в [0,1), «ночность» в [0,1], полдень=0 / полночь=1', () => {
+  const { game } = boot();
+  const P = game.K.DAYNIGHT_PERIOD;
+  for (const time of [0, P * 0.13, P * 0.5, P * 0.87, P, P * 3.4, -P * 0.2]) {
+    const { phase, night } = game.dayCycle(time);
+    assert.ok(phase >= 0 && phase < 1, `phase вне [0,1) при t=${time}: ${phase}`);
+    assert.ok(night >= 0 && night <= 1, `night вне [0,1] при t=${time}: ${night}`);
+  }
+  assert.ok(Math.abs(game.dayCycle(0).night - 0) < 1e-9, 'старт смены — день (night≈0)');
+  assert.ok(Math.abs(game.dayCycle(P / 2).night - 1) < 1e-9, 'середина периода — ночь (night≈1)');
+  assert.ok(Math.abs(game.dayCycle(P).phase - game.dayCycle(0).phase) < 1e-9, 'цикл замыкается');
+});
+
+test('weatherTaxiMult: ясно=1, снег мешает сильнее дождя, оба < ясной погоды', () => {
+  const { game } = boot();
+  const clear = game.weatherTaxiMult('clear');
+  const rain = game.weatherTaxiMult('rain');
+  const snow = game.weatherTaxiMult('snow');
+  assert.equal(clear, 1);
+  assert.ok(snow < rain && rain < clear, `ожидалось snow<rain<1, получено ${snow}<${rain}<${clear}`);
+});
+
+test('WEATHER_KINDS включает clear/rain/snow', () => {
+  const { game } = boot();
+  for (const k of ['clear', 'rain', 'snow']) assert.ok(game.WEATHER_KINDS.includes(k), `нет "${k}"`);
+});
+
+test('погода — opt-in: ни один уровень кампании не включает её по умолчанию', () => {
+  const { game } = boot();
+  for (let i = 0; i < game.LEVELS.length; i++) {
+    assert.ok(!game.LEVELS[i].weather, `L${i + 1} не должен включать погоду в MVP-кампании`);
+  }
+});
+
+test('validateLevels ловит битый флаг weather', () => {
+  const { game } = boot();
+  game.LEVELS[1].weather = 'snow';                 // должно быть true, а не строка
+  assert.ok(game.validateLevels().some(p => /weather/.test(p)), 'битый флаг weather должен отлавливаться');
+});
+
 // ---------- Уровни и прогрессия ----------
 
 test('ровно 10 уровней', () => {

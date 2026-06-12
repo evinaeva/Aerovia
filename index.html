@@ -355,6 +355,7 @@
       'toast.rush':'Rush hour!',
       'toast.wind':'Wind shift — runway closed',
       'toast.fog':'Fog — taxiing slowed',
+      'toast.weather.rain':'Rain — taxiing slowed', 'toast.weather.snow':'Snow — taxiing slowed',
       'toast.emergency':'Fuel critical — land now!', 'toast.medical':'Medevac — straight through!',
       'float.combo':'×{x} combo', 'float.express':'on time!', 'float.nearMiss':'phew!',
       'loss.airTimeout':'Air timeout — didn\'t land in time',
@@ -484,6 +485,7 @@
       'toast.rush':'Час пик!',
       'toast.wind':'Смена ветра — полоса закрыта',
       'toast.fog':'Туман — руление замедлено',
+      'toast.weather.rain':'Дождь — руление замедлено', 'toast.weather.snow':'Снег — руление замедлено',
       'toast.emergency':'Топливо на нуле — садить срочно!', 'toast.medical':'Медицинский — вне очереди!',
       'float.combo':'×{x} комбо', 'float.express':'вовремя!', 'float.nearMiss':'уфф!',
       'loss.airTimeout':'Воздушный таймаут — не успел сесть',
@@ -663,6 +665,15 @@
     WIND_PERIOD: 28, WIND_DUR: 12,    // смена ветра: период и длительность закрытия ВПП
     FOG_PERIOD: 45, FOG_DUR: 10,      // туман: период и длительность
     FOG_TAXI: 0.55,                   // множитель скорости руления в тумане
+    // атмосфера (чистая логика; визуал — за слоем дизайна, рендер просто читает
+    // nightAmount/weather). day/night — фоновые «часы», на сложность не влияют.
+    DAYNIGHT_PERIOD: 150,             // сек на полный круг день→ночь→день
+    // погода — опциональный движок, включается флагом weather:true у уровня/биома
+    WEATHER_PERIOD: 40,               // период попыток смены погоды
+    WEATHER_DUR: 16,                  // длительность погодного окна
+    WEATHER_SNOW_CHANCE: 0.5,         // доля снега среди непогоды (иначе дождь)
+    WEATHER_RAIN_TAXI: 0.8,           // множитель скорости руления под дождём
+    WEATHER_SNOW_TAXI: 0.6,           // множитель скорости руления под снегом (хуже дождя)
   };
 
   // ---- лесной биом: помехи на ВПП и спец-бригады (см. docs/backlog.md) ----
@@ -774,6 +785,19 @@
   // старте (console.error) и жёстко из тестов. См. docs/DEV.md, раздел «Тесты».
   const EVENT_KEYS = ['vip','emergency','medical','rush','fog','wind'];
   const SVC_TYPES  = ['fuel','board','repair'];
+  const WEATHER_KINDS = ['clear','rain','snow'];
+  // «часы» суток: фаза 0..1 (0 — полдень) и «ночность» 0..1 (1 — глубокая ночь).
+  // Чистая функция времени: визуал берёт night, на саму игру это не влияет.
+  function dayCycle(time){
+    const P = K.DAYNIGHT_PERIOD;
+    const phase = ((time % P) + P) % P / P;             // 0..1, устойчиво к time<0
+    const night = (1 - Math.cos(phase * 2 * Math.PI)) / 2;  // плавно 0→1→0
+    return { phase, night };
+  }
+  // множитель скорости руления по погоде: ясно=1, дождь/снег — медленнее (снег хуже)
+  function weatherTaxiMult(w){
+    return w==='snow' ? K.WEATHER_SNOW_TAXI : w==='rain' ? K.WEATHER_RAIN_TAXI : 1;
+  }
   function validateLevels(){
     const p = [];
     if(!Array.isArray(LEVELS) || !LEVELS.length){ p.push('LEVELS пуст'); return p; }
@@ -797,6 +821,7 @@
       });
       if(!(lv.runways>=1)) p.push(L+'runways должен быть >= 1');
       if(lv.startMoney!=null && !(lv.startMoney>0)) p.push(L+'startMoney должен быть > 0');
+      if(lv.weather!=null && lv.weather!==true) p.push(L+'weather должен быть true (или отсутствовать)');
       const ev = lv.events || {};
       Object.keys(ev).forEach(k=>{
         if(!EVENT_KEYS.includes(k)) p.push(L+'неизвестное событие "'+k+'"');
@@ -821,7 +846,21 @@
     langs.forEach(c=>{ all.forEach(k=>{ if(I18N[c][k]==null) p.push('i18n: в языке "'+c+'" нет ключа "'+k+'"'); }); });
     return p;
   }
-  function validateGame(){ return validateLevels().concat(validateI18n()); }
+  // проверка констант атмосферы (страховка под движки day/night и погоды)
+  function validateConfig(){
+    const p = [];
+    if(!(K.DAYNIGHT_PERIOD>0)) p.push('K.DAYNIGHT_PERIOD должен быть > 0');
+    if(!(K.WEATHER_PERIOD>0)) p.push('K.WEATHER_PERIOD должен быть > 0');
+    if(!(K.WEATHER_DUR>0)) p.push('K.WEATHER_DUR должен быть > 0');
+    if(!(K.WEATHER_SNOW_CHANCE>=0 && K.WEATHER_SNOW_CHANCE<=1)) p.push('K.WEATHER_SNOW_CHANCE вне [0,1]');
+    ['WEATHER_RAIN_TAXI','WEATHER_SNOW_TAXI'].forEach(k=>{
+      if(!(K[k]>0 && K[k]<=1)) p.push('K.'+k+' должен быть в (0,1]');
+    });
+    if(!(K.WEATHER_SNOW_TAXI < K.WEATHER_RAIN_TAXI)) p.push('снег должен мешать рулению сильнее дождя');
+    if(!WEATHER_KINDS.includes('clear')) p.push('WEATHER_KINDS должен включать "clear"');
+    return p;
+  }
+  function validateGame(){ return validateLevels().concat(validateI18n()).concat(validateConfig()); }
   let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
@@ -834,6 +873,8 @@
   let rushUntil = 0, nextRush = 0;                    // «час пик»
   let windUntil = 0, nextWind = 0;                    // смена ветра (закрытие ВПП)
   let fogUntil = 0, nextFog = 0;                      // туман
+  let weather = 'clear', weatherUntil = 0, nextWeather = 0; // погода: clear|rain|snow
+  let dayPhase = 0, nightAmount = 0;                  // «часы» суток (логика; рендер читает)
   let zen = false;                                    // режим без проигрыша
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
@@ -1057,6 +1098,9 @@
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0;
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
+    // атмосфера: «часы» суток идут всегда; погода — опциональный движок (флаг weather)
+    dayPhase=0; nightAmount=0; weather='clear'; weatherUntil=0;
+    nextWeather = (!zen && LV.weather) ? K.WEATHER_PERIOD : Infinity;
     hazards=[]; crews=[]; hazardSeq=0;
     const forest = LV.biome==='forest';
     if(LV.biome){
@@ -1464,9 +1508,19 @@
     }
     if(windUntil>0 && gameTime>=windUntil){ runways.forEach(r=>r.closed=false); windUntil=0; }
     if(gameTime>=nextFog){ fogUntil=gameTime+K.FOG_DUR; nextFog=gameTime+K.FOG_PERIOD; toast={text:t('toast.fog'), t:0, good:false}; }
+    // «часы» суток (логика; визуал берёт nightAmount). Не влияют на сложность.
+    { const dc = dayCycle(gameTime); dayPhase = dc.phase; nightAmount = dc.night; }
+    // погода: окна rain/snow по таймеру (движок выключен, если nextWeather=Infinity)
+    if(gameTime>=nextWeather){
+      weather = Math.random()<K.WEATHER_SNOW_CHANCE ? 'snow' : 'rain';
+      weatherUntil = gameTime+K.WEATHER_DUR; nextWeather = gameTime+K.WEATHER_PERIOD;
+      toast = {text:t('toast.weather.'+weather), t:0, good:false};
+    }
+    if(weather!=='clear' && gameTime>=weatherUntil) weather='clear';
     const rush = gameTime<rushUntil;
     const fog = gameTime<fogUntil;
-    const taxiSpeed = fog ? K.SPEED_TAXI*K.FOG_TAXI : K.SPEED_TAXI;
+    // руление замедляют и туман, и непогода — берём наименьший (самый «вязкий») множитель
+    const taxiSpeed = K.SPEED_TAXI * Math.min(fog?K.FOG_TAXI:1, weatherTaxiMult(weather));
     // spawn
     spawnTimer-=dt;
     const interval = rush ? K.SPAWN_BASE*0.4 : Math.max(K.SPAWN_MIN, K.SPAWN_BASE - served*0.05);
@@ -2913,9 +2967,11 @@
   // (без ?test=1) ничего не выставляется — прод-поведение не меняется.
   if(typeof location!=='undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
     window.__GAME = {
-      VERSION, LEVELS, K, I18N, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES,
+      VERSION, LEVELS, K, I18N, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
       t, levelEvents, levelName, objectiveDesc, computeStars, metricValue,
-      validateGame, validateLevels, validateI18n,
+      dayCycle, weatherTaxiMult,
+      get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
+      validateGame, validateLevels, validateI18n, validateConfig,
       saveGame, loadGame, setLang, detectLang,
       get save(){ return save; },     set save(v){ save=v; },
       get lang(){ return lang; },
