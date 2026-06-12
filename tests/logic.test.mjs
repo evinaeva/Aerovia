@@ -129,6 +129,32 @@ test('у снегоуборщика и снежной помехи есть ст
   }
 });
 
+// ---------- Де-айсинг: отдельный бокс на MVP-аэропорте ----------
+
+test('MVP-аэропорт несёт отдельный бокс де-айсинга', () => {
+  const { game } = boot();
+  const forest = game.BIOMES.find(b => b.id === 'forest');
+  assert.equal(forest.level.deice, true, 'на лесном аэропорте есть де-айс-бокс');
+  assert.ok(game.SVC.deice, 'у де-айсинга есть сервисный тип (SVC.deice)');
+});
+
+test('де-айсинг — отдельная инфраструктура, не обычная сторона-бокс', () => {
+  const { game } = boot();
+  // deice НЕ среди покупаемых сторон (top/left/bottom) — это отдельный всегда-открытый бокс
+  assert.ok(!game.SVC_TYPES.includes('deice'), 'deice не должен быть типом обычной стороны');
+});
+
+test('у де-айсинга есть строки на обоих языках', () => {
+  const { game } = boot();
+  for (const c of ['en', 'ru']) assert.ok(game.I18N[c]['svc.deice'], `${c}: нет svc.deice`);
+});
+
+test('validateLevels ловит битый флаг deice', () => {
+  const { game } = boot();
+  game.LEVELS[1].deice = 1;                         // должно быть true
+  assert.ok(game.validateLevels().some(p => /deice/.test(p)), 'битый флаг deice должен отлавливаться');
+});
+
 // ---------- Уровни и прогрессия ----------
 
 test('ровно 10 уровней', () => {

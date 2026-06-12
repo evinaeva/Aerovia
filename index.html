@@ -19,6 +19,7 @@
     --muted:#7f9bb0;
     --amber:#f4a259;   /* ремонт */
     --teal:#4ecdc4;    /* топливо */
+    --ice:#7fd6ff;     /* де-айсинг */
     --rose:#ef798a;    /* посадка людей */
     --gold:#f4cf5e;    /* вип / деньги / вылет */
     --life:#ef5365;
@@ -294,7 +295,7 @@
   // ---- palette helpers ----
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const COL = {};
-  ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','rose','gold','life','coin']
+  ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin']
     .forEach(n => COL[n] = css('--'+n));
 
   // service -> color (названия услуг — в i18n: svc.*)
@@ -302,6 +303,7 @@
     repair: {color: COL.amber},
     fuel:   {color: COL.teal},
     board:  {color: COL.rose},
+    deice:  {color: COL.ice},
     depart: {color: COL.gold},
   };
 
@@ -347,7 +349,7 @@
       'tut.takeoff':'All set — guide it to a runway to take off',
       'tut.done':'Nice — you’ve got the hang of it!',
       'log.empty':'no losses yet',
-      'svc.repair':'Repair', 'svc.fuel':'Fuel', 'svc.board':'Boarding', 'svc.depart':'Departure',
+      'svc.repair':'Repair', 'svc.fuel':'Fuel', 'svc.board':'Boarding', 'svc.deice':'De-ice', 'svc.depart':'Departure',
       'mode.zen':'Zen',
       'toast.zenStart':'Zen mode: just guide the planes',
       'toast.goal':'Goal: {desc}',
@@ -479,7 +481,7 @@
       'tut.takeoff':'Готово — веди на полосу, на взлёт',
       'tut.done':'Отлично — дальше сам!',
       'log.empty':'потерь пока нет',
-      'svc.repair':'Ремонт', 'svc.fuel':'Топливо', 'svc.board':'Посадка', 'svc.depart':'Вылет',
+      'svc.repair':'Ремонт', 'svc.fuel':'Топливо', 'svc.board':'Посадка', 'svc.deice':'Антилёд', 'svc.depart':'Вылет',
       'mode.zen':'Zen',
       'toast.zenStart':'Zen-режим: просто веди борта',
       'toast.goal':'Цель: {desc}',
@@ -752,7 +754,7 @@
   // (откуда выезжают спец-бригады) рисуется сверху поля у всех биом-карт.
   const BIOMES = [
     { id:'forest', emoji:'🌲', ready:true,
-      level:{ biome:'forest', weather:true, objective:{ metric:'served', target:14 },
+      level:{ biome:'forest', weather:true, deice:true, objective:{ metric:'served', target:14 },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
         runways:3 } },
     { id:'arctic',   emoji:'❄️', ready:false },
@@ -826,6 +828,7 @@
       if(!(lv.runways>=1)) p.push(L+'runways должен быть >= 1');
       if(lv.startMoney!=null && !(lv.startMoney>0)) p.push(L+'startMoney должен быть > 0');
       if(lv.weather!=null && lv.weather!==true) p.push(L+'weather должен быть true (или отсутствовать)');
+      if(lv.deice!=null && lv.deice!==true) p.push(L+'deice должен быть true (или отсутствовать)');
       const ev = lv.events || {};
       Object.keys(ev).forEach(k=>{
         if(!EVENT_KEYS.includes(k)) p.push(L+'неизвестное событие "'+k+'"');
@@ -939,6 +942,10 @@
                      x:0,y:0,w:bw,h:bh});
         }
       }
+      // отдельный бокс де-айсинга (инфраструктура: всегда открыт, без апгрейда) —
+      // у правого края поля, ворота в поле; нужен только в снегопад (см. spawnPlane)
+      if(LV.deice) bays.push({side:'deice', type:'deice', slot:0, deice:true,
+                              open:true, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh});
     }
     // position bays
     const bySide = s => bays.filter(b=>b.side===s);
@@ -957,6 +964,9 @@
     spread(left.length, fy0+bh*0.7, fy1-bh*0.7).forEach((cy,i)=>{
       left[i].w=bw; left[i].h=bh; left[i].x=fx0; left[i].y=cy-bh/2;
     });
+    // де-айс-бокс — у правого края поля, по центру по вертикали
+    const de = bays.find(b=>b.side==='deice');
+    if(de){ de.w=bw; de.h=bh; de.x=fx1-bw; de.y=(fy0+fy1)/2-bh/2; }
 
     // runways on right
     const rwL = W*0.60, rwR = W*0.85;
@@ -1095,8 +1105,9 @@
     lossLog=[]; toast=null;
     document.getElementById('pauseScreen').classList.add('hidden');
     document.getElementById('settingsPanel').classList.add('hidden');
-    bays.forEach(b=>{ b.occupied=null; const cfg=LV.sides[b.side];
-      b.open = b.slot < cfg.open; b.lvl=0; });
+    bays.forEach(b=>{ b.occupied=null;
+      if(b.deice){ b.open=true; b.lvl=0; return; }   // де-айс — инфраструктура, всегда открыт
+      const cfg=LV.sides[b.side]; b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0;
@@ -1142,6 +1153,9 @@
     // медицинский: высаживает пациента в пассажирском боксе, затем сразу вылет
     const nSvc = medical ? 1 : (Math.random() < 0.45 ? 2 : 1);
     const requests = medical ? ['board','depart'] : pool.slice(0, nSvc).concat(['depart']);
+    // де-айсинг: в снегопад обычный борт обязан пройти антиобледенение перед вылетом
+    // (медицинский — «вне очереди», пропускаем). Шаг ставится прямо перед 'depart'.
+    if(LV.deice && weather==='snow' && !medical) requests.splice(requests.length-1, 0, 'deice');
     const waitMult = (vip||medical) ? 1 : 2;                             // джет и медицинский нетерпеливы
     // воздушное терпение: топливо-на-нуле — садить срочно; медицинский — тоже спешит
     const airMult = emergency ? 0.4 : (medical ? K.MEDICAL_AIR : 1);
@@ -1311,7 +1325,7 @@
     for(const b of bays) if(rectHit(p.x,p.y,b)) return b;
     return null;
   }
-  function bayUpCost(b){ return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
+  function bayUpCost(b){ if(b.deice) return null; return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
 
   function down(e){
     if(!running) return;
@@ -1732,6 +1746,7 @@
   function dirOut(b){ // направление "наружу из бокса" в поле
     if(b.side==='top') return {dx:0,dy:1};
     if(b.side==='bottom') return {dx:0,dy:-1};
+    if(b.side==='deice') return {dx:-1,dy:0}; // у правого края поля, ворота влево
     return {dx:1,dy:0}; // left
   }
   const clampX = x => Math.max(field.x0+10, Math.min(field.x1-10, x));
@@ -1794,10 +1809,19 @@
     ctx.quadraticCurveTo(r*0.6,-r*0.05,r*0.62,r*0.9); ctx.closePath(); ctx.fill(); ctx.restore(); }
   function iconDepart(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/4);
     ctx.scale(r/26,r/26); planeShape(col); ctx.restore(); }
+  function iconSnow(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy);   // снежинка: 6 лучей
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(1,r*0.16); ctx.lineCap='round';
+    for(let k=0;k<6;k++){ ctx.rotate(Math.PI/3);
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-r); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-r*0.62); ctx.lineTo(r*0.26,-r*0.84); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,-r*0.62); ctx.lineTo(-r*0.26,-r*0.84); ctx.stroke();
+    }
+    ctx.restore(); }
   function drawIcon(type,cx,cy,r,col,hole){
     if(type==='repair') iconGear(cx,cy,r,col,hole);
     else if(type==='fuel') iconDrop(cx,cy,r,col);
     else if(type==='board') iconPerson(cx,cy,r,col);
+    else if(type==='deice') iconSnow(cx,cy,r,col);
     else iconDepart(cx,cy,r,col);
   }
 
@@ -2013,6 +2037,7 @@
     ctx.beginPath();
     if(out.dy===1){ ctx.moveTo(x0,y1); ctx.arcTo(x0,y0,x1,y0,r); ctx.arcTo(x1,y0,x1,y1,r); ctx.lineTo(x1,y1); }
     else if(out.dy===-1){ ctx.moveTo(x0,y0); ctx.arcTo(x0,y1,x1,y1,r); ctx.arcTo(x1,y1,x1,y0,r); ctx.lineTo(x1,y0); }
+    else if(out.dx===-1){ ctx.moveTo(x0,y0); ctx.arcTo(x1,y0,x1,y1,r); ctx.arcTo(x1,y1,x0,y1,r); ctx.lineTo(x0,y1); } // ворота слева
     else { ctx.moveTo(x1,y0); ctx.arcTo(x0,y0,x0,y1,r); ctx.arcTo(x0,y1,x1,y1,r); ctx.lineTo(x1,y1); }
   }
 
@@ -2051,6 +2076,7 @@
     let gx0,gy0,gx1,gy1;
     if(out.dy===1){ gx0=b.x; gy0=b.y+b.h; gx1=b.x+b.w; gy1=gy0; }
     else if(out.dy===-1){ gx0=b.x; gy0=b.y; gx1=b.x+b.w; gy1=gy0; }
+    else if(out.dx===-1){ gx0=b.x; gy0=b.y; gx1=gx0; gy1=b.y+b.h; }
     else { gx0=b.x+b.w; gy0=b.y; gx1=gx0; gy1=b.y+b.h; }
     ctx.setLineDash([4*ui,5*ui]); ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.22);
     ctx.beginPath(); ctx.moveTo(gx0,gy0); ctx.lineTo(gx1,gy1); ctx.stroke(); ctx.setLineDash([]);
@@ -2981,7 +3007,7 @@
   // (без ?test=1) ничего не выставляется — прод-поведение не меняется.
   if(typeof location!=='undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
     window.__GAME = {
-      VERSION, LEVELS, BIOMES, K, I18N, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
+      VERSION, LEVELS, BIOMES, K, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
       t, levelEvents, levelName, objectiveDesc, computeStars, metricValue,
       dayCycle, weatherTaxiMult, neededCrew,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
