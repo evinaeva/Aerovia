@@ -35,6 +35,10 @@ python3 -m http.server 8000
 - [`docs/achievements.md`](docs/achievements.md) — список достижений/медалей (46 шт.):
   от лайтовых до задротских и секретных.
 - [`docs/DEV.md`](docs/DEV.md) — документация разработчика (устройство кода, как войти в проект).
+- [`docs/art-direction/`](docs/art-direction/README.md) — **арт-дирекшн**: визуальная
+  библия (стиль, палитра, UI, библиотека объектов, do/don't, референсы).
+- [`docs/game-design/`](docs/game-design/README.md) — **геймдизайн**: игровой цикл,
+  события, типы бортов/аэропорта, прогрессия (сводка к `docs/FAQ.md`).
 - [`CHANGELOG.md`](CHANGELOG.md) — история версий: что добавлено/изменено/убрано.
 
 ## Структура
