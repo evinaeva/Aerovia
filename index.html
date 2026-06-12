@@ -6,6 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>PlaneFlow</title>
+<link rel="icon" type="image/png" href="assets/icon/icon-512.png">
+<link rel="apple-touch-icon" href="assets/icon/icon-512.png">
+<meta name="theme-color" content="#16131f">
 <style>
   /* ===== облик «cozy / stylized-flat» (см. CHANGELOG) ===== */
   :root{
@@ -54,6 +57,8 @@
     font-size:46px;letter-spacing:.04em;margin:12px 0 6px;color:var(--phosphor);
     text-shadow:0 0 26px rgba(191,233,255,.45);
   }
+  .wordmark{display:block;width:min(340px,82%);height:auto;margin:14px auto 4px}
+  #startScreen .wm-fallback{display:none} /* бренд — вордмарк-спрайт; текст остаётся фолбэком для ридеров */
   .panel p{font-size:13px;line-height:1.7;color:var(--muted);margin:10px 0 0}
   .panel .big{font-size:48px;margin:8px 0 0;letter-spacing:.02em}
   #finalStars{color:var(--gold);font-size:52px;letter-spacing:.08em;text-shadow:0 0 24px rgba(244,207,94,.5)}
@@ -65,8 +70,8 @@
     padding:13px 22px;border-radius:10px;transition:.15s;
   }
   .btn:hover{color:var(--phosphor);border-color:rgba(191,233,255,.7);background:rgba(191,233,255,.12)}
-  .btn-primary{background:var(--phosphor);border-color:var(--phosphor);color:var(--ink);box-shadow:0 0 16px rgba(191,233,255,.35)}
-  .btn-primary:hover{background:var(--phosphor);color:var(--ink);box-shadow:0 0 26px rgba(191,233,255,.55)}
+  .btn-primary{background:#5dca7a;border-color:#5dca7a;color:var(--ink);box-shadow:0 0 16px rgba(93,202,122,.4)}
+  .btn-primary:hover{background:#6fdb8b;border-color:#6fdb8b;color:var(--ink);box-shadow:0 0 26px rgba(93,202,122,.55)}
   .btn-teal{border-color:rgba(78,205,196,.45);color:var(--teal)}
   .btn-teal:hover{color:var(--teal);border-color:var(--teal);background:rgba(78,205,196,.10)}
   .btn-rose{border-color:rgba(239,121,138,.45);color:var(--rose)}
@@ -162,7 +167,8 @@
   <div class="overlay" id="startScreen">
     <div class="panel">
       <div class="kicker" data-i18n="start.kicker"></div>
-      <h1 data-i18n="app.name"></h1>
+      <svg class="wordmark" viewBox="0 0 520 88" aria-label="PlaneFlow"><use href="#wordmark-lockup"></use></svg>
+      <h1 class="wm-fallback" data-i18n="app.name"></h1>
       <p data-i18n="start.tagline"></p>
       <div class="ctarow">
         <button class="btn btn-teal" id="zenBtn"><span class="bglyph">☾</span><span data-i18n="start.zen"></span></button>
@@ -302,16 +308,17 @@
   const SPRITES = (() => {
     const cache = new Map();
     const stripF = s => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)
-    function img(id, w, h){
+    function img(id, w, h, color){
       const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
-      const key = id + '@' + pw + 'x' + ph;
+      const key = id + '@' + pw + 'x' + ph + (color||'');
       let im = cache.get(key);
       if(!im){
         const sym = document.getElementById(id);
         if(!sym) return null;
         const vb = sym.getAttribute('viewBox') || '0 0 64 64';
+        const cattr = color ? ' color="'+color+'"' : '';
         const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb +
-                    '" width="' + pw + '" height="' + ph + '">' + stripF(sym.innerHTML) + '</svg>';
+                    '" width="' + pw + '" height="' + ph + '"' + cattr + '>' + stripF(sym.innerHTML) + '</svg>';
         im = new Image(); im.decoding = 'async';
         im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
         cache.set(key, im);
@@ -322,8 +329,8 @@
     const A = {
       ready: false,
       has(id){ return !!document.getElementById(id); },
-      blitC(id, cx, cy, dw, dh, rot){
-        if(!A.ready) return false; const im = img(id, dw, dh); if(!ok(im)) return false;
+      blitC(id, cx, cy, dw, dh, rot, color){
+        if(!A.ready) return false; const im = img(id, dw, dh, color); if(!ok(im)) return false;
         ctx.save(); ctx.translate(cx, cy); if(rot) ctx.rotate(rot);
         ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh); ctx.restore(); return true;
       },
@@ -1495,6 +1502,7 @@
     pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult;
     pl.groundTime = pl.groundMax;
     pl.landedAt = gameTime;          // для экспресс-бонуса
+    pulseFx(pl.x, pl.y, 'touchdown', 0.6);  // дымок касания
     SND.land(); HAP.tap();
     ACH.onLand(pl);
   }
@@ -1524,6 +1532,7 @@
     const fx = pl.runway ? pl.runway.x+pl.runway.w-34*ui : Math.min(pl.x, W-40*ui);
     const fy = pl.runway ? pl.runway.cy : pl.y;
     addFloat(fx, fy, '+'+fmtMoney(pay), pl.halfPay?COL.muted:COL.coin);
+    pulseFx(fx, fy+12*ui, 'takeoff', 0.6);   // отрыв: спид-лайны
     // мгновенный дофамин: «×N комбо» за серию и «вовремя!» за экспресс — над «+N ₿»
     let stack = 17*ui;
     if(combo>=2){ addFloat(fx, fy-stack, t('float.combo',{x:combo}), COL.gold); stack+=17*ui; }
@@ -1708,6 +1717,7 @@
         if(pl.serveTime<=0){
           const b=pl.bay; b.occupied=null; pl.bay=null;
           pl.reqIndex++; ACH.onService(pl); SND.served();
+          pulseFx(b.x+b.w/2, b.y+b.h/2, 'success', 0.5);  // услуга готова
           // выезд из бокса на поле
           pl.zone='field';
           const ex = clampX(b.x+b.w/2 + dirOut(b).dx*(b.w*0.6+24*ui));
@@ -1922,7 +1932,7 @@
 
     // вода справа за полосами (медленные волны)
     const wg=ctx.createLinearGradient(aR,0,W,0);
-    wg.addColorStop(0,COL.water); wg.addColorStop(1,'#0b242c');
+    wg.addColorStop(0,COL.water); wg.addColorStop(1,'#142e34');
     ctx.fillStyle=wg; ctx.fillRect(aR,0,W-aR,H);
     for(let i=0;i<6;i++){
       const yy=H*(i+1)/7 + Math.sin(tm*0.0015+i)*3;
@@ -1931,7 +1941,7 @@
 
     // металлическая рама апрона с заклёпками
     const fx=ax-8*ui, fy=ay-8*ui, fw=(aR-ax)+16*ui, fh=(ab-ay)+16*ui;
-    const mg=ctx.createLinearGradient(0,fy,0,fy+fh); mg.addColorStop(0,'#2c3a48'); mg.addColorStop(1,'#1a242f');
+    const mg=ctx.createLinearGradient(0,fy,0,fy+fh); mg.addColorStop(0,'#3a3354'); mg.addColorStop(1,'#211d33');
     rr(fx,fy,fw,fh,14*ui); ctx.fillStyle=mg; ctx.fill();
     ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(fx,fy,fw,fh,14*ui); ctx.stroke();
     ctx.fillStyle=hexa(COL.muted,.5);
@@ -1952,7 +1962,7 @@
     const ix=ax+(field.x1-ax)*0.28, iy=ay+(ab-ay)*0.34;
     const iw=(field.x1-ax)*0.42, ih=(ab-ay)*0.32;
     if(!(COZY && SPRITES.blit('terminal', ix, iy, iw, ih))){
-      rr(ix,iy,iw,ih,8*ui); ctx.fillStyle='#26323e'; ctx.fill();
+      rr(ix,iy,iw,ih,8*ui); ctx.fillStyle='#3a3354'; ctx.fill();
       ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.15); rr(ix,iy,iw,ih,8*ui); ctx.stroke();
       const wcols=7, wrows=2, wx0=ix+iw*0.09, wy0=iy+ih*0.14, wxs=(iw*0.86)/wcols, wys=ih*0.30;
       for(let r2=0;r2<wrows;r2++) for(let c2=0;c2<wcols;c2++){
@@ -1970,7 +1980,7 @@
 
   function drawRunways(tm){
     runways.forEach((r,i)=>{
-      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle='#161f29'; ctx.fill();
+      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle='#1a1d2e'; ctx.fill();
       ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
       // осевая пунктирная
       ctx.strokeStyle=hexa(COL.paper, r.occupied?0.35:0.5);
@@ -1984,7 +1994,7 @@
       }
       // огни кромок: золотые / янтарные (занята) / красные (закрыта), мерцают
       const blink=0.4+0.6*Math.abs(Math.sin(tm*0.004+i));
-      const lc = r.closed?COL.life:(r.occupied?COL.amber:COL.gold);
+      const lc = r.closed?COL.life:(r.occupied?COL.amber:'#ffb84d'); // amber-glow по спеке cozy
       for(let k=0;k<=8;k++){
         const lx=r.x+9*ui+k*(r.w-18*ui)/8;
         ctx.fillStyle=hexa(lc,blink);
@@ -2115,7 +2125,10 @@
       rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle='#1f1b2c'; ctx.fill();
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.muted,.25); rr(b.x,b.y,b.w,b.h,9*ui); ctx.stroke();
       // приглушённая иконка типа + замок
-      ctx.globalAlpha=.35; drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.28, 8*ui, COL.muted, '#1f1b2c'); ctx.globalAlpha=1;
+      ctx.globalAlpha=.35;
+      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.28, 22*ui, 22*ui)))
+        drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.28, 8*ui, COL.muted, '#1f1b2c');
+      ctx.globalAlpha=1;
       const lx=b.x+b.w/2, ly=b.y+b.h*0.52;
       ctx.fillStyle=hexa(COL.muted,.8); rr(lx-7*ui,ly-4*ui,14*ui,11*ui,2.5*ui); ctx.fill();
       ctx.beginPath(); ctx.arc(lx,ly-4*ui,5*ui,Math.PI,0);
@@ -2151,9 +2164,19 @@
       // центр отдан припаркованному борту (рисуется поверх) —
       // тип услуги мелкой пиктограммой у дальней от ворот стены
       const iy = out.dy===-1 ? b.y+b.h-13*ui : b.y+13*ui;
-      drawIcon(b.type, b.x+13*ui, iy, 6*ui, col, '#2a2440');
+      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+13*ui, iy, 16*ui, 16*ui)))
+        drawIcon(b.type, b.x+13*ui, iy, 6*ui, col, '#2a2440');
+      // живая анимация обслуживания над бортом (искры/капли/посадка людей)
+      if(COZY){
+        const fxid={repair:'fx-weld',fuel:'fx-fuel',board:'fx-boarding',deice:'fx-droplet'}[b.type];
+        const pp=0.62+0.38*Math.abs(Math.sin(nowT*0.006));
+        ctx.save(); ctx.globalAlpha=pp;
+        if(fxid) SPRITES.blitC(fxid, b.x+b.w/2, b.y+b.h*0.34, 26*ui*pp, 26*ui*pp);
+        ctx.restore();
+      }
     } else {
-      drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 12*ui, col, '#2a2440');
+      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.40, 30*ui, 30*ui)))
+        drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 12*ui, col, '#2a2440');
       // подпись услуги
       ctx.fillStyle=hexa(col,.85); ctx.font=`${8*ui}px ${MONO}`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -2199,12 +2222,24 @@
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
       for(const w of pl.path) ctx.lineTo(w.x,w.y);
       ctx.stroke();
-      // пульсирующая точка-цель на конце маршрута выбранного борта
-      if(pl.selected){
+      // наконечник-стрелка по направлению последнего сегмента
+      {
         const tp=pl.path[pl.path.length-1];
-        const p2=0.5+0.5*Math.sin(nowT*0.005);
-        ctx.beginPath(); ctx.arc(tp.x,tp.y,(6+p2*4)*ui,0,7);
-        ctx.setLineDash([]); ctx.lineWidth=2; ctx.strokeStyle=hexa(_rc,.35+.4*p2); ctx.stroke();
+        const pp=pl.path.length>1?pl.path[pl.path.length-2]:{x:pl.x,y:pl.y};
+        const aAng=Math.atan2(tp.y-pp.y, tp.x-pp.x);
+        ctx.setLineDash([]);
+        if(!(COZY && SPRITES.blitC('route-arrow', tp.x, tp.y, 15*ui, 15*ui, aAng, _rc))){
+          ctx.save(); ctx.translate(tp.x,tp.y); ctx.rotate(aAng);
+          ctx.fillStyle=hexa(_rc, pl.selected?0.9:0.55);
+          ctx.beginPath(); ctx.moveTo(7*ui,0); ctx.lineTo(-4*ui,-5*ui); ctx.lineTo(-4*ui,5*ui); ctx.closePath(); ctx.fill();
+          ctx.restore();
+        }
+        // пульсирующая точка-цель у выбранного борта
+        if(pl.selected){
+          const p2=0.5+0.5*Math.sin(nowT*0.005);
+          ctx.beginPath(); ctx.arc(tp.x,tp.y,(7+p2*4)*ui,0,7);
+          ctx.lineWidth=2; ctx.strokeStyle=hexa(_rc,.35+.4*p2); ctx.stroke();
+        }
       }
       ctx.restore();
     }
@@ -2248,7 +2283,7 @@
     const hud=HUD_H();
     // плавающая панель
     rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui);
-    ctx.fillStyle='rgba(13,28,43,.85)'; ctx.fill();
+    ctx.fillStyle='rgba(33,29,51,.85)'; ctx.fill();
     ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui); ctx.stroke();
     const cy=hud/2;
     // жизни-сердечки
@@ -2257,8 +2292,10 @@
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
     const urgent = LV.objective.time && tShown<=10;
     ctx.textBaseline='middle'; ctx.textAlign='left';
-    ctx.fillStyle=hexa(COL.phosphor,.9); ctx.font=`${13*ui}px ${MONO}`;
-    ctx.fillText('◷', 96*ui, cy);
+    if(!(COZY && SPRITES.blitC('clock', 102*ui, cy, 15*ui, 15*ui))){
+      ctx.fillStyle=hexa(COL.phosphor,.9); ctx.font=`${13*ui}px ${MONO}`;
+      ctx.fillText('◷', 96*ui, cy);
+    }
     ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`${14*ui}px ${MONO}`;
     ctx.fillText(fmtTime(tShown), 112*ui, cy);
     // деньги — по центру, с лёгким золотым свечением
@@ -2280,18 +2317,22 @@
     ctx.textAlign='right'; ctx.fillStyle=hexa(COL.muted,.7); ctx.font=`${9.5*ui}px ${MONO}`;
     ctx.fillText(currentLevelName(), pauseBtn.x-12*ui, cy);
 
-    // кнопка паузы — скруглённая карточка
-    rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui);
-    ctx.fillStyle='rgba(127,155,176,.06)'; ctx.fill();
-    ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.4);
-    rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui); ctx.stroke();
-    ctx.fillStyle=COL.paper;
+    // кнопка паузы — cozy-чип (на паузе поверх рисуем «play»)
     const pcx=pauseBtn.x+pauseBtn.w/2, pcy=pauseBtn.y+pauseBtn.h/2;
-    if(!paused){
-      ctx.fillRect(pcx-6*ui,pcy-6*ui,4*ui,12*ui);
-      ctx.fillRect(pcx+2*ui,pcy-6*ui,4*ui,12*ui);
-    } else {
-      ctx.beginPath(); ctx.moveTo(pcx-5*ui,pcy-6*ui); ctx.lineTo(pcx+7*ui,pcy); ctx.lineTo(pcx-5*ui,pcy+6*ui); ctx.closePath(); ctx.fill();
+    const cozyPause = COZY && !paused &&
+      SPRITES.blitC('pause-btn', pcx, pcy, Math.max(pauseBtn.w,pauseBtn.h), Math.max(pauseBtn.w,pauseBtn.h));
+    if(!cozyPause){
+      rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui);
+      ctx.fillStyle='rgba(154,111,212,.10)'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.4);
+      rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui); ctx.stroke();
+      ctx.fillStyle=COL.paper;
+      if(!paused){
+        ctx.fillRect(pcx-6*ui,pcy-6*ui,4*ui,12*ui);
+        ctx.fillRect(pcx+2*ui,pcy-6*ui,4*ui,12*ui);
+      } else {
+        ctx.beginPath(); ctx.moveTo(pcx-5*ui,pcy-6*ui); ctx.lineTo(pcx+7*ui,pcy); ctx.lineTo(pcx-5*ui,pcy+6*ui); ctx.closePath(); ctx.fill();
+      }
     }
 
     // цепочка операций выбранного борта — карточка под HUD
@@ -2299,7 +2340,7 @@
       const chain=selected.requests, n=chain.length;
       const bw2=30*ui, gap2=16*ui, x0=14*ui, y0=hud+10*ui;
       const pw=n*bw2+(n-1)*gap2+16*ui;
-      rr(x0,y0,pw,44*ui,9*ui); ctx.fillStyle='rgba(13,28,43,.72)'; ctx.fill();
+      rr(x0,y0,pw,44*ui,9*ui); ctx.fillStyle='rgba(33,29,51,.72)'; ctx.fill();
       ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(x0,y0,pw,44*ui,9*ui); ctx.stroke();
       const tag = selected.vip ? (t('hud.plane')+' · '+t('hud.vip'))
                 : selected.emergency ? (t('hud.plane')+' '+t('hud.sos'))
@@ -2321,7 +2362,8 @@
         ctx.fillStyle=active?hexa(c,.16):'rgba(127,155,176,.05)'; ctx.fill();
         ctx.lineWidth=1.5; ctx.strokeStyle=hexa(c,active?.9:.4);
         rr(bx,y0+15*ui,bw2,22*ui,6*ui); ctx.stroke();
-        drawIcon(ty, bx+bw2/2, bcy, 8*ui, c, '#0f1d2b');
+        if(!(COZY && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 19*ui, 19*ui)))
+          drawIcon(ty, bx+bw2/2, bcy, 8*ui, c, '#211d33');
         ctx.globalAlpha=1;
       }
     }
@@ -2335,16 +2377,21 @@
     ctx.font=`${12*ui}px ${MONO}`;
     const w=ctx.measureText(toast.text).width+44*ui, h=24*ui;
     const x=W/2-w/2, y=HUD_H()+12*ui;
-    rr(x,y,w,h,12*ui); ctx.fillStyle='rgba(10,22,34,.92)'; ctx.fill();
+    rr(x,y,w,h,12*ui); ctx.fillStyle='rgba(26,22,40,.92)'; ctx.fill();
     ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.7);
     ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=10; rr(x,y,w,h,12*ui); ctx.stroke(); ctx.shadowBlur=0;
-    ctx.beginPath(); ctx.arc(x+13*ui,y+h/2,3.5*ui,0,7); ctx.fillStyle=col; ctx.fill();
+    if(!(COZY && SPRITES.blitC(toast.good?'check':'heart-crack', x+14*ui, y+h/2, 15*ui, 15*ui))){
+      ctx.beginPath(); ctx.arc(x+13*ui,y+h/2,3.5*ui,0,7); ctx.fillStyle=col; ctx.fill();
+    }
     ctx.fillStyle=COL.paper; ctx.textAlign='left'; ctx.textBaseline='middle';
     ctx.fillText(toast.text, x+26*ui, y+h/2);
     ctx.restore();
   }
   function boom(x,y){ effects.push({x,y,t:0,life:0.55,kind:'crash'}); }
   function nearMiss(x,y){ effects.push({x,y,t:0,life:0.5,kind:'near'}); }
+  function pulseFx(x,y,kind,life){ effects.push({x,y,t:0,life:life||0.55,kind}); }
+  // kind → cozy-спрайт и цвет процедурного фолбэка
+  const FX_SPRITE={near:'fx-ripple',crash:'fx-crash',touchdown:'fx-touchdown',takeoff:'fx-takeoff',success:'fx-success',error:'fx-error'};
   function drawEffects(dt){
     for(let i=effects.length-1;i>=0;i--){
       const e=effects[i]; e.t+=dt;
@@ -2352,8 +2399,13 @@
       if(k>=1){ effects.splice(i,1); continue; }
       const a=1-k;
       ctx.save(); ctx.translate(e.x,e.y);
+      if(COZY){
+        const sz=(e.kind==='crash'?(44+k*64):(20+k*56))*ui;
+        ctx.globalAlpha=a;
+        if(SPRITES.blitC(FX_SPRITE[e.kind]||'fx-ripple',0,0,sz,sz)){ ctx.globalAlpha=1; ctx.restore(); continue; }
+        ctx.globalAlpha=1;
+      }
       if(e.kind==='near'){
-        if(COZY){ ctx.globalAlpha=a; if(SPRITES.blitC('fx-ripple',0,0,(16+k*64)*ui,(16+k*64)*ui)){ ctx.globalAlpha=1; ctx.restore(); continue; } ctx.globalAlpha=1; }
         // near-miss «уфф»: мягкая двойная волна без искр и жести
         ctx.beginPath(); ctx.arc(0,0,(8+k*30)*ui,0,7);
         ctx.lineWidth=2.5*a+0.5; ctx.strokeStyle=hexa(COL.phosphor,.7*a); ctx.stroke();
@@ -2362,7 +2414,13 @@
         ctx.beginPath(); ctx.arc(0,0,7*(1-k)*ui,0,7); ctx.fillStyle=hexa('#ffffff',.5*a); ctx.fill();
         ctx.restore(); continue;
       }
-      if(COZY){ ctx.globalAlpha=a; if(SPRITES.blitC('fx-crash',0,0,(44+k*64)*ui,(44+k*64)*ui)){ ctx.globalAlpha=1; ctx.restore(); continue; } ctx.globalAlpha=1; }
+      if(e.kind!=='crash'){
+        // мягкое одиночное кольцо (фолбэк для touchdown/takeoff/success/error)
+        const fc={touchdown:COL.muted,takeoff:COL.paper,success:'#5dca7a',error:COL.life}[e.kind]||COL.paper;
+        ctx.beginPath(); ctx.arc(0,0,(8+k*26)*ui,0,7);
+        ctx.lineWidth=2*a+0.5; ctx.strokeStyle=hexa(fc,.6*a); ctx.stroke();
+        ctx.restore(); continue;
+      }
       // ударная волна
       ctx.beginPath(); ctx.arc(0,0,(6+k*44)*ui,0,7);
       ctx.lineWidth=3*a+0.5; ctx.strokeStyle=hexa(COL.life,.6*a); ctx.stroke();
@@ -2452,7 +2510,7 @@
     ctx.font=`${12.5*ui}px ${MONO}`;
     const w=ctx.measureText(txt).width+48*ui, h=30*ui;
     const x=W/2-w/2, y=H-h-(14*ui+safe.b);
-    rr(x,y,w,h,12*ui); ctx.fillStyle='rgba(10,22,34,.92)'; ctx.fill();
+    rr(x,y,w,h,12*ui); ctx.fillStyle='rgba(26,22,40,.92)'; ctx.fill();
     ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.6);
     ctx.shadowColor=hexa(col,.4); ctx.shadowBlur=10; rr(x,y,w,h,12*ui); ctx.stroke(); ctx.shadowBlur=0;
     ctx.textAlign='left'; ctx.textBaseline='middle';

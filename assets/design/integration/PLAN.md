@@ -63,7 +63,16 @@ text/paper `#f4eede`, reduce `--phosphor` glow usage. Accents
 - [x] Main menu background → `menu-bg` sprite (cover-fit).
 - [x] App icon + Android adaptive shipped under `assets/icon/`.
 
-Kept procedural by design (dynamic state): patience ring, runway
-occupied/closed lights, bay gate orientation + service progress/level pips.
-Still on the backlog for a polish pass: bay/runway full sprite adoption,
-service/takeoff/touchdown effect frames, level-select card art, button system.
+## Polish pass — DONE (v0.21, second slice)
+- [x] Bay icons -> `svc-*` sprites (idle / busy / locked) + chain card icons.
+- [x] Live service animation over a busy bay (`fx-weld/fuel/boarding/droplet`).
+- [x] Route arrowhead (`route-arrow`, tinted via currentColor support).
+- [x] HUD `clock` + `pause-btn` sprites; toast icons (`check`/`heart-crack`).
+- [x] New effect triggers: touchdown / takeoff / service-done (`pulseFx`).
+- [x] Wordmark lockup on the start screen; primary button green per spec.
+- [x] Favicon / apple-touch-icon / theme-color; leftover radar colours purged.
+
+Kept procedural by design (dynamic state): patience ring, runway strip
+(size + occupied/closed feedback), bay gate orientation + progress/pips.
+Remaining nice-to-haves: tile-based field, level-card art, winter art set
+(snow/plow have no sprites yet), PWA packaging.
