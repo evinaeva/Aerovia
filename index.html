@@ -381,8 +381,10 @@
       'forest.tree':'A tree is falling toward the runway!',
       'forest.deer':'Deer on the runway!',
       'forest.birds':'Birds over the runway!',
+      'forest.snow':'Snow drift on the runway!',
       'forest.cleared':'Runway clear',
       'forest.crew.truck':'Maintenance', 'forest.crew.eagle':'Bird scare', 'forest.crew.chainsaw':'Chainsaw crew',
+      'forest.crew.plow':'Snowplow',
       'canvas.service':'SERVICE',
       // --- медали / достижения ---
       'medals.btn':'Medals', 'medals.kicker':'Achievements', 'medals.title':'Medals', 'medals.back':'Back',
@@ -511,8 +513,10 @@
       'forest.tree':'Дерево падает на полосу!',
       'forest.deer':'Олень на полосе!',
       'forest.birds':'Птицы над полосой!',
+      'forest.snow':'Снежный занос на полосе!',
       'forest.cleared':'Полоса свободна',
       'forest.crew.truck':'Техслужба', 'forest.crew.eagle':'Орёл-разгон', 'forest.crew.chainsaw':'Бригада с пилой',
+      'forest.crew.plow':'Снегоуборщик',
       'canvas.service':'СЛУЖБА',
       // --- медали / достижения ---
       'medals.btn':'Медали', 'medals.kicker':'Достижения', 'medals.title':'Медали', 'medals.back':'Назад',
@@ -748,7 +752,7 @@
   // (откуда выезжают спец-бригады) рисуется сверху поля у всех биом-карт.
   const BIOMES = [
     { id:'forest', emoji:'🌲', ready:true,
-      level:{ biome:'forest', objective:{ metric:'served', target:14 },
+      level:{ biome:'forest', weather:true, objective:{ metric:'served', target:14 },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
         runways:3 } },
     { id:'arctic',   emoji:'❄️', ready:false },
@@ -1182,6 +1186,7 @@
   function neededCrew(h){
     if(h.kind==='tree') return h.fallen ? 'truck' : 'chainsaw';
     if(h.kind==='deer') return 'truck';
+    if(h.kind==='snow') return 'plow';
     return 'eagle';
   }
   // помеха под пальцем (для тапа): берём ближайшую ещё не обслуживаемую
@@ -1196,9 +1201,15 @@
     const free = runways.filter(r=>!r.closed && r.hazard==null);
     if(!free.length) return;
     const r = free[Math.floor(Math.random()*free.length)];
-    const kind = ['tree','deer','birds'][Math.floor(Math.random()*3)];
+    // снежный занос — только в снегопад (зимний геймплей поверх лесных помех)
+    const pool = weather==='snow' ? ['tree','deer','birds','snow'] : ['tree','deer','birds'];
+    const kind = pool[Math.floor(Math.random()*pool.length)];
     const h = { id:++hazardSeq, kind, runway:r, t:0, dispatched:false, done:false };
-    if(kind==='tree'){
+    if(kind==='snow'){
+      h.x = r.x + r.w*0.5; h.y = r.cy;
+      r.closed = true;                                  // занос на полосе — закрыта, пока не расчистит плуг
+      toast = {text:t('forest.snow'), t:0, good:false};
+    } else if(kind==='tree'){
       h.beaver = Math.random() < FOR.BEAVER_CHANCE;     // бобёр грызёт — падает медленнее
       h.fallTime = h.beaver ? FOR.TREE_FALL_BEAVER : FOR.TREE_FALL;
       h.fallen = false;
@@ -1252,9 +1263,10 @@
         if(!h.fallen && h.t>=h.fallTime){ h.fallen=true; h.runway.closed=true; } // легло поперёк полосы
       } else if(h.kind==='deer'){
         if(!h.dispatched && h.t>=FOR.DEER_LIFE) resolveHazard(h, false);          // олень сам ушёл
-      } else { // birds
+      } else if(h.kind==='birds'){
         if(!h.dispatched && h.t>=FOR.BIRD_LIFE) resolveHazard(h, false);          // птицы улетели
       }
+      // снег (kind==='snow') сам не уходит — нужен плуг (создаёт «всегда есть дело»)
     }
     // спец-авто: едут к помехе → работают → возвращаются домой
     for(const c of crews){
@@ -1969,6 +1981,8 @@
         if(h.beaver) emoji('🦫', h.x+12*ui, h.y+8*ui, 13*ui, hexa(COL.amber,.5)); // бобёр грызёт у основания
       } else if(h.kind==='deer'){
         emoji('🦌', h.x, h.y, 22*ui, hexa(COL.amber,.4));
+      } else if(h.kind==='snow'){
+        emoji('❄️', h.x, h.y, 22*ui, hexa(COL.teal,.5));   // занос на полосе (плейсхолдер под арт)
       } else { // birds
         for(let k=0;k<3;k++) emoji('🐦', h.x+(k-1)*15*ui, h.y+Math.sin(tm*0.006+k)*4*ui, 13*ui, hexa(COL.phosphor,.4));
       }
@@ -1977,13 +1991,13 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚'}[neededCrew(h)];
+        const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'}[neededCrew(h)];
         emoji(ic, h.x, h.y-32*ui, 14*ui, hexa(COL.teal,.5));
       }
     }
     // спец-авто в пути / за работой
     for(const c of crews){
-      const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚'}[c.kind];
+      const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'}[c.kind];
       emoji(ic, c.x, c.y, 16*ui, hexa(COL.amber,.4));
       if(c.phase==='work'){               // искорки работы
         const pulse=Math.abs(Math.sin(tm*0.02));
@@ -2967,9 +2981,9 @@
   // (без ?test=1) ничего не выставляется — прод-поведение не меняется.
   if(typeof location!=='undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
     window.__GAME = {
-      VERSION, LEVELS, K, I18N, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
+      VERSION, LEVELS, BIOMES, K, I18N, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
       t, levelEvents, levelName, objectiveDesc, computeStars, metricValue,
-      dayCycle, weatherTaxiMult,
+      dayCycle, weatherTaxiMult, neededCrew,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
       validateGame, validateLevels, validateI18n, validateConfig,
       saveGame, loadGame, setLang, detectLang,
