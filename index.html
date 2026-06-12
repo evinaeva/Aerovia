@@ -2186,12 +2186,13 @@
     const need=curNeed(pl);
     const ncol=SVC[need].color;
 
-    // маршрут — фосфорная пунктирная с «бегущими» штрихами
+    // маршрут — cozy-зелёная (radar-фосфор при COZY=off), «бегущие» штрихи
     if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
+      const _rc = COZY ? '#5dca7a' : COL.phosphor;
       ctx.save();
-      ctx.strokeStyle=hexa(COL.phosphor, pl.selected?0.85:0.45);
+      ctx.strokeStyle=hexa(_rc, pl.selected?0.85:0.45);
       ctx.lineWidth=2.5; ctx.setLineDash([9,11]); ctx.lineDashOffset=-nowT*0.05;
-      if(pl.selected){ ctx.shadowColor=hexa(COL.phosphor,.7); ctx.shadowBlur=10; }
+      if(pl.selected){ ctx.shadowColor=hexa(_rc,.7); ctx.shadowBlur=10; }
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
       for(const w of pl.path) ctx.lineTo(w.x,w.y);
       ctx.stroke();
@@ -2200,7 +2201,7 @@
         const tp=pl.path[pl.path.length-1];
         const p2=0.5+0.5*Math.sin(nowT*0.005);
         ctx.beginPath(); ctx.arc(tp.x,tp.y,(6+p2*4)*ui,0,7);
-        ctx.setLineDash([]); ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.35+.4*p2); ctx.stroke();
+        ctx.setLineDash([]); ctx.lineWidth=2; ctx.strokeStyle=hexa(_rc,.35+.4*p2); ctx.stroke();
       }
       ctx.restore();
     }
@@ -2224,16 +2225,20 @@
       ctx.beginPath(); ctx.arc(pl.x,pl.y,20*ui+p*3*ui,0,7);
       ctx.lineWidth=2; ctx.strokeStyle=hexa(pc,.4+.4*p); ctx.stroke();
     }
-    // выделение — пунктирное кольцо
-    if(pl.selected){
+    // выделение — cozy-кольцо (спрайт) с фолбэком на пунктир
+    if(pl.selected && !(COZY && SPRITES.blitC('ring-selected', pl.x, pl.y, K.GRAB, K.GRAB))){
       ctx.save(); ctx.beginPath(); ctx.arc(pl.x,pl.y,K.GRAB*0.5,0,7);
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([4,5]); ctx.stroke(); ctx.restore();
     }
 
     drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5, pl.vip, pl.emergency, pl.medical);
 
-    // иконка текущей нужды над бортом (8.45 = прежние 6.5 +30%)
-    if(pl.zone!=='bay') drawIcon(need, pl.x, pl.y-28*ui, 8.45*ui, ncol, COL.ink);
+    // иконка текущей нужды над бортом — cozy-чип svc-* (фолбэк: процедурная иконка)
+    if(pl.zone!=='bay'){
+      const _ny = pl.y-28*ui;
+      if(!(COZY && SPRITES.blitC('svc-'+need, pl.x, _ny, 22*ui, 22*ui)))
+        drawIcon(need, pl.x, _ny, 8.45*ui, ncol, COL.ink);
+    }
   }
 
   function drawHUD(){
