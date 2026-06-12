@@ -106,8 +106,8 @@
   // ---- balance knobs (дефолты, потом крутим) ----
   const K = {
     TURN: 3.2,            // rad/sec поворот в полёте
-    SPEED_AIR: 47,        // скорость захода на посадку
-    SPEED_TAXI: 35,       // скорость руления по земле
+    SPEED_AIR: 60,        // скорость захода на посадку
+    SPEED_TAXI: 45,       // скорость руления по земле
     SPEED_TAKEOFF: 150,   // разгон на взлёте
     ARRIVE: 12,
     GRAB: 42,
@@ -223,6 +223,7 @@
   // ---- game state ----
   let planes=[], money=0, lives=0, served=0, gameTime=0;
   let running=false, paused=false, lastTs=0, spawnTimer=0;
+  let effects=[];          // анимации крушений
 
   function reset(){
     planes=[]; money=K.START_MONEY; lives=K.START_LIVES; served=0; gameTime=0;
@@ -230,7 +231,7 @@
     bays.forEach(b=>{ b.occupied=null; const cfg=LEVEL.sides[b.side];
       b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>r.occupied=null);
-    selected=null;
+    effects=[]; selected=null;
     spawnPlane();
   }
 
@@ -352,17 +353,18 @@
     if(pl.bay){ if(pl.bay.occupied===pl) pl.bay.occupied=null; pl.bay=null; }
   }
   function killAir(pl){            // воздушный таймаут: -1 жизнь
-    pl.dead=true; freeRes(pl); lives--;
+    if(pl.dead) return;
+    pl.dead=true; boom(pl.x,pl.y); freeRes(pl); lives--;
   }
   function killCrash(pl){          // столкновение: -1 жизнь и -выручка
     if(pl.dead) return;
-    pl.dead=true; freeRes(pl); lives--; money-=pl.reward;
+    pl.dead=true; boom(pl.x,pl.y); freeRes(pl); lives--; money-=pl.reward;
   }
 
   function curNeed(pl){ return pl.requests[pl.reqIndex]; }
 
   function land(pl, r){            // начать посадку на полосу r
-    pl.zone='runway'; pl.runway=r; r.occupied=pl;
+    pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
     pl.landing=true; pl.moving=true; pl.path=[];
   }
   function startGround(pl){
@@ -421,13 +423,11 @@
           followPath(pl, K.SPEED_AIR, dt);
         }
         // заход на посадку: пересёк правый край полос -> захват ближайшей
+        // (садимся даже на занятую — крушение только при физическом контакте)
         if(pl.x <= field.rwR){
           let best=null, bd=1e9;
           for(const r of runways){ const d=Math.abs(pl.y-r.cy); if(d<bd){bd=d;best=r;} }
-          if(best){
-            if(best.occupied && best.occupied!==pl){ killCrash(pl); killCrash(best.occupied); }
-            else land(pl, best);
-          }
+          if(best) land(pl, best);
         }
         continue;
       }
@@ -472,8 +472,9 @@
         if(need==='depart'){
           for(const r of runways){
             if(rectHit(pl.x,pl.y,r)){
-              if(r.occupied && r.occupied!==pl){ killCrash(pl); killCrash(r.occupied); }
-              else { pl.zone='runway'; pl.runway=r; r.occupied=pl; pl.takeoff=true; pl.moving=true; pl.path=[]; }
+              // выезд на полосу под взлёт (крушение — только при контакте на ВПП)
+              pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
+              pl.takeoff=true; pl.moving=true; pl.path=[];
               break;
             }
           }
@@ -519,6 +520,16 @@
       for(let j=i+1;j<ground.length;j++){
         if(dist(ground[i].x,ground[i].y,ground[j].x,ground[j].y)<K.CRASH_DIST){
           killCrash(ground[i]); killCrash(ground[j]);
+        }
+      }
+
+    // столкновения на ВПП: физический контакт (заходящий бьёт стоящего, либо
+    // садящийся пересекается со взлетающим), а не сам факт захода на полосу
+    const onrw = planes.filter(p=>!p.dead && p.zone==='runway');
+    for(let i=0;i<onrw.length;i++)
+      for(let j=i+1;j<onrw.length;j++){
+        if(dist(onrw[i].x,onrw[i].y,onrw[j].x,onrw[j].y)<K.CRASH_DIST){
+          killCrash(onrw[i]); killCrash(onrw[j]);
         }
       }
 
@@ -810,6 +821,33 @@
     }
   }
 
+  function boom(x,y){ effects.push({x,y,t:0,life:0.55}); }
+  function drawEffects(dt){
+    for(let i=effects.length-1;i>=0;i--){
+      const e=effects[i]; e.t+=dt;
+      const k=e.t/e.life;
+      if(k>=1){ effects.splice(i,1); continue; }
+      const R=10*ui + k*36*ui;
+      ctx.save(); ctx.translate(e.x,e.y);
+      // ударная волна
+      ctx.globalAlpha=(1-k)*0.9; ctx.strokeStyle=COL.amber; ctx.lineWidth=3*ui;
+      ctx.beginPath(); ctx.arc(0,0,R,0,7); ctx.stroke();
+      ctx.strokeStyle=COL.rose; ctx.lineWidth=1.5*ui;
+      ctx.beginPath(); ctx.arc(0,0,R*0.6,0,7); ctx.stroke();
+      // искры
+      ctx.globalAlpha=(1-k)*0.85; ctx.strokeStyle=COL.amber; ctx.lineWidth=2*ui;
+      for(let s=0;s<8;s++){ const a=s*Math.PI/4;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a)*R*0.5, Math.sin(a)*R*0.5);
+        ctx.lineTo(Math.cos(a)*R, Math.sin(a)*R); ctx.stroke(); }
+      // центральная вспышка в начале
+      if(k<0.45){ ctx.globalAlpha=(0.45-k)/0.45; ctx.fillStyle=COL.paper;
+        ctx.beginPath(); ctx.arc(0,0,9*ui*(1-k),0,7); ctx.fill(); }
+      ctx.restore();
+    }
+    ctx.globalAlpha=1;
+  }
+
   function frame(ts){
     if(!lastTs)lastTs=ts;
     let dt=(ts-lastTs)/1000; lastTs=ts;
@@ -820,6 +858,7 @@
     drawRunways();
     bays.forEach(drawBay);
     planes.forEach(p=>{ if(!p.dead) drawPlane(p); });
+    drawEffects(dt);
     drawHUD();
 
     if(paused && running){
