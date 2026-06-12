@@ -280,6 +280,7 @@
       'toast.rush':'Rush hour!',
       'toast.wind':'Wind shift — runway closed',
       'toast.fog':'Fog — taxiing slowed',
+      'float.combo':'×{x} combo', 'float.express':'on time!', 'float.nearMiss':'phew!',
       'loss.airTimeout':'Air timeout — didn\'t land in time',
       'loss.collision':'Collision',
       'loss.collisionBay':'Collision in a bay',
@@ -378,6 +379,7 @@
       'toast.rush':'Час пик!',
       'toast.wind':'Смена ветра — полоса закрыта',
       'toast.fog':'Туман — руление замедлено',
+      'float.combo':'×{x} комбо', 'float.express':'вовремя!', 'float.nearMiss':'уфф!',
       'loss.airTimeout':'Воздушный таймаут — не успел сесть',
       'loss.collision':'Столкновение',
       'loss.collisionBay':'Столкновение в боксе',
@@ -503,6 +505,10 @@
     ARRIVE: 12,
     GRAB: 42,
     CRASH_DIST: 24,       // столкновение на поле
+    NEAR_DIST: 52,        // «едва разошлись»: ближе — near-miss «уфф» (но не краш)
+    NEAR_COOL: 2.2,       // антидребезг near-miss на одну пару бортов, сек
+    SLOWMO_DUR: 0.30,     // лёгкое замедление времени при near-miss, сек
+    SLOWMO_SCALE: 0.45,   // во сколько раз замедляется время в этот миг
     AIR_BASE: 140,        // базовое воздушное терпение, сек
     GROUND_BASE: 60,      // базовое наземное терпение, сек
     GROUND_STEP: 30,      // + за каждую услугу
@@ -563,7 +569,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.13';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.14';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -654,8 +660,11 @@
   let lossLog=[], toast=null;
   const debug={infiniteLives:false, richStart:false};
   const BIG_MONEY=999999;
-  let floaters=[];         // плавающие награды «+N ₿» / «−50%» над полем
+  let floaters=[];         // плавающие награды «+N ₿» / «×N комбо» / «уфф!» над полем
   let alarmAt=0;           // антидребезг тревожного бипа терпения
+  let slowmo=0;            // секунды лёгкого замедления времени (near-miss)
+  let nearMissPairs={};    // key «idA-idB» → время, до которого пара «остыла»
+  let planeSeq=0;          // id бортов для антидребезга near-miss
   function addFloat(x,y,text,col){ floaters.push({x,y,text,col,t:0,life:1.15}); }
 
   // ---- звук и вибрация (идеи из копилки: раздел 1) ----
@@ -697,6 +706,19 @@
       const g=ac.createGain(); g.gain.setValueAtTime(0.65,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
       src.connect(f); f.connect(g); g.connect(master); src.start(t0);
     }
+    function whoosh(){ // мягкий «уфф» near-miss: полосовой шум, проносится и стихает
+      if(!ensure()) return;
+      const t0=ac.currentTime, dur=0.34;
+      const buf=ac.createBuffer(1,Math.floor(ac.sampleRate*dur),ac.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++){ const e=i/d.length; d[i]=(Math.random()*2-1)*Math.sin(Math.PI*e); }
+      const src=ac.createBufferSource(); src.buffer=buf;
+      const f=ac.createBiquadFilter(); f.type='bandpass'; f.Q.value=1.4;
+      f.frequency.setValueAtTime(420,t0); f.frequency.exponentialRampToValueAtTime(1100,t0+dur);
+      const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(0.16,t0+0.06); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+      src.connect(f); f.connect(g); g.connect(master); src.start(t0);
+    }
     const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); // случайный индекс ноты гаммы
     return {
       setEnabled(v){ enabled=v; },
@@ -711,12 +733,14 @@
       crash(){ thud(); tone(98,0.4,'sawtooth',0.22); },
       medal(){ tone(1046.5,0.12,'sine',0.24); tone(1568,0.22,'sine',0.22,0.10); },
       alarm(){ tone(880,0.06,'square',0.10); },                                 // терпение на исходе
+      nearmiss(){ whoosh(); },                                                  // «уфф» — борта едва разошлись
     };
   })();
   const HAP = { // вибрация: Android — да, iOS веб — молча игнорирует (в обёртке будет плагин)
     on:true,
     v(p){ if(this.on && navigator.vibrate){ try{ navigator.vibrate(p); }catch(e){} } },
     tap(){ this.v(12); }, ok(){ this.v([18,40,24]); }, penalty(){ this.v(35); }, crash(){ this.v([60,40,90]); },
+    near(){ this.v([10,30,10]); },
   };
 
   function reset(){
@@ -728,7 +752,7 @@
     bays.forEach(b=>{ b.occupied=null; const cfg=LV.sides[b.side];
       b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>{ r.occupied=null; r.closed=false; });
-    effects=[]; floaters=[]; alarmAt=0; selected=null; levelPassed=false; upgradesDone=0;
+    effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
     nextRush = zen?Infinity:K.RUSH_PERIOD;
@@ -755,6 +779,7 @@
     // вертикальная позиция зависания — у одной из полос/между ними
     const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
     planes.push({
+      id: ++planeSeq,
       x: field.hoverX, y, ang: Math.PI, // нос влево
       vip, emergency, requests, reqIndex:0,
       zone:'air',            // air | runway | field | bay
@@ -918,9 +943,14 @@
     }
     money += pay;
     SND.depart(express); HAP.ok();
-    addFloat(pl.runway ? pl.runway.x+pl.runway.w-34*ui : Math.min(pl.x, W-40*ui),
-             pl.runway ? pl.runway.cy : pl.y,
-             '+'+fmtMoney(pay), pl.halfPay?COL.muted:COL.coin);
+    // якорь всплывашек — у вылетающего борта; награды стопкой ползут вверх над бортом
+    const fx = pl.runway ? pl.runway.x+pl.runway.w-34*ui : Math.min(pl.x, W-40*ui);
+    const fy = pl.runway ? pl.runway.cy : pl.y;
+    addFloat(fx, fy, '+'+fmtMoney(pay), pl.halfPay?COL.muted:COL.coin);
+    // мгновенный дофамин: «×N комбо» за серию и «вовремя!» за экспресс — над «+N ₿»
+    let stack = 17*ui;
+    if(combo>=2){ addFloat(fx, fy-stack, t('float.combo',{x:combo}), COL.gold); stack+=17*ui; }
+    if(express){ addFloat(fx, fy-stack, t('float.express'), COL.teal); }
     ACH.onDepart(pl, pay);
     pl.dead=true; freeRes(pl);
   }
@@ -1114,6 +1144,35 @@
             killCrash(onrw[i],'loss.collisionRunway'); killCrash(onrw[j],'loss.collisionRunway');
           }
         }
+    }
+
+    // near-miss «уфф»: два борта едва разошлись (ближе NEAR_DIST, но не краш) и
+    // именно СБЛИЖАЛИСЬ в этот миг — вспышка + лёгкое замедление + «уфф». Работает и
+    // в Zen (это украшение, без штрафа). Антидребезг — по паре бортов (NEAR_COOL),
+    // карта пар пересобирается каждый кадр (сама чистит ушедшие/севшие борта).
+    {
+      const air = planes.filter(p=>!p.dead && p.zone!=='bay');
+      const next={};
+      for(let i=0;i<air.length;i++)
+        for(let j=i+1;j<air.length;j++){
+          const a=air[i], b=air[j], d=dist(a.x,a.y,b.x,b.y);
+          if(d >= K.NEAR_DIST*1.5) continue;                 // далеко — не отслеживаем
+          const key = a.id<b.id ? a.id+'-'+b.id : b.id+'-'+a.id;
+          const prev = nearMissPairs[key];
+          let cool = prev ? prev.cool : 0;
+          // нужен предыдущий кадр и реальное сближение — иначе спавн рядом или
+          // два зависших борта дали бы ложное «уфф»
+          const closing = prev && d < prev.last - 0.01;
+          if(d>=K.CRASH_DIST && d<K.NEAR_DIST && closing && gameTime>=cool){
+            nearMiss((a.x+b.x)/2, (a.y+b.y)/2);
+            addFloat((a.x+b.x)/2, (a.y+b.y)/2 - 18*ui, t('float.nearMiss'), COL.phosphor);
+            SND.nearmiss(); HAP.near();
+            slowmo = Math.max(slowmo, K.SLOWMO_DUR);
+            cool = gameTime + K.NEAR_COOL;
+          }
+          next[key] = {cool, last:d};
+        }
+      nearMissPairs = next;
     }
 
     // уборка
@@ -1564,7 +1623,8 @@
     ctx.fillText(toast.text, x+26*ui, y+h/2);
     ctx.restore();
   }
-  function boom(x,y){ effects.push({x,y,t:0,life:0.55}); }
+  function boom(x,y){ effects.push({x,y,t:0,life:0.55,kind:'crash'}); }
+  function nearMiss(x,y){ effects.push({x,y,t:0,life:0.5,kind:'near'}); }
   function drawEffects(dt){
     for(let i=effects.length-1;i>=0;i--){
       const e=effects[i]; e.t+=dt;
@@ -1572,6 +1632,15 @@
       if(k>=1){ effects.splice(i,1); continue; }
       const a=1-k;
       ctx.save(); ctx.translate(e.x,e.y);
+      if(e.kind==='near'){
+        // near-miss «уфф»: мягкая двойная волна без искр и жести
+        ctx.beginPath(); ctx.arc(0,0,(8+k*30)*ui,0,7);
+        ctx.lineWidth=2.5*a+0.5; ctx.strokeStyle=hexa(COL.phosphor,.7*a); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0,0,(4+k*18)*ui,0,7);
+        ctx.lineWidth=2*a+0.5; ctx.strokeStyle=hexa(COL.amber,.55*a); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0,0,7*(1-k)*ui,0,7); ctx.fillStyle=hexa('#ffffff',.5*a); ctx.fill();
+        ctx.restore(); continue;
+      }
       // ударная волна
       ctx.beginPath(); ctx.arc(0,0,(6+k*44)*ui,0,7);
       ctx.lineWidth=3*a+0.5; ctx.strokeStyle=hexa(COL.life,.6*a); ctx.stroke();
@@ -1638,7 +1707,11 @@
     let dt=(ts-lastTs)/1000; lastTs=ts;
     if(dt>0.05)dt=0.05;
     nowT=ts;
-    if(running && !paused) update(dt);
+    // лёгкое замедление времени на миг near-miss (таймер идёт в реальном
+    // времени, замедляется только симуляция — вспышки/всплывашки тикают как обычно)
+    let udt = dt;
+    if(slowmo>0){ slowmo=Math.max(0, slowmo-dt); udt = dt*K.SLOWMO_SCALE; }
+    if(running && !paused) update(udt);
 
     if(inMenu){
       drawMenuScene(ts);
