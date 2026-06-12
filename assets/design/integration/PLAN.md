@@ -72,7 +72,13 @@ text/paper `#f4eede`, reduce `--phosphor` glow usage. Accents
 - [x] Wordmark lockup on the start screen; primary button green per spec.
 - [x] Favicon / apple-touch-icon / theme-color; leftover radar colours purged.
 
+## Third slice — DONE (v0.21)
+- [x] Tile-based field: `SPRITES.pattern` (DPR-aware CanvasPattern) — tarmac
+  slabs, water tile, grass strip + sandy shoreline with surf foam.
+- [x] Level-select cards per the batch-5 spec: mini board thumbnail, display
+  number, sprite star row, best result, padlock overlay for locked shifts.
+
 Kept procedural by design (dynamic state): patience ring, runway strip
 (size + occupied/closed feedback), bay gate orientation + progress/pips.
-Remaining nice-to-haves: tile-based field, level-card art, winter art set
-(snow/plow have no sprites yet), PWA packaging.
+Remaining: winter art set (snow/plow have no sprites yet, `weather` is
+opt-in and off in the campaign), PWA packaging, store screenshots.
