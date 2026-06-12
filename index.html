@@ -42,6 +42,7 @@
   }
   .panel p{font-size:13px;line-height:1.7;color:var(--muted);margin:10px 0 0}
   .panel .big{font-size:48px;color:var(--phosphor);margin:8px 0 0;letter-spacing:.02em}
+  #finalStars{color:var(--gold);font-size:52px;letter-spacing:.08em}
   .btn{
     margin-top:24px;display:inline-block;cursor:pointer;
     border:1px solid var(--phosphor);color:var(--phosphor);background:transparent;
@@ -93,9 +94,10 @@
 
   <div class="overlay hidden" id="overScreen">
     <div class="panel">
-      <div class="kicker">Смена закрыта</div>
-      <div class="big" id="finalScore">0</div>
+      <div class="kicker" id="overKicker">Смена закрыта</div>
+      <div class="big" id="finalStars">☆☆☆</div>
       <p id="overMsg">Закончились жизни.</p>
+      <button class="btn" id="nextBtn">Следующий уровень</button>
       <button class="btn" id="againBtn">Ещё раз</button>
       <button class="btn" id="toLevelsBtn">К уровням</button>
     </div>
@@ -175,18 +177,26 @@
   };
 
   // ---- level config ----
+  // objective.metric: 'served' | 'upgrades'; time (сек) — лимит для уровня на время;
+  // stars: [1★,2★,3★] пороги по метрике. Прохождение = ≥1★.
   const LEVELS = [
-    { name:'Уровень 1', goal:8,
+    { name:'Уровень 1',
+      objective:{ metric:'served', desc:'Принять как можно больше бортов', stars:[5,8,12] },
       sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
       runways:3 },
-    { name:'Уровень 2', goal:12,
+    { name:'Уровень 2',
+      objective:{ metric:'served', time:120, desc:'Принять бортов за 2:00', stars:[8,12,16] },
+      sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways:3 },
+    { name:'Уровень 3',
+      objective:{ metric:'upgrades', time:150, desc:'Улучшить боксы за 2:30', stars:[2,4,6] },
       sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
       runways:3 },
   ];
   let LV = LEVELS[0];
-  let levelIdx = 0, levelPassed = false;
-  let save = {unlocked:1, best:{}};
-  const SAVE_KEY = 'tower_save_v1', VERSION = '0.5';
+  let levelIdx = 0, levelPassed = false, upgradesDone = 0;
+  let save = {unlocked:1, best:{}, stars:{}};
+  const SAVE_KEY = 'tower_save_v1', VERSION = '0.6';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -285,7 +295,8 @@
     bays.forEach(b=>{ b.occupied=null; const cfg=LV.sides[b.side];
       b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>r.occupied=null);
-    effects=[]; selected=null; levelPassed=false;
+    effects=[]; selected=null; levelPassed=false; upgradesDone=0;
+    toast={text:'Цель: '+LV.objective.desc, t:0, good:true};
     spawnPlane();
   }
 
@@ -356,6 +367,7 @@
       if(cost!=null && money>=cost){
         money-=cost;
         if(!b.open) b.open=true; else b.lvl++;
+        upgradesDone++;
       }
       return;
     }
@@ -437,18 +449,15 @@
     served++;
     money += Math.round(pl.reward * (pl.halfPay?0.5:1));
     pl.dead=true; freeRes(pl);
-    checkGoal();
   }
-  function checkGoal(){
-    if(levelPassed || served < LV.goal) return;
-    levelPassed=true;
-    if(save.unlocked < levelIdx+2) save.unlocked = Math.min(LEVELS.length, levelIdx+2);
-    recordResult(); saveGame();
-    toast={text:'★ Уровень пройден! Открыт следующий', t:0, good:true};
-  }
+  function metricValue(){ return LV.objective.metric==='upgrades' ? upgradesDone : served; }
+  function computeStars(){ const v=metricValue(); let s=0; for(const t of LV.objective.stars) if(v>=t) s++; return s; }
   function recordResult(){
-    const b=save.best[levelIdx];
-    if(b==null || served>b){ save.best[levelIdx]=served; saveGame(); }
+    const stars=computeStars();
+    if(save.best[levelIdx]==null || served>save.best[levelIdx]) save.best[levelIdx]=served;
+    if(save.stars[levelIdx]==null || stars>save.stars[levelIdx]) save.stars[levelIdx]=stars;
+    if(stars>=1 && save.unlocked < levelIdx+2) save.unlocked = Math.min(LEVELS.length, levelIdx+2);
+    saveGame();
   }
 
   // ---- update ----
@@ -606,8 +615,9 @@
     // уборка
     for(let i=planes.length-1;i>=0;i--) if(planes[i].dead){ if(selected===planes[i]) selected=null; planes.splice(i,1); }
 
-    if(lives<=0){ gameOver('Закончились жизни.'); return; }
+    if(lives<=0){ endLevel('Жизни кончились.'); return; }
     gameTime+=dt;
+    if(LV.objective.time && gameTime>=LV.objective.time){ endLevel('Время вышло!'); return; }
   }
   function dirOut(b){ // направление "наружу из бокса" в поле
     if(b.side==='top') return {dx:0,dy:1};
@@ -849,18 +859,20 @@
       ctx.font=`${16*ui}px ui-monospace,monospace`; ctx.textAlign='left';
       ctx.fillText('♥', hx, hy);
     }
-    // таймер
-    const mm=String(Math.floor(gameTime/60)).padStart(2,'0');
-    const ss=String(Math.floor(gameTime%60)).padStart(2,'0');
-    ctx.fillStyle=COL.phosphor; ctx.font=`${15*ui}px ui-monospace,monospace`;
-    ctx.textAlign='center'; ctx.fillText(mm+':'+ss, W*0.42, hud/2);
+    // таймер (обратный отсчёт для уровней на время)
+    const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
+    ctx.fillStyle = (LV.objective.time && tShown<=10) ? COL.life : COL.phosphor;
+    ctx.font=`${15*ui}px ui-monospace,monospace`; ctx.textAlign='center';
+    ctx.fillText(fmtTime(tShown), W*0.42, hud/2);
     // деньги
     ctx.fillStyle=money<0?COL.life:COL.coin; ctx.textAlign='right';
     ctx.font=`600 ${16*ui}px ui-monospace,monospace`;
     ctx.fillText(money+' ₿', W - 56*ui, hud/2);
     // принято
-    ctx.fillStyle=COL.muted; ctx.font=`${11*ui}px ui-monospace,monospace`; ctx.textAlign='center';
-    ctx.fillText('★ '+served+' / '+LV.goal, W*0.62, hud/2);
+    const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
+    const ls = computeStars();
+    ctx.fillStyle=COL.coin; ctx.font=`${12*ui}px ui-monospace,monospace`; ctx.textAlign='center';
+    ctx.fillText('★'.repeat(ls)+'☆'.repeat(3-ls)+'  '+mv, W*0.62, hud/2);
     // название уровня (угол)
     ctx.fillStyle='rgba(127,155,176,.7)'; ctx.font=`${11*ui}px ui-monospace,monospace`;
     ctx.textAlign='right'; ctx.textBaseline='bottom';
@@ -960,19 +972,23 @@
     requestAnimationFrame(frame);
   }
 
-  function gameOver(msg){
+  function endLevel(reason){
     running=false; recordResult();
-    document.getElementById('finalScore').textContent=served;
-    const passed = served>=LV.goal;
+    const stars=computeStars(), v=metricValue(), passed=stars>=1;
+    document.getElementById('overKicker').textContent = passed?'Уровень пройден':'Смена закрыта';
+    document.getElementById('finalStars').textContent = '★'.repeat(stars)+'☆'.repeat(3-stars);
+    const unit = LV.objective.metric==='upgrades'?' улучшений':' бортов';
     document.getElementById('overMsg').textContent =
-      msg+' Принято: '+served+' (цель '+LV.goal+'), касса: '+money+'₿.'+(passed?' Уровень пройден ★':'');
+      reason+' '+LV.objective.desc+'. Результат: '+v+unit+', касса '+money+'₿.';
+    const hasNext = levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
+    document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
     document.getElementById('overScreen').classList.remove('hidden');
   }
 
   // ---- меню / уровни / сохранение ----
-  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; } }catch(e){} }
+  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; } }catch(e){} }
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
-  function resetProgress(){ save={unlocked:1,best:{}}; saveGame(); renderLevels(); }
+  function resetProgress(){ save={unlocked:1,best:{},stars:{}}; saveGame(); renderLevels(); }
   function buildLevel(idx){ levelIdx=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
   function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   function showLevels(){ renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
@@ -980,10 +996,11 @@
   function renderLevels(){
     const list=document.getElementById('levelList'); list.innerHTML='';
     LEVELS.forEach((lv,i)=>{
-      const unlocked = i < save.unlocked, best=save.best[i];
+      const unlocked = i < save.unlocked, stars=save.stars[i]||0;
       const b=document.createElement('button');
       b.className='levelbtn'+(unlocked?'':' locked');
-      b.innerHTML=`<span class="lvname">${lv.name}</span><span class="lvbest">${unlocked?(best!=null?('рекорд: '+best+' ✈'):'не пройден'):'🔒'}</span>`;
+      const starStr = unlocked ? ('★'.repeat(stars)+'☆'.repeat(3-stars)) : '🔒';
+      b.innerHTML=`<span class="lvname">${lv.name}</span><span class="lvbest">${starStr}</span>`;
       if(unlocked) b.onclick=()=>startLevel(i);
       list.appendChild(b);
     });
@@ -994,6 +1011,7 @@
   document.getElementById('resetProgBtn').onclick=resetProgress;
   document.getElementById('againBtn').onclick=()=>{ document.getElementById('overScreen').classList.add('hidden'); reset(); };
   document.getElementById('toLevelsBtn').onclick=showLevels;
+  document.getElementById('nextBtn').onclick=()=>{ if(levelIdx+1<LEVELS.length) startLevel(levelIdx+1); };
 
   function setPaused(p){
     paused=p;
