@@ -124,8 +124,6 @@
   .stat .val{font-size:17px;margin-top:4px}
   .v-phos{color:var(--phosphor)} .v-gold{color:var(--gold)} .v-life{color:var(--life)} .v-teal{color:var(--teal)}
   /* график нагрузки/принято на экране итога смены */
-  .statgraph{width:100%;height:132px;margin-top:16px;display:block;border-radius:14px;
-    border:1.5px solid rgba(191,233,255,.15);background:rgba(10,22,34,.6)}
   .langbtns{display:flex;gap:8px;flex-wrap:wrap}
   .langbtn{border:1.5px solid rgba(127,155,176,.4);color:var(--muted);background:transparent;
     font:inherit;font-size:11px;letter-spacing:.08em;padding:6px 12px;border-radius:8px;cursor:pointer}
@@ -199,7 +197,6 @@
       <div class="big" id="finalStars">☆☆☆</div>
       <p id="overMsg"></p>
       <div class="stats" id="overStats"></div>
-      <canvas id="statGraph" class="statgraph"></canvas>
       <div class="ctarow">
         <button class="btn btn-quiet" id="shareBtn"><span class="bglyph">⇪</span><span data-i18n="over.share"></span></button>
       </div>
@@ -455,7 +452,7 @@
       'loss.collisionBay':'Collision in a bay',
       'loss.collisionField':'Collision on the apron',
       'loss.collisionRunway':'Collision on the runway',
-      'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!',
+      'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!', 'end.done':'No more arrivals.',
       'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time', 'stats.peak':'Peak load',
       'hud.vip':'VIP', 'hud.med':'MED', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
       'canvas.terminal':'TERMINAL', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
@@ -587,7 +584,7 @@
       'loss.collisionBay':'Столкновение в боксе',
       'loss.collisionField':'Столкновение на поле',
       'loss.collisionRunway':'Столкновение на ВПП',
-      'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!',
+      'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!', 'end.done':'Борты закончились.',
       'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время', 'stats.peak':'Пик нагрузки',
       'hud.vip':'ВИП', 'hud.med':'МЕД', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
       'canvas.terminal':'ТЕРМИНАЛ', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
@@ -1092,7 +1089,7 @@
 
   // ---- game state ----
   let planes=[], money=0, lives=0, served=0, gameTime=0;
-  let running=false, paused=false, lastTs=0, spawnTimer=0;
+  let running=false, paused=false, lastTs=0, spawnTimer=0, spawnedTotal=0;
   // статистика смены для экрана итога: пик одновременной нагрузки + временной ряд
   // (нагрузка/принято) для графика; lastShift — снимок последней смены для шеринга
   let statPeak=0, statSamples=[], statStep=1.5, statNextAt=0, lastShift=null;
@@ -1200,7 +1197,7 @@
       const cfg=LV.sides[b.side]; b.open = b.slot < cfg.open; b.lvl=0; });
     runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
-    statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0;
+    statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0; spawnedTotal=0;
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
     // атмосфера: «часы» суток идут всегда; погода — опциональный движок (флаг weather)
@@ -1254,11 +1251,13 @@
     const reward = Math.round(nSvc * K.MONEY_SVC * bonus);
     // вертикальная позиция зависания — у одной из полос/между ними
     const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
+    spawnedTotal++;
     planes.push({
       id: ++planeSeq,
-      x: field.hoverX, y, ang: Math.PI, // нос влево
+      x: W + 40*ui, y, ang: Math.PI, // влетает с правого края, нос влево
       vip, emergency, medical, requests, reqIndex:0,
       zone:'air',            // air | runway | field | bay
+      entering:true,         // глиссада с правого края до точки зависания
       path:[], moving:false, selected:false,
       landing:false, takeoff:false, exiting:false,
       runway:null, bay:null,
@@ -1644,7 +1643,9 @@
     const interval = rush ? K.SPAWN_BASE*0.4 : Math.max(K.SPAWN_MIN, K.SPAWN_BASE - served*0.05);
     // в туториале держим в небе только один борт — спокойно ведём его за руку
     const cap = tut ? 1 : K.MAX_PLANES;
-    if(spawnTimer<=0 && planes.length<cap){ spawnPlane(); spawnTimer=interval; }
+    // на уровнях «посадить N» всего прилетает ровно N бортов (не в Zen и не на апгрейды)
+    const spawnCap = (!zen && LV.objective.metric==='served') ? LV.objective.target : Infinity;
+    if(spawnTimer<=0 && planes.length<cap && spawnedTotal<spawnCap){ spawnPlane(); spawnTimer=interval; }
 
     updateTutorial();
     ACH.onTick(dt);
@@ -1655,6 +1656,15 @@
 
       // ---- AIR ----
       if(pl.zone==='air'){
+        // влёт с правого края до точки зависания; игрок может перехватить маршрутом
+        if(pl.entering){
+          if(pl.moving && pl.path.length){ pl.entering=false; }
+          else {
+            steer(pl, field.hoverX, pl.y, K.SPEED_AIR, dt);
+            if(pl.x<=field.hoverX){ pl.x=field.hoverX; pl.ang=Math.PI; pl.entering=false; }
+            else continue;
+          }
+        }
         if(!zen){ pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; } }
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_AIR, dt);
@@ -1755,22 +1765,17 @@
     }
 
     // столкновения (в Zen отключены — поток без проигрыша)
+    // Физический контакт любых двух наземных бортов — на поле И на полосе, в т.ч.
+    // межзонно: садящийся/взлетающий борт, въезжающий в стоящего на торце ВПП, —
+    // это крушение, а не «уфф» (борта в воздухе «сверху», в краш не входят).
     if(!zen){
-      // на поле (оба свободно рулят)
-      const ground = planes.filter(p=>!p.dead && p.zone==='field');
-      for(let i=0;i<ground.length;i++)
-        for(let j=i+1;j<ground.length;j++){
-          if(dist(ground[i].x,ground[i].y,ground[j].x,ground[j].y)<K.CRASH_DIST){
-            killCrash(ground[i],'loss.collisionField'); killCrash(ground[j],'loss.collisionField');
-          }
-        }
-      // на ВПП: физический контакт (заходящий бьёт стоящего, либо садящийся
-      // пересекается со взлетающим), а не сам факт захода на полосу
-      const onrw = planes.filter(p=>!p.dead && p.zone==='runway');
-      for(let i=0;i<onrw.length;i++)
-        for(let j=i+1;j<onrw.length;j++){
-          if(dist(onrw[i].x,onrw[i].y,onrw[j].x,onrw[j].y)<K.CRASH_DIST){
-            killCrash(onrw[i],'loss.collisionRunway'); killCrash(onrw[j],'loss.collisionRunway');
+      const phys = planes.filter(p=>!p.dead && (p.zone==='field' || p.zone==='runway'));
+      for(let i=0;i<phys.length;i++)
+        for(let j=i+1;j<phys.length;j++){
+          const a=phys[i], b=phys[j];
+          if(dist(a.x,a.y,b.x,b.y)<K.CRASH_DIST){
+            const reason = (a.zone==='runway' && b.zone==='runway') ? 'loss.collisionRunway' : 'loss.collisionField';
+            killCrash(a,reason); killCrash(b,reason);
           }
         }
     }
@@ -1780,7 +1785,7 @@
     // в Zen (это украшение, без штрафа). Антидребезг — по паре бортов (NEAR_COOL),
     // карта пар пересобирается каждый кадр (сама чистит ушедшие/севшие борта).
     {
-      const air = planes.filter(p=>!p.dead && p.zone!=='bay');
+      const air = planes.filter(p=>!p.dead && p.zone!=='bay' && !p.entering);
       const next={};
       for(let i=0;i<air.length;i++)
         for(let j=i+1;j<air.length;j++){
@@ -1824,6 +1829,8 @@
     if(!zen){
       if(lives<=0){ endLevel('end.lives'); return; }
       if(metricValue() >= LV.objective.target){ endLevel('end.goal'); return; }
+      // все борты прилетели и поле пусто, а цель не набрана — смена окончена (без софтлока)
+      if(LV.objective.metric==='served' && spawnedTotal>=LV.objective.target && planes.length===0 && served<LV.objective.target){ endLevel('end.done'); return; }
     }
     // статистика смены: пик одновременной нагрузки + редкие отсчёты для графика
     if(planes.length>statPeak) statPeak=planes.length;
@@ -2171,8 +2178,8 @@
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.muted,.25); rr(b.x,b.y,b.w,b.h,9*ui); ctx.stroke();
       // приглушённая иконка типа + замок
       ctx.globalAlpha=.35;
-      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.28, 22*ui, 22*ui)))
-        drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.28, 8*ui, COL.muted, '#1f1b2c');
+      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.28, 33*ui, 33*ui)))
+        drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.28, 12*ui, COL.muted, '#1f1b2c');
       ctx.globalAlpha=1;
       const lx=b.x+b.w/2, ly=b.y+b.h*0.52;
       ctx.fillStyle=hexa(COL.muted,.8); rr(lx-7*ui,ly-4*ui,14*ui,11*ui,2.5*ui); ctx.fill();
@@ -2209,8 +2216,8 @@
       // центр отдан припаркованному борту (рисуется поверх) —
       // тип услуги мелкой пиктограммой у дальней от ворот стены
       const iy = out.dy===-1 ? b.y+b.h-13*ui : b.y+13*ui;
-      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+13*ui, iy, 16*ui, 16*ui)))
-        drawIcon(b.type, b.x+13*ui, iy, 6*ui, col, '#2a2440');
+      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+13*ui, iy, 24*ui, 24*ui)))
+        drawIcon(b.type, b.x+13*ui, iy, 9*ui, col, '#2a2440');
       // живая анимация обслуживания над бортом (искры/капли/посадка людей)
       if(COZY){
         const fxid={repair:'fx-weld',fuel:'fx-fuel',board:'fx-boarding',deice:'fx-droplet'}[b.type];
@@ -2220,8 +2227,8 @@
         ctx.restore();
       }
     } else {
-      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.40, 30*ui, 30*ui)))
-        drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 12*ui, col, '#2a2440');
+      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.40, 45*ui, 45*ui)))
+        drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 18*ui, col, '#2a2440');
       // подпись услуги
       ctx.fillStyle=hexa(col,.85); ctx.font=`${8*ui}px ${MONO}`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -2319,8 +2326,8 @@
     // иконка текущей нужды над бортом — cozy-чип svc-* (фолбэк: процедурная иконка)
     if(pl.zone!=='bay'){
       const _ny = pl.y-28*ui;
-      if(!(COZY && SPRITES.blitC('svc-'+need, pl.x, _ny, 22*ui, 22*ui)))
-        drawIcon(need, pl.x, _ny, 8.45*ui, ncol, COL.ink);
+      if(!(COZY && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui)))
+        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);
     }
   }
 
@@ -2407,8 +2414,8 @@
         ctx.fillStyle=active?hexa(c,.16):'rgba(127,155,176,.05)'; ctx.fill();
         ctx.lineWidth=1.5; ctx.strokeStyle=hexa(c,active?.9:.4);
         rr(bx,y0+15*ui,bw2,22*ui,6*ui); ctx.stroke();
-        if(!(COZY && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 19*ui, 19*ui)))
-          drawIcon(ty, bx+bw2/2, bcy, 8*ui, c, '#211d33');
+        if(!(COZY && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 28*ui, 28*ui)))
+          drawIcon(ty, bx+bw2/2, bcy, 12*ui, c, '#211d33');
         ctx.globalAlpha=1;
       }
     }
@@ -2662,7 +2669,6 @@
     document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
     document.getElementById('overScreen').classList.remove('hidden');
     // график рисуем после показа экрана — нужен реальный размер канваса
-    requestAnimationFrame(()=>renderStatGraph(document.getElementById('statGraph'), lastShift));
   }
 
   // ---- статистика смены: график во времени + карточка для шеринга ----
@@ -2704,15 +2710,6 @@
     g.fillStyle=COL.teal; g.fillRect(gx+2,gy+5,8,3); g.fillStyle=hexa(COL.muted,.9); g.fillText(t('graph.load'), gx+14, gy+6);
     const lx=gx+14+g.measureText(t('graph.load')).width+12;
     g.fillStyle=COL.gold; g.fillRect(lx,gy+5,8,3); g.fillStyle=hexa(COL.muted,.9); g.fillText(t('graph.served'), lx+12, gy+6);
-  }
-  function renderStatGraph(cv2, shift){
-    if(!cv2 || !shift) return;
-    const dpr=Math.min(window.devicePixelRatio||1, 2);
-    const cssW=cv2.clientWidth||360, cssH=cv2.clientHeight||132;
-    cv2.width=cssW*dpr; cv2.height=cssH*dpr;
-    const g=cv2.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
-    g.clearRect(0,0,cssW,cssH);
-    drawTimeline(g, 0,0, cssW,cssH, shift);
   }
   // локальный скруглённый прямоугольник для офскрин-контекста (rr() завязан на ctx)
   function rrp(g,x,y,w,h,r){ r=Math.min(r,w/2,h/2);
