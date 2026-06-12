@@ -1,0 +1,117 @@
+<!-- @dsCard group="Sprites" viewport="760x1020" name="Field & Boxes (Batch 2)" subtitle="Vector symbol sheet — tarmac, runway, service bays, routes" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PlaneFlow — Field & Boxes spritesheet</title>
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  html, body { margin: 0; }
+  body {
+    background:
+      radial-gradient(120% 80% at 30% 0%, rgba(58,51,84,0.45), rgba(20,17,30,0)) ,
+      var(--bg-page);
+    color: var(--text-body);
+    font-family: var(--font-ui);
+    padding: 26px 26px 34px;
+  }
+  h2 {
+    font-family: var(--font-display); font-weight: 600; font-size: 15px;
+    letter-spacing: 0.02em; color: var(--cream-100);
+    margin: 26px 0 12px; display: flex; align-items: center; gap: 10px;
+  }
+  h2:first-of-type { margin-top: 4px; }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--border-soft); }
+  .grid { display: flex; flex-wrap: wrap; gap: 12px; }
+  .cell {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    background: var(--surface-card); border: 1.5px solid var(--border-soft);
+    border-radius: var(--r-card); padding: 12px 12px 9px; box-shadow: var(--shadow-raised);
+  }
+  .stagebox {
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background:
+      linear-gradient(0deg, rgba(0,0,0,0.18), rgba(0,0,0,0.18)),
+      repeating-linear-gradient(0deg, transparent 0 31px, rgba(181,140,240,0.07) 31px 32px),
+      repeating-linear-gradient(90deg, transparent 0 31px, rgba(181,140,240,0.07) 31px 32px),
+      var(--navy-800);
+  }
+  .id {
+    font-size: 11px; letter-spacing: 0.02em; color: var(--text-muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .lead { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; max-width: 64ch; margin: 0 0 6px; }
+  code { color: var(--cream-200); font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
+</style>
+</head>
+<body>
+  <p class="lead">Vector <code>&lt;symbol&gt;</code> sheet — drop <code>assets/sprites/planeflow-field.svg</code> into the game and reference any piece with <code>&lt;use href="planeflow-field.svg#id"&gt;</code>. Scales crisply at any pixel density. Tint <code>route-arrow</code> via CSS <code>color:</code>.</p>
+  <div id="sprite" hidden></div>
+  <div id="gallery"></div>
+
+<script>
+  const ITEMS = [
+    { g: "Terrain", items: [
+      { id: "tile-tarmac", w: 64, h: 64, s: 92, flat: true },
+      { id: "tile-grass",  w: 64, h: 64, s: 92, flat: true },
+      { id: "tile-water",  w: 64, h: 64, s: 92, flat: true },
+      { id: "shore",       w: 64, h: 64, s: 92, flat: true },
+    ]},
+    { g: "Terminal & Runway", items: [
+      { id: "terminal",          w: 160, h: 112, s: 188 },
+      { id: "runway",            w: 120, h: 340, s: 84 },
+      { id: "runway-threshold",  w: 120, h: 72,  s: 130 },
+      { id: "runway-pointer",    w: 64,  h: 64,  s: 86 },
+      { id: "lamp",              w: 16,  h: 16,  s: 44 },
+    ]},
+    { g: "Service bays", items: [
+      { id: "bay-frame",    w: 100, h: 100, s: 96 },
+      { id: "bay-open",     w: 100, h: 100, s: 96 },
+      { id: "bay-locked",   w: 100, h: 100, s: 96 },
+      { id: "bay-repair",   w: 100, h: 100, s: 96 },
+      { id: "bay-fuel",     w: 100, h: 100, s: 96 },
+      { id: "bay-board",    w: 100, h: 100, s: 96 },
+      { id: "bay-occupied", w: 100, h: 100, s: 96 },
+      { id: "bay-progress", w: 100, h: 100, s: 96 },
+      { id: "upgrade-pips", w: 72,  h: 24,  s: 84 },
+    ]},
+    { g: "Routes", items: [
+      { id: "route-line",          w: 180, h: 70, s: 168 },
+      { id: "route-line-selected", w: 180, h: 70, s: 168 },
+      { id: "route-arrow",         w: 40,  h: 40, s: 52, tint: "var(--amber)" },
+    ]},
+  ];
+
+  fetch("planeflow-field.svg")
+    .then((r) => r.text())
+    .then((txt) => {
+      document.getElementById("sprite").innerHTML = txt;
+      const root = document.getElementById("gallery");
+      for (const sec of ITEMS) {
+        const h = document.createElement("h2");
+        h.textContent = sec.g;
+        root.appendChild(h);
+        const grid = document.createElement("div");
+        grid.className = "grid";
+        for (const it of sec.items) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          const pad = it.flat ? 0 : 12;
+          const wpx = Math.round(it.s);
+          const hpx = Math.round((it.h / it.w) * it.s);
+          cell.innerHTML =
+            '<div class="stagebox" style="width:' + (wpx + pad) + 'px;height:' + (hpx + pad) + 'px' +
+            (it.tint ? ';color:' + it.tint : '') + '">' +
+            '<svg width="' + wpx + '" height="' + hpx + '" viewBox="0 0 ' + it.w + ' ' + it.h + '">' +
+            '<use href="#' + it.id + '"></use></svg></div>' +
+            '<span class="id">' + it.id + '</span>';
+          grid.appendChild(cell);
+        }
+        root.appendChild(grid);
+      }
+    });
+</script>
+</body>
+</html>
