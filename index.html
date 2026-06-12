@@ -108,6 +108,14 @@
   .langbtn:hover{color:var(--phosphor);border-color:var(--phosphor)}
   .langbtn.on{color:var(--phosphor);border-color:var(--phosphor);background:rgba(191,233,255,.08)}
   .vno{margin-top:18px;font-size:10px;color:var(--muted);letter-spacing:.12em}
+  /* окно целей смены */
+  .goalrows{margin-top:18px}
+  .goalrow{display:flex;gap:14px;align-items:center;text-align:left;padding:11px 14px;margin:9px 0;
+    border:1.5px solid rgba(191,233,255,.15);border-radius:12px;background:rgba(10,22,34,.55)}
+  .goalrow .gs{color:var(--gold);font-size:15px;letter-spacing:.05em;flex:0 0 auto;min-width:48px;
+    text-shadow:0 0 10px rgba(244,207,94,.45)}
+  .goalrow .gt{font-size:12.5px;color:var(--paper);line-height:1.5}
+  .goalzen{font-size:13px;line-height:1.7;color:var(--muted);margin-top:16px}
 
   /* ---- медали ---- */
   .panel-wide{max-width:580px;width:94%;max-height:88vh;display:flex;flex-direction:column;padding:26px 24px}
@@ -200,9 +208,21 @@
       <div class="pausegrid">
         <button class="btn btn-primary" id="resumeBtn"><span class="bglyph">▶</span><span data-i18n="pause.resume"></span></button>
         <button class="btn btn-teal" id="restartBtn"><span class="bglyph">↻</span><span data-i18n="pause.restart"></span></button>
+        <button class="btn" id="goalsBtn"><span class="bglyph">◎</span><span data-i18n="pause.goals"></span></button>
         <button class="btn" id="settingsBtn"><span class="bglyph">⚙</span><span data-i18n="pause.settings"></span></button>
         <button class="btn" id="fsBtn2"><span class="bglyph">⛶</span><span data-i18n="start.fullscreen"></span></button>
         <button class="btn btn-rose" id="menuBtn"><span class="bglyph">⌂</span><span data-i18n="pause.menu"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="goalsScreen">
+    <div class="panel card">
+      <div class="kicker" id="goalsKicker"></div>
+      <h1 id="goalsTitle"></h1>
+      <div class="goalrows" id="goalsBody"></div>
+      <div class="ctarow">
+        <button class="btn btn-primary" id="goalsOk"><span class="bglyph">✓</span><span data-i18n="goals.ok"></span></button>
       </div>
     </div>
   </div>
@@ -267,7 +287,10 @@
       'obj.servedTimed':['Land {n} plane in {time}','Land {n} planes in {time}'],
       'obj.upgrades':['Make {n} upgrade in {time}','Make {n} upgrades in {time}'],
       'pause.kicker':'Paused', 'pause.resume':'Resume', 'pause.restart':'Restart',
-      'pause.settings':'Settings', 'pause.menu':'Main menu',
+      'pause.settings':'Settings', 'pause.menu':'Main menu', 'pause.goals':'Goals',
+      'goals.kicker':'Shift goals', 'goals.ok':'Got it',
+      'goals.star2':'No ground penalties', 'goals.star3':'No crashes',
+      'goals.zen':'Zen mode — endless flow. No lives, no timeouts, no stars: just guide the planes.',
       'settings.language':'Language',
       'settings.sound':'Sound', 'settings.vibro':'Vibration (phone)',
       'settings.optLives':'Infinite lives (debug)', 'settings.optMoney':'Unlimited money (debug)',
@@ -367,7 +390,10 @@
       'obj.servedTimed':['Принять {n} борт за {time}','Принять {n} борта за {time}','Принять {n} бортов за {time}'],
       'obj.upgrades':['Сделать {n} улучшение за {time}','Сделать {n} улучшения за {time}','Сделать {n} улучшений за {time}'],
       'pause.kicker':'Пауза', 'pause.resume':'Играть', 'pause.restart':'Начать заново',
-      'pause.settings':'Настройки', 'pause.menu':'В главное меню',
+      'pause.settings':'Настройки', 'pause.menu':'В главное меню', 'pause.goals':'Цели',
+      'goals.kicker':'Цели смены', 'goals.ok':'Понятно',
+      'goals.star2':'Без наземных штрафов', 'goals.star3':'Без крушений',
+      'goals.zen':'Zen-режим — бесконечный поток. Без жизней, таймаутов и звёзд: просто веди борта.',
       'settings.language':'Язык',
       'settings.sound':'Звук', 'settings.vibro':'Вибрация (телефон)',
       'settings.optLives':'Бесконечные жизни (отладка)', 'settings.optMoney':'Безлимит денег (отладка)',
@@ -533,9 +559,9 @@
     // спец-борты / события
     EMERGENCY_CHANCE: 0.12,           // доля бортов «топливо на нуле»
     EMERGENCY_BONUS: 1.5,             // x1.5 денег за аварийный борт
-    MEDICAL_CHANCE: 0.10,             // доля «медицинских» бортов (вне очереди)
+    MEDICAL_CHANCE: 0.10,             // доля «медицинских» бортов (приоритет)
     MEDICAL_AIR: 0.7,                 // множитель воздушного терпения медицинского (срочный)
-    MEDICAL_PAY: 30,                  // фикс-бонус за медицинский (он без наземных услуг)
+    MEDICAL_BONUS: 2.5,               // x2.5 денег за медицинский (приоритетный борт)
     RUSH_PERIOD: 35, RUSH_DUR: 8,     // «час пик»: период и длительность волны
     WIND_PERIOD: 28, WIND_DUR: 12,    // смена ветра: период и длительность закрытия ВПП
     FOG_PERIOD: 45, FOG_DUR: 10,      // туман: период и длительность
@@ -574,7 +600,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.15';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.16';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -764,29 +790,28 @@
     nextWind = zen?Infinity:K.WIND_PERIOD;
     nextFog  = zen?Infinity:K.FOG_PERIOD;
     ACH.onLevelStart();
-    toast = zen ? {text:t('toast.zenStart'), t:0, good:true}
-                : {text:t('toast.goal', {desc:objectiveDesc()}), t:0, good:true};
     spawnPlane();
+    showGoals(false);          // крупное окно постановки целей в начале раунда (заодно ставит на паузу)
   }
 
   function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
   function spawnPlane(){
     // спец-борты как мини-события (раздел 3 копилки): частный джет (вип),
-    // «топливо на нуле» (срочный + бонус), медицинский (вне очереди — без боксов).
+    // «топливо на нуле» (срочный + бонус), медицинский (приоритет — высадка пациента).
     const vip = Math.random() < K.VIP_CHANCE;                            // частный джет
     const emergency = !vip && Math.random() < K.EMERGENCY_CHANCE;        // «топливо на нуле»
     const medical = !vip && !emergency && Math.random() < K.MEDICAL_CHANCE; // медицинский
     const pool = shuffle(['repair','fuel','board']);
-    // медицинский «вне очереди» — без наземных услуг: сразу к вылету, быстрый разворот
-    const nSvc = medical ? 0 : (Math.random() < 0.45 ? 2 : 1);
-    const requests = pool.slice(0, nSvc).concat(['depart']);
+    // медицинский: высаживает пациента в пассажирском боксе, затем сразу вылет
+    const nSvc = medical ? 1 : (Math.random() < 0.45 ? 2 : 1);
+    const requests = medical ? ['board','depart'] : pool.slice(0, nSvc).concat(['depart']);
     const waitMult = (vip||medical) ? 1 : 2;                             // джет и медицинский нетерпеливы
     // воздушное терпение: топливо-на-нуле — садить срочно; медицинский — тоже спешит
     const airMult = emergency ? 0.4 : (medical ? K.MEDICAL_AIR : 1);
     const airBase = K.AIR_BASE * airMult * waitMult;
-    const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1);
-    const reward = medical ? K.MEDICAL_PAY : Math.round(nSvc * K.MONEY_SVC * bonus);
+    const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1) * (medical?K.MEDICAL_BONUS:1);
+    const reward = Math.round(nSvc * K.MONEY_SVC * bonus);
     // вертикальная позиция зависания — у одной из полос/между ними
     const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
     planes.push({
@@ -1779,7 +1804,7 @@
   // язык, медали (ach/stats) и звук/вибро — не прогресс уровней, сохраняем при сбросе
   function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false}; saveGame(); renderLevels(); }
   function buildLevel(idx){ levelIdx=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
-  function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel','medalScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
+  function hideAllScreens(){ ['startScreen','levelScreen','overScreen','pauseScreen','settingsPanel','medalScreen','goalsScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
   function startLevel(idx){ zen=false; buildLevel(idx); hideAllScreens(); reset(); }
   function startZen(){ zen=true; buildLevel(0); hideAllScreens(); reset(); }
@@ -1850,6 +1875,36 @@
   document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; };
   document.getElementById('optSound').onchange=e=>{ save.sound=e.target.checked; saveGame(); SND.setEnabled(save.sound); };
   document.getElementById('optVibro').onchange=e=>{ save.vibro=e.target.checked; saveGame(); HAP.on=save.vibro; };
+
+  // ---- окно постановки целей смены ----
+  // Показывается в начале каждого раунда (на паузе), а также по кнопке «Цели» в
+  // паузе. Закрыть: «Понятно» или тап мимо карточки. Звёзды: 1★ цель, 2★ без
+  // наземных штрафов, 3★ без крушений (см. computeStars). В Zen — текст без звёзд.
+  let goalsFromPause=false;
+  function buildGoalsContent(){
+    document.getElementById('goalsKicker').textContent = t('goals.kicker');
+    document.getElementById('goalsTitle').textContent = zen ? t('mode.zen') : t('level.name',{n:levelIdx+1});
+    const body=document.getElementById('goalsBody');
+    if(zen){ body.innerHTML = `<p class="goalzen">${t('goals.zen')}</p>`; return; }
+    const rows=[['★', objectiveDesc()], ['★★', t('goals.star2')], ['★★★', t('goals.star3')]];
+    body.innerHTML = rows.map(r=>`<div class="goalrow"><div class="gs">${r[0]}</div><div class="gt">${r[1]}</div></div>`).join('');
+  }
+  function showGoals(fromPause){
+    goalsFromPause=!!fromPause;
+    paused=true;                       // заморозить симуляцию, пока окно открыто
+    buildGoalsContent();
+    if(fromPause) document.getElementById('pauseScreen').classList.add('hidden');
+    document.getElementById('goalsScreen').classList.remove('hidden');
+  }
+  function closeGoals(){
+    document.getElementById('goalsScreen').classList.add('hidden');
+    if(goalsFromPause) document.getElementById('pauseScreen').classList.remove('hidden'); // вернуться в паузу
+    else paused=false;                 // продолжить игру
+    goalsFromPause=false;
+  }
+  document.getElementById('goalsOk').onclick=closeGoals;
+  document.getElementById('goalsScreen').addEventListener('pointerdown', e=>{ if(e.target.id==='goalsScreen') closeGoals(); }); // тап мимо карточки
+  document.getElementById('goalsBtn').onclick=()=>showGoals(true);
 
   // ================= ДОСТИЖЕНИЯ / МЕДАЛИ =================
   // Самодостаточный модуль: ловит игровые события через ACH.onX(...), копит
