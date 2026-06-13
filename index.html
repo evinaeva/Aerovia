@@ -104,6 +104,7 @@
     border-radius:50%;background:var(--muted);transition:.15s}
   .opt input[type=checkbox]:checked{background:#5dca7a;border-color:#5dca7a}
   .opt input[type=checkbox]:checked::after{transform:translateX(22px);background:#fff}
+  .subhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--phosphor);margin:18px 0 6px;border-bottom:1px solid rgba(191,233,255,.18);padding-bottom:4px}
   .logbox{margin-top:14px;max-height:130px;overflow:auto;border-top:1px solid rgba(127,155,176,.25);padding-top:8px}
   .logrow{font-size:11px;color:var(--paper);padding:2px 0;letter-spacing:.03em}
   .logrow.muted{color:var(--muted)}
@@ -372,8 +373,10 @@
         <div class="opt" style="cursor:default"><span data-i18n="settings.language"></span><div class="langbtns" id="langBtns2"></div></div>
         <label class="opt"><input type="checkbox" id="optSound2"> <span data-i18n="settings.sound"></span></label>
         <label class="opt"><input type="checkbox" id="optVibro2"> <span data-i18n="settings.vibro"></span></label>
+        <div class="subhead" data-i18n="settings.debug"></div>
         <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
         <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
+        <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
       </div>
       <div class="ctarow">
         <button class="btn btn-rose" id="resetProgBtn2" data-i18n="levels.reset"></button>
@@ -670,7 +673,8 @@
       'goals.zen':'Zen mode — endless flow. No lives, no timeouts, no stars: just guide the planes.',
       'settings.title':'Settings', 'settings.back':'Back', 'settings.language':'Language',
       'settings.sound':'Sound', 'settings.vibro':'Vibration (phone)',
-      'settings.optLives':'Infinite lives (debug)', 'settings.optMoney':'Unlimited money (debug)',
+      'settings.debug':'Debug',
+      'settings.optLives':'Infinite lives', 'settings.optMoney':'Unlimited money', 'settings.optUnlockAll':'Unlock all levels',
       'tut.land':'Drag the plane onto a runway',
       'tut.service':'Now lead it into the {svc} bay',
       'tut.takeoff':'All set — guide it to a runway to take off',
@@ -814,7 +818,8 @@
       'goals.zen':'Zen-режим — бесконечный поток. Без жизней, таймаутов и звёзд: просто веди борта.',
       'settings.title':'Настройки', 'settings.back':'Назад', 'settings.language':'Язык',
       'settings.sound':'Звук', 'settings.vibro':'Вибрация (телефон)',
-      'settings.optLives':'Бесконечные жизни (отладка)', 'settings.optMoney':'Безлимит денег (отладка)',
+      'settings.debug':'Отладка',
+      'settings.optLives':'Бесконечные жизни', 'settings.optMoney':'Безлимит денег', 'settings.optUnlockAll':'Открыть все уровни',
       'tut.land':'Веди борт пальцем на полосу',
       'tut.service':'Теперь отведи его в бокс «{svc}»',
       'tut.takeoff':'Готово — веди на полосу, на взлёт',
@@ -1408,7 +1413,7 @@
   let nowT=0;              // время кадра (мс) для анимаций отрисовки
   let effects=[];          // анимации крушений
   let lossLog=[], toast=null;
-  const debug={infiniteLives:false, richStart:false};
+  const debug={infiniteLives:false, richStart:false, unlockAll:false};
   const BIG_MONEY=999999;
   let floaters=[];         // плавающие награды «+N ₿» / «×N комбо» / «уфф!» над полем
   let alarmAt=0;           // антидребезг тревожного бипа терпения
@@ -3079,7 +3084,7 @@
       d.innerHTML=`<div class="label">${s2[0]}</div><div class="val ${s2[2]}">${s2[1]}</div>`;
       statsBox.appendChild(d);
     });
-    const hasNext = !LV.biome && !LV.bonus && levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
+    const hasNext = !LV.biome && !LV.bonus && levelIdx+1<LEVELS.length && (debug.unlockAll||(levelIdx+1)<save.unlocked);
     document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
     document.getElementById('overScreen').classList.remove('hidden');
     // график рисуем после показа экрана — нужен реальный размер канваса
@@ -3281,7 +3286,7 @@
     openWagon();
     for(let i=0;i<LEVELS.length;i++){
       if(inWagon===PER) openWagon();                    // вагон заполнен → следующий
-      const unlocked=i<save.unlocked, stars=save.stars[i]||0, isCur=i===curIdx, feat=feats[i];
+      const unlocked=debug.unlockAll||i<save.unlocked, stars=save.stars[i]||0, isCur=i===curIdx, feat=feats[i];
       const b=document.createElement('button');
       b.className='levelcard suitcase'+(unlocked?'':' locked')+(stars>0?' done':'')+(isCur?' current':'')+(feat?' node':'');
       let html='';
@@ -3399,6 +3404,7 @@
   };
   document.getElementById('optLives').onchange=e=>{ debug.infiniteLives=e.target.checked; };
   document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; };
+  document.getElementById('optUnlockAll').onchange=e=>{ debug.unlockAll=e.target.checked; renderLevels(); };
   // звук/вибро — единственная копия чекбоксов в экране «Настройки» главного меню
   function syncSettingsUI(){
     const s=document.getElementById('optSound2'); if(s) s.checked=save.sound!==false;
