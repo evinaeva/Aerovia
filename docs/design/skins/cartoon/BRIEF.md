@@ -55,6 +55,13 @@ The skin changes how things look, never *where* they are. Honor this exactly
 `references/ref-04-layout-mockup.png` shows this layout; `ref-01..03` show the
 target *art style* on top of it.
 
+> **Produce assets with an image-generation model, NOT by code-drawing.** The lush
+> painted cartoon look (gradients, soft shadows, glossy bevels) can't be made with
+> vector/code — it comes out flat. Use **image-to-image** off `ref-01..03` as the style
+> anchor, one isolated object per asset on a flat magenta/transparent background, then
+> export transparent PNGs at the §3 sizes. (Same method & prompt structure as the neon
+> brief's §0.5 — bays empty, planes nose-up, no baked icon/label/cost.)
+
 ## 2. The cartoon style
 
 Bright, cheerful **daytime** mobile-casual (think *Airport City / Township*):
