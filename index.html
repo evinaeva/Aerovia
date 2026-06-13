@@ -467,16 +467,20 @@
   const cv = document.getElementById('c');
   const ctx = cv.getContext('2d');
 
-  // ---- visual skin (A/B-able): 'cozy' (default) | 'neon' ----
-  // Switch with ?skin=neon in the URL (persists to localStorage) or skin=cozy to
-  // reset. The neon skin turns the cozy sprite atlas off (everything renders
-  // procedurally) and swaps the palette for neon tokens + extra glow.
+  // ---- visual skin (A/B-able): 'cozy' (default) | 'neon' | 'cartoon' ----
+  // Switch with ?skin=neon|cartoon in the URL (persists to localStorage) or
+  // skin=cozy to reset. The neon skin turns the cozy sprite atlas off (everything
+  // renders procedurally) and swaps the palette for neon tokens + extra glow. The
+  // cartoon skin is a bright daytime recolour: it keeps the cozy atlas but injects
+  // the saturated `--cartoon-*` palette via CARTOON_TOKENS, and auto-upgrades to
+  // bespoke cartoon PNGs the moment assets/sprites/cartoon/ ships them.
+  const SKINS = ['cozy', 'neon', 'cartoon'];
   let SKIN = 'cozy';
   try {
     const _q = new URLSearchParams(location.search).get('skin');
     const _s = _q || localStorage.getItem('pf_skin');
-    if (_s === 'neon' || _s === 'cozy') SKIN = _s;
-    if (_q === 'neon' || _q === 'cozy') localStorage.setItem('pf_skin', _q);
+    if (SKINS.includes(_s)) SKIN = _s;
+    if (SKINS.includes(_q)) localStorage.setItem('pf_skin', _q);
   } catch (e) { /* no URL/localStorage in test harness */ }
   let NEON = SKIN === 'neon';
 
@@ -513,9 +517,41 @@
     amber:'#ffb13b', teal:'#22e3c6', ice:'#5fd2ff', rose:'#ff4f9d',
     gold:'#ffd23b', life:'#ff3b6b',
   };
+  // Мультяшная палитра: яркий дневной recolor (зелёное поле, голубая вода, кремовые
+  // глянцевые боксы, сочные акценты). Зеркалит tokens/cartoon.css (`--cartoon-*`):
+  // ключи здесь — это имена токенов спрайт-атласа/COL, значения — из cartoon.css.
+  // Применяется как переопределение PALETTE при SKIN==='cartoon' и перекрашивает
+  // и cozy-спрайты, и процедурную отрисовку. Bright — без неонового свечения.
+  const CARTOON_TOKENS = {
+    // линия/тень — единый тёплый тёмный контур
+    ink:'#3a2a17', shadow:'#3a2a17', 'cream-outline':'#5a4326',
+    // поле/окружение — луговая зелень, дневное небо
+    tarmac:'#6fbf4a', 'tarmac-2':'#5aa83c', grass:'#6fbf4a', 'grass-dim':'#5aa83c',
+    'grass-tuft':'#8fd96a', 'sky-low':'#bfe6f7', 'sky-mid':'#a6dcf2',
+    // вода + берег
+    water:'#5fc7e8', 'water-wave':'#8fe0f5', 'water-wave2':'#bff0fb', sand:'#e8d39a',
+    // кремовые глянцевые боксы/панели
+    paper:'#fff3d8', 'cream-100':'#fff3d8', 'cream-200':'#ffe9bc', 'bay-dim':'#ffe9bc',
+    // сервисные акценты (сочные, дружелюбные)
+    amber:'#ff8a1f', 'amber-glow':'#ffb05a', 'amber-core':'#ffd089',
+    teal:'#1fb6d8', ice:'#5ec2e8', rose:'#ff5ca0',
+    // монеты/звёзды/жизни
+    gold:'#ffce3a', coin:'#ffce3a', 'gold-dim':'#f2a400', 'gold-ink':'#5e4a16', life:'#ff4d5e',
+    // маршруты/валидность — яркая зелень
+    phosphor:'#36d36b', green:'#36d36b', 'green-bright':'#6bef9a', red:'#ff4d5e', blue:'#2f6fb0',
+    // глубокие/служебные поверхности → зелёные/коричневые тона вместо cozy-фиолета
+    chip:'#4a3a28', 'navy-900':'#3a6b3a', 'purple-700':'#4d9433', 'purple-600':'#5aa83c',
+    'gray-500':'#9a855f', 'gray-600':'#6b5333', muted:'#9a855f', white:'#ffffff',
+  };
+  // имя скина → объект-переопределение PALETTE (пустой = дефолтный cozy-вид)
+  function skinTokens(skin){
+    if(skin === 'neon') return Object.assign({}, NEON_TOKENS);
+    if(skin === 'cartoon') return Object.assign({}, CARTOON_TOKENS);
+    return {};
+  }
   // Активная тема: набор переопределений PALETTE. Пустая = дефолтный вид.
   // Меняй ключи (или подменяй объект целиком), чтобы перекрасить весь арт.
-  const THEME = { tokens: NEON ? Object.assign({}, NEON_TOKENS) : {} };
+  const THEME = { tokens: skinTokens(SKIN) };
 
   // ---- cozy sprite atlas (canvas) ----
   // Sprite sheets (assets/sprites/planeflow-*.svg) are fetched once into a hidden
@@ -535,9 +571,9 @@
   // рендера и палитру, следующий кадр перерисуется (кэш спрайтов/паттернов
   // ключуется по подписи темы, поэтому подхватывается автоматически).
   function applySkin(code){
-    SKIN = (code === 'neon') ? 'neon' : 'cozy';
+    SKIN = SKINS.includes(code) ? code : 'cozy';
     NEON = SKIN === 'neon';
-    THEME.tokens = NEON ? Object.assign({}, NEON_TOKENS) : {};
+    THEME.tokens = skinTokens(SKIN);
     refreshSpriteMode();
   }
   const SPRITES = (() => {
@@ -716,6 +752,10 @@
   // фолбэк (текущий неон), и параллельно подтягиваем арт скина.
   function refreshSpriteMode(){
     if (SKIN === 'cozy') { COZY = true; return; }
+    // cartoon: пока нет своих листов/PNG — рисуем перекрашенный cozy-атлас (а не
+    // тёмный процедурный фолбэк), и параллельно тянем cartoon-арт; как только
+    // PNG/SVG скина доедут, img() сам отдаст их приоритетно (COZY можно не трогать).
+    if (SKIN === 'cartoon') { COZY = true; if (!SPRITES.skinReady) SPRITES.loadSkin(SKIN); return; }
     COZY = !!SPRITES.skinReady;
     if (!SPRITES.skinReady) SPRITES.loadSkin(SKIN);
   }
@@ -796,7 +836,7 @@
       'goals.star2':'No ground penalties', 'goals.star3':'No crashes',
       'goals.zen':'Zen mode — endless flow. No lives, no timeouts, no stars: just guide the planes.',
       'settings.title':'Settings', 'settings.back':'Back', 'settings.language':'Language',
-      'settings.skin':'Skin', 'settings.skinCozy':'Cozy', 'settings.skinNeon':'Neon',
+      'settings.skin':'Skin', 'settings.skinCozy':'Cozy', 'settings.skinNeon':'Neon', 'settings.skinCartoon':'Cartoon',
       'settings.sound':'Sound', 'settings.vibro':'Vibration (phone)',
       'settings.debug':'Debug',
       'settings.optLives':'Infinite lives', 'settings.optMoney':'Unlimited money', 'settings.optUnlockAll':'Unlock all levels',
@@ -942,7 +982,7 @@
       'goals.star2':'Без наземных штрафов', 'goals.star3':'Без крушений',
       'goals.zen':'Zen-режим — бесконечный поток. Без жизней, таймаутов и звёзд: просто веди борта.',
       'settings.title':'Настройки', 'settings.back':'Назад', 'settings.language':'Язык',
-      'settings.skin':'Стиль', 'settings.skinCozy':'Уютный', 'settings.skinNeon':'Неон',
+      'settings.skin':'Стиль', 'settings.skinCozy':'Уютный', 'settings.skinNeon':'Неон', 'settings.skinCartoon':'Мультяшный',
       'settings.sound':'Звук', 'settings.vibro':'Вибрация (телефон)',
       'settings.debug':'Отладка',
       'settings.optLives':'Бесконечные жизни', 'settings.optMoney':'Безлимит денег', 'settings.optUnlockAll':'Открыть все уровни',
@@ -3608,7 +3648,7 @@
   function renderSkinBtns(){
     const box=document.getElementById('skinBtns'); if(!box) return;
     box.innerHTML='';
-    for(const [code,labelKey] of [['cozy','settings.skinCozy'],['neon','settings.skinNeon']]){
+    for(const [code,labelKey] of [['cozy','settings.skinCozy'],['neon','settings.skinNeon'],['cartoon','settings.skinCartoon']]){
       const b=document.createElement('button');
       b.className='langbtn'+(code===SKIN?' on':'');
       b.textContent=t(labelKey);
