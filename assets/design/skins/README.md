@@ -18,19 +18,27 @@ the design agent.
 
 ## How drawn art plugs in (the backend seam)
 
-The engine auto-loads **per-skin sprite sheets** and uses them when present — no
-code changes needed to ship a skin's art:
+The engine auto-loads **per-skin art** and uses it when present — no code changes to
+ship a skin. **PNG is the target format** (effects baked into the image → reliable on
+Android/iOS, nothing to debug). Resolution order per id is **PNG → skin-SVG → base
+cozy → procedural**.
 
-1. Drop SVG sheets at `assets/sprites/<skin>/planeflow-{aircraft,field,hud,effects,brand}.svg`.
-2. Prefix every `<symbol id>` with `<skin>-` (e.g. `neon-plane`, `neon-bay-fuel`).
-   The atlas resolves `<skin>-<id>` ahead of the base `<id>` when that skin is
-   active, overriding the procedural placeholder automatically.
-3. The atlas (`SPRITES` in `index.html`) loads these on demand (`SPRITES.loadSkin`),
-   flips `A.skinReady` / `refreshSpriteMode()` when ≥1 symbol arrives, and repaints
-   live. Until then the skin renders procedurally (so it never looks broken).
-4. **Bay panels** have a dedicated full-panel hook: `<skin>-bay-{repair,fuel,board,
-   locked}` are blitted as the whole panel, with the engine overlaying the dynamic
-   icon/label/cost/progress on top (don't bake those into the sprite).
+**PNG (preferred):**
+1. Drop one transparent PNG per asset at `assets/sprites/<skin>/<id>.png` (base id, no
+   prefix — e.g. `neon/bay-repair.png`, `neon/plane.png`).
+2. List every shipped id in `assets/sprites/<skin>/manifest.json` (a JSON array of
+   strings). The engine loads the manifest (`SPRITES.loadSkin`), flips `A.skinReady` /
+   `refreshSpriteMode()`, and draws `<skin>/<id>.png` for each listed id — live, no
+   reload. Author at ~3× on-screen size; bake glow/gloss/shadow in.
 
-Match ids / viewBox / sizes from [`../../sprites/README.md`](../../sprites/README.md)
-and keep `var(--token,#hex)` colors so they stay recolorable.
+**SVG (fallback):** sheets at `assets/sprites/<skin>/planeflow-*.svg` with every
+`<symbol id>` prefixed `<skin>-` (e.g. `neon-plane`). Colors via `var(--token,#hex)`.
+Note: the canvas blit strips SVG filters, so live glow/blur won't render — prefer PNG
+for effects.
+
+**Bay panels** have a dedicated full-panel hook: `bay-{repair,fuel,board,deice,locked}`
+is blitted as the whole panel, with the engine overlaying the dynamic
+icon/label/cost/progress on top (don't bake those into the asset).
+
+Match ids / sizes from [`../../sprites/README.md`](../../sprites/README.md) and each
+skin's `BRIEF.md`.

@@ -557,13 +557,33 @@
       for(const k of keys) css += '--' + k + ':' + t[k] + ';';
       return '<style>:root{' + css + '}</style>';
     }
+    // PNG-арт пер-скина (растровый, с запечённым glow/глянцем/тенями — без SVG-
+    // фильтров и токенов; кросс-платформенно надёжно). Какие id доступны как PNG —
+    // задаёт манифест assets/sprites/<skin>/manifest.json (массив id); сам файл —
+    // assets/sprites/<skin>/<id>.png. PNG имеет наивысший приоритет в img().
+    const pngCache = new Map();   // 'skin/id' -> Image
+    const pngIds = new Map();     // skin -> Set<id>
+    function pngImg(id){
+      const set = pngIds.get(SKIN);
+      if(!set || !set.has(id)) return null;
+      const key = SKIN + '/' + id;
+      let im = pngCache.get(key);
+      if(!im){
+        im = new Image(); im.decoding = 'async';
+        im.src = 'assets/sprites/' + SKIN + '/' + id + '.png';
+        pngCache.set(key, im);
+      }
+      return im;   // может ещё грузиться — ok() ниже это учитывает (фолбэк до загрузки)
+    }
     function img(id, w, h, color){
+      // PNG-арт активного скина — высший приоритет (рисуется как есть, без темы)
+      if(SKIN !== 'cozy'){ const pim = pngImg(id); if(pim) return pim; }
       const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
       // color может быть строкой (legacy currentColor) или объектом-переопределением токенов
       const tokens = (color && typeof color === 'object') ? color : null;
       const cstr = (typeof color === 'string') ? color : '';
       const sig = tokens ? tokSig(tokens) : '';
-      // пер-скиновый override: при активном не-cozy скине символ `<skin>-<id>`
+      // пер-скиновый override (SVG): при активном не-cozy скине символ `<skin>-<id>`
       // (если он загружен из assets/sprites/<skin>/) имеет приоритет над базовым.
       // Так нарисованный неон-арт «встаёт» поверх движка без правок call-site'ов.
       let symId = id;
@@ -656,7 +676,15 @@
         Promise.all(urls.map(u => fetch(u).then(r => r.ok ? r.text() : '').catch(() => '')))
           .then(parts => {
             const html = parts.join('\n');
-            if (html.trim()) { h.innerHTML = html; A.skinReady = !!h.querySelector('symbol'); }
+            if (html.trim()) { h.innerHTML = html; if (h.querySelector('symbol')) A.skinReady = true; }
+            if (typeof refreshSpriteMode === 'function') refreshSpriteMode();
+          }).catch(() => {});
+        // PNG-манифест: список id, доступных как растровые ассеты этого скина
+        fetch('assets/sprites/' + skin + '/manifest.json')
+          .then(r => r.ok ? r.json() : null)
+          .then(m => {
+            const ids = Array.isArray(m) ? m : (m && Array.isArray(m.png) ? m.png : null);
+            if (ids && ids.length) { pngIds.set(skin, new Set(ids)); A.skinReady = true; }
             if (typeof refreshSpriteMode === 'function') refreshSpriteMode();
           }).catch(() => {});
       } catch (e) { /* ignore */ }
