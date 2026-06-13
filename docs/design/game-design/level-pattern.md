@@ -65,7 +65,9 @@ Pattern notes:
 - **L5** is the only `race` level — the timer is the pressure, planes are "∞".
 - Money is **left at the default** (no per-level `startMoney` in the tutorial block); the
   economy lessons (L3 upgrade, L4 open new bays) work on the standard PlaneFlow scale
-  (`START_MONEY` 100, bay open/upgrade 100/80…).
+  (`START_MONEY` 100, bay open/upgrade 100/80…). Note the **per-service payout is derived
+  from the map**, not fixed — see [`economy.md`](economy.md). You set `stars`/`sides`/`time`
+  and the economy follows; you don't hand-tune money.
 
 ### Event ramp (L7–L10) — specials on top of solid mechanics
 

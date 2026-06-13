@@ -100,6 +100,11 @@ A loss log with causes is available in Pause → Settings.
 - **Express bonus:** finishing all tasks and departing *fast* pays ×1.5.
 - Spend money to **open** locked boxes (padlock) or **upgrade** open ones
   (faster service, +25% per level). Cost shows yellow if affordable, gray if not.
+- Money is **per-shift** (resets each level — no carry-over). The per-service payout and
+  starting cash are **derived from the level's difficulty** so the buy-side stays
+  *tight-but-doable* on every map: clearing the goals funds a sensible apron build-out, and
+  clean combo/express play funds the rest. The model lives in `levelEconomy()` — see
+  [`economy.md`](economy.md) for the formula.
 
 See [`progression.md`](progression.md) for levels, stars, and Zen mode. Aircraft
 varieties and surprise events are in [`airport_types.md`](airport_types.md) and
