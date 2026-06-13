@@ -3911,6 +3911,8 @@
     clock:  '<svg class="gicon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.4V12l3.1 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     plane:  '<svg class="gicon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16v-1.9l-7.5-4.7V3.7a1.5 1.5 0 0 0-3 0v5.7L3 14.1V16l7.5-2.3V18.6L8.4 20.1V21.6l3.1-.9 3.1.9v-1.5l-2.1-1.5V13.7z" fill="currentColor"/></svg>',
     wrench: '<svg class="gicon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.7 18.4l-7.1-7.1a4.6 4.6 0 0 0-5.8-5.9l2.9 2.9-2.5 2.5-2.9-2.9a4.6 4.6 0 0 0 5.9 5.8l7.1 7.1a1 1 0 0 0 1.4 0l1.1-1.1a1 1 0 0 0 0-1.3z" fill="currentColor"/></svg>',
+    // гусеница (для бонус-мира «луг бабочек»): сегменты-кружки + голова с усиками
+    caterpillar: '<svg class="gicon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="15.5" r="3" fill="currentColor"/><circle cx="9.4" cy="14.6" r="3.3" fill="currentColor"/><circle cx="14" cy="13.7" r="3.5" fill="currentColor"/><circle cx="18.4" cy="12.6" r="3.8" fill="currentColor"/><path d="M17.4 9.1l-.7-2.2M19.7 9l.9-2.1" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   };
   const INF = '∞';
   function hasI18n(key){ return (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null); }
@@ -3919,7 +3921,9 @@
   function goalRowsHTML(){
     if(zen) return `<p class="goalzen">${t('goals.zen')}</p>`;
     const o = LV.objective, stars = o.stars || [o.target, o.target, o.target];
-    const primary = o.metric==='upgrades' ? GICON.wrench : GICON.plane;  // основная метрика
+    // основная метрика: 🐛 на лугу бабочек, 🔧 на апгрейд-уровнях, иначе ✈
+    const primary = LV.bonus==='butterfly' ? GICON.caterpillar
+                  : o.metric==='upgrades' ? GICON.wrench : GICON.plane;
     // вызов (краткое описание) + обучающая строка
     let head;
     if(LV.biome) head = `<p class="goal-challenge">${t('biome.'+LV.biome+'.hint')}</p>`;
@@ -4242,6 +4246,8 @@
       get zen(){ return zen; },        set zen(v){ zen=v; },
       // выставить текущий уровень кампании (levelKey=индекс — как в buildLevel)
       setLevel(i){ levelIdx=i; levelKey=i; LV=LEVELS[i]; },
+      // выставить бонус-уровень как текущий (без layout/DOM — для проверки окна целей)
+      setBonus(b){ curBiome=null; curBonus=b; levelIdx=-1; levelKey='bonus_'+b.id; LV=b.level; },
       // прогон РЕАЛЬНОГО пути завершения смены: выставляем результат и зовём те же
       // computeStars()/recordResult(), что и в игре — проверяем звёзды, открытие
       // следующего уровня и сохранение, не трогая отрисовку и ввод.
