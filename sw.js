@@ -14,7 +14,7 @@
  *
  * After changing precached assets or wanting to force a refresh, bump VERSION.
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'planeflow-' + VERSION;
 
 // App shell — everything needed to boot offline. Paths are relative so the SW
@@ -23,7 +23,11 @@ const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './assets/icon/icon-192.png',
+  './assets/icon/icon-180.png',
   './assets/icon/icon-512.png',
+  './assets/icon/icon-maskable-192.png',
+  './assets/icon/icon-maskable-512.png',
   './assets/icon/icon-adaptive-bg.png',
   './assets/icon/icon-adaptive-fg.png',
   './assets/sprites/planeflow-aircraft.svg',
