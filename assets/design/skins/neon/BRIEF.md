@@ -12,6 +12,29 @@ Your job is to draw the real neon art that replaces the placeholder.
 
 ---
 
+## 0. Audience & art intent (read first — it sets the tone)
+
+**Who it's for:** **adults** who want a **calm, low-stimulation** session — the kind
+of player who can zone in for an hour and *not feel tired or over-stimulated*.
+People used to **understated, restrained** interfaces (think a quiet night control
+tower, lo-fi ambient, a tidy dashboard) — not flashy mobile candy.
+
+**So the neon here is CALM, not arcade-loud.** Tune every choice toward easy-on-the-
+eyes:
+- **Muted / desaturated** neon, not blazing. Accents *glow softly*, they don't scream.
+  Lower the contrast and saturation vs a typical neon game; no harsh pure-white bloom.
+- **Dark, even background** with gentle depth; minimal, slow motion (the radar sweep
+  is slow and faint). Nothing strobes, pulses hard, or demands attention.
+- **Generous spacing, clean type, few colors.** Restful, "professional night shift"
+  vibe. Readable without being bright.
+- A player should be able to stare at this for an hour comfortably. If an element
+  feels punchy or tiring, dial it back.
+
+> The `ref-01` image is the right *layout/structure*, but treat its glow/saturation as
+> an **upper bound** — our neon is a softer, more grown-up, more muted version of it.
+
+---
+
 ## 1. The locked gameplay layout (must NOT change)
 
 Same spec as every skin (the skin changes looks, never positions):
@@ -29,26 +52,27 @@ Same spec as every skin (the skin changes looks, never positions):
 `references/ref-02-layout-mockup.png` = the layout; `ref-01-target-neon.png` = the
 target art (what we're matching).
 
-## 2. The neon style (match `ref-01`)
+## 2. The neon style — calm night air-traffic-control
 
-Dark arcade **air-traffic-control** look:
+A quiet, **muted** dark control-room look (see §0 — calm beats flashy):
 
-- **Dark navy/black field** with a faint **radar** (concentric rings + crosshair +
-  slow sweep) and a subtle grid. *(The engine already draws this field — see §4.)*
-- **Big glossy rounded panels** for service bays — dark fill, a **bright neon
-  colored border** per service (orange repair / pink boarding / green / cyan fuel /
-  purple VIP), soft outer **glow/bloom**, a **large icon**, a **label**
-  (REPAIR / FUEL / BOARDING / …) and a **cost chip**.
-- **Runways** as dark rounded strips with **colored neon edge lights** (pink / teal /
-  green / magenta), dashed centerline, big runway numbers.
-- **Planes**: bright bodies with **colored nose/livery**, neon outline, subtle glow.
-- **Route**: a glowing cyan/white line with bloom; finger cursor at the live end.
+- **Dark, even navy/slate field** with a faint **radar** (concentric rings +
+  crosshair + a slow, low-opacity sweep) and a subtle grid. *(Engine-drawn — see §4.)*
+- **Rounded panels** for service bays — dark fill, a **soft neon colored edge** per
+  service (muted amber repair / dusty teal fuel / soft rose boarding / pale cyan
+  de-ice), a **gentle glow** (not bloom), a clear **large icon**, a **label** and a
+  **cost chip**. Glossy but understated — matte-glass, not wet-shiny.
+- **Runways** as dark rounded strips with **dim colored edge lights**, dashed
+  centerline, clear runway numbers. Lights breathe slowly, never blink hard.
+- **Planes**: clean light bodies with a **calm colored nose/livery**, thin neon
+  outline, faint glow.
+- **Route**: a soft cyan line with a *gentle* halo; finger cursor at the live end.
 - **HUD**: dark translucent with neon-outlined value groups (heart · clock · coin ·
-  target/goal · pause), big bold numerals.
+  goal · pause), big readable numerals — but low-key, not bright.
 
-Consistent neon look: one outline/glow language, saturated accents on dark, high
-contrast, **everything large and readable**. The earlier in-engine version was too
-small and too plain — fix that.
+Consistent, **restrained** neon: one soft glow language, **muted accents on dark,
+moderate contrast**, generous spacing, **large & readable**. The earlier in-engine
+version was too small and plain; the fix is *bigger and richer*, **not louder**.
 
 ## 3. Color palette (the neon tokens already in the engine)
 
@@ -62,6 +86,11 @@ depart/gold #ffd23b · coin/gold #ffd23b · life #ff3b6b
 ```
 
 Plus per-bay border accents seen in `ref-01` (orange/pink/green/cyan/purple).
+
+> **Treat these as the *brightest* you'd go.** Per §0, the drawn art should lean
+> **more muted/desaturated** — softer, dustier versions of these accents — so an hour
+> of play stays comfortable. The vivid values above are mainly for procedural/HUD
+> bits; in your PNGs, pull saturation and bloom *down*.
 
 ## 4. Format & integration — **deliver PNG** (the seam is built)
 
@@ -109,12 +138,23 @@ assets/sprites/neon/manifest.json     # ["plane","bay-repair","svc-fuel", …]
 still accepted as a fallback — resolution order is **PNG → skin-SVG → base →
 procedural** — but **PNG is the target format**.)*
 
-## 5. Mini-animations
+## 5. Animations (keep them slow & soft — see §0)
 
-Animation is canvas-side (the engine tweens static art). Redraw the service/feedback
-FX in neon: `fx-weld`, `fx-fuel`, `fx-boarding`, `fx-droplet`, `fx-touchdown`,
-`fx-takeoff`, `fx-crash`, `fx-success`, `fx-error`, `fx-ripple` — bright neon
-particles/rings with glow. Optional ambient: radar blips, scanning glints.
+Animation is canvas-side (the engine tweens static art): deliver clean **peak-pose**
+art + a short motion note (loop length, easing). For neon, motion is **gentle and
+slow** — nothing strobes or snaps.
+
+- **Service FX:** `fx-weld` (soft sparks), `fx-fuel` (droplets), `fx-boarding`
+  (figures step in), `fx-droplet` (de-ice) — muted neon, gentle.
+- **Plane life:** `fx-touchdown` (soft puff), `fx-takeoff` (slow streak), subtle idle
+  hover; engine spin if wanted.
+- **Feedback:** `fx-crash`, `fx-success`, `fx-error`, `fx-ripple` — calm pulses, no
+  harsh flashes.
+- **Ambient (optional):** slow radar sweep + faint blips, a quiet breathing glow on
+  active panels. Restful, never attention-grabbing.
+- **UI micro-interactions:** soft button press (slight scale + glow), smooth fades
+  between screens, gentle toast slide-in, `+N` money float, combo tick. All soft
+  ease-in/out.
 
 ## 6. Asset checklist (what to draw) — each shipped as `assets/sprites/neon/<id>.png`
 
@@ -137,12 +177,35 @@ File names use the **base id** (no prefix); list every shipped id in `manifest.j
 - [ ] `coin`, `star`, `star-empty`, `clock`, `check`, `moon`
 - [ ] `pause-btn`, `zen-badge`
 
-### Effects (256×256)
-- [ ] neon versions of `fx-weld/fuel/boarding/droplet/touchdown/takeoff/crash/
-      success/error/ripple/spark/smoke/dust/board-dot`
+### Effects / animations (256×256, peak-pose + motion note)
+- [ ] `fx-weld`, `fx-fuel`, `fx-boarding`, `fx-droplet` (service)
+- [ ] `fx-touchdown`, `fx-takeoff`, `fx-crash`, `fx-success`, `fx-error`, `fx-ripple`
+- [ ] `fx-spark`, `fx-smoke`, `fx-dust`, `fx-board-dot`
 
-### Optional (later)
-- [ ] `tile-*`, `terminal`, `runway`, `menu-bg` (if we want a fully drawn field/menu)
+### Menus & screens (DOM — themed via a CSS palette + a few backgrounds)
+> Menus are HTML/CSS overlays, not canvas sprites. Deliver a **neon CSS palette**
+> (surface/card/border/text/accent values) + the listed background/art bits. Every
+> screen below needs a neon treatment:
+- [ ] **Start / main menu** — background art/gradient, wordmark/logo, the action rail
+- [ ] **Level select** — the «luggage-cart» route map: track, **level node** (locked /
+      current / done states), star row, back
+- [ ] **Shift goals** dialog (3 star tiers) · **Pause** (dimmed field + buttons) ·
+      **End of shift** (stars + stat chips) · **Settings** (rows + toggles + segmented
+      controls) · **Medals** grid · **Reset confirm**
+- [ ] **Toasts** (life lost / level passed / +money) · **panels/cards** & dividers
+
+### Buttons & controls (DOM — define neon states)
+- [ ] Button styles: **primary**, **secondary/ghost**, **danger** — idle / hover /
+      pressed / disabled
+- [ ] **Toggle switch** (on/off), **segmented control** (language, skin), **chips**
+      (cost / star count), **progress bar** (goal), **combo badge**
+
+### Menu icons (small, consistent set)
+- [ ] `play`, `zen`/moon, `maps`, `medals`, `settings`/gear, `fullscreen`, `share`,
+      `back`, `star`, `lock` — single-weight neon glyphs
+
+### Brand / app
+- [ ] `wordmark` + logo mark (neon) · `menu-bg` · **app icon** + splash (store/PWA)
 
 ## 7. Definition of done
 
