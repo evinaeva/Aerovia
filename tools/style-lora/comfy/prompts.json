@@ -1,0 +1,14 @@
+[
+  { "name": "plane-cargo",   "view": "top-down",            "subject": "a single red and white cargo airplane" },
+  { "name": "plane-seaplane","view": "top-down",            "subject": "a single blue seaplane with pontoon floats" },
+  { "name": "hangar",        "view": "three-quarter view",  "subject": "a large airplane hangar building with rounded roof" },
+  { "name": "cafe",          "view": "three-quarter view",  "subject": "a small cozy airport cafe building with awning" },
+  { "name": "fuel-truck",    "view": "side three-quarter view", "subject": "a yellow airport fuel tanker truck" },
+  { "name": "baggage-tug",   "view": "side three-quarter view", "subject": "a small baggage tug towing a luggage cart" },
+  { "name": "palm",          "view": "front view",          "subject": "a palm tree on a round grass tuft" },
+  { "name": "boulder",       "view": "front view",          "subject": "a mossy grey boulder rock" },
+  { "name": "windsock",      "view": "front view",          "subject": "an orange airport windsock on a striped pole" },
+  { "name": "gem",           "view": "front view",          "subject": "a single glossy blue gem currency token, no frame" },
+  { "name": "key",           "view": "front view",          "subject": "a single golden key token, no frame" },
+  { "name": "trophy",        "view": "front view",          "subject": "a single golden trophy cup token, no frame" }
+]
