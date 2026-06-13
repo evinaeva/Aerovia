@@ -490,37 +490,39 @@ def s_flow():
     return s
 
 # ================================================================ RENDER
-SCREENS=[("00-flow",s_flow,1180,640),
-         ("01-start",s_start,None,None),
-         ("02-levels",s_levels,None,None),
-         ("03-hud",s_hud,None,None),
-         ("04-aircraft",s_aircraft,None,None),
-         ("05-pause",s_pause,None,None),
-         ("06-goals",s_goals,None,None),
-         ("07-over",s_over,None,None),
-         ("08-settings",s_settings,None,None),
-         ("09-medals",s_medals,None,None)]
-
-paths=[]
-for name,fn,fw,fh in SCREENS:
-    svg=fn()
+def render_svg(name,svg,fw=None,fh=None):
     open(os.path.join(HERE,name+".svg"),"w").write(svg)
     png=os.path.join(HERE,name+".png")
     if fw: cairosvg.svg2png(bytestring=svg.encode(),write_to=png,output_width=fw*2,output_height=fh*2)
     else:  cairosvg.svg2png(bytestring=svg.encode(),write_to=png,output_width=(W+2*BW)*2,output_height=(TITLE+2*BW+H)*2)
-    paths.append((name,png))
-    print("rendered",name)
+    print("rendered",name); return png
 
-# contact sheet (skip the flow map; just the 9 screens, 3x3)
-screens=[p for n,p in paths if n!="00-flow"]
-thumbs=[Image.open(p).convert("RGB") for p in screens]
-tw=thumbs[0].width//2; th=thumbs[0].height//2
-pad=24; cols=3; rows=3
-sheet=Image.new("RGB",(cols*tw+(cols+1)*pad, rows*th+(rows+1)*pad),(13,11,20))
-for i,im in enumerate(thumbs):
-    im=im.resize((tw,th))
-    r,c=divmod(i,cols)
-    sheet.paste(im,(pad+c*(tw+pad), pad+r*(th+pad)))
-sheet.save(os.path.join(HERE,"overview.png"))
-print("contact sheet -> overview.png")
-print("DONE")
+def render_all():
+    SCREENS=[("00-flow",s_flow,1180,640),
+             ("01-start",s_start,None,None),
+             ("02-levels",s_levels,None,None),
+             ("03-hud",s_hud,None,None),
+             ("04-aircraft",s_aircraft,None,None),
+             ("05-pause",s_pause,None,None),
+             ("06-goals",s_goals,None,None),
+             ("07-over",s_over,None,None),
+             ("08-settings",s_settings,None,None),
+             ("09-medals",s_medals,None,None)]
+    paths=[]
+    for name,fn,fw,fh in SCREENS:
+        paths.append((name,render_svg(name,fn(),fw,fh)))
+    # contact sheet (skip the flow map; just the 9 screens, 3x3)
+    screens=[p for n,p in paths if n!="00-flow"]
+    thumbs=[Image.open(p).convert("RGB") for p in screens]
+    tw=thumbs[0].width//2; th=thumbs[0].height//2
+    pad=24; cols=3; rows=3
+    sheet=Image.new("RGB",(cols*tw+(cols+1)*pad, rows*th+(rows+1)*pad),(13,11,20))
+    for i,im in enumerate(thumbs):
+        im=im.resize((tw,th)); r,c=divmod(i,cols)
+        sheet.paste(im,(pad+c*(tw+pad), pad+r*(th+pad)))
+    sheet.save(os.path.join(HERE,"overview.png"))
+    print("contact sheet -> overview.png")
+
+if __name__=="__main__":
+    render_all()
+    print("DONE")
