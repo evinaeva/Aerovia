@@ -11,7 +11,7 @@
 ## 1. Бренд / идентичность
 - ✅ **Название** — **PlaneFlow** (утверждено 2026-06-12; было рабочее «Tower»)
 - ✅ **Логотип / вордмарк** — `mark` / `wordmark` / `wordmark-lockup`; локап на стартовом экране
-- ✅ **Палитра** — cozy-токены утверждены (navy/purple база, cream текст, акценты услуг)
+- ✅ **Палитра** — cozy-токены утверждены (navy/purple база, cream текст, акценты услуг); спрайты перекрашиваемы на лету через `var(--token, #hex)` + `SPRITES.setTheme()` (см. `assets/sprites/README.md`)
 - 🟡 **Шрифты** — display-стек в вордмарке (Fredoka — substitution), в продукте mono; финализировать при пакетировании
 - ✅ **Иконка приложения** — `assets/icon/`: 512 full-bleed + Android adaptive (bg/fg); подключена как favicon/apple-touch-icon
 

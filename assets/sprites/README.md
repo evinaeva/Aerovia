@@ -1,10 +1,43 @@
 # PlaneFlow — Sprite assets
 
 Cozy / stylized-flat, top-down vector art. Every piece is an inline
-`<symbol>` in a spritesheet `.svg`. Colors, radii and shadows come from
-`tokens/*.css` (embedded as literal hex in each sheet, with a token map in the
-file header). **Readability First** — silhouettes read in < 0.5 s; interactive
-chips are ≥ 44 px.
+`<symbol>` in a spritesheet `.svg`. **Readability First** — silhouettes read in
+< 0.5 s; interactive chips are ≥ 44 px.
+
+## Recolor mechanism — «перекрашивать цвета сколько угодно»
+
+Sprite fills/strokes are **not** baked hex. Every color is written as
+`var(--token, #fallbackhex)` — a named CSS variable with the original hex as the
+fallback. So:
+
+- **Default look is unchanged.** If no token is defined, the browser uses the
+  `#fallbackhex` — the exact color the art was authored with. The static
+  `*-preview.html` files and any plain `<use>` render identically to before.
+- **Recolor at runtime** by defining the tokens. The game's sprite atlas
+  (`SPRITES` in `index.html`) rasterizes each `<symbol>` into a standalone
+  `<svg>`; to recolor it injects a `<style>:root{--token:value;…}</style>` block
+  into that wrapper. Pass a token-override object through `blitC`/`blit`
+  (e.g. `SPRITES.blitC('coin', x, y, w, h, 0, {gold:'#fff', 'gold-dim':'#aaa'})`),
+  or call `SPRITES.setTheme({…})` to recolor **everything** globally. The atlas
+  cache keys on a deterministic signature of the token set, so any number of
+  themes/tints coexist without collision.
+- `route-arrow` still uses `fill="currentColor"` and is tinted via the legacy
+  string `color` arg (route color) — unchanged.
+
+Token names are listed in the per-symbol tables below (the **colors / tokens**
+column). The full default palette lives in `PALETTE` in `index.html`; the
+procedural fallback reads the same tokens via `COL` so a theme recolors both the
+sprites and the fallback shapes. Token reference (token → default hex):
+
+`ink #16131f` · `tarmac #242842` (navy-800) · `navy-900 #1a1d2e` · `water #1c3a42` ·
+`water-wave #2a525c` · `water-wave2 #3a6b76` · `grass #38482f` · `grass-dim #2e3b27` ·
+`grass-tuft #46583b` · `sand #6b5c44` · `wood #4a3f33` · `chip #2a2440` (purple-800) ·
+`purple-700 #3a3354` · `purple-600 #46406a` · `bay-dim #1f1b2c` · `gray-500 #8a8c99` ·
+`gray-600 #6b6d7a` · `cream-100 #f4eede` (paper) · `cream-200 #e8e0cf` · `cream-outline #b9b0a0` ·
+`gold #f4cf5e` · `gold-dim #caa53a` · `gold-ink #5e4a16` · `amber #f2a93b` · `amber-glow #ffb84d` ·
+`amber-core #ffd089` · `teal #4ecdc4` · `ice #7fd6ff` · `blue #4ab4d6` · `green #5dca7a` ·
+`green-bright #7fe098` · `rose #ef798a` · `red #e0584f` · `life #ef5365` · `phosphor #cdb0f7` ·
+`white #ffffff` · `sky-low #3a2f3e` · `sky-mid #241d33` · `shadow #0a0614`.
 
 ## Spritesheets
 | File | Batch | Contents | Preview |
