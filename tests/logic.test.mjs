@@ -258,6 +258,16 @@ test('race-уровень (L5) показывает «без лимита» по
   assert.ok(html.includes('∞'), 'на race-уровне потолок бортов — ∞ (без лимита)');
 });
 
+test('бонус-мир «луг бабочек» рисует цель гусеницей, а не самолётом', () => {
+  const { game } = boot();
+  const b = game.BONUS.find(x => x.level && x.level.bonus === 'butterfly');
+  assert.ok(b, 'должен быть бонус-уровень с темой butterfly');
+  game.setBonus(b);
+  const html = game.goalRowsHTML();
+  assert.ok(/caterpillar/.test(html), 'на лугу бабочек основная иконка — гусеница');
+  assert.ok(!/M21 16v-1\.9/.test(html), 'самолётной иконки на лугу быть не должно');
+});
+
 test('имена уровней локализуются, для несуществующего — общий фолбэк', () => {
   const { game } = boot();
   assert.equal(game.levelName(0), 'Airport Control');    // язык по умолчанию — en
