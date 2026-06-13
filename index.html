@@ -1253,8 +1253,9 @@
   ];
   let LV = LEVELS[0], curBiome = null, curBonus = null;
   // бонус после прохождения уровня №levelNum (1-based); открыт, если тот пройден на ≥1★
+  // (или включён отладочный тумблер «Открыть все уровни» — как у кампании, см. renderLevels)
   function bonusAfter(levelNum){ return BONUS.find(b=>b.after===levelNum) || null; }
-  function bonusUnlocked(b){ return (save.stars[b.after-1]||0) >= 1; }
+  function bonusUnlocked(b){ return debug.unlockAll || (save.stars[b.after-1]||0) >= 1; }
   function bonusName(b){
     const key = 'bonus.t.'+b.id;
     const has = (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null);
