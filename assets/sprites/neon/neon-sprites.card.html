@@ -40,6 +40,7 @@
   .hud { height: 30px; }          /* hud chips */
   .btn { height: 58px; }          /* buttons */
   .fx { height: 60px; }           /* effects */
+  .br { height: 70px; }           /* brand — scaled down */
 </style>
 </head>
 <body>
@@ -62,6 +63,12 @@
 
   <div class="sec">Effects — peak pose, soft &amp; slow (256)</div>
   <div class="row" id="fx"></div>
+
+  <div class="sec">Menu icons (96) &amp; brand</div>
+  <div class="row" id="menu"></div>
+
+  <div class="sec">Brand / app — wordmark · logo · app-icon · backgrounds</div>
+  <div class="row" id="brand"></div>
 </div>
 <script>
   const base = './';
@@ -73,6 +80,8 @@
     hud: { cls:'hud', ids:['heart','heart-empty','heart-crack','coin','star','star-empty','clock','check','moon'],
            extra:{cls:'btn', ids:['pause-btn','zen-badge']} },
     fx: { cls:'fx', ids:['fx-weld','fx-fuel','fx-boarding','fx-droplet','fx-touchdown','fx-takeoff','fx-crash','fx-success','fx-error','fx-ripple','fx-spark','fx-smoke','fx-dust','fx-board-dot'] },
+    menu: { cls:'hud', ids:['play','back','settings','maps','medals','fullscreen','share','moon','lock'] },
+    brand: { cls:'br', ids:['wordmark','logo','app-icon','menu-bg','splash'] },
   };
   function tile(id, cls){
     const t = document.createElement('div'); t.className='tile';

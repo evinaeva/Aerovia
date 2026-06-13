@@ -1,0 +1,142 @@
+<!-- @dsCard group="Cartoon Skin" viewport="900x740" name="Cartoon Palette & Controls" subtitle="Saturated daytime tokens + chunky button / chip / toggle / segmented / progress states for the DOM menus" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../../styles.css" />
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  html, body { margin: 0; }
+  * { box-sizing: border-box; }
+  body { font-family: var(--font-ui); color: var(--cartoon-text-body); padding: 26px 30px 36px;
+    background: linear-gradient(180deg, var(--cartoon-sky) 0%, var(--cartoon-sky-2) 100%); }
+  h2 { font-family: var(--font-display); font-size: 24px; color: var(--cartoon-text-strong); margin: 0 0 3px; }
+  .sub { font-size: 13px; color: var(--cartoon-text-body); margin-bottom: 22px; max-width: 760px; line-height: 1.5; }
+  .sub code { background: rgba(58,42,23,0.1); padding: 1px 6px; border-radius: 6px; font-family: var(--font-num); font-size: 12px; }
+  .sec { font-size: 11px; letter-spacing: var(--ls-kicker); text-transform: uppercase; color: var(--cartoon-text-muted);
+    font-weight: 800; margin: 26px 0 13px; }
+
+  /* palette */
+  .pal { display: grid; grid-template-columns: repeat(6, 1fr); gap: 11px; }
+  .sw { border-radius: 14px; overflow: hidden; border: var(--cartoon-stroke-sm) solid var(--cartoon-outline); box-shadow: var(--cartoon-shadow-soft); }
+  .sw .chip { height: 48px; }
+  .sw .meta { padding: 6px 9px; background: var(--cartoon-cream); }
+  .sw .nm { font-size: 11px; font-weight: 800; color: var(--cartoon-text-strong); }
+  .sw .hx { font-size: 9.5px; color: var(--cartoon-text-muted); font-family: var(--font-num); margin-top: 1px; }
+
+  .cols { display: grid; grid-template-columns: 1.15fr 1fr; gap: 34px; }
+
+  /* chunky cartoon buttons — gradient fill, single warm-dark outline, 3D bottom edge */
+  .btnrow { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  .bcell { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .cb { font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: var(--ls-label); text-transform: uppercase;
+    color: #fff; border: var(--cartoon-stroke) solid var(--cartoon-outline); border-radius: var(--cartoon-r-button);
+    padding: 12px 26px; cursor: pointer; position: relative; transition: transform var(--dur-fast) var(--cartoon-ease-bounce), box-shadow var(--dur-fast);
+    box-shadow: 0 5px 0 rgba(58,42,23,0.55), var(--cartoon-gloss); }
+  .cb.primary   { background: linear-gradient(180deg, #6bef9a, var(--cartoon-route)); }
+  .cb.secondary { background: linear-gradient(180deg, var(--cartoon-cream-hi), var(--cartoon-cream-2)); color: var(--cartoon-text-strong); }
+  .cb.danger    { background: linear-gradient(180deg, #ff8a93, var(--cartoon-life)); }
+  .cb:hover     { transform: translateY(-2px); box-shadow: 0 7px 0 rgba(58,42,23,0.55), var(--cartoon-gloss); }
+  .cb:active    { transform: translateY(5px); box-shadow: 0 1px 0 rgba(58,42,23,0.55), var(--cartoon-gloss); }
+  .cb.disabled  { background: linear-gradient(180deg, #ece2cf, #d9ccb2); color: #b3a589; box-shadow: 0 5px 0 rgba(58,42,23,0.25); cursor: not-allowed; }
+  /* a forced-pressed sample so the press state is visible at rest */
+  .cb.is-pressed { transform: translateY(5px); box-shadow: 0 1px 0 rgba(58,42,23,0.55), var(--cartoon-gloss); }
+  .state { font-size: 9.5px; color: var(--cartoon-text-muted); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 800; }
+
+  /* toggle */
+  .toggle { width: 64px; height: 34px; border-radius: 999px; background: #e4cfa3; border: var(--cartoon-stroke) solid var(--cartoon-outline);
+    position: relative; cursor: pointer; transition: background var(--dur-base); box-shadow: inset 0 2px 4px rgba(58,42,23,0.2); }
+  .toggle.on { background: linear-gradient(180deg, #6bef9a, var(--cartoon-route)); }
+  .toggle i { position: absolute; top: 2px; left: 2px; width: 26px; height: 26px; border-radius: 50%; background: #fff;
+    border: 2.5px solid var(--cartoon-outline); transition: left var(--dur-base) var(--cartoon-ease-bounce); }
+  .toggle.on i { left: 32px; }
+
+  /* segmented control */
+  .seg { display: inline-flex; background: var(--cartoon-cream-2); border: var(--cartoon-stroke) solid var(--cartoon-outline);
+    border-radius: 15px; padding: 4px; gap: 4px; box-shadow: inset 0 2px 4px rgba(58,42,23,0.15); }
+  .seg button { font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: 0.04em; color: var(--cartoon-text-muted);
+    border: none; background: none; padding: 7px 18px; border-radius: 11px; cursor: pointer; transition: all var(--dur-fast); }
+  .seg button.active { color: #fff; background: linear-gradient(180deg, #ffa2cb, var(--cartoon-board)); box-shadow: 0 2px 0 rgba(58,42,23,0.4); }
+
+  /* chips */
+  .chips { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .chip2 { display: inline-flex; align-items: center; gap: 7px; padding: 7px 15px 7px 9px; border-radius: 999px; white-space: nowrap;
+    font-family: var(--font-display); font-weight: 700; font-size: 15px; border: var(--cartoon-stroke-sm) solid var(--cartoon-outline); box-shadow: var(--cartoon-shadow-soft); }
+  .coin-dot { width: 19px; height: 19px; border-radius: 50%; flex: 0 0 auto;
+    background: radial-gradient(circle at 38% 32%, #ffe79a, var(--cartoon-coin) 58%, var(--cartoon-coin-deep)); border: 2px solid var(--cartoon-outline); }
+  .chip2 svg { width: 18px; height: 18px; fill: currentColor; stroke: var(--cartoon-outline); stroke-width: 1.6; }
+  .chip2.cost  { background: var(--cartoon-cream); color: var(--cartoon-text-strong); }
+  .chip2.stars { background: linear-gradient(180deg, #fff0c2, #ffe08a); color: #b8860b; }
+  .chip2.combo { background: linear-gradient(180deg, #ffa2cb, var(--cartoon-board)); color: #fff; border-color: var(--cartoon-outline); }
+
+  /* progress */
+  .goalcap { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--cartoon-text-strong); }
+  .prog { height: 18px; border-radius: 999px; background: #e4cfa3; border: var(--cartoon-stroke) solid var(--cartoon-outline); overflow: hidden; margin-top: 9px; box-shadow: inset 0 2px 4px rgba(58,42,23,0.2); }
+  .prog i { display: block; height: 100%; width: 64%; border-radius: 999px; background: linear-gradient(180deg, #ffa2cb, var(--cartoon-board)); box-shadow: inset 0 2px 0 rgba(255,255,255,0.5); }
+
+  /* lives */
+  .lives { display: flex; gap: 9px; align-items: center; }
+  .lives svg { width: 34px; height: 34px; fill: var(--cartoon-life); stroke: var(--cartoon-outline); stroke-width: 2; }
+  .lives .empty { fill: var(--cartoon-life-empty); }
+</style>
+</head>
+<body>
+  <h2>Cartoon palette &amp; controls</h2>
+  <div class="sub">Bright, saturated daytime on soft sky — the lively "living airport" skin. These tokens (<code>--cartoon-*</code>) and DOM states drive the menus, dialogs and HUD. Every silhouette carries one warm-dark outline (<code>--cartoon-outline</code>); buttons are chunky with a soft 3D bottom edge that compresses on press.</div>
+
+  <div class="sec">Palette — from BRIEF §5, tuned to references/ref-01 (Airport City)</div>
+  <div class="pal" id="pal"></div>
+
+  <div class="cols" style="margin-top:26px">
+    <div>
+      <div class="sec">Buttons — primary · secondary · danger · disabled</div>
+      <div class="btnrow">
+        <div class="bcell"><button class="cb primary">Go</button><div class="state">primary</div></div>
+        <div class="bcell"><button class="cb secondary">Maps</button><div class="state">secondary</div></div>
+        <div class="bcell"><button class="cb danger">Reset</button><div class="state">danger</div></div>
+        <div class="bcell"><button class="cb primary is-pressed">Build</button><div class="state">pressed</div></div>
+        <div class="bcell"><button class="cb disabled">Locked</button><div class="state">disabled</div></div>
+      </div>
+
+      <div class="sec" style="margin-top:26px">Toggle &amp; segmented control</div>
+      <div class="btnrow" style="gap:24px; align-items:center">
+        <div class="toggle on" id="t1"><i></i></div>
+        <div class="seg" id="seg"><button class="active">EN</button><button>RU</button></div>
+        <div class="seg"><button>Cozy</button><button class="active">Cartoon</button></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec">Chips — cost · stars · combo</div>
+      <div class="chips">
+        <span class="chip2 cost"><span class="coin-dot"></span>5 000</span>
+        <span class="chip2 stars"><i data-lucide="star"></i>3</span>
+        <span class="chip2 combo">×2 combo</span>
+      </div>
+
+      <div class="sec" style="margin-top:26px">Goal progress</div>
+      <div class="goalcap">Shift goal · 9 / 14</div>
+      <div class="prog"><i></i></div>
+
+      <div class="sec" style="margin-top:26px">Lives</div>
+      <div class="lives">
+        <i data-lucide="heart"></i><i data-lucide="heart"></i><i data-lucide="heart"></i><i data-lucide="heart" class="empty"></i>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const SW = [
+    ['grass','#6fbf4a'],['water','#5fc7e8'],['sand','#e8d39a'],['cream','#fff3d8'],['outline','#3a2a17'],['route','#36d36b'],
+    ['repair','#ff8a1f'],['fuel','#1fb6d8'],['board','#ff5ca0'],['deice','#5ec2e8'],['depart','#ffc62e'],['coin','#ffce3a'],
+    ['life','#ff4d5e'],['tree','#3f9b3c'],['plane','#ffffff'],['window','#2f6fb0'],['text','#3a2a17'],['sky','#bfe6f7'],
+  ];
+  document.getElementById('pal').innerHTML = SW.map(([n,h])=>
+    `<div class="sw"><div class="chip" style="background:${h}"></div><div class="meta"><div class="nm">${n}</div><div class="hx">${h}</div></div></div>`).join('');
+  document.getElementById('t1').onclick = e => e.currentTarget.classList.toggle('on');
+  document.querySelectorAll('.seg').forEach(seg => seg.querySelectorAll('button').forEach(b => b.onclick = () => {
+    seg.querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }));
+  if (window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>
