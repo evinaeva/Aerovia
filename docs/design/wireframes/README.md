@@ -4,7 +4,7 @@ Rendered layout proposal for every screen + the screen-flow map. This is the **l
 layer (where buttons go, sizing, composition), **not** a snapshot of the current
 `index.html` — it redesigns the UI from the gameplay up.
 
-Full write-up & rationale: [`../../../docs/art-direction/wireframes.md`](../../../docs/art-direction/wireframes.md).
+Full write-up & rationale: [`../art-direction/wireframes.md`](../art-direction/wireframes.md).
 
 ## Regenerate
 

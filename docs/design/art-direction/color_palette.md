@@ -4,7 +4,7 @@
 > Rule of thumb: **muted but warm, max 6–7 dominant colors, never oversaturated.**
 >
 > ⚠️ **Hex values below are approximated from the style-guide reference image** (panel
-> 10) and the existing working palette in [`../assets.md`](../assets.md). Treat them as
+> 10) and the existing working palette in [`../assets.md`](../../assets.md). Treat them as
 > a starting target to be confirmed against `index.html`, not as locked tokens. When a
 > value is pulled from code, mark it ✅ confirmed.
 

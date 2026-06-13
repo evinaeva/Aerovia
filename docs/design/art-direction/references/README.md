@@ -48,4 +48,4 @@ references/planeflow_style_guide_v1.png
 
 Drop additional reference images here and add a short row above describing each one
 (source, what it informs, any caveats). Keep this folder for *inputs/inspiration*;
-shipped assets and their production status live in [`../../assets.md`](../../assets.md).
+shipped assets and their production status live in [`../../assets.md`](../../../assets.md).
