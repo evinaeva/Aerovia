@@ -365,6 +365,58 @@ test('validateBonus ловит поломку: after не кратен 5', () =>
   assert.ok(problems.some(p => /кратен 5/.test(p)), 'нарушение шага в 5 уровней должно отлавливаться');
 });
 
+// ---------- Экономика уровня (levelEconomy) ----------
+
+test('экономика: оплата за услугу в границах [SVC_MIN, SVC_MAX] на всех уровнях', () => {
+  const { game } = boot();
+  const K = game.K;
+  game.LEVELS.forEach((lv, i) => {
+    const e = game.levelEconomy(lv);
+    assert.ok(e.svcReward >= K.SVC_MIN && e.svcReward <= K.SVC_MAX,
+      `L${i + 1}: svcReward ${e.svcReward} вне [${K.SVC_MIN}, ${K.SVC_MAX}]`);
+  });
+});
+
+test('экономика: смена окупает хотя бы один новый бокс на голой оплате (без комбо)', () => {
+  const { game } = boot();
+  const K = game.K;
+  const avg = 1 + K.TWO_SVC_CHANCE;
+  game.LEVELS.forEach((lv, i) => {
+    const e = game.levelEconomy(lv);
+    const baseEarn = e.svcReward * avg * e.flow;
+    assert.ok(baseEarn >= K.BAY_OPEN_COST,
+      `L${i + 1}: базового дохода ${Math.round(baseEarn)} не хватит на бокс (${K.BAY_OPEN_COST})`);
+  });
+});
+
+test('экономика: больше бортов в смене → дешевле оплата за борт (поток гасит цену)', () => {
+  const { game } = boot();
+  // L4 (target 20) и L6 (target 28) — одинаковый апрон, разный поток: больше поток → ниже svc
+  const e4 = game.levelEconomy(game.LEVELS[3]);
+  const e6 = game.levelEconomy(game.LEVELS[5]);
+  assert.ok(e6.flow > e4.flow, 'L6 принимает больше бортов, чем L4');
+  assert.ok(e6.svcReward <= e4.svcReward, 'при большем потоке оплата за борт не растёт');
+});
+
+test('экономика: голая оплата НЕ покрывает весь набор — добор идёт мастерством', () => {
+  const { game } = boot();
+  const K = game.K;
+  const avg = 1 + K.TWO_SVC_CHANCE;
+  // на «средних» по апрону уровнях (L4) базовый доход < полного набора, но комбо×2/экспресс×1.5
+  // дают запас сверх него — «непросто, но выполнимо»
+  const e = game.levelEconomy(game.LEVELS[3]);
+  const baseTotal = e.startMoney + e.svcReward * avg * e.flow;
+  assert.ok(baseTotal < e.kitCost, 'голой оплаты с запасом не должно хватать на весь набор');
+  assert.ok(baseTotal >= e.kitCost * 0.8, 'но впритык — не меньше 80% набора (иначе недостижимо)');
+});
+
+test('экономика: validateLevels ловит сломанную ручку (нереальная оплата → бокс не накопить)', () => {
+  const { game } = boot();
+  game.K.SVC_MIN = game.K.SVC_MAX = 1;   // ломаем модель: оплата зажата почти в ноль
+  const problems = game.validateLevels();
+  assert.ok(problems.some(p => /экономика|бокс/.test(p)), 'недостижимая экономика должна отлавливаться');
+});
+
 // ---------- Сейв: загрузка и миграция ----------
 
 test('загрузка существующего сейва (новый ключ)', () => {

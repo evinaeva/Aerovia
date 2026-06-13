@@ -1218,8 +1218,8 @@
     GROUND_BASE: 60,      // базовое наземное терпение, сек
     GROUND_STEP: 30,      // + за каждую услугу
     SERVE_BASE: 3.0,      // базовое время обслуживания в боксе
-    MONEY_SVC: 10,        // деньги за услугу (вип x2)
     VIP_CHANCE: 0.25,
+    TWO_SVC_CHANCE: 0.45, // доля бортов с 2 услугами (иначе 1) — задаёт средний чек смены
     SPAWN_BASE: 4.2,      // интервал спавна
     SPAWN_MIN: 2.2,
     MAX_PLANES: 9,
@@ -1228,6 +1228,14 @@
     BAY_UP_COST: [80,160,320], // апгрейд до ур.1/2/3
     BAY_MAX_LVL: 3,
     UP_SPEED: 0.25,       // +25% скорости за уровень
+    // --- экономика: оплата за услугу и стартовая касса ВЫВОДЯТСЯ из самого уровня
+    //     функцией levelEconomy() (см. docs/design/game-design/economy.md). Константы
+    //     ниже — настроечные ручки модели, а не деньги напрямую. ---
+    SVC_MIN: 10, SVC_MAX: 22,  // границы оплаты за одну услугу (вип/срочный/мед дают ×bonus сверху)
+    ECON_OPEN_FRAC: 0.7,       // какую долю докупаемых боксов уровень «ожидает» открыть
+    ECON_UP_FRAC:   0.6,       // и долю работающих боксов, что возьмут апгрейд ур.1
+    ECON_TIGHTNESS: 0.9,       // голая оплата (без комбо/экспресса) покрывает ~90% «набора»
+    ECON_FLOW_SECS: 6,         // таймерные карты: оценка потока — один платный борт раз в N сек
     START_LIVES: 3,
     // комбо / экспресс
     COMBO_MAX: 10, COMBO_STEP: 0.1,   // множитель денег до x2 за серию чистых вылетов
@@ -1375,7 +1383,60 @@
   LEVELS.forEach(lv=>normObjective(lv.objective));
   BIOMES.forEach(b=>{ if(b.level) normObjective(b.level.objective); });
   BONUS.forEach(b=>{ if(b.level) normObjective(b.level.objective); });
+
+  // ---- ЭКОНОМИКА УРОВНЯ (деньги выводятся из сложности карты) ----
+  // Деньги живут ВНУТРИ смены (сбрасываются каждый уровень — переноса нет). Чтобы
+  // покупки (открыть/прокачать боксы) ощущались одинаково на ЛЮБОЙ карте — нынешней
+  // и будущей — оплату за услугу (svcReward) и стартовую кассу (startMoney) мы НЕ
+  // задаём вручную по уровням, а ВЫВОДИМ из конфига самого уровня. Две опоры:
+  //
+  //   (A) «НАБОР» (buy-side) — что игрок должен суметь купить, пройдя смену на 3★:
+  //        открыть бóльшую часть докупаемых боксов + по апгрейду ур.1 на работающие.
+  //          openable   = Σ(slots − open) по сторонам      // докупаемые боксы
+  //          working    = (стартово открытые) + round(openable · ECON_OPEN_FRAC)
+  //          kitCost    = round(openable · ECON_OPEN_FRAC) · BAY_OPEN_COST
+  //                     + working · BAY_UP_COST[0] · ECON_UP_FRAC
+  //
+  //   (B) «ЗАРАБОТОК» (earn-side) — голая касса за смену БЕЗ комбо/экспресса:
+  //          baseEarn   = svcReward · avgNSvc · flow
+  //        где avgNSvc = 1 + TWO_SVC_CHANCE (средний чек: борт несёт 1 или 2 услуги),
+  //        а flow — сколько ПЛАТНЫХ бортов проходит за смену:
+  //          • served-карты заканчиваются ровно на target бортах → flow = target;
+  //          • таймерные (race / метрика upgrades) — оценка по часам: time / ECON_FLOW_SECS.
+  //
+  // Связываем (A) и (B): startMoney + baseEarn ≈ ECON_TIGHTNESS · kitCost. То есть
+  // ОДНОЙ голой оплаты впритык НЕ хватает на весь набор (TIGHTNESS<1) — добор идёт
+  // мастерством: комбо (до ×2) и экспресс (×1.5). Это и есть «непросто, но честно и
+  // поощряет умение». Решаем уравнение относительно svcReward и зажимаем в
+  // [SVC_MIN, SVC_MAX], чтобы ранние мелкие карты не богатели, а длинные — не нищали.
+  function levelEconomy(lv){
+    const o = (lv && lv.objective) || {};
+    const sides = (lv && lv.sides) || {};
+    let open0 = 0, openable = 0;
+    for(const s of ['top','left','bottom']){
+      const c = sides[s]; if(!c) continue;
+      open0 += c.open; openable += Math.max(0, c.slots - c.open);
+    }
+    const startMoney = (lv && lv.startMoney) || K.START_MONEY;
+    const avgNSvc = 1 + K.TWO_SVC_CHANCE;
+    // поток платных бортов за смену
+    const target = o.target != null ? o.target : (Array.isArray(o.stars) ? o.stars[o.stars.length-1] : 1);
+    const flow = (o.metric === 'served' && !o.race)
+      ? Math.max(1, target)
+      : Math.max(1, Math.round((o.time || 180) / K.ECON_FLOW_SECS));
+    // набор, который смена должна профинансировать
+    const expectOpen  = Math.round(openable * K.ECON_OPEN_FRAC);
+    const workingBays = open0 + expectOpen;
+    const kitCost = expectOpen * K.BAY_OPEN_COST + workingBays * K.BAY_UP_COST[0] * K.ECON_UP_FRAC;
+    // решаем относительно оплаты за услугу
+    const need = Math.max(0, kitCost * K.ECON_TIGHTNESS - startMoney);
+    const svcReward = Math.max(K.SVC_MIN, Math.min(K.SVC_MAX,
+      Math.round(need / (avgNSvc * flow))));
+    return { startMoney, svcReward, flow, kitCost, openable };
+  }
+
   let LV = LEVELS[0], curBiome = null, curBonus = null;
+  let econ = levelEconomy(LV);   // {startMoney, svcReward, …} — пересчитывается в reset()
   // бонус после прохождения уровня №levelNum (1-based); открыт, если тот пройден на ≥1★
   // (или включён отладочный тумблер «Открыть все уровни» — как у кампании, см. renderLevels)
   function bonusAfter(levelNum){ return BONUS.find(b=>b.after===levelNum) || null; }
@@ -1467,6 +1528,14 @@
       if(lv.startMoney!=null && !(lv.startMoney>0)) p.push(L+'startMoney должен быть > 0');
       if(lv.weather!=null && lv.weather!==true) p.push(L+'weather должен быть true (или отсутствовать)');
       if(lv.deice!=null && lv.deice!==true) p.push(L+'deice должен быть true (или отсутствовать)');
+      // экономика уровня (levelEconomy): оплата в границах и смена окупает хотя бы
+      // ОДИН новый бокс на голой оплате — прямая страховка от «не накопить на бокс»
+      if(o){
+        const ec = levelEconomy(lv);
+        if(!(ec.svcReward>=K.SVC_MIN && ec.svcReward<=K.SVC_MAX)) p.push(L+'svcReward вне [SVC_MIN, SVC_MAX]');
+        const baseEarn = ec.svcReward * (1+K.TWO_SVC_CHANCE) * ec.flow;
+        if(!(baseEarn >= K.BAY_OPEN_COST)) p.push(L+'базового дохода смены не хватит даже на открытие одного бокса (экономика)');
+      }
       const ev = lv.events || {};
       Object.keys(ev).forEach(k=>{
         if(!EVENT_KEYS.includes(k)) p.push(L+'неизвестное событие "'+k+'"');
@@ -1501,6 +1570,14 @@
     });
     if(!(K.WEATHER_SNOW_TAXI < K.WEATHER_RAIN_TAXI)) p.push('снег должен мешать рулению сильнее дождя');
     if(!WEATHER_KINDS.includes('clear')) p.push('WEATHER_KINDS должен включать "clear"');
+    // экономика: ручки модели в допустимых диапазонах (см. levelEconomy)
+    ['ECON_OPEN_FRAC','ECON_UP_FRAC','ECON_TIGHTNESS','TWO_SVC_CHANCE'].forEach(k=>{
+      if(!(K[k]>=0 && K[k]<=1)) p.push('K.'+k+' должен быть в [0,1]');
+    });
+    if(!(K.ECON_FLOW_SECS>0)) p.push('K.ECON_FLOW_SECS должен быть > 0');
+    if(!(K.SVC_MIN>0 && K.SVC_MIN<=K.SVC_MAX)) p.push('K.SVC_MIN должен быть в (0, SVC_MAX]');
+    if(!(K.BAY_OPEN_COST>0)) p.push('K.BAY_OPEN_COST должен быть > 0');
+    if(!(Array.isArray(K.BAY_UP_COST) && K.BAY_UP_COST.length>=1 && K.BAY_UP_COST[0]>0)) p.push('K.BAY_UP_COST должен начинаться с цены > 0');
     return p;
   }
   // бонус-уровни: каждый кратен 5 (бонус «каждые 5 уровней»), валидная раскладка,
@@ -1770,7 +1847,8 @@
   };
 
   function reset(){
-    planes=[]; money=debug.richStart?BIG_MONEY:(LV.startMoney||K.START_MONEY); lives=K.START_LIVES; served=0; gameTime=0;
+    econ = levelEconomy(LV);   // оплата за услугу и стартовая касса — из конфига уровня
+    planes=[]; money=debug.richStart?BIG_MONEY:econ.startMoney; lives=K.START_LIVES; served=0; gameTime=0;
     // раунд начинается с пустого неба: первый борт прилетает через 1–3 секунды
     spawnTimer=1 + Math.random()*2; running=true; paused=false; inMenu=false;
     lossLog=[]; toast=null;
@@ -1835,7 +1913,7 @@
         airTime:Infinity, airMax:Infinity, waitMult:2,
         groundTime:groundMax, groundMax, serveTime:0, serveMax:0, landedAt:0,
         halfPay:false, dead:false,
-        reward: K.MONEY_SVC,
+        reward: econ.svcReward,
         vip:false, emergency:false, medical:false,
       });
       return;
@@ -1848,7 +1926,7 @@
     const medical = evs.medical && !vip && !emergency && Math.random() < K.MEDICAL_CHANCE; // медицинский
     const pool = shuffle(['repair','fuel','board']);
     // медицинский: высаживает пациента в пассажирском боксе, затем сразу вылет
-    const nSvc = medical ? 1 : (Math.random() < 0.45 ? 2 : 1);
+    const nSvc = medical ? 1 : (Math.random() < K.TWO_SVC_CHANCE ? 2 : 1);
     const requests = medical ? ['board','depart'] : pool.slice(0, nSvc).concat(['depart']);
     // де-айсинг: в снегопад обычный борт обязан пройти антиобледенение перед вылетом
     // (медицинский — «вне очереди», пропускаем). Шаг ставится прямо перед 'depart'.
@@ -1860,7 +1938,7 @@
     const calmMult = LV.calm || 1;
     const airBase = K.AIR_BASE * airMult * waitMult * calmMult;
     const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1) * (medical?K.MEDICAL_BONUS:1);
-    const reward = Math.round(nSvc * K.MONEY_SVC * bonus);
+    const reward = Math.round(nSvc * econ.svcReward * bonus);
     // вертикальная позиция зависания — у одной из полос/между ними
     const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
     spawnedTotal++;
@@ -4234,7 +4312,7 @@
   if(typeof location!=='undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
     window.__GAME = {
       VERSION, LEVELS, BIOMES, BONUS, K, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
-      t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, goalRowsHTML,
+      t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, goalRowsHTML, levelEconomy,
       dayCycle, weatherTaxiMult, neededCrew,
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
