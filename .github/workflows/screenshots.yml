@@ -1,0 +1,65 @@
+# Авто-генерация галереи скриншотов по всем версиям игры.
+#
+# Браузер (Chromium) в облачной песочнице Claude Code недоступен, поэтому
+# рендеринг Canvas-игры гоняется здесь, на раннерах GitHub (egress открыт):
+# скрипт проходит по версиям из git-истории, снимает 3 экрана для каждой,
+# собирает docs/screenshots/README.md и коммитит результат обратно в ветку.
+#
+# Запуск — вручную: Actions → «Screenshots» → Run workflow (на нужной ветке).
+name: Screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      versions:
+        description: 'Версии через запятую (пусто = все из git-истории)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shoot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # нужна полная история — скрипт делает worktree по коммитам версий
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Capture screenshots
+        run: |
+          if [ -n "${{ github.event.inputs.versions }}" ]; then
+            node scripts/screenshots.mjs --versions "${{ github.event.inputs.versions }}"
+          else
+            node scripts/screenshots.mjs --all
+          fi
+
+      - name: Build gallery
+        run: node scripts/build-gallery.mjs
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          if git diff --cached --quiet; then
+            echo "Изменений нет — ничего не коммитим."
+          else
+            git commit -m "chore(screenshots): regenerate version gallery"
+            git push origin HEAD:${{ github.ref_name }}
+          fi

@@ -49,6 +49,9 @@ python3 -m http.server 8000
 - [`docs/game-design/`](docs/game-design/README.md) — **геймдизайн**: игровой цикл,
   события, типы бортов/аэропорта, прогрессия (сводка к `docs/FAQ.md`).
 - [`CHANGELOG.md`](CHANGELOG.md) — история версий: что добавлено/изменено/убрано.
+- [`docs/screenshots/`](docs/screenshots/README.md) — **галерея скриншотов по версиям**
+  (главный экран, геймплей, пауза) — видеть прогресс глазами. Генерируется автоматически
+  (GitHub Actions «Screenshots»); локально — `npm run screenshots -- --all && npm run gallery`.
 
 ## Структура
 
