@@ -100,7 +100,7 @@ Rules:
 - Transitions are smooth and soft (ease in/out), short, and non-chaotic.
 - Satisfying micro-feedback on success (gentle pop, +money float, soft glow).
 - Errors are clear but calm — no aggressive flashing, no screen shake spam.
-- Toasts for life lost / level passed / +money (see [`../assets.md`](../assets.md)).
+- Toasts for life lost / level passed / +money (see [`../assets.md`](../../assets.md)).
 
 ---
 

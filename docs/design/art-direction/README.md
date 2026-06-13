@@ -14,4 +14,4 @@ The visual bible for PlaneFlow. Start here, then dive into the specific files.
 | [`references/`](references/) | Visual references, incl. the master style guide. |
 
 Game-design context lives next door in [`../game-design/`](../game-design/). Asset
-production status is tracked in [`../assets.md`](../assets.md).
+production status is tracked in [`../assets.md`](../../assets.md).

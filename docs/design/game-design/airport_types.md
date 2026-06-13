@@ -1,6 +1,6 @@
 # PlaneFlow — Aircraft & Airport Types
 
-> Game-design reference. Player-facing rules: [`../FAQ.md`](../FAQ.md). Visual treatment:
+> Game-design reference. Player-facing rules: [`../FAQ.md`](../../FAQ.md). Visual treatment:
 > [`../art-direction/object_library.md`](../art-direction/object_library.md).
 >
 > Title note: "types" here covers both the **aircraft varieties** the player handles and
