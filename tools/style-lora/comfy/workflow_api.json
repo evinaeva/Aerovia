@@ -23,7 +23,7 @@
   "7": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "text": "blurry, photo, realistic, 3d render, noisy, text, watermark, multiple objects, sprite sheet, frame, border",
+      "text": "blurry, photo, realistic, 3d render, noisy, text, letters, words, signage, label, writing, typography, gibberish text, watermark, multiple objects, sprite sheet, frame, border, drop shadow on ground",
       "clip": ["10", 1]
     }
   },
