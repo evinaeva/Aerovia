@@ -4,6 +4,11 @@
 > **neon** visual skin of PlaneFlow: the style description, reference images
 > (`references/`), and the **asset checklist**. The engine seam is already built
 > (see *Integration*) — drawn assets drop in with **no code changes**.
+>
+> **Where to get assets cheaply (free-first, all PNG):** see
+> [`SOURCING.md`](SOURCING.md) — most icons/particles are free (Kenney CC0,
+> game-icons CC-BY, exported as colored PNGs); only the ~5 glossy bay panels truly
+> need generation.
 
 **Status:** the neon skin ships today as a **procedural placeholder** + a flat
 code-drawn vector pass — **neither matches the target**. Compare
