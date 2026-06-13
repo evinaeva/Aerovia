@@ -1607,6 +1607,11 @@
     pl.x += Math.cos(pl.ang)*spd*dt;
     pl.y += Math.sin(pl.ang)*spd*dt;
   }
+  // плавный доворот курса к target (без смещения) — для парковки в боксе
+  function turnTo(pl, target, dt){
+    let d=target-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+    const m=K.TURN*dt; pl.ang += Math.max(-m, Math.min(m, d));
+  }
   function followPath(pl, spd, dt){
     if(!pl.path.length){ return false; }
     const wp=pl.path[0];
@@ -1745,8 +1750,7 @@
               if(b.occupied && b.occupied!==pl){ if(!zen){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
               else {
                 pl.zone='bay'; pl.bay=b; b.occupied=pl;
-                pl.x=b.x+b.w/2; pl.y=b.y+b.h/2; pl.moving=false; pl.path=[];
-                const o=dirOut(b); pl.ang=Math.atan2(-o.dy,-o.dx); // паркуем носом внутрь — борт виден в открытом боксе
+                pl.moving=false; pl.path=[]; pl.bayPhase='in'; // плавный заезд: анимация в зоне bay
                 pl.serveMax=serveTimeFor(b); pl.serveTime=pl.serveMax;
                 SND.dock();
               }
@@ -1757,19 +1761,31 @@
         continue;
       }
 
-      // ---- BAY (обслуживание) ----
+      // ---- BAY (обслуживание): плавный заезд → стоянка носом к стене →
+      //      на последней четверти времени разворот и выезд носом наружу ----
       if(pl.zone==='bay'){
+        const b=pl.bay, o=dirOut(b);
         if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
         pl.serveTime-=dt;
+        const frac=Math.max(0,pl.serveTime)/Math.max(0.001,pl.serveMax);
+        const cx=b.x+b.w/2, cy=b.y+b.h/2;
+        const along=(Math.abs(o.dx)>=Math.abs(o.dy)) ? b.w : b.h;
+        const parkX=cx - o.dx*along*0.18, parkY=cy - o.dy*along*0.18;                 // у дальней стены
+        const frontX=clampX(cx + o.dx*(along*0.6+24*ui)), frontY=clampY(cy + o.dy*(along*0.6+24*ui)); // перед боксом
+        if(frac>0.25){
+          // заезд и стоянка носом к стене
+          if(dist(pl.x,pl.y,parkX,parkY)>3*ui) steer(pl, parkX, parkY, taxiSpeed*0.8, dt);
+          else { pl.x=parkX; pl.y=parkY; turnTo(pl, Math.atan2(-o.dy,-o.dx), dt*1.5); }
+        } else {
+          // последняя четверть: плавный разворот (за счёт steer) и выезд носом наружу
+          if(dist(pl.x,pl.y,frontX,frontY)>3*ui) steer(pl, frontX, frontY, taxiSpeed*0.9, dt);
+          else { pl.x=frontX; pl.y=frontY; turnTo(pl, Math.atan2(o.dy,o.dx), dt*1.5); }
+        }
         if(pl.serveTime<=0){
-          const b=pl.bay; b.occupied=null; pl.bay=null;
+          b.occupied=null; pl.bay=null; pl.bayPhase=null;
           pl.reqIndex++; ACH.onService(pl); SND.served();
-          pulseFx(b.x+b.w/2, b.y+b.h/2, 'success', 0.5);  // услуга готова
-          // выезд из бокса на поле
-          pl.zone='field';
-          const ex = clampX(b.x+b.w/2 + dirOut(b).dx*(b.w*0.6+24*ui));
-          const ey = clampY(b.y+b.h/2 + dirOut(b).dy*(b.h*0.6+24*ui));
-          pl.x=ex; pl.y=ey; pl.moving=false; pl.path=[];
+          pulseFx(cx,cy,'success',0.5);
+          pl.zone='field'; pl.x=frontX; pl.y=frontY; pl.moving=false; pl.path=[];
         }
         continue;
       }
@@ -2275,13 +2291,12 @@
     const need=curNeed(pl);
     const ncol=SVC[need].color;
 
-    // маршрут — cozy-зелёная (radar-фосфор при COZY=off), «бегущие» штрихи
+    // маршрут — cozy-зелёная (radar-фосфор при COZY=off): сплошная тонкая линия
     if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
       const _rc = COZY ? '#5dca7a' : COL.phosphor;
       ctx.save();
-      ctx.strokeStyle=hexa(_rc, pl.selected?0.85:0.45);
-      ctx.lineWidth=2.5; ctx.setLineDash([9,11]); ctx.lineDashOffset=-nowT*0.05;
-      if(pl.selected){ ctx.shadowColor=hexa(_rc,.7); ctx.shadowBlur=10; }
+      ctx.strokeStyle=hexa(_rc, pl.selected?0.85:0.5);
+      ctx.lineWidth=1.25; ctx.lineCap='round'; ctx.lineJoin='round'; // сплошная, на 50% тоньше, без мерцания
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
       for(const w of pl.path) ctx.lineTo(w.x,w.y);
       ctx.stroke();
@@ -2297,11 +2312,10 @@
           ctx.beginPath(); ctx.moveTo(7*ui,0); ctx.lineTo(-4*ui,-5*ui); ctx.lineTo(-4*ui,5*ui); ctx.closePath(); ctx.fill();
           ctx.restore();
         }
-        // пульсирующая точка-цель у выбранного борта
+        // статичная точка-цель у выбранного борта (без мерцания)
         if(pl.selected){
-          const p2=0.5+0.5*Math.sin(nowT*0.005);
-          ctx.beginPath(); ctx.arc(tp.x,tp.y,(7+p2*4)*ui,0,7);
-          ctx.lineWidth=2; ctx.strokeStyle=hexa(_rc,.35+.4*p2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(tp.x,tp.y,5*ui,0,7);
+          ctx.lineWidth=1.5; ctx.strokeStyle=hexa(_rc,.6); ctx.stroke();
         }
       }
       ctx.restore();
