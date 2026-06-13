@@ -43,4 +43,6 @@ echo " Opening public tunnel. Copy the https://<...>.trycloudflare.com"
 echo " URL printed below into your browser to reach ComfyUI."
 echo " (Keep this terminal running. Ctrl-C stops the tunnel.)"
 echo "============================================================"
-exec cloudflared tunnel --url http://localhost:8188
+# --http-host-header localhost: ComfyUI 403s on a non-local Host header
+# (DNS-rebinding guard); rewrite it so the origin sees a localhost request.
+exec cloudflared tunnel --url http://localhost:8188 --http-host-header localhost
