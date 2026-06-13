@@ -116,6 +116,16 @@
   .biomecard .lvkick{font-size:13px;letter-spacing:.06em;text-transform:none;color:var(--paper);margin-top:6px}
   .biomecard .biotag{font-size:10.5px;line-height:1.5;color:var(--muted);margin:4px 0 8px}
   .biomecard.locked .bioemoji{filter:grayscale(1);opacity:.55}
+  /* бонус-уровень «N½»: цветочно-розовая карточка между уровнями */
+  .bonuscard{background:linear-gradient(150deg,#3a2a4a,#27343a);border-color:rgba(255,158,199,.42)}
+  .bonuscard:hover{border-color:rgba(255,158,199,.75);background:linear-gradient(150deg,#46324f,#2d3c44);box-shadow:0 0 14px rgba(255,158,199,.32)}
+  .bonuscard.locked{background:#1b1726;border-color:rgba(138,140,153,.18)}
+  .bonuscard.locked:hover{background:#1b1726;border-color:rgba(138,140,153,.18);box-shadow:0 1px 5px rgba(10,8,20,.35)}
+  .bonuscard .lvkick{color:#ff9ec7}
+  .bonuscard.locked .lvkick{color:var(--muted)}
+  .bonuscard .lvnum{color:#ffd9ec}
+  .bonuscard.locked .lvnum{color:var(--muted)}
+  .bonuscard .lvhalf{font-size:11px;opacity:.8;vertical-align:super}
   /* статистика на экране итога */
   .stats{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:18px;padding:14px 18px;
     border:1.5px solid rgba(191,233,255,.15);border-radius:14px;background:rgba(10,22,34,.6)}
@@ -430,6 +440,11 @@
       'level.t.4':'Special guest', 'level.t.5':'No breather', 'level.t.6':'Big spenders',
       'level.t.7':'Rush hour', 'level.t.8':'The surge', 'level.t.9':'Hot shift',
       'level.t.10':'Dispatcher’s exam',
+      // бонус-мир «луг бабочек» (открывается каждые 5 уровней)
+      'bonus.world':'Bonus world', 'bonus.name':'Bonus {n}½',
+      'bonus.t.0':'Butterfly Meadow', 'bonus.t.1':'Pollen Festival',
+      'bonus.obj':['Send {n} caterpillar off as a butterfly','Send {n} caterpillars off as butterflies'],
+      'bonus.req':'Clear level {n} to unlock',
       'obj.served':['Land {n} plane and survive','Land {n} planes and survive'],
       'obj.servedTimed':['Land {n} plane in {time}','Land {n} planes in {time}'],
       'obj.upgrades':['Make {n} upgrade in {time}','Make {n} upgrades in {time}'],
@@ -465,7 +480,7 @@
       'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!', 'end.done':'No more arrivals.',
       'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time', 'stats.peak':'Peak load',
       'hud.vip':'VIP', 'hud.med':'MED', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
-      'canvas.terminal':'TERMINAL', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
+      'canvas.terminal':'TERMINAL', 'canvas.garden':'GREENHOUSE', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- biomes / maps + forest biome ---
       'menu.biomes':'Maps',
@@ -563,6 +578,11 @@
       'level.t.4':'Особый гость', 'level.t.5':'Без передышки', 'level.t.6':'Дорогие клиенты',
       'level.t.7':'Час пик', 'level.t.8':'Наплыв', 'level.t.9':'Горячая смена',
       'level.t.10':'Скорая вне очереди',
+      // бонус-мир «луг бабочек» (открывается каждые 5 уровней)
+      'bonus.world':'Бонус-мир', 'bonus.name':'Бонус {n}½',
+      'bonus.t.0':'Луг бабочек', 'bonus.t.1':'Праздник пыльцы',
+      'bonus.obj':['Выпусти {n} гусеницу бабочкой','Выпусти {n} гусеницы бабочками','Выпусти {n} гусениц бабочками'],
+      'bonus.req':'Пройди уровень {n}, чтобы открыть',
       'obj.served':['Принять {n} борт и выжить','Принять {n} борта и выжить','Принять {n} бортов и выжить'],
       'obj.servedTimed':['Принять {n} борт за {time}','Принять {n} борта за {time}','Принять {n} бортов за {time}'],
       'obj.upgrades':['Сделать {n} улучшение за {time}','Сделать {n} улучшения за {time}','Сделать {n} улучшений за {time}'],
@@ -598,7 +618,7 @@
       'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!', 'end.done':'Борты закончились.',
       'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время', 'stats.peak':'Пик нагрузки',
       'hud.vip':'ВИП', 'hud.med':'МЕД', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
-      'canvas.terminal':'ТЕРМИНАЛ', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
+      'canvas.terminal':'ТЕРМИНАЛ', 'canvas.garden':'ТЕПЛИЦА', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- биомы / карты + лесной биом ---
       'menu.biomes':'Карты',
@@ -861,10 +881,37 @@
     { id:'mountain', emoji:'🏔️', ready:false },
     { id:'megacity', emoji:'🌆', ready:false },
   ];
-  let LV = LEVELS[0], curBiome = null;
+  // ---- бонус-уровни (шуточный «другой мир» каждые 5 уровней) ----
+  // Открывается после прохождения каждого 5-го уровня кампании (after=5,10,…) и
+  // показывается в списке между N и N+1 как «N½» (не отдельный уровень кампании —
+  // прогресс она не двигает, ключ сохранения строковый 'bonus_<id>', как у биомов).
+  // Тот же движок «веди от А до Б», но реколор: борты → гусеницы, боксы → цветы,
+  // удачный вылет → бабочка (🐛 → 🌸 → 🦋). Правила-сюрпризы: спокойный мир без
+  // событий/спецбортов и с увеличенным терпением (level.calm), а каждый вылет —
+  // метаморфоза в бабочку с бонус-нектаром (см. depart()).
+  const BONUS = [
+    { id:0, after:5,  emoji:'🦋',
+      level:{ bonus:'butterfly', calm:1.5, objective:{ metric:'served', target:8 },
+        sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+        runways:3 } },
+    { id:1, after:10, emoji:'🦋',
+      level:{ bonus:'butterfly', calm:1.5, objective:{ metric:'served', target:12 },
+        sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+        runways:3 } },
+  ];
+  let LV = LEVELS[0], curBiome = null, curBonus = null;
+  // бонус после прохождения уровня №levelNum (1-based); открыт, если тот пройден на ≥1★
+  function bonusAfter(levelNum){ return BONUS.find(b=>b.after===levelNum) || null; }
+  function bonusUnlocked(b){ return (save.stars[b.after-1]||0) >= 1; }
+  function bonusName(b){
+    const key = 'bonus.t.'+b.id;
+    const has = (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null);
+    return has ? t(key) : t('bonus.name', {n:b.after});
+  }
   function objectiveDesc(){
     const o = LV.objective;
     const params = {n:o.target, time:o.time ? fmtTime(o.time) : ''};
+    if(LV.bonus) return t('bonus.obj', params);   // «выпусти N гусениц бабочками»
     if(o.metric==='upgrades') return t('obj.upgrades', params);
     return o.time ? t('obj.servedTimed', params) : t('obj.served', params);
   }
@@ -965,12 +1012,43 @@
     if(!WEATHER_KINDS.includes('clear')) p.push('WEATHER_KINDS должен включать "clear"');
     return p;
   }
-  function validateGame(){ return validateLevels().concat(validateI18n()).concat(validateConfig()); }
+  // бонус-уровни: каждый кратен 5 (бонус «каждые 5 уровней»), валидная раскладка,
+  // тема задана, и after не выходит за пределы кампании
+  function validateBonus(){
+    const p = [];
+    if(!Array.isArray(BONUS)){ p.push('BONUS должен быть массивом'); return p; }
+    const seen = {};
+    BONUS.forEach((b,i)=>{
+      const L = 'BONUS['+i+']: ';
+      if(b.id==null) p.push(L+'нет id');
+      else { if(seen[b.id]) p.push(L+'дублирующийся id '+b.id); seen[b.id]=1; }
+      if(!(b.after>=1)) p.push(L+'after должен быть >= 1');
+      else {
+        if(b.after % 5 !== 0) p.push(L+'after должен быть кратен 5 (бонус каждые 5 уровней)');
+        if(b.after > LEVELS.length) p.push(L+'after выходит за пределы кампании (L'+b.after+')');
+      }
+      const lv = b.level || {};
+      if(!lv.bonus) p.push(L+'level.bonus (тема) не задана');
+      if(!lv.objective || !(lv.objective.target>0)) p.push(L+'нет валидного objective.target');
+      ['top','left','bottom'].forEach(side=>{
+        const c = (lv.sides||{})[side];
+        if(!c){ p.push(L+'нет стороны "'+side+'"'); return; }
+        if(!SVC_TYPES.includes(c.type)) p.push(L+side+': неизвестный тип бокса "'+c.type+'"');
+        if(!(c.slots>=1)) p.push(L+side+': slots должен быть >= 1');
+        if(!(c.open>=0 && c.open<=c.slots)) p.push(L+side+': open вне диапазона [0, slots]');
+      });
+      if(!(lv.runways>=1)) p.push(L+'runways должен быть >= 1');
+      if(lv.calm!=null && !(lv.calm>0)) p.push(L+'calm должен быть > 0');
+    });
+    return p;
+  }
+  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()); }
   let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
   function currentLevelName(){
     if(zen) return t('mode.zen');
+    if(LV.bonus) return curBonus ? bonusName(curBonus) : t('bonus.name', {n:''});
     if(LV.biome) return t('biome.'+LV.biome+'.name');
     return levelName();      // кампания: красивое имя уровня (level.t.<n>) с фолбэком
   }
@@ -984,7 +1062,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.21';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.22';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -1234,7 +1312,7 @@
     ACH.onLevelStart();
     // тихий туториал «покажи и дай сделать»: только при первом запуске и не в Zen —
     // первый борт ведём за руку (подсветка + подсказка), без стены текста
-    tut = (!zen && !save.tutorialDone && !LV.biome) ? {step:'land', plane:null} : null;
+    tut = (!zen && !save.tutorialDone && !LV.biome && !LV.bonus) ? {step:'land', plane:null} : null;
     showGoals(false);          // крупное окно постановки целей в начале раунда (заодно ставит на паузу)
   }
 
@@ -1257,7 +1335,9 @@
     const waitMult = (vip||medical) ? 1 : 2;                             // джет и медицинский нетерпеливы
     // воздушное терпение: топливо-на-нуле — садить срочно; медицинский — тоже спешит
     const airMult = emergency ? 0.4 : (medical ? K.MEDICAL_AIR : 1);
-    const airBase = K.AIR_BASE * airMult * waitMult;
+    // бонус-мир «спокойный»: гусеницы терпеливые (level.calm растягивает таймеры)
+    const calmMult = LV.calm || 1;
+    const airBase = K.AIR_BASE * airMult * waitMult * calmMult;
     const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1) * (medical?K.MEDICAL_BONUS:1);
     const reward = Math.round(nSvc * K.MONEY_SVC * bonus);
     // вертикальная позиция зависания — у одной из полос/между ними
@@ -1535,7 +1615,7 @@
   function startGround(pl){
     pl.landing=false; pl.moving=false; pl.zone='runway'; // стоит на полосе, ждёт руления
     const rem = pl.nSvc; // число услуг (без вылета)
-    pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult;
+    pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult * (LV.calm || 1);
     pl.groundTime = pl.groundMax;
     pl.landedAt = gameTime;          // для экспресс-бонуса
     pulseFx(pl.x, pl.y, 'touchdown', 0.6);  // дымок касания
@@ -1572,7 +1652,14 @@
     // мгновенный дофамин: «×N комбо» за серию и «вовремя!» за экспресс — над «+N ₿»
     let stack = 17*ui;
     if(combo>=2){ addFloat(fx, fy-stack, t('float.combo',{x:combo}), COL.gold); stack+=17*ui; }
-    if(express){ addFloat(fx, fy-stack, t('float.express'), COL.teal); }
+    if(express){ addFloat(fx, fy-stack, t('float.express'), COL.teal); stack+=17*ui; }
+    // бонус-мир: метаморфоза — гусеница вылетает бабочкой 🦋 + премия-нектар
+    if(LV.bonus){
+      const pollen = Math.max(2, Math.round(pl.reward * 0.5));
+      money += pollen;
+      addFloat(fx, fy-stack, '🦋 +'+fmtMoney(pollen), COL.rose);
+      pulseFx(fx, fy, 'success', 0.6);
+    }
     ACH.onDepart(pl, pay);
     if(tut && tut.plane===pl) completeTutorial();
     pl.dead=true; freeRes(pl);
@@ -1964,6 +2051,7 @@
   // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый,
   // медицинский — белый с красным крестом на фюзеляже
   function drawPlaneBodyAt(x,y,ang,s,vip,emergency,medical){
+    if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)
     if(COZY){
       // sprite is authored nose-up; game heading has nose along +x → rotate ang+90°
       const _id = medical ? 'plane-medevac' : emergency ? 'plane-emergency' : vip ? 'plane-vip' : 'plane';
@@ -1991,19 +2079,22 @@
     const ax=field.x0, ay=field.y0, aR=field.rwR, ab=field.y1;
 
     // вода справа за полосами: бесшовный тайл (фолбэк — градиент) + медленные волны
-    const wpat = COZY ? SPRITES.pattern('tile-water', 56*ui) : null;
-    if(wpat){ ctx.fillStyle=wpat; ctx.fillRect(aR,0,W-aR,H); }
-    else {
-      const wg=ctx.createLinearGradient(aR,0,W,0);
-      wg.addColorStop(0,COL.water); wg.addColorStop(1,'#142e34');
-      ctx.fillStyle=wg; ctx.fillRect(aR,0,W-aR,H);
-    }
-    for(let i=0;i<6;i++){
-      const yy=H*(i+1)/7 + Math.sin(tm*0.0015+i)*3;
-      ctx.fillStyle=hexa(wpat?'#9adbe8':COL.phosphor,.06); ctx.fillRect(aR,yy,W-aR,2);
+    // (в бонус-мире вода/берег уступают лугу — см. drawBonusDecor ниже)
+    const wpat = (COZY && !LV.bonus) ? SPRITES.pattern('tile-water', 56*ui) : null;
+    if(!LV.bonus){
+      if(wpat){ ctx.fillStyle=wpat; ctx.fillRect(aR,0,W-aR,H); }
+      else {
+        const wg=ctx.createLinearGradient(aR,0,W,0);
+        wg.addColorStop(0,COL.water); wg.addColorStop(1,'#142e34');
+        ctx.fillStyle=wg; ctx.fillRect(aR,0,W-aR,H);
+      }
+      for(let i=0;i<6;i++){
+        const yy=H*(i+1)/7 + Math.sin(tm*0.0015+i)*3;
+        ctx.fillStyle=hexa(wpat?'#9adbe8':COL.phosphor,.06); ctx.fillRect(aR,yy,W-aR,2);
+      }
     }
     // травяная кромка с песчаным берегом между полем и водой (cozy: трава → берег → вода)
-    if(COZY && LV.biome!=='forest'){
+    if(COZY && LV.biome!=='forest' && !LV.bonus){
       const gw=24*ui;
       ctx.fillStyle=SPRITES.pattern('tile-grass', 56*ui)||'#38482f';
       ctx.fillRect(aR,0,gw,H);
@@ -2052,14 +2143,15 @@
     }
     ctx.fillStyle=hexa(COL.muted,.6); ctx.font=`${9*ui}px ${MONO}`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(t('canvas.terminal'), ix+iw/2, iy+ih-9*ui);
+    ctx.fillText(t(LV.bonus?'canvas.garden':'canvas.terminal'), ix+iw/2, iy+ih-9*ui);
 
     if(LV.biome==='forest') drawForestDecor(tm, ax, ay, aR, ab);
+    if(LV.bonus) drawBonusDecor(tm, ax, ay, aR, ab);
   }
 
   function drawRunways(tm){
     runways.forEach((r,i)=>{
-      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle='#1a1d2e'; ctx.fill();
+      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':'#1a1d2e'; ctx.fill();  // бонус: садовая дорожка
       ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
       // осевая пунктирная
       ctx.strokeStyle=hexa(COL.paper, r.occupied?0.35:0.5);
@@ -2114,6 +2206,63 @@
     ctx.fillStyle=COL.paper;                // фолбэк-цвет, если у системы нет цветных эмодзи
     if(glow){ ctx.shadowColor=glow; ctx.shadowBlur=9; }
     ctx.fillText(g,x,y); ctx.restore();
+  }
+  // ---- бонус-мир «луг бабочек»: гусеницы вместо бортов, цветы вместо боксов ----
+  const BCOL = {sky:'#bfe8ff', meadow:'#d9f3c9', body:'#7fc241', body2:'#5fa830', petal:'#ff9ec7'};
+  // гусеница вдоль курса: нос (голова) по +x, сегменты тянутся к хвосту (−x)
+  function drawCaterpillar(x,y,ang,s){
+    ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
+    // тень под тельцем
+    ctx.save(); ctx.translate(3,6); ctx.globalAlpha=.22; ctx.fillStyle='#000';
+    for(let i=0;i<6;i++){ ctx.beginPath(); ctx.arc(12-i*9, 0, 7-i*0.4, 0, 7); ctx.fill(); }
+    ctx.restore();
+    for(let i=5;i>=0;i--){            // от хвоста к голове — голова рисуется поверх
+      ctx.beginPath(); ctx.arc(12-i*9, 0, 7-i*0.4, 0, 7);
+      ctx.fillStyle = (i%2) ? BCOL.body : BCOL.body2; ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(16, 0, 8.5, 0, 7); ctx.fillStyle=BCOL.body; ctx.fill();   // голова
+    ctx.fillStyle='#1c241a';          // глазки
+    ctx.beginPath(); ctx.arc(20,-3.2,1.8,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(20, 3.2,1.8,0,7); ctx.fill();
+    ctx.strokeStyle=BCOL.body2; ctx.lineWidth=1.6;  // усики с шариками
+    ctx.beginPath(); ctx.moveTo(18,-4); ctx.lineTo(24,-9); ctx.moveTo(18,4); ctx.lineTo(24,9); ctx.stroke();
+    ctx.fillStyle=BCOL.petal;
+    ctx.beginPath(); ctx.arc(24,-9,2,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(24,9,2,0,7); ctx.fill();
+    ctx.restore();
+  }
+  // простой цветок: лепестки по кругу + золотая серединка
+  function drawFlower(cx,cy,r,col){
+    ctx.save();
+    ctx.fillStyle=col;
+    for(let i=0;i<6;i++){ const a=i/6*Math.PI*2;
+      ctx.beginPath(); ctx.ellipse(cx+Math.cos(a)*r*0.62, cy+Math.sin(a)*r*0.62, r*0.5, r*0.3, a, 0, 7); ctx.fill(); }
+    ctx.fillStyle='#f4cf5e'; ctx.beginPath(); ctx.arc(cx,cy,r*0.42,0,7); ctx.fill();
+    ctx.restore();
+  }
+  function roundCloud(x,y,r){
+    ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.arc(x+r*0.9,y+r*0.25,r*0.78,0,7); ctx.arc(x-r*0.9,y+r*0.25,r*0.68,0,7); ctx.fill();
+  }
+  // луговой антураж поверх апрона: небо-градиент с облаками за «полосами» +
+  // зелёный налёт на поле с россыпью цветочков (вместо воды/тармака ночного порта)
+  function drawBonusDecor(tm, ax, ay, aR, ab){
+    const sg=ctx.createLinearGradient(aR,0,aR,H); sg.addColorStop(0,BCOL.sky); sg.addColorStop(1,BCOL.meadow);
+    ctx.fillStyle=sg; ctx.fillRect(aR,0,W-aR,H);
+    ctx.fillStyle='rgba(255,255,255,.55)';
+    for(let i=0;i<4;i++){
+      const cyy=H*(i+1)/5 + Math.sin(tm*0.0004+i)*6;
+      const span=Math.max(1, W-aR-40*ui);
+      const cxx=aR+20*ui + ((i*53*ui) % span);
+      roundCloud(cxx, cyy, 15*ui);
+    }
+    ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
+    ctx.fillStyle='rgba(120,200,90,.16)'; ctx.fillRect(ax,ay,aR-ax,ab-ay);
+    const pcol=[BCOL.petal, COL.gold, '#b58cf0'];
+    for(let i=0;i<10;i++){
+      const fxp=ax+18*ui + ((i*97*ui) % Math.max(1,(aR-ax-30*ui)));
+      const fyp=ay+14*ui + ((i*61*ui) % Math.max(1,(ab-ay-24*ui)));
+      drawFlower(fxp, fyp, 5*ui, pcol[i%3]);
+    }
+    ctx.restore();
   }
   // зелёный лесной антураж поверх фона апрона (вода справа → лесная кромка)
   function drawForestDecor(tm, ax, ay, aR, ab){
@@ -2225,7 +2374,7 @@
     // открытый бокс-«стойло»: пол + стены с трёх сторон, ворота в сторону поля,
     // рамка цвета услуги (ярче и со свечением, когда занят) — борт внутри виден
     const out=dirOut(b);
-    rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle='#2a2440'; ctx.fill();
+    rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=LV.bonus?'#2e3a26':'#2a2440'; ctx.fill();   // бонус: грядка
     ctx.lineWidth=2;
     if(busy){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=12; }
     ctx.strokeStyle=hexa(col, busy?0.9:0.45); bayWalls(b,out,9*ui); ctx.stroke(); ctx.shadowBlur=0;
@@ -2253,6 +2402,11 @@
         if(fxid) SPRITES.blitC(fxid, b.x+b.w/2, b.y+b.h*0.34, 26*ui*pp, 26*ui*pp);
         ctx.restore();
       }
+    } else if(LV.bonus){
+      // бонус-мир: бокс — это цветок; тип услуги — мелкой пиктограммой в серединке
+      drawFlower(b.x+b.w/2, b.y+b.h*0.40, 18*ui, col);
+      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.40, 20*ui, 20*ui)))
+        drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.40, 8*ui, COL.ink, col);
     } else {
       if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.40, 45*ui, 45*ui)))
         drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 18*ui, col, '#2a2440');
@@ -2690,7 +2844,7 @@
       d.innerHTML=`<div class="label">${s2[0]}</div><div class="val ${s2[2]}">${s2[1]}</div>`;
       statsBox.appendChild(d);
     });
-    const hasNext = !LV.biome && levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
+    const hasNext = !LV.biome && !LV.bonus && levelIdx+1<LEVELS.length && (levelIdx+1)<save.unlocked;
     document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
     document.getElementById('overScreen').classList.remove('hidden');
     // график рисуем после показа экрана — нужен реальный размер канваса
@@ -2803,11 +2957,14 @@
   // язык, медали (ach/stats) и звук/вибро — не прогресс уровней, сохраняем при сбросе
   // сброс прогресса заодно возвращает туториал — новый игрок снова увидит обучение
   function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false,tutorialDone:false}; saveGame(); renderLevels(); }
-  function buildLevel(idx){ curBiome=null; levelIdx=idx; levelKey=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
-  function buildBiome(b){ curBiome=b; levelIdx=-1; levelKey='b_'+b.id; LV=b.level; bays=[]; runways=[]; layout(); }
+  function buildLevel(idx){ curBiome=null; curBonus=null; levelIdx=idx; levelKey=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
+  function buildBiome(b){ curBiome=b; curBonus=null; levelIdx=-1; levelKey='b_'+b.id; LV=b.level; bays=[]; runways=[]; layout(); }
+  // бонус-уровень: своя тема и строковый ключ сохранения (как биом — кампанию не двигает)
+  function buildBonus(b){ curBiome=null; curBonus=b; levelIdx=-1; levelKey='bonus_'+b.id; LV=b.level; bays=[]; runways=[]; layout(); }
   function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsPanel','settingsScreen','medalScreen','goalsScreen','confirmScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
   function startLevel(idx){ zen=false; buildLevel(idx); hideAllScreens(); reset(); }
+  function startBonus(b){ if(!bonusUnlocked(b)) return; zen=false; buildBonus(b); hideAllScreens(); reset(); }
   function startZen(){ zen=true; buildLevel(0); hideAllScreens(); reset(); }
   // карты биомов: отдельный экран выбора (доступен из главного меню)
   function showBiomes(){ inMenu=true; renderBiomes(); hideAllScreens(); document.getElementById('biomeScreen').classList.remove('hidden'); }
@@ -2869,7 +3026,33 @@
       b.setAttribute('aria-label', t('level.name',{n:i+1})+(unlocked?'':' — '+t('levels.locked')));
       if(unlocked) b.onclick=()=>startLevel(i);
       list.appendChild(b);
+      // бонус-уровень после каждого 5-го: карточка «N½» сразу за уровнем N
+      const bn=bonusAfter(i+1);
+      if(bn) list.appendChild(bonusCard(bn));
     });
+  }
+  // карточка бонус-мира «N½» (открыта после прохождения уровня N на ≥1★)
+  function bonusCard(bn){
+    const unl=bonusUnlocked(bn), bstars=save.stars['bonus_'+bn.id]||0, bbest=save.best['bonus_'+bn.id];
+    const c=document.createElement('button');
+    c.className='levelcard bonuscard'+(unl?'':' locked');
+    let html=`<div class="lvkick">${t('bonus.world')}</div>`+
+      `<div class="lvnum">${bn.after}<span class="lvhalf">½</span></div>`;
+    if(unl){
+      html+=`<div class="lvname">${bn.emoji} ${bonusName(bn)}</div>`+
+        `<div class="lvmeta"><span class="lvstars">${[0,1,2].map(s=>starSvg(s<bstars)).join('')}</span>`+
+        (bbest!=null?`<span class="lvbest">🦋 ${fmtNum(bbest)}</span>`:'<span></span>')+`</div>`;
+    } else {
+      html+=`<div class="lvname">${t('bonus.req',{n:bn.after})}</div>`+
+        `<div class="lvmeta"></div>`+
+        `<div class="lvlock"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">`+
+        `<rect x="5" y="11" width="14" height="9" rx="2" fill="#8a8c99"/>`+
+        `<path d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="#8a8c99" stroke-width="2" stroke-linecap="round"/></svg></div>`;
+    }
+    c.innerHTML=html;
+    c.setAttribute('aria-label', bonusName(bn)+(unl?'':' — '+t('levels.locked')));
+    if(unl) c.onclick=()=>startBonus(bn);
+    return c;
   }
 
   // ---- полноэкранный режим (для телефона: убирает прокрутку и адресную строку) ----
@@ -3238,11 +3421,12 @@
   // (без ?test=1) ничего не выставляется — прод-поведение не меняется.
   if(typeof location!=='undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
     window.__GAME = {
-      VERSION, LEVELS, BIOMES, K, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
+      VERSION, LEVELS, BIOMES, BONUS, K, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
       t, levelEvents, levelName, objectiveDesc, computeStars, metricValue,
       dayCycle, weatherTaxiMult, neededCrew,
+      bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
-      validateGame, validateLevels, validateI18n, validateConfig,
+      validateGame, validateLevels, validateBonus, validateI18n, validateConfig,
       saveGame, loadGame, setLang, detectLang,
       get save(){ return save; },     set save(v){ save=v; },
       get lang(){ return lang; },
