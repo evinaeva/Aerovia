@@ -484,16 +484,20 @@
   const cv = document.getElementById('c');
   const ctx = cv.getContext('2d');
 
-  // ---- visual skin (A/B-able): 'cozy' (default) | 'neon' ----
-  // Switch with ?skin=neon in the URL (persists to localStorage) or skin=cozy to
-  // reset. The neon skin turns the cozy sprite atlas off (everything renders
-  // procedurally) and swaps the palette for neon tokens + extra glow.
+  // ---- visual skin (A/B-able): 'cozy' (default) | 'neon' | 'cartoon' ----
+  // Switch with ?skin=neon|cartoon in the URL (persists to localStorage) or
+  // skin=cozy to reset. The neon skin turns the cozy sprite atlas off (everything
+  // renders procedurally) and swaps the palette for neon tokens + extra glow. The
+  // cartoon skin is a bright daytime recolour: it keeps the cozy atlas but injects
+  // the saturated `--cartoon-*` palette via CARTOON_TOKENS, and auto-upgrades to
+  // bespoke cartoon PNGs the moment assets/sprites/cartoon/ ships them.
+  const SKINS = ['cozy', 'neon', 'cartoon'];
   let SKIN = 'cozy';
   try {
     const _q = new URLSearchParams(location.search).get('skin');
     const _s = _q || localStorage.getItem('pf_skin');
-    if (_s === 'neon' || _s === 'cozy') SKIN = _s;
-    if (_q === 'neon' || _q === 'cozy') localStorage.setItem('pf_skin', _q);
+    if (SKINS.includes(_s)) SKIN = _s;
+    if (SKINS.includes(_q)) localStorage.setItem('pf_skin', _q);
   } catch (e) { /* no URL/localStorage in test harness */ }
   let NEON = SKIN === 'neon';
 
@@ -530,9 +534,41 @@
     amber:'#ffb13b', teal:'#22e3c6', ice:'#5fd2ff', rose:'#ff4f9d',
     gold:'#ffd23b', life:'#ff3b6b',
   };
+  // Мультяшная палитра: яркий дневной recolor (зелёное поле, голубая вода, кремовые
+  // глянцевые боксы, сочные акценты). Зеркалит tokens/cartoon.css (`--cartoon-*`):
+  // ключи здесь — это имена токенов спрайт-атласа/COL, значения — из cartoon.css.
+  // Применяется как переопределение PALETTE при SKIN==='cartoon' и перекрашивает
+  // и cozy-спрайты, и процедурную отрисовку. Bright — без неонового свечения.
+  const CARTOON_TOKENS = {
+    // линия/тень — единый тёплый тёмный контур
+    ink:'#3a2a17', shadow:'#3a2a17', 'cream-outline':'#5a4326',
+    // поле/окружение — луговая зелень, дневное небо
+    tarmac:'#6fbf4a', 'tarmac-2':'#5aa83c', grass:'#6fbf4a', 'grass-dim':'#5aa83c',
+    'grass-tuft':'#8fd96a', 'sky-low':'#bfe6f7', 'sky-mid':'#a6dcf2',
+    // вода + берег
+    water:'#5fc7e8', 'water-wave':'#8fe0f5', 'water-wave2':'#bff0fb', sand:'#e8d39a',
+    // кремовые глянцевые боксы/панели
+    paper:'#fff3d8', 'cream-100':'#fff3d8', 'cream-200':'#ffe9bc', 'bay-dim':'#ffe9bc',
+    // сервисные акценты (сочные, дружелюбные)
+    amber:'#ff8a1f', 'amber-glow':'#ffb05a', 'amber-core':'#ffd089',
+    teal:'#1fb6d8', ice:'#5ec2e8', rose:'#ff5ca0',
+    // монеты/звёзды/жизни
+    gold:'#ffce3a', coin:'#ffce3a', 'gold-dim':'#f2a400', 'gold-ink':'#5e4a16', life:'#ff4d5e',
+    // маршруты/валидность — яркая зелень
+    phosphor:'#36d36b', green:'#36d36b', 'green-bright':'#6bef9a', red:'#ff4d5e', blue:'#2f6fb0',
+    // глубокие/служебные поверхности → зелёные/коричневые тона вместо cozy-фиолета
+    chip:'#4a3a28', 'navy-900':'#3a6b3a', 'purple-700':'#4d9433', 'purple-600':'#5aa83c',
+    'gray-500':'#9a855f', 'gray-600':'#6b5333', muted:'#9a855f', white:'#ffffff',
+  };
+  // имя скина → объект-переопределение PALETTE (пустой = дефолтный cozy-вид)
+  function skinTokens(skin){
+    if(skin === 'neon') return Object.assign({}, NEON_TOKENS);
+    if(skin === 'cartoon') return Object.assign({}, CARTOON_TOKENS);
+    return {};
+  }
   // Активная тема: набор переопределений PALETTE. Пустая = дефолтный вид.
   // Меняй ключи (или подменяй объект целиком), чтобы перекрасить весь арт.
-  const THEME = { tokens: NEON ? Object.assign({}, NEON_TOKENS) : {} };
+  const THEME = { tokens: skinTokens(SKIN) };
 
   // ---- cozy sprite atlas (canvas) ----
   // Sprite sheets (assets/sprites/planeflow-*.svg) are fetched once into a hidden
@@ -552,9 +588,9 @@
   // рендера и палитру, следующий кадр перерисуется (кэш спрайтов/паттернов
   // ключуется по подписи темы, поэтому подхватывается автоматически).
   function applySkin(code){
-    SKIN = (code === 'neon') ? 'neon' : 'cozy';
+    SKIN = SKINS.includes(code) ? code : 'cozy';
     NEON = SKIN === 'neon';
-    THEME.tokens = NEON ? Object.assign({}, NEON_TOKENS) : {};
+    THEME.tokens = skinTokens(SKIN);
     refreshSpriteMode();
   }
   const SPRITES = (() => {
@@ -733,6 +769,10 @@
   // фолбэк (текущий неон), и параллельно подтягиваем арт скина.
   function refreshSpriteMode(){
     if (SKIN === 'cozy') { COZY = true; return; }
+    // cartoon: пока нет своих листов/PNG — рисуем перекрашенный cozy-атлас (а не
+    // тёмный процедурный фолбэк), и параллельно тянем cartoon-арт; как только
+    // PNG/SVG скина доедут, img() сам отдаст их приоритетно (COZY можно не трогать).
+    if (SKIN === 'cartoon') { COZY = true; if (!SPRITES.skinReady) SPRITES.loadSkin(SKIN); return; }
     COZY = !!SPRITES.skinReady;
     if (!SPRITES.skinReady) SPRITES.loadSkin(SKIN);
   }
@@ -835,7 +875,7 @@
       'goals.star2':'No ground penalties', 'goals.star3':'No crashes',
       'goals.zen':'Zen mode — endless flow. No lives, no timeouts, no stars: just guide the planes.',
       'settings.title':'Settings', 'settings.back':'Back', 'settings.language':'Language',
-      'settings.skin':'Skin', 'settings.skinCozy':'Cozy', 'settings.skinNeon':'Neon',
+      'settings.skin':'Skin', 'settings.skinCozy':'Cozy', 'settings.skinNeon':'Neon', 'settings.skinCartoon':'Cartoon',
       'settings.sound':'Sound', 'settings.vibro':'Vibration (phone)',
       'settings.debug':'Debug',
       'settings.optLives':'Infinite lives', 'settings.optMoney':'Unlimited money', 'settings.optUnlockAll':'Unlock all levels',
@@ -1003,7 +1043,7 @@
       'goals.star2':'Без наземных штрафов', 'goals.star3':'Без крушений',
       'goals.zen':'Zen-режим — бесконечный поток. Без жизней, таймаутов и звёзд: просто веди борта.',
       'settings.title':'Настройки', 'settings.back':'Назад', 'settings.language':'Язык',
-      'settings.skin':'Стиль', 'settings.skinCozy':'Уютный', 'settings.skinNeon':'Неон',
+      'settings.skin':'Стиль', 'settings.skinCozy':'Уютный', 'settings.skinNeon':'Неон', 'settings.skinCartoon':'Мультяшный',
       'settings.sound':'Звук', 'settings.vibro':'Вибрация (телефон)',
       'settings.debug':'Отладка',
       'settings.optLives':'Бесконечные жизни', 'settings.optMoney':'Безлимит денег', 'settings.optUnlockAll':'Открыть все уровни',
@@ -1773,6 +1813,33 @@
   function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
   function spawnPlane(){
+    // бонус-мир «луг бабочек»: гусеница ВПОЛЗАЕТ справа по земле (не прилетает),
+    // несёт одну услугу — цветок своего цвета (3 вида ↔ 3 цвета). Заползёт в свой
+    // цветок → куколка → по таймеру → бабочка, упорхнёт к краю (см. update/depart).
+    if(LV.bonus){
+      const sp = Math.floor(Math.random()*BSP.length);          // вид (и цвет)
+      const type = BTYPE[sp];                                    // совпадает с типом цветка-бокса
+      const calmMult = LV.calm || 1;
+      const groundMax = (K.GROUND_BASE + K.GROUND_STEP) * 2 * calmMult;  // терпеливые, спокойный мир
+      const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
+      spawnedTotal++;
+      planes.push({
+        id: ++planeSeq,
+        x: W + 40*ui, y, ang: Math.PI,                            // вползает с правого края, головой влево
+        species: sp, bug:'cat', bonusCrawl:true,                  // стадия гусеницы; авто-вползание до поля
+        requests:[type,'depart'], reqIndex:0, nSvc:1,
+        zone:'field',                                             // сразу на земле — без воздуха/ВПП
+        entering:false, path:[], moving:false, selected:false,
+        landing:false, takeoff:false, exiting:false,
+        runway:null, bay:null,
+        airTime:Infinity, airMax:Infinity, waitMult:2,
+        groundTime:groundMax, groundMax, serveTime:0, serveMax:0, landedAt:0,
+        halfPay:false, dead:false,
+        reward: K.MONEY_SVC,
+        vip:false, emergency:false, medical:false,
+      });
+      return;
+    }
     // спец-борты как мини-события (раздел 3 копилки): частный джет (вип),
     // «топливо на нуле» (срочный + бонус), медицинский (приоритет — высадка пациента).
     const evs = levelEvents();                                           // какие спецборты разрешены уровнем
@@ -2268,10 +2335,25 @@
 
       // ---- FIELD (руление) ----
       if(pl.zone==='field'){
-        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
+        // бонус-мир: терпение гусеницы тикает, но улетающую бабочку не штрафуем
+        if(!zen && !(LV.bonus && pl.bug==='fly')){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
         const need=curNeed(pl);
+        // бонус-мир: бабочка упорхивает к правому краю (без ВПП) и «вылетает»
+        if(LV.bonus && pl.bug==='fly'){
+          pl.moving=true;
+          steer(pl, W+90*ui, pl.y-30*ui, K.SPEED_TAKEOFF*0.7, dt);   // вверх-вправо за край
+          if(pl.x > W+30){ depart(pl); }
+          continue;
+        }
         if(pl.moving && pl.path.length){
           followPath(pl, taxiSpeed, dt);
+          if(LV.bonus) pl.bonusCrawl=false;                          // игрок повёл сам — авто-вползание отменяем
+        } else if(LV.bonus && pl.bonusCrawl){
+          // авто-вползание с правого края до кромки поля, дальше ждём игрока
+          // (игрок может перехватить раньше — потянул маршрут → bonusCrawl снимается выше)
+          const ex = field.x1 - 24*ui;
+          steer(pl, ex, pl.y, taxiSpeed, dt);
+          if(pl.x <= ex){ pl.x=ex; pl.bonusCrawl=false; pl.moving=false; }
         } else if(pl.exiting){
           pl.exiting=false; pl.moving=false;
         }
@@ -2291,11 +2373,13 @@
             if(!b.open) continue;
             if(rectHit(pl.x,pl.y,b)){
               if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
-              if(b.occupied && b.occupied!==pl){ if(!zen){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
+              if(b.occupied && b.occupied!==pl){ if(!zen && !LV.bonus){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
               else {
                 pl.zone='bay'; pl.bay=b; b.occupied=pl;
-                pl.moving=false; pl.path=[]; pl.bayPhase='in'; // плавный заезд: анимация в зоне bay
+                pl.moving=false; pl.path=[];
                 pl.serveMax=serveTimeFor(b); pl.serveTime=pl.serveMax;
+                if(LV.bonus){ pl.bug='cocoon'; pl.landedAt=gameTime; }   // бонус: окуклилась; «вовремя» — от входа в цветок
+                else { pl.bayPhase='in'; }                              // кампания: плавный заезд носом к стене
                 SND.dock();
               }
               break;
@@ -2309,6 +2393,21 @@
       //      на последней четверти времени разворот и выезд носом наружу ----
       if(pl.zone==='bay'){
         const b=pl.bay, o=dirOut(b);
+        // бонус-мир: гусеница окуклилась — куколка спокойно сидит в серединке цветка,
+        // без маневра; по истечении времени метаморфозы превращается в бабочку
+        if(LV.bonus){
+          pl.serveTime-=dt;
+          const fcx=b.x+b.w/2, fcy=b.y+b.h*0.40;        // центр цветка (где он нарисован)
+          pl.x += (fcx-pl.x)*Math.min(1, dt*6); pl.y += (fcy-pl.y)*Math.min(1, dt*6);
+          if(pl.serveTime<=0){
+            b.occupied=null; pl.bay=null;
+            pl.reqIndex++; ACH.onService(pl); SND.served();
+            pulseFx(fcx,fcy,'success',0.6);
+            pl.bug='fly'; pl.ang=0;                       // вылупилась бабочка — курс к краю
+            pl.zone='field'; pl.x=fcx; pl.y=fcy; pl.moving=true; pl.path=[];
+          }
+          continue;
+        }
         if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
         pl.serveTime-=dt;
         const frac=Math.max(0,pl.serveTime)/Math.max(0.001,pl.serveMax);
@@ -2348,7 +2447,7 @@
     // Физический контакт любых двух наземных бортов — на поле И на полосе, в т.ч.
     // межзонно: садящийся/взлетающий борт, въезжающий в стоящего на торце ВПП, —
     // это крушение, а не «уфф» (борта в воздухе «сверху», в краш не входят).
-    if(!zen){
+    if(!zen && !LV.bonus){
       const phys = planes.filter(p=>!p.dead && (p.zone==='field' || p.zone==='runway'));
       for(let i=0;i<phys.length;i++)
         for(let j=i+1;j<phys.length;j++){
@@ -2364,7 +2463,7 @@
     // именно СБЛИЖАЛИСЬ в этот миг — вспышка + лёгкое замедление + «уфф». Работает и
     // в Zen (это украшение, без штрафа). Антидребезг — по паре бортов (NEAR_COOL),
     // карта пар пересобирается каждый кадр (сама чистит ушедшие/севшие борта).
-    {
+    if(!LV.bonus){           // спокойный луг — гусеницы/бабочки не пугают друг друга
       const air = planes.filter(p=>!p.dead && p.zone!=='bay' && !p.entering);
       const next={};
       for(let i=0;i<air.length;i++)
@@ -2724,8 +2823,18 @@
   }
   // ---- бонус-мир «луг бабочек»: гусеницы вместо бортов, цветы вместо боксов ----
   const BCOL = {sky:'#bfe8ff', meadow:'#d9f3c9', body:'#7fc241', body2:'#5fa830', petal:'#ff9ec7'};
+  // три вида гусениц ↔ три цвета цветков ↔ три вида бабочек (пазл-сортировка):
+  // species i соответствует типу бокса BTYPE[i]; цвет ведёт через все три стадии.
+  const BTYPE = ['fuel','board','repair'];                 // какие боксы = какие виды
+  const BSP = [
+    { body:'#ff9ec7', body2:'#ef79a8', petal:'#ff5fa0', wing:'#ff8fc2', spot:'#ffe1ef' }, // розовый
+    { body:'#ffd76a', body2:'#f0b53b', petal:'#ffc24d', wing:'#ffd169', spot:'#fff3cf' }, // золотой
+    { body:'#c4a3ff', body2:'#a87cf0', petal:'#b07cff', wing:'#c79bff', spot:'#ece0ff' }, // сиреневый
+  ];
+  const bSpec = type => { const i = BTYPE.indexOf(type); return i<0 ? 0 : i; };  // тип бокса → вид
   // гусеница вдоль курса: нос (голова) по +x, сегменты тянутся к хвосту (−x)
-  function drawCaterpillar(x,y,ang,s){
+  function drawCaterpillar(x,y,ang,s,sp){
+    const C = BSP[sp||0];
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     // тень под тельцем
     ctx.save(); ctx.translate(3,6); ctx.globalAlpha=.22; ctx.fillStyle='#000';
@@ -2733,17 +2842,60 @@
     ctx.restore();
     for(let i=5;i>=0;i--){            // от хвоста к голове — голова рисуется поверх
       ctx.beginPath(); ctx.arc(12-i*9, 0, 7-i*0.4, 0, 7);
-      ctx.fillStyle = (i%2) ? BCOL.body : BCOL.body2; ctx.fill();
+      ctx.fillStyle = (i%2) ? C.body : C.body2; ctx.fill();
     }
-    ctx.beginPath(); ctx.arc(16, 0, 8.5, 0, 7); ctx.fillStyle=BCOL.body; ctx.fill();   // голова
+    ctx.beginPath(); ctx.arc(16, 0, 8.5, 0, 7); ctx.fillStyle=C.body; ctx.fill();   // голова
     ctx.fillStyle='#1c241a';          // глазки
     ctx.beginPath(); ctx.arc(20,-3.2,1.8,0,7); ctx.fill();
     ctx.beginPath(); ctx.arc(20, 3.2,1.8,0,7); ctx.fill();
-    ctx.strokeStyle=BCOL.body2; ctx.lineWidth=1.6;  // усики с шариками
+    ctx.strokeStyle=C.body2; ctx.lineWidth=1.6;  // усики с шариками
     ctx.beginPath(); ctx.moveTo(18,-4); ctx.lineTo(24,-9); ctx.moveTo(18,4); ctx.lineTo(24,9); ctx.stroke();
-    ctx.fillStyle=BCOL.petal;
+    ctx.fillStyle=C.petal;
     ctx.beginPath(); ctx.arc(24,-9,2,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(24,9,2,0,7); ctx.fill();
     ctx.restore();
+  }
+  // куколка (хризалида): висящая капля в цвете вида, с лёгким бликом
+  function drawCocoon(x,y,s,sp){
+    const C = BSP[sp||0];
+    ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
+    ctx.save(); ctx.translate(2,4); ctx.globalAlpha=.2; ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.ellipse(0,2,9,13,0,0,7); ctx.fill(); ctx.restore();
+    ctx.fillStyle=C.body2;                          // тельце-капля
+    ctx.beginPath(); ctx.moveTo(0,-15); ctx.quadraticCurveTo(11,-6,9,6); ctx.quadraticCurveTo(6,16,0,16);
+    ctx.quadraticCurveTo(-6,16,-9,6); ctx.quadraticCurveTo(-11,-6,0,-15); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=C.body;                           // сегменты-насечки
+    for(let i=-1;i<=2;i++){ ctx.beginPath(); ctx.ellipse(0,i*6,8-Math.abs(i),2.2,0,0,7); ctx.fill(); }
+    ctx.fillStyle=C.spot; ctx.globalAlpha=.7;       // блик
+    ctx.beginPath(); ctx.ellipse(-3,-6,2,4,0.4,0,7); ctx.fill(); ctx.globalAlpha=1;
+    ctx.strokeStyle=C.body2; ctx.lineWidth=1.4;     // крючок-крепление к стеблю
+    ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(0,-21); ctx.stroke();
+    ctx.restore();
+  }
+  // бабочка вдоль курса: тельце по оси, 4 крыла в цвете вида + пятна
+  function drawButterfly(x,y,ang,s,sp){
+    const C = BSP[sp||0], flap = 0.7+0.3*Math.abs(Math.sin(nowT*0.012));
+    ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
+    ctx.save(); ctx.scale(1, flap);                 // взмах: крылья «дышат» по вертикали
+    ctx.fillStyle=C.wing;
+    [-1,1].forEach(sg=>{                              // переднее и заднее крыло с каждой стороны
+      ctx.beginPath(); ctx.ellipse(3, sg*11, 11, 8, sg*0.5, 0, 7); ctx.fill();   // переднее
+      ctx.beginPath(); ctx.ellipse(-7, sg*10, 8, 7, sg*-0.4, 0, 7); ctx.fill();  // заднее
+    });
+    ctx.fillStyle=C.spot;                            // пятна-глазки на крыльях
+    [-1,1].forEach(sg=>{ ctx.beginPath(); ctx.arc(4, sg*12, 2.6, 0, 7); ctx.fill(); });
+    ctx.restore();
+    ctx.fillStyle='#3a2c14';                         // тельце
+    ctx.beginPath(); ctx.ellipse(0,0,3,9,0,0,7); ctx.fill();
+    ctx.strokeStyle='#3a2c14'; ctx.lineWidth=1;      // усики
+    ctx.beginPath(); ctx.moveTo(6,-1); ctx.lineTo(11,-4); ctx.moveTo(6,1); ctx.lineTo(11,4); ctx.stroke();
+    ctx.restore();
+  }
+  // выбрать стадию по pl.bug: гусеница → куколка (в цветке) → бабочка (вылет)
+  function drawBug(pl){
+    const sp = pl.species||0, s = ui*0.5;
+    if(pl.bug==='cocoon') drawCocoon(pl.x, pl.y, s, sp);
+    else if(pl.bug==='fly') drawButterfly(pl.x, pl.y, pl.ang, s*1.1, sp);
+    else drawCaterpillar(pl.x, pl.y, pl.ang, s, sp);
   }
   // простой цветок: лепестки по кругу + золотая серединка
   function drawFlower(cx,cy,r,col){
@@ -2860,7 +3012,7 @@
   }
 
   function drawBay(b){
-    const col=SVC[b.type].color;
+    const col=LV.bonus ? BSP[bSpec(b.type)].petal : SVC[b.type].color;   // бонус: цвет цветка по виду
     const busy=!!b.occupied;
     ctx.save();
     // нарисованная цельная панель бокса (пер-скиновый арт, напр. neon): bay-<type>
@@ -2912,7 +3064,10 @@
       ctx.fillStyle=hexa(col,.8);
       [[gx0,gy0],[gx1,gy1]].forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],2*ui,0,7); ctx.fill(); });
     }
-    if(busy){
+    if(LV.bonus){
+      // бонус-мир: бокс — это цветок своего цвета, виден всегда (куколка садится в серединку поверх)
+      drawFlower(b.x+b.w/2, b.y+b.h*0.40, 18*ui, col);
+    } else if(busy){
       // центр отдан припаркованному борту (рисуется поверх) —
       // тип услуги мелкой пиктограммой у дальней от ворот стены
       const iy = out.dy===-1 ? b.y+b.h-13*ui : b.y+13*ui;
@@ -2926,11 +3081,6 @@
         if(fxid) SPRITES.blitC(fxid, b.x+b.w/2, b.y+b.h*0.34, 26*ui*pp, 26*ui*pp);
         ctx.restore();
       }
-    } else if(LV.bonus){
-      // бонус-мир: бокс — это цветок; тип услуги — мелкой пиктограммой в серединке
-      drawFlower(b.x+b.w/2, b.y+b.h*0.40, 18*ui, col);
-      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.40, 20*ui, 20*ui)))
-        drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.40, 8*ui, COL.ink, col);
     } else {
       if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.40, 45*ui, 45*ui)))
         drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 18*ui, col, '#2a2440');
@@ -3001,8 +3151,10 @@
     }
 
     // кольцо терпения: бирюза → янтарь → красный (аварийный всегда красный)
+    // у улетающей бабочки кольца нет — она уже «обслужена»
     let frac=null;
-    if(pl.zone==='air') frac=Math.max(0,pl.airTime)/pl.airMax;
+    if(LV.bonus && pl.bug==='fly') frac=null;
+    else if(pl.zone==='air') frac=Math.max(0,pl.airTime)/pl.airMax;
     else if(pl.zone!=='bay') frac=Math.max(0,pl.groundTime)/Math.max(1,pl.groundMax);
     if(frac!=null){
       const rcol = pl.emergency ? COL.life : (frac>0.5 ? COL.teal : frac>0.25 ? COL.amber : COL.life);
@@ -3025,13 +3177,18 @@
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([4,5]); ctx.stroke(); ctx.restore();
     }
 
-    drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5, pl.vip, pl.emergency, pl.medical);
+    if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
+    else drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5, pl.vip, pl.emergency, pl.medical);
 
-    // иконка текущей нужды над бортом — cozy-чип svc-* (фолбэк: процедурная иконка)
+    // пузырёк нужды над бортом
     if(pl.zone!=='bay'){
       const _ny = pl.y-28*ui;
-      if(!(COZY && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui)))
-        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);
+      if(LV.bonus){
+        // бонус: над гусеницей — цветок нужного цвета (её цель). Куколка/бабочка — без пузырька.
+        if(pl.bug==='cat') drawFlower(pl.x, _ny, 9*ui, BSP[pl.species||0].petal);
+      } else if(!(COZY && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui))) {
+        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // cozy-чип svc-* (фолбэк: процедурная иконка)
+      }
     }
   }
 
@@ -3114,7 +3271,11 @@
       ctx.font=`${7.5*ui}px ${MONO}`; ctx.textAlign='left'; ctx.textBaseline='middle';
       ctx.fillText(tag, x0+8*ui, y0+8*ui);
       for(let i=0;i<n;i++){
-        const ty=chain[i], c=SVC[ty].color;   // ty, не t — не затенять t() из i18n
+        const ty=chain[i];
+        // бонус: цвет/иконки шага — по виду гусеницы (цветок → бабочка), а не услуга
+        const c = (LV.bonus && ty!=='depart') ? BSP[selected.species||0].petal
+                : (LV.bonus && ty==='depart') ? BSP[selected.species||0].wing
+                : SVC[ty].color;
         const bx=x0+8*ui+i*(bw2+gap2), bcy=y0+26*ui;
         if(i>0){
           ctx.strokeStyle=hexa(COL.muted,.4); ctx.lineWidth=2; ctx.setLineDash([3,4]);
@@ -3126,7 +3287,11 @@
         ctx.fillStyle=active?hexa(c,.16):'rgba(127,155,176,.05)'; ctx.fill();
         ctx.lineWidth=1.5; ctx.strokeStyle=hexa(c,active?.9:.4);
         rr(bx,y0+15*ui,bw2,22*ui,6*ui); ctx.stroke();
-        if(!(COZY && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 28*ui, 28*ui)))
+        if(LV.bonus){
+          const sp=selected.species||0;
+          if(ty==='depart') drawButterfly(bx+bw2/2, bcy, 0, ui*0.42, sp);   // финал — бабочка
+          else drawFlower(bx+bw2/2, bcy, 9*ui, c);                          // шаг — цветок своего цвета
+        } else if(!(COZY && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 28*ui, 28*ui)))
           drawIcon(ty, bx+bw2/2, bcy, 12*ui, c, '#211d33');
         ctx.globalAlpha=1;
       }
@@ -3713,7 +3878,7 @@
   function renderSkinBtns(){
     const box=document.getElementById('skinBtns'); if(!box) return;
     box.innerHTML='';
-    for(const [code,labelKey] of [['cozy','settings.skinCozy'],['neon','settings.skinNeon']]){
+    for(const [code,labelKey] of [['cozy','settings.skinCozy'],['neon','settings.skinNeon'],['cartoon','settings.skinCartoon']]){
       const b=document.createElement('button');
       b.className='langbtn'+(code===SKIN?' on':'');
       b.textContent=t(labelKey);

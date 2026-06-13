@@ -35,6 +35,14 @@ const ASSETS = [
   './assets/sprites/planeflow-hud.svg',
   './assets/sprites/planeflow-effects.svg',
   './assets/sprites/planeflow-brand.svg',
+  // neon skin shell (opt-in via ?skin=neon): per-skin sprite sheets + the PNG
+  // manifest, so the neon art engages instantly and offline. The 43 baked PNGs
+  // themselves are NOT precached (they'd add ~1.3MB to every install while cozy
+  // is the default) — they load on demand and cache via stale-while-revalidate
+  // the first time the neon skin renders online.
+  './assets/sprites/neon/planeflow-aircraft.svg',
+  './assets/sprites/neon/planeflow-field.svg',
+  './assets/sprites/neon/manifest.json',
 ];
 
 self.addEventListener('install', (e) => {

@@ -1,0 +1,90 @@
+<!-- @dsCard group="Neon Skin" viewport="900x900" name="Neon Sprites — Baked Atlas" subtitle="41 transparent PNGs in assets/sprites/neon/ + manifest.json — drop-in for the engine" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../../styles.css" />
+<style>
+  html, body { margin: 0; }
+  body {
+    font-family: var(--font-ui);
+    color: var(--neon-text-body);
+    background:
+      radial-gradient(120% 90% at 50% 18%, var(--neon-field-core) 0%, var(--neon-tarmac) 42%, var(--neon-ink) 100%);
+    padding: 28px 30px 36px;
+  }
+  .field-rings {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0.5;
+    background-image:
+      radial-gradient(circle at 50% 38%, transparent 0 23%, rgba(111,198,221,0.07) 23.4%, transparent 24%),
+      radial-gradient(circle at 50% 38%, transparent 0 37%, rgba(111,198,221,0.05) 37.4%, transparent 38%),
+      linear-gradient(rgba(111,198,221,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(111,198,221,0.035) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 46px 46px, 46px 46px;
+  }
+  .wrap { position: relative; }
+  h2 { font-family: var(--font-display); font-size: 22px; color: var(--neon-text-strong);
+       margin: 0 0 2px; letter-spacing: 0.01em; text-shadow: var(--neon-text-glow); }
+  .sub { font-size: 12.5px; color: var(--neon-text-muted); margin-bottom: 22px; }
+  .sec { font-size: 11px; letter-spacing: var(--ls-kicker); text-transform: uppercase;
+         color: var(--neon-cyan); margin: 26px 0 12px; font-weight: 700; opacity: 0.9; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .tile { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+  .tile img { display: block; object-fit: contain; image-rendering: auto; }
+  .tile .cap { font-size: 9.5px; color: var(--neon-text-muted); letter-spacing: 0.03em;
+               font-family: var(--font-num); }
+  .b { height: 84px; }            /* bays ~96x72 */
+  .pl { height: 60px; }           /* planes */
+  .rg { height: 60px; }           /* rings */
+  .sv { height: 50px; }           /* svc chips */
+  .hud { height: 30px; }          /* hud chips */
+  .btn { height: 58px; }          /* buttons */
+  .fx { height: 60px; }           /* effects */
+</style>
+</head>
+<body>
+<div class="field-rings"></div>
+<div class="wrap">
+  <h2>Neon sprite atlas</h2>
+  <div class="sub">Authored at 3× · PNG-32 + alpha · base-id filenames · listed in <code>manifest.json</code>. Bays carry no baked icon/label/cost — the engine overlays those live.</div>
+
+  <div class="sec">Bays — glossy neon panels (320×240)</div>
+  <div class="row" id="bays"></div>
+
+  <div class="sec">Aircraft &amp; rings (256)</div>
+  <div class="row" id="planes"></div>
+
+  <div class="sec">Service icon chips (160)</div>
+  <div class="row" id="svc"></div>
+
+  <div class="sec">HUD chips (96) &amp; buttons (192)</div>
+  <div class="row" id="hud"></div>
+
+  <div class="sec">Effects — peak pose, soft &amp; slow (256)</div>
+  <div class="row" id="fx"></div>
+</div>
+<script>
+  const base = './';
+  const groups = {
+    bays: { cls:'b', ids:['bay-repair','bay-fuel','bay-board','bay-deice','bay-locked'] },
+    planes: { cls:'pl', ids:['plane','plane-vip','plane-emergency','plane-medevac'],
+              extra:{cls:'rg', ids:['ring-selected','ring-patience','ring-patience-low']} },
+    svc: { cls:'sv', ids:['svc-repair','svc-fuel','svc-board','svc-depart'] },
+    hud: { cls:'hud', ids:['heart','heart-empty','heart-crack','coin','star','star-empty','clock','check','moon'],
+           extra:{cls:'btn', ids:['pause-btn','zen-badge']} },
+    fx: { cls:'fx', ids:['fx-weld','fx-fuel','fx-boarding','fx-droplet','fx-touchdown','fx-takeoff','fx-crash','fx-success','fx-error','fx-ripple','fx-spark','fx-smoke','fx-dust','fx-board-dot'] },
+  };
+  function tile(id, cls){
+    const t = document.createElement('div'); t.className='tile';
+    const img = document.createElement('img'); img.src = base+id+'.png'; img.className=cls; img.alt=id;
+    const cap = document.createElement('div'); cap.className='cap'; cap.textContent=id;
+    t.append(img, cap); return t;
+  }
+  for(const [k,g] of Object.entries(groups)){
+    const el = document.getElementById(k);
+    g.ids.forEach(id => el.append(tile(id, g.cls)));
+    if(g.extra) g.extra.ids.forEach(id => el.append(tile(id, g.extra.cls)));
+  }
+</script>
+</body>
+</html>
