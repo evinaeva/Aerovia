@@ -1,8 +1,8 @@
 # PlaneFlow — Progression
 
-> Game-design reference. Player-facing rules: [`../FAQ.md`](../FAQ.md). Level data lives
-> in the `LEVELS` array in `index.html` (see [`../DEV.md`](../DEV.md)); achievements are
-> tracked in [`../achievements.md`](../achievements.md).
+> Game-design reference. Player-facing rules: [`../FAQ.md`](../../FAQ.md). Level data lives
+> in the `LEVELS` array in `index.html` (see [`../DEV.md`](../../DEV.md)); achievements are
+> tracked in [`../achievements.md`](../../achievements.md).
 
 ---
 
@@ -62,7 +62,7 @@ low-stress, high-focus.
 ## Achievements
 
 A separate medal/achievement system (46 items, from light to hardcore to secret) is
-catalogued in [`../achievements.md`](../achievements.md) and complements star-based
+catalogued in [`../achievements.md`](../../achievements.md) and complements star-based
 progression.
 
 ---

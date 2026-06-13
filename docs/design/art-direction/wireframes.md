@@ -10,7 +10,7 @@
 >
 > ⚠️ **These are a fresh proposal, not the current `index.html`.** They redesign the
 > layout from the gameplay up. Rendered mockups + the build script live in
-> [`../../assets/design/wireframes/`](../../assets/design/wireframes/) — edit `build.py`
+> [`../wireframes/`](../wireframes/) — edit `build.py`
 > and re-run `python3 build.py` to regenerate every image.
 
 ---
@@ -40,7 +40,7 @@ The visual language (rounded warm cards, soft shadow, the 6–7 colour palette) 
 
 ## Screen flow
 
-![Screen flow map](../../assets/design/wireframes/00-flow.png)
+![Screen flow map](../wireframes/00-flow.png)
 
 ```
 Start/Menu ──Play──► Level select ──tap level──► Shift goals ──Got it──► IN-GAME (HUD)
@@ -56,7 +56,7 @@ Start/Menu ──Play──► Level select ──tap level──► Shift goals
 ## Screens
 
 ### 01 · Start / Main menu
-![Start](../../assets/design/wireframes/01-start.png)
+![Start](../wireframes/01-start.png)
 
 - **Left half:** wordmark + cozy top-down art (planes), no buttons — it breathes.
 - **Right rail (thumb side):** one oversized **PLAY**, then a stack of secondary tiles —
@@ -64,7 +64,7 @@ Start/Menu ──Play──► Level select ──tap level──► Shift goals
 - Sizes: primary CTA ≈ 200×58, secondary tiles ≈ 200×46, full-width touch targets.
 
 ### 02 · Level select — «Flight map»
-![Level select](../../assets/design/wireframes/02-levels.png)
+![Level select](../wireframes/02-levels.png)
 
 - Levels are **stops strung along a dashed flight-route line** (on-theme: this is a
   routing game). Each stop = a node with its number, three star slots below, padlock if
@@ -72,7 +72,7 @@ Start/Menu ──Play──► Level select ──tap level──► Shift goals
 - Star total chip top-right; **Back** bottom-left. Horizontally scrollable.
 
 ### 03 · In-game HUD *(the hero screen)*
-![HUD](../../assets/design/wireframes/03-hud.png)
+![HUD](../wireframes/03-hud.png)
 
 - **One slim top bar (~52px, translucent):**
   - left cluster — **lives** (hearts) · **money** (coin + amount) · **combo** (×2 badge);
@@ -85,39 +85,39 @@ Start/Menu ──Play──► Level select ──tap level──► Shift goals
 - **To-do card** floats beside the tapped plane with a thin leader line.
 
 ### 04 · Aircraft info / to-do
-![Aircraft](../../assets/design/wireframes/04-aircraft.png)
+![Aircraft](../wireframes/04-aircraft.png)
 
 - Tap a plane → card with type/destination, **Passengers / Fuel / Condition** bars, and
   the **ordered task queue** (repair → fuel → board → depart). Drag to the next box to
   advance. Order is strict.
 
 ### 05 · Pause
-![Pause](../../assets/design/wireframes/05-pause.png)
+![Pause](../wireframes/05-pause.png)
 
 - Field is **dimmed, not hidden** (keeps context). Card shows the **goal/star recap**
   (★ goal, ★★ no overdue, ★★★ no crashes) with live values, and a **thumb-row** of
   **Resume · Restart · Menu**. Gear (top-right of card) opens Settings.
 
 ### 06 · Shift goals (start of level)
-![Goals](../../assets/design/wireframes/06-goals.png)
+![Goals](../wireframes/06-goals.png)
 
 - Shown when a level begins. Three **star tiers** with one-line descriptions, one big
   **Got it** CTA. Reopenable from Pause.
 
 ### 07 · End of shift
-![End](../../assets/design/wireframes/07-over.png)
+![End](../wireframes/07-over.png)
 
 - **Stars** earned (centre, the middle one largest), then **stat chips** (Planes · Money ·
   Best combo · Overdue). Three exits: **Levels · Retry · Next** (Next is primary).
 
 ### 08 · Settings
-![Settings](../../assets/design/wireframes/08-settings.png)
+![Settings](../wireframes/08-settings.png)
 
 - Large **toggle switches** (Sound · Vibration · assist cheats), **language** pills, and a
   separated, rose-tinted **Reset progress** (destructive) apart from the green **Back**.
 
 ### 09 · Medals / Achievements
-![Medals](../../assets/design/wireframes/09-medals.png)
+![Medals](../wireframes/09-medals.png)
 
 - Grid of warm tiles: **earned = gold medal**, **locked = padlock**. Count up top,
   scrollable, tap a tile for detail.
@@ -129,7 +129,7 @@ Start/Menu ──Play──► Level select ──tap level──► Shift goals
 Screens 1 and 3 are flagged for a rework. Below are directions to choose between before
 implementing them; render with `python3 variants.py`.
 
-![Variants](../../assets/design/wireframes/variants-overview.png)
+![Variants](../wireframes/variants-overview.png)
 
 **Start (01):**
 - **A · «Boarding pass»** — the whole menu *is* a boarding pass: brand + flight fields on

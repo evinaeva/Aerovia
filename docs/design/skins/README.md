@@ -40,5 +40,5 @@ for effects.
 is blitted as the whole panel, with the engine overlaying the dynamic
 icon/label/cost/progress on top (don't bake those into the asset).
 
-Match ids / sizes from [`../../sprites/README.md`](../../sprites/README.md) and each
+Match ids / sizes from [`../../sprites/README.md`](../../../assets/sprites/README.md) and each
 skin's `BRIEF.md`.

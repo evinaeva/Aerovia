@@ -9,8 +9,8 @@
 > [`dos_and_donts.md`](dos_and_donts.md) ·
 > [`references/`](references/).
 >
-> Gameplay rules (for players) live in [`../FAQ.md`](../FAQ.md). The project brief
-> is in [`../tower_project_brief.md`](../tower_project_brief.md).
+> Gameplay rules (for players) live in [`../FAQ.md`](../../FAQ.md). The project brief
+> is in [`../tower_project_brief.md`](../../tower_project_brief.md).
 
 ---
 

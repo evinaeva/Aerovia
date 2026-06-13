@@ -2,7 +2,7 @@
 
 > Catalogue of every drawable game object and its visual intent. Mirrors the style-guide
 > reference panels. Parent: [`art_direction_v1.md`](art_direction_v1.md). Production
-> status of assets is tracked separately in [`../assets.md`](../assets.md).
+> status of assets is tracked separately in [`../assets.md`](../../assets.md).
 
 General rule for all objects: **clean silhouette, slightly oversized for readability,
 soft shading, recognizable in < 0.5 s.**

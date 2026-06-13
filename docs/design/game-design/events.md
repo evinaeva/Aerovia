@@ -1,6 +1,6 @@
 # PlaneFlow — Events & Surprises
 
-> Game-design reference. Player-facing rules: [`../FAQ.md`](../FAQ.md). Visual treatment
+> Game-design reference. Player-facing rules: [`../FAQ.md`](../../FAQ.md). Visual treatment
 > of events: [`../art-direction/object_library.md`](../art-direction/object_library.md)
 > (panel 07 of the style guide) and weather notes in
 > [`../art-direction/art_direction_v1.md`](../art-direction/art_direction_v1.md#weather-events).
