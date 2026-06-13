@@ -408,27 +408,80 @@
   const cv = document.getElementById('c');
   const ctx = cv.getContext('2d');
 
+  // ---- палитра спрайтов: единый источник правды для перекраски ----
+  // Спрайт-листы (assets/sprites/planeflow-*.svg) хранят цвета как
+  // `var(--token, #fallbackhex)`, а не голым hex. Тема (THEME ниже) задаёт
+  // значения токенов; их можно переопределять «сколько угодно» на лету.
+  // Дефолтная тема пустая → срабатывает fallback-hex в самих SVG → вид 1-в-1
+  // как раньше. Передай объект-переопределение в blitC/blit, чтобы перекрасить
+  // отдельный спрайт под любую палитру; ключ кэша учитывает тему, поэтому разные
+  // перекраски сосуществуют без коллизий.
+  const PALETTE = {
+    // базовые токены повторяют :root (cozy / stylized-flat)
+    ink:'#16131f', tarmac:'#242842', water:'#1c3a42',
+    paper:'#f4eede', amber:'#f2a93b', teal:'#4ecdc4', ice:'#7fd6ff',
+    rose:'#ef798a', gold:'#f4cf5e', life:'#ef5365', phosphor:'#cdb0f7',
+    // расширенные токены спрайтов (см. assets/sprites/README.md — карта токенов)
+    'cream-100':'#f4eede', 'cream-200':'#e8e0cf', 'cream-outline':'#b9b0a0',
+    'gold-dim':'#caa53a', 'gold-ink':'#5e4a16', 'amber-glow':'#ffb84d',
+    'amber-core':'#ffd089', green:'#5dca7a', 'green-bright':'#7fe098',
+    red:'#e0584f', blue:'#4ab4d6', chip:'#2a2440', 'navy-900':'#1a1d2e',
+    'purple-700':'#3a3354', 'purple-600':'#46406a', 'bay-dim':'#1f1b2c',
+    'gray-500':'#8a8c99', 'gray-600':'#6b6d7a', white:'#ffffff',
+    grass:'#38482f', 'grass-dim':'#2e3b27', 'grass-tuft':'#46583b',
+    'water-wave':'#2a525c', 'water-wave2':'#3a6b76', sand:'#6b5c44',
+    wood:'#4a3f33', shadow:'#0a0614', 'sky-low':'#3a2f3e', 'sky-mid':'#241d33',
+  };
+  // Активная тема: набор переопределений PALETTE. Пустая = дефолтный вид.
+  // Меняй ключи (или подменяй объект целиком), чтобы перекрасить весь арт.
+  const THEME = { tokens: {} };
+
   // ---- cozy sprite atlas (canvas) ----
   // Sprite sheets (assets/sprites/planeflow-*.svg) are fetched once into a hidden
   // holder; each <symbol> is rasterised into an <img> at device-pixel size, cached,
   // and blitted per frame. Until a sprite is ready (or if COZY is off) the call
   // returns false and the caller falls back to its procedural draw — so the game
   // never renders blank and the look can be toggled instantly.
+  //
+  // Перекраска: SVG используют `var(--token, #hex)`. Чтобы перекрасить, передай
+  // в blitC/blit объект-переопределение токенов (напр. {gold:'#fff', amber:'#0f0'})
+  // — он впрыснется в спрайт как <style>:root{--token:value}. Строка в `color`
+  // по-прежнему задаёт `currentColor` (используется только для route-arrow).
   const COZY = true;
   const SPRITES = (() => {
     const cache = new Map();
     const stripF = s => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)
+    // детерминированная подпись набора токенов для ключа кэша (sorted)
+    function tokSig(t){
+      const keys = Object.keys(t).sort();
+      let s = '';
+      for(const k of keys) s += k + ':' + t[k] + ';';
+      return s;
+    }
+    // <style> с CSS-переменными темы; пусто, когда переопределений нет (дефолт)
+    function styleBlock(t){
+      const keys = Object.keys(t);
+      if(!keys.length) return '';
+      let css = '';
+      for(const k of keys) css += '--' + k + ':' + t[k] + ';';
+      return '<style>:root{' + css + '}</style>';
+    }
     function img(id, w, h, color){
       const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
-      const key = id + '@' + pw + 'x' + ph + (color||'');
+      // color может быть строкой (legacy currentColor) или объектом-переопределением токенов
+      const tokens = (color && typeof color === 'object') ? color : null;
+      const cstr = (typeof color === 'string') ? color : '';
+      const sig = tokens ? tokSig(tokens) : '';
+      const key = id + '@' + pw + 'x' + ph + cstr + (sig ? '#' + sig : '');
       let im = cache.get(key);
       if(!im){
         const sym = document.getElementById(id);
         if(!sym) return null;
         const vb = sym.getAttribute('viewBox') || '0 0 64 64';
-        const cattr = color ? ' color="'+color+'"' : '';
+        const cattr = cstr ? ' color="'+cstr+'"' : '';
         const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb +
-                    '" width="' + pw + '" height="' + ph + '"' + cattr + '>' + stripF(sym.innerHTML) + '</svg>';
+                    '" width="' + pw + '" height="' + ph + '"' + cattr + '>' +
+                    (tokens ? styleBlock(tokens) : '') + stripF(sym.innerHTML) + '</svg>';
         im = new Image(); im.decoding = 'async';
         im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
         cache.set(key, im);
@@ -436,25 +489,45 @@
       return im;
     }
     const ok = im => im && im.complete && im.naturalWidth > 0;
+    // объединяет активную тему (THEME.tokens) с per-call переопределением.
+    // Строку (currentColor) пропускаем как есть. Без темы и без override —
+    // возвращаем сам color, чтобы дефолтный путь не плодил пустые объекты в кэше.
+    function withTheme(color){
+      const base = THEME.tokens;
+      const hasBase = base && Object.keys(base).length;
+      if(color && typeof color === 'object'){
+        return hasBase ? Object.assign({}, base, color) : color;
+      }
+      // color — строка (или undefined): применяем активную тему, если она есть.
+      // строковый currentColor через объект не пробросить, поэтому если есть и
+      // тема, и строка — строка важнее для route-arrow (тема его не трогает).
+      if(typeof color === 'string') return color;
+      return hasBase ? base : undefined;
+    }
     const A = {
       ready: false,
+      get palette(){ return PALETTE; },
+      // применить/сбросить тему: setTheme({gold:'#fff'}) — частично, setTheme(null) — сброс
+      setTheme(tokens){ THEME.tokens = (tokens && typeof tokens === 'object') ? tokens : {}; },
       has(id){ return !!document.getElementById(id); },
       blitC(id, cx, cy, dw, dh, rot, color){
-        if(!A.ready) return false; const im = img(id, dw, dh, color); if(!ok(im)) return false;
+        if(!A.ready) return false; const im = img(id, dw, dh, withTheme(color)); if(!ok(im)) return false;
         ctx.save(); ctx.translate(cx, cy); if(rot) ctx.rotate(rot);
         ctx.drawImage(im, -dw / 2, -dh / 2, dw, dh); ctx.restore(); return true;
       },
-      blit(id, dx, dy, dw, dh){
-        if(!A.ready) return false; const im = img(id, dw, dh); if(!ok(im)) return false;
+      blit(id, dx, dy, dw, dh, color){
+        if(!A.ready) return false; const im = img(id, dw, dh, withTheme(color)); if(!ok(im)) return false;
         ctx.drawImage(im, dx, dy, dw, dh); return true;
       },
-      // бесшовный тайл → CanvasPattern (кэш по id+размеру); null, пока спрайт не готов
+      // бесшовный тайл → CanvasPattern (кэш по id+размеру+теме); null, пока спрайт не готов
       pattern(id, tile){
         if(!A.ready) return null;
-        const key = id + '#' + Math.round(tile * dpr);
+        const tk = (THEME.tokens && Object.keys(THEME.tokens).length) ? THEME.tokens : null;
+        const sig = tk ? JSON.stringify(Object.keys(tk).sort().map(k=>k+tk[k])) : '';
+        const key = id + '#' + Math.round(tile * dpr) + sig;
         let p = patterns.get(key);
         if(p) return p;
-        const im = img(id, tile, tile);
+        const im = img(id, tile, tile, tk || undefined);
         if(!ok(im)) return null;
         try{
           p = ctx.createPattern(im, 'repeat');
@@ -484,10 +557,23 @@
   })();
 
   // ---- palette helpers ----
+  // COL — палитра для процедурного фолбэка. Значения берутся из :root (дефолтный
+  // вид), но переопределение темы (THEME.tokens) имеет приоритет, чтобы перекраска
+  // одинаково ложилась и на спрайты, и на процедурную отрисовку. Дефолт (тема
+  // пустая) → берётся :root → вид 1-в-1 как раньше. `coin` — алиас `gold`.
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const COL = {};
-  ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin']
-    .forEach(n => COL[n] = css('--'+n));
+  {
+    const base = {};
+    ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin']
+      .forEach(n => base[n] = css('--'+n));
+    const tokenOf = { paper:'cream-100', coin:'gold' }; // имя COL → имя токена темы
+    ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin']
+      .forEach(n => Object.defineProperty(COL, n, {
+        enumerable: true,
+        get(){ const t = THEME.tokens; const tk = tokenOf[n] || n; return (t && t[tk]) || base[n]; }
+      }));
+  }
 
   // service -> color (названия услуг — в i18n: svc.*)
   const SVC = {
