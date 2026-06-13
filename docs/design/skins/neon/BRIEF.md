@@ -5,33 +5,84 @@
 > (`references/`), and the **asset checklist**. The engine seam is already built
 > (see *Integration*) — drawn assets drop in with **no code changes**.
 
-**Status:** the neon skin ships today as a **procedural placeholder** (engine-drawn
-radar field + glow). It does *not* match the target polish — see
-`references/current-procedural-placeholder.png` vs `references/ref-01-target-neon.png`.
-Your job is to draw the real neon art that replaces the placeholder.
+**Status:** the neon skin ships today as a **procedural placeholder** + a flat
+code-drawn vector pass — **neither matches the target**. Compare
+`references/current-procedural-placeholder.png` and the flat vector sheet vs the goal,
+`references/ref-01-target-neon.png`. The goal is to **match `ref-01` closely** (its
+glossy, rendered look) — see §0.5 for *how* (it must be image-generated, not
+code-drawn).
 
 ---
 
-## 0. Audience & art intent (read first — it sets the tone)
+## 0. Audience & art intent (read first)
 
-**Who it's for:** **adults** who want a **calm, low-stimulation** session — the kind
-of player who can zone in for an hour and *not feel tired or over-stimulated*.
-People used to **understated, restrained** interfaces (think a quiet night control
-tower, lo-fi ambient, a tidy dashboard) — not flashy mobile candy.
+**Who it's for:** **adults** who want a **comfortable, long** session (an hour without
+eye-fatigue). Comfort comes from a **deep dark base + controlled contrast**, *not* from
+making things flat or washed-out. The **UI elements themselves are richly rendered and
+glossy — exactly like `ref-01`.**
 
-**So the neon here is CALM, not arcade-loud.** Tune every choice toward easy-on-the-
-eyes:
-- **Muted / desaturated** neon, not blazing. Accents *glow softly*, they don't scream.
-  Lower the contrast and saturation vs a typical neon game; no harsh pure-white bloom.
-- **Dark, even background** with gentle depth; minimal, slow motion (the radar sweep
-  is slow and faint). Nothing strobes, pulses hard, or demands attention.
-- **Generous spacing, clean type, few colors.** Restful, "professional night shift"
-  vibe. Readable without being bright.
-- A player should be able to stare at this for an hour comfortably. If an element
-  feels punchy or tiring, dial it back.
+**Target = match `ref-01` (the reference) closely.** That means:
+- **Glossy, dimensional panels** — smooth gradients, a soft top sheen, a rounded
+  **neon colored rim with real bloom/glow**, subtle inner shadow. Premium mobile-game
+  finish, like the reference — *not* flat rectangles with a thin stroke.
+- **Saturated neon accents on a deep dark field.** Rich, glowing — but sitting on a
+  calm near-black background so the overall screen still reads restful (the dark base
+  is what keeps it easy on the eyes, not desaturating the accents).
+- **Big, polished icons** with their own shading/glow. **Crisp, readable.**
 
-> The `ref-01` image is the right *layout/structure*, but treat its glow/saturation as
-> an **upper bound** — our neon is a softer, more grown-up, more muted version of it.
+> Earlier this brief said "muted / pull saturation down". **That was wrong for what
+> you want — ignore it.** Match the reference's vivid, glossy neon; keep it
+> comfortable via the *dark background and spacing*, not by dulling the art.
+
+---
+
+## 0.5 How to PRODUCE the assets — **image-generation, NOT code-drawing**
+
+The flat results so far happened because the assets were **drawn with code (vector
+shapes)** — clean but inherently flat. **Vector/code cannot reproduce the reference's
+rendered gloss.** To match `ref-01`, **every asset must be made with an image-generation
+model** (Midjourney / SDXL / Flux / DALL·E / Nano-Banana / etc.) in **image-to-image**
+mode, then exported as a transparent PNG.
+
+**Per-asset workflow**
+1. **image-to-image / "style reference"** using `references/ref-01-target-neon.png` as
+   the look anchor (medium denoise so it keeps the reference's material & finish).
+2. Generate **one isolated object**, centered, on a **flat magenta `#ff00ff`** (or
+   transparent) background — no scene, no other objects, **no baked text**.
+3. Upscale → **remove background** → **transparent PNG-32** at the §6 size.
+4. Keep the **same panel material/rim treatment across all bays** (batch them / reuse a
+   seed) so the set is consistent.
+
+**Shared style anchor — prepend to every prompt:**
+> `glossy dark neon game-UI asset, matching the attached reference: deep navy-black
+> smooth gradient fill, soft top sheen, rounded glowing neon rim with bloom, premium
+> mobile-game finish, crisp high detail, single centered object isolated on flat
+> magenta background, no text, no scene — [ASSET]`
+
+**Negative prompt (always):**
+> `flat, dull, matte, low-contrast, sketch, hand-drawn, watermark, text, label,
+> multiple objects, busy background, realistic photo`
+
+**`[ASSET]` per file** (one PNG each; ids/sizes in §6):
+| file | `[ASSET]` phrase |
+| --- | --- |
+| `bay-repair` | rounded rectangular service-bay panel, glowing **orange** neon rim, **empty inside** |
+| `bay-fuel` | …glowing **teal/cyan** rim, empty inside |
+| `bay-board` | …glowing **pink/magenta** rim, empty inside |
+| `bay-deice` | …glowing **ice-blue** rim, empty inside |
+| `bay-locked` | dim dark panel, faint **grey** rim, slightly desaturated (locked), empty |
+| `plane` | top-down airliner, glossy white body, cyan neon outline + soft glow, **nose UP** |
+| `plane-vip` / `-emergency` / `-medevac` | gold body / red accents / white with red cross |
+| `svc-repair` / `-fuel` / `-board` / `-depart` | glossy neon **gear** (orange) / **droplet** (teal) / **person** (pink) / **up-plane** (gold) icon chip |
+| `coin` / `heart` / `star` / `clock` / `check` / `moon` | glossy neon coin / heart / star / clock / check / moon |
+| `pause-btn` / `zen-badge` | rounded glossy dark button with neon pause bars / neon moon |
+| `fx-*` | neon particle burst / glowing ring, soft bloom, peak pose |
+
+> **Bays are empty glossy panels** — do **not** generate an icon/label/cost inside them
+> (the engine overlays those live). Planes **centered & nose-up**.
+
+If your tool can't do transparent output directly, generate on flat magenta and key it
+out. Generate at **≥ the §6 size** (bigger then downscale = crisper).
 
 ---
 
@@ -52,27 +103,26 @@ Same spec as every skin (the skin changes looks, never positions):
 `references/ref-02-layout-mockup.png` = the layout; `ref-01-target-neon.png` = the
 target art (what we're matching).
 
-## 2. The neon style — calm night air-traffic-control
+## 2. The neon style — glossy night air-traffic-control (match `ref-01`)
 
-A quiet, **muted** dark control-room look (see §0 — calm beats flashy):
+A polished dark control-room look — **rendered, glossy, glowing**, like the reference:
 
-- **Dark, even navy/slate field** with a faint **radar** (concentric rings +
-  crosshair + a slow, low-opacity sweep) and a subtle grid. *(Engine-drawn — see §4.)*
-- **Rounded panels** for service bays — dark fill, a **soft neon colored edge** per
-  service (muted amber repair / dusty teal fuel / soft rose boarding / pale cyan
-  de-ice), a **gentle glow** (not bloom), a clear **large icon**, a **label** and a
-  **cost chip**. Glossy but understated — matte-glass, not wet-shiny.
-- **Runways** as dark rounded strips with **dim colored edge lights**, dashed
-  centerline, clear runway numbers. Lights breathe slowly, never blink hard.
-- **Planes**: clean light bodies with a **calm colored nose/livery**, thin neon
-  outline, faint glow.
-- **Route**: a soft cyan line with a *gentle* halo; finger cursor at the live end.
-- **HUD**: dark translucent with neon-outlined value groups (heart · clock · coin ·
-  goal · pause), big readable numerals — but low-key, not bright.
+- **Deep dark navy/black field** with a **radar** (concentric rings + crosshair + slow
+  sweep) and a subtle grid. *(Engine-drawn — see §4.)*
+- **Glossy dimensional panels** for service bays — smooth gradient fill, a soft top
+  sheen, a **rounded neon colored rim with real bloom/glow** per service (orange repair
+  / cyan fuel / pink boarding / ice-blue de-ice), subtle inner shadow. Premium finish —
+  *not* a flat rect with a thin stroke. The engine overlays the icon/label/cost.
+- **Runways** as dark rounded strips with **colored neon edge lights**, dashed
+  centerline, clear runway numbers.
+- **Planes**: glossy light bodies with a **colored nose/livery**, neon outline + glow.
+- **Route**: a glowing cyan line with a soft halo; finger cursor at the live end.
+- **HUD**: dark translucent with neon-rendered value chips (heart · clock · coin ·
+  goal · pause), big crisp numerals with subtle glow.
 
-Consistent, **restrained** neon: one soft glow language, **muted accents on dark,
-moderate contrast**, generous spacing, **large & readable**. The earlier in-engine
-version was too small and plain; the fix is *bigger and richer*, **not louder**.
+Consistent, **rich** neon: one glossy glow language, **saturated accents on a deep dark
+base**, generous spacing, **large & readable**. Comfort comes from the dark base — not
+from dulling the art.
 
 ## 3. Color palette (the neon tokens already in the engine)
 
@@ -87,10 +137,9 @@ depart/gold #ffd23b · coin/gold #ffd23b · life #ff3b6b
 
 Plus per-bay border accents seen in `ref-01` (orange/pink/green/cyan/purple).
 
-> **Treat these as the *brightest* you'd go.** Per §0, the drawn art should lean
-> **more muted/desaturated** — softer, dustier versions of these accents — so an hour
-> of play stays comfortable. The vivid values above are mainly for procedural/HUD
-> bits; in your PNGs, pull saturation and bloom *down*.
+> These are the engine's recolor tokens (used for procedural/HUD bits). For the drawn
+> PNGs, **match the reference's vivid, glossy neon** — these hexes are a starting point,
+> not a ceiling. Saturation/glow should read like `ref-01`, sitting on the deep dark base.
 
 ## 4. Format & integration — **deliver PNG** (the seam is built)
 
