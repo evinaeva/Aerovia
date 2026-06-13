@@ -47,8 +47,14 @@ def wait(pid: str, timeout: int = 600) -> dict:
     deadline = time.time() + timeout
     while time.time() < deadline:
         hist = json.loads(_get(f"/history/{pid}") or b"{}")
-        if pid in hist and hist[pid].get("outputs"):
-            return hist[pid]["outputs"]
+        if pid in hist:
+            entry = hist[pid]
+            if entry.get("outputs"):
+                return entry["outputs"]
+            status = entry.get("status", {})
+            if status.get("status_str") == "error" or status.get("completed") is False:
+                msgs = json.dumps(status.get("messages", []))[:800]
+                raise SystemExit(f"ComfyUI execution error:\n{msgs}")
         time.sleep(2)
     raise SystemExit("timed out waiting for ComfyUI")
 
