@@ -7,10 +7,13 @@
  *   • static assets (sprites/icons/manifest) → stale-while-revalidate: serve
  *     from cache instantly, refresh in the background for next time.
  *
- * Updates: install does NOT auto-skipWaiting. When sw.js changes (bump VERSION),
- * the new worker installs and waits; the page shows an "update available" toast
- * and posts SKIP_WAITING when the user accepts. On activation we claim clients,
- * the page hears `controllerchange` and reloads once into the new version.
+ * Updates: auto-applied. When sw.js changes (bump VERSION), the new worker
+ * skipWaiting()s on install and clients.claim()s on activate, so it takes over
+ * immediately; the page hears `controllerchange` and reloads once into the new
+ * version. No manual confirmation needed — this is what prevents clients from
+ * getting stuck on a stale cached shell. The page still shows the "update
+ * available" toast as a heads-up, but the reload no longer depends on it.
+ * Trade-off: an active session may reload once when a new version ships.
  *
  * After changing precached assets or wanting to force a refresh, bump VERSION.
  */
@@ -52,7 +55,9 @@ self.addEventListener('install', (e) => {
       Promise.all(ASSETS.map((u) => c.add(u).catch(() => {})))
     )
   );
-  // Intentionally no skipWaiting() — wait for the page to confirm the update.
+  // Take over as soon as installed so a single reload adopts the new version —
+  // no waiting on a user toast (prevents clients sticking on a stale shell).
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
