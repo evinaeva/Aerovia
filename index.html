@@ -56,6 +56,20 @@
   }
   /* меню: сцена-радар на канвасе видна целиком */
   #startScreen{background:none;backdrop-filter:none}
+  /* старт — две колонки: бренд+арт слева, рейл действий справа (wireframes.md, мокап 01) */
+  .startpanel{max-width:880px;width:94%;display:flex;align-items:center;gap:34px;text-align:left;padding:24px 30px}
+  .start-brand{flex:1 1 auto;min-width:0}
+  .start-brand .wordmark{margin:6px 0 8px;width:min(440px,100%)}
+  .start-brand p{margin:8px 0 0}
+  .start-rail{flex:0 0 248px;display:flex;flex-direction:column;gap:11px;
+    background:var(--raised);border:1.5px solid var(--pur-line);border-radius:24px;
+    padding:18px;box-shadow:0 18px 48px rgba(8,6,16,.5)}
+  .start-rail .btn{width:100%}
+  .start-rail #startBtn{padding:18px 22px;font-size:18px;border-radius:16px}
+  .start-rail-row{display:flex;gap:11px}
+  .start-rail-row .btn{flex:1}
+  .start-rail-row #fsBtn{flex:0 0 52px;padding:14px 0}
+  @media (max-width:620px){.startpanel{flex-direction:column;gap:18px}.start-rail{flex-basis:auto;width:100%}}
   .panel{text-align:center;padding:30px 26px;max-width:420px;margin:auto;flex:0 0 auto}
   .panel.wide{max-width:740px}
   .panel.card{background:var(--raised);border:1.5px solid var(--pur-line);border-radius:var(--card-r);
@@ -306,22 +320,24 @@
   <canvas id="c"></canvas>
 
   <div class="overlay" id="startScreen">
-    <div class="panel">
-      <div class="kicker" data-i18n="start.kicker"></div>
-      <svg class="wordmark" viewBox="0 0 520 88" aria-label="PlaneFlow"><use href="#wordmark-lockup"></use></svg>
-      <h1 class="wm-fallback" data-i18n="app.name"></h1>
-      <p data-i18n="start.tagline"></p>
-      <div class="ctarow">
-        <button class="btn btn-teal" id="zenBtn"><span class="bglyph">☾</span><span data-i18n="start.zen"></span></button>
-        <button class="btn btn-primary" id="startBtn"><span class="bglyph">▶</span><span data-i18n="start.play"></span></button>
+    <div class="panel startpanel">
+      <div class="start-brand">
+        <div class="kicker" data-i18n="start.kicker"></div>
+        <svg class="wordmark" viewBox="0 0 520 88" aria-label="PlaneFlow"><use href="#wordmark-lockup"></use></svg>
+        <h1 class="wm-fallback" data-i18n="app.name"></h1>
+        <p data-i18n="start.tagline"></p>
+        <div class="vno"><span data-i18n="start.version"></span> <span id="ver"></span></div>
       </div>
-      <div class="ctarow">
+      <div class="start-rail">
+        <button class="btn btn-primary" id="startBtn"><span class="bglyph">▶</span><span data-i18n="start.play"></span></button>
+        <button class="btn btn-teal" id="zenBtn"><span class="bglyph">☾</span><span data-i18n="start.zen"></span></button>
         <button class="btn" id="biomesBtn"><span class="bglyph">🌲</span><span data-i18n="menu.biomes"></span></button>
         <button class="btn btn-quiet" id="medalsBtn"><span class="bglyph">🏅</span><span data-i18n="medals.btn"></span></button>
-        <button class="btn btn-quiet" id="settingsMenuBtn"><span class="bglyph">⚙</span><span data-i18n="pause.settings"></span></button>
-        <button class="btn btn-quiet" id="fsBtn"><span class="bglyph">⛶</span><span data-i18n="start.fullscreen"></span></button>
+        <div class="start-rail-row">
+          <button class="btn btn-quiet" id="settingsMenuBtn"><span class="bglyph">⚙</span><span data-i18n="pause.settings"></span></button>
+          <button class="btn btn-quiet" id="fsBtn"><span class="bglyph">⛶</span></button>
+        </div>
       </div>
-      <div class="vno"><span data-i18n="start.version"></span> <span id="ver"></span></div>
     </div>
   </div>
 
@@ -2757,36 +2773,43 @@
     ctx.fillStyle='rgba(33,29,51,.85)'; ctx.fill();
     ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui); ctx.stroke();
     const cy=hud/2;
-    // жизни-сердечки
-    for(let i=0;i<K.START_LIVES;i++) heart(28*ui+i*20*ui, cy, 6.5*ui, i<lives?COL.life:null);
-    // таймер (обратный отсчёт для уровней на время)
+    ctx.textBaseline='middle';
+    // ── левый кластер: жизни · деньги · комбо (мокап 01) ──
+    for(let i=0;i<K.START_LIVES;i++) heart(26*ui+i*19*ui, cy, 6.3*ui, i<lives?COL.life:null);
+    let lx = 26*ui + K.START_LIVES*19*ui + 8*ui;
+    if(COZY) SPRITES.blitC('coin', lx+6*ui, cy, 15*ui, 15*ui);
+    else { ctx.textAlign='left'; ctx.fillStyle=COL.coin; ctx.font=`${12*ui}px ${MONO}`; ctx.fillText('$', lx, cy); }
+    ctx.textAlign='left'; ctx.font=`700 ${15*ui}px ${MONO}`;
+    ctx.fillStyle = money<0?COL.life:COL.coin;
+    ctx.shadowColor=hexa(COL.gold,.4); ctx.shadowBlur=9*ui;
+    ctx.fillText(fmtMoney(money), lx+15*ui, cy); ctx.shadowBlur=0;
+    lx += 15*ui + ctx.measureText(fmtMoney(money)).width + 13*ui;
+    if(combo>1){
+      const ct='×'+fmtNum(comboMult(),1);
+      ctx.font=`800 ${12*ui}px ${MONO}`;
+      const cbw=ctx.measureText(ct).width + 16*ui;
+      rr(lx,cy-10*ui,cbw,20*ui,10*ui); ctx.fillStyle=hexa(COL.phosphor,.16); ctx.fill();
+      ctx.lineWidth=1.2; ctx.strokeStyle=hexa(COL.phosphor,.6); rr(lx,cy-10*ui,cbw,20*ui,10*ui); ctx.stroke();
+      ctx.fillStyle=COL.phosphor; ctx.textAlign='center'; ctx.fillText(ct, lx+cbw/2, cy);
+    }
+    // ── правый: таймер перед кнопкой паузы ──
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
     const urgent = LV.objective.time && tShown<=10;
-    ctx.textBaseline='middle'; ctx.textAlign='left';
-    if(!(COZY && SPRITES.blitC('clock', 102*ui, cy, 15*ui, 15*ui))){
-      ctx.fillStyle=hexa(COL.phosphor,.9); ctx.font=`${13*ui}px ${MONO}`;
-      ctx.fillText('◷', 96*ui, cy);
-    }
-    ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`${14*ui}px ${MONO}`;
-    ctx.fillText(fmtTime(tShown), 112*ui, cy);
-    // деньги — по центру, с лёгким золотым свечением
-    ctx.textAlign='center'; ctx.font=`600 ${15*ui}px ${MONO}`;
-    ctx.fillStyle=money<0?COL.life:COL.coin;
-    ctx.shadowColor=hexa(COL.gold,.45); ctx.shadowBlur=10*ui;
-    ctx.fillText(fmtMoney(money), W*0.46, cy); ctx.shadowBlur=0;
-    if(COZY){ const _mw=ctx.measureText(fmtMoney(money)).width; SPRITES.blitC('coin', W*0.46-_mw/2-11*ui, cy, 15*ui, 15*ui); }
-    // прогресс цели: подпись + значение
+    ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`700 ${15*ui}px ${MONO}`;
+    ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy);
+    // ── центр: уровень + счёт + полоса прогресса цели ──
     const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
-    ctx.textAlign='left';
-    ctx.fillStyle=COL.muted; ctx.font=`${7.5*ui}px ${MONO}`;
-    ctx.fillText(t('hud.served'), W*0.58, cy-7*ui);
-    let prog = zen ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target));
-    if(combo>1) prog += '   '+t('hud.combo', {x:fmtNum(comboMult(),1)});
-    ctx.fillStyle=COL.phosphor; ctx.font=`${12.5*ui}px ${MONO}`;
-    ctx.fillText(prog, W*0.58, cy+6*ui);
-    // уровень/режим — справа перед паузой
-    ctx.textAlign='right'; ctx.fillStyle=hexa(COL.muted,.7); ctx.font=`${9.5*ui}px ${MONO}`;
-    ctx.fillText(currentLevelName(), pauseBtn.x-12*ui, cy);
+    const cxC = W*0.5;
+    ctx.textAlign='center';
+    const cnt = zen ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+'  /  '+fmtNum(LV.objective.target));
+    ctx.fillStyle=hexa(COL.paper,.92); ctx.font=`${10*ui}px ${MONO}`;
+    ctx.fillText(currentLevelName()+'   ·   '+cnt, cxC, cy-6*ui);
+    if(!zen){
+      const target=LV.objective.target||1, frac=Math.max(0,Math.min(1,mv/target));
+      const bw3=170*ui, bx3=cxC-bw3/2, by3=cy+5*ui, bh3=6*ui;
+      rr(bx3,by3,bw3,bh3,bh3/2); ctx.fillStyle='rgba(127,155,176,.20)'; ctx.fill();
+      if(frac>0){ rr(bx3,by3,Math.max(bh3,bw3*frac),bh3,bh3/2); ctx.fillStyle='#5dca7a'; ctx.fill(); }
+    }
 
     // кнопка паузы — cozy-чип (на паузе поверх рисуем «play»)
     const pcx=pauseBtn.x+pauseBtn.w/2, pcy=pauseBtn.y+pauseBtn.h/2;
