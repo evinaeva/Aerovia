@@ -1167,13 +1167,14 @@
     const n = LV.runways;
     const top0 = hud + M, bot0 = H - M;
     const gap = 10*ui;
-    const rh = ((bot0-top0) - gap*(n-1)) / n;
+    const rh = 40*ui;                       // ширина ВПП ≈ 1.5× размах борта (~26ui)
+    const rwY0 = top0 + Math.max(0, ((bot0-top0) - (rh*n + gap*(n-1))) / 2); // центрируем по вертикали
     if(!runways.length || runways.length!==n){
       runways = []; for(let i=0;i<n;i++) runways.push({occupied:null, closed:false});
     }
     for(let i=0;i<n;i++){
       const r=runways[i];
-      r.x=rwL; r.y=top0 + i*(rh+gap); r.w=rwR-rwL; r.h=rh;
+      r.x=rwL; r.y=rwY0 + i*(rh+gap); r.w=rwR-rwL; r.h=rh;
       r.cy = r.y + r.h/2;
       r.stopX = rwL + 26*ui;   // куда докатывается севший борт (полевой край)
       r.exitX = rwR + 10*ui;   // правый (водный) край
@@ -1703,6 +1704,11 @@
     pl.x += Math.cos(pl.ang)*spd*dt;
     pl.y += Math.sin(pl.ang)*spd*dt;
   }
+  // плавный доворот курса к target (без смещения) — для парковки в боксе
+  function turnTo(pl, target, dt){
+    let d=target-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+    const m=K.TURN*dt; pl.ang += Math.max(-m, Math.min(m, d));
+  }
   function followPath(pl, spd, dt){
     if(!pl.path.length){ return false; }
     const wp=pl.path[0];
@@ -1841,8 +1847,7 @@
               if(b.occupied && b.occupied!==pl){ if(!zen){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
               else {
                 pl.zone='bay'; pl.bay=b; b.occupied=pl;
-                pl.x=b.x+b.w/2; pl.y=b.y+b.h/2; pl.moving=false; pl.path=[];
-                const o=dirOut(b); pl.ang=Math.atan2(-o.dy,-o.dx); // паркуем носом внутрь — борт виден в открытом боксе
+                pl.moving=false; pl.path=[]; pl.bayPhase='in'; // плавный заезд: анимация в зоне bay
                 pl.serveMax=serveTimeFor(b); pl.serveTime=pl.serveMax;
                 SND.dock();
               }
@@ -1853,19 +1858,40 @@
         continue;
       }
 
-      // ---- BAY (обслуживание) ----
+      // ---- BAY (обслуживание): плавный заезд → стоянка носом к стене →
+      //      на последней четверти времени разворот и выезд носом наружу ----
       if(pl.zone==='bay'){
+        const b=pl.bay, o=dirOut(b);
         if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
         pl.serveTime-=dt;
+        const frac=Math.max(0,pl.serveTime)/Math.max(0.001,pl.serveMax);
+        const cx=b.x+b.w/2, cy=b.y+b.h/2;
+        const vert=Math.abs(o.dy)>Math.abs(o.dx);
+        const half=(vert? b.h : b.w)/2;
+        const L=13*ui, gap=4*ui;                   // полудлина борта + зазор до стены
+        const parkA = -(half - L - gap);           // центр борта у дальней стены (целиком внутри)
+        const frontA =  (half + L + gap);          // центр борта чуть перед воротами
+        // держим борт ровно на оси ворот → нет касания боковых стен
+        if(vert) pl.x += (cx-pl.x)*Math.min(1, dt*6);
+        else     pl.y += (cy-pl.y)*Math.min(1, dt*6);
+        const along = vert ? (pl.y-cy)*o.dy : (pl.x-cx)*o.dx;  // вдоль оси, наружу +
+        const step = taxiSpeed*dt*0.85;
+        const setAlong = a => { if(vert) pl.y=cy+a*o.dy; else pl.x=cx+a*o.dx; };
+        const angIn=Math.atan2(-o.dy,-o.dx), angOut=Math.atan2(o.dy,o.dx);
+        if(frac>0.25){
+          turnTo(pl, angIn, dt*2);                                 // нос к стене
+          setAlong(along + Math.sign(parkA-along)*Math.min(step, Math.abs(parkA-along)));
+        } else {
+          // последняя четверть: разворот НА МЕСТЕ (центр — клиренс), затем выезд
+          let d=angOut-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+          if(Math.abs(d)>0.12){ turnTo(pl, angOut, dt*1.8); }
+          else { turnTo(pl, angOut, dt*2); setAlong(along + Math.sign(frontA-along)*Math.min(step, Math.abs(frontA-along))); }
+        }
         if(pl.serveTime<=0){
-          const b=pl.bay; b.occupied=null; pl.bay=null;
+          b.occupied=null; pl.bay=null; pl.bayPhase=null;
           pl.reqIndex++; ACH.onService(pl); SND.served();
-          pulseFx(b.x+b.w/2, b.y+b.h/2, 'success', 0.5);  // услуга готова
-          // выезд из бокса на поле
-          pl.zone='field';
-          const ex = clampX(b.x+b.w/2 + dirOut(b).dx*(b.w*0.6+24*ui));
-          const ey = clampY(b.y+b.h/2 + dirOut(b).dy*(b.h*0.6+24*ui));
-          pl.x=ex; pl.y=ey; pl.moving=false; pl.path=[];
+          pulseFx(cx,cy,'success',0.5);
+          pl.zone='field'; setAlong(frontA); pl.x=clampX(pl.x); pl.y=clampY(pl.y); pl.moving=false; pl.path=[];
         }
         continue;
       }
@@ -2371,13 +2397,12 @@
     const need=curNeed(pl);
     const ncol=SVC[need].color;
 
-    // маршрут — cozy-зелёная (radar-фосфор при COZY=off), «бегущие» штрихи
+    // маршрут — cozy-зелёная (radar-фосфор при COZY=off): сплошная тонкая линия
     if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
       const _rc = COZY ? '#5dca7a' : COL.phosphor;
       ctx.save();
-      ctx.strokeStyle=hexa(_rc, pl.selected?0.85:0.45);
-      ctx.lineWidth=2.5; ctx.setLineDash([9,11]); ctx.lineDashOffset=-nowT*0.05;
-      if(pl.selected){ ctx.shadowColor=hexa(_rc,.7); ctx.shadowBlur=10; }
+      ctx.strokeStyle=hexa(_rc, pl.selected?0.85:0.5);
+      ctx.lineWidth=1.25; ctx.lineCap='round'; ctx.lineJoin='round'; // сплошная, на 50% тоньше, без мерцания
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
       for(const w of pl.path) ctx.lineTo(w.x,w.y);
       ctx.stroke();
@@ -2393,11 +2418,10 @@
           ctx.beginPath(); ctx.moveTo(7*ui,0); ctx.lineTo(-4*ui,-5*ui); ctx.lineTo(-4*ui,5*ui); ctx.closePath(); ctx.fill();
           ctx.restore();
         }
-        // пульсирующая точка-цель у выбранного борта
+        // статичная точка-цель у выбранного борта (без мерцания)
         if(pl.selected){
-          const p2=0.5+0.5*Math.sin(nowT*0.005);
-          ctx.beginPath(); ctx.arc(tp.x,tp.y,(7+p2*4)*ui,0,7);
-          ctx.lineWidth=2; ctx.strokeStyle=hexa(_rc,.35+.4*p2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(tp.x,tp.y,5*ui,0,7);
+          ctx.lineWidth=1.5; ctx.strokeStyle=hexa(_rc,.6); ctx.stroke();
         }
       }
       ctx.restore();
