@@ -20,3 +20,6 @@ playwright-report/
 # python
 __pycache__/
 *.pyc
+
+# generated sprite outputs (live on the lora-outputs branch, not main)
+tools/style-lora/output/
