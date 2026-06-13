@@ -16,3 +16,7 @@ build/
 test-results/
 playwright-report/
 .playwright/
+
+# python
+__pycache__/
+*.pyc
