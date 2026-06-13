@@ -161,8 +161,10 @@ hangs off the reserved `HUD_H` top band; that band is left unchanged).
   primary CTA + soft secondary buttons, warm raised cards, **toggle switches** in
   Settings, warmed goal/stat cards. This restyles **Pause, Shift goals, End of shift,
   Settings, Medals** and the menu chrome toward the mockups.
-- ⏳ **Start (01)** & **HUD (03)** — adopt the shared language now; their full bespoke
-  layout (original proposal — see decision above) is a follow-up.
+- ✅ **Start (01)** — two-column layout (brand + art left, action rail right) per mockup 01.
+- ✅ **HUD (03)** — top bar reworked to the «slim bar» proposal: left cluster
+  (lives · money · combo badge), centre (level + goal **progress bar**), right
+  (timer + pause). `HUD_H` and all field/box/plane geometry untouched.
 - ⛔ **Level select (02)** — keeps the shipped **«luggage-cart» map** by decision; the
   «flight-map» mockup stays as a reference idea only.
 
