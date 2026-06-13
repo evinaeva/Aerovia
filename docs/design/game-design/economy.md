@@ -24,8 +24,10 @@ the same, and stays *tight-but-doable*, on every present and future map.
 
 ## The formula
 
-`levelEconomy(lv)` returns `{ startMoney, svcReward, flow, kitCost, openable }`. It ties two
-sides together:
+`levelEconomy(lv)` returns `{ startMoney, svcReward, flow, kitCost, openable, difficulty,
+generosity, skillMult, effects }`. It ties four things together — the **kit** to buy (A),
+the level's **difficulty** → generosity (B), the realistic **skill multiplier** from the
+effects that are on (C), then solves for the per-service pay:
 
 ### (A) The "kit" — what a shift should be able to *buy*
 
@@ -40,35 +42,70 @@ kitCost    = expectOpen × BAY_OPEN_COST                 // opening them
            + working   × BAY_UP_COST[0] × ECON_UP_FRAC  // + a few tier-1 upgrades
 ```
 
-### (B) The "earn" — what a shift actually *banks* (raw pay)
+### (B) Difficulty — the level's pressure score → generosity
 
-Base cash over the shift, **excluding** combo/express:
-
-```
-avgNSvc  = 1 + TWO_SVC_CHANCE          // a plane carries 1 or 2 service tasks (avg ≈ 1.45)
-flow     = served (untimed)  → target  // the shift ends exactly at `target` planes
-         = race / upgrades   → round(time / ECON_FLOW_SECS)   // timed: ~1 paid plane / N s
-baseEarn = svcReward × avgNSvc × flow
-```
-
-### Tie them together and solve for `svcReward`
+Genre note: time-management games (Diner Dash et al.) tune challenge from a **weighted
+composite** of arrival density, request variety, special/hard customers and patience/time
+limits — and treat *chaining* bonuses as skill upside layered on a base that must stand on
+its own. We mirror that. `levelDifficulty(lv)` is a pure function of the config, in
+`~[0, ECON_DIFF_CAP]`:
 
 ```
-startMoney + baseEarn  ≈  ECON_TIGHTNESS × kitCost
-        ⇒  svcReward = clamp( round( (ECON_TIGHTNESS·kitCost − startMoney)
-                                      / (avgNSvc · flow) ),  SVC_MIN, SVC_MAX )
+eventScore = Σ EVENT_DIFF[k]  for active specials   // vip .5, rush 1, medical 1, emer/fog/wind .8
+dens       = min(1, flow / ECON_FLOW_REF)           // how busy the apron is
+timeScore  = race ? 1 : (time ? 0.5 : 0)            // clock pressure
+envScore   = (weather?1:0) + (deice?1:0)            // hostile environment
+difficulty = (W_EVENT·eventScore + W_TIME·timeScore + W_DENS·dens + W_ENV·envScore) / DIFF_NORM
+difficulty = difficulty / calm                       // a "calm" world (bonus maps) is easier
 ```
 
-`ECON_TIGHTNESS < 1` means **raw pay alone slightly under-funds the kit** — the gap is
-closed by *skill*: the combo multiplier (up to ×2 for clean streaks) and the express bonus
-(×1.5 for fast cycles). That's the "hard but fair, rewarding to master" feel: complete the
-goals and you can afford to grow; play *cleanly* and you can afford the whole apron with
-room to spare.
+Harder maps are paid **more generously**, because chaos eats income (penalties, broken
+streaks, crashes that deduct cash):
 
-The `clamp` keeps small early maps from getting rich (cap `SVC_MAX`) and long maps from
-going hungry (floor `SVC_MIN`). Because `flow` is in the denominator, **busier maps pay a
-little less per plane** — total economy stays level across the campaign instead of
-ballooning as plane counts rise.
+```
+generosity = ECON_GEN_BASE + ECON_GEN_DIFF × difficulty      // ECON_GEN_BASE ≥ 1
+```
+
+`ECON_GEN_BASE ≥ 1` is the **3★ guarantee**: even an easy tutorial map funds the full
+expected kit, so money never blocks the third star.
+
+### (C) Skill multiplier — only from the effects that are *on*
+
+`levelEffects(lv)` reads per-level flags `combo` / `express` (both **default on**; a level
+opts out with `combo:false` / `express:false`). The model only counts the bonus income a
+mechanic can realistically add **when it's enabled**:
+
+```
+comboReach  = min(flow, COMBO_MAX) / COMBO_MAX                    // short maps can't build a streak
+comboHead   = combo?   (COMBO_STEP·COMBO_MAX)·comboReach·(1−ECON_CHAOS·difficulty)·ECON_COMBO_REAL : 0
+expressHead = express? (EXPRESS_BONUS−1)·ECON_EXPRESS_SHARE·(1−ECON_CHAOS·difficulty)             : 0
+skillMult   = 1 + comboHead + expressHead
+```
+
+So combo/express are worth **less on chaotic maps** (streaks break) and on **short maps**
+(no time to build), and **nothing when switched off** — which is how they're introduced
+gradually. The same flags gate the live payout in `depart()`, so turning a flag off on an
+early level *automatically* raises that level's base pay (see below).
+
+### Tie it together and solve for `svcReward`
+
+A competent player's **realized** income should cover the kit (with the difficulty cushion):
+
+```
+startMoney + svcReward·avgNSvc·flow·skillMult  =  kitCost · generosity
+  ⇒  svcReward = clamp( round( (kitCost·generosity − startMoney) / (avgNSvc·flow·skillMult) ),
+                        SVC_MIN, SVC_MAX )
+
+avgNSvc = 1 + TWO_SVC_CHANCE          // a plane carries 1 or 2 tasks (avg ≈ 1.45)
+flow    = served (untimed) → target  // shift ends exactly at `target`
+        = race / upgrades  → round(time / ECON_FLOW_SECS)   // timed: ~1 paid plane / N s
+```
+
+A player who actually chains combos/express lands near `kitCost·generosity`; a sloppy
+player banks less (raw `baseEarn = svcReward·avgNSvc·flow`) — *hard but fair*. Because both
+`flow` and `skillMult` sit in the denominator, **busier maps and effect-rich maps pay a
+little less per plane**, keeping the economy level across the campaign. The `clamp` stops
+tiny maps getting rich (`SVC_MAX`) and starving long ones (`SVC_MIN`).
 
 ---
 
@@ -76,47 +113,56 @@ ballooning as plane counts rise.
 
 | Knob | Value | Meaning |
 | --- | --- | --- |
-| `SVC_MIN` / `SVC_MAX` | 10 / 22 | clamp on pay per service (VIP/urgent/medical add ×bonus) |
-| `ECON_OPEN_FRAC` | 0.7 | share of buyable bays a shift is expected to open |
-| `ECON_UP_FRAC` | 0.6 | share of running bays expected to take a tier-1 upgrade |
-| `ECON_TIGHTNESS` | 0.9 | raw pay funds ~90% of the kit; the rest is combo/express |
+| `SVC_MIN` / `SVC_MAX` | 10 / 32 | clamp on pay per service (VIP/urgent/medical add ×bonus) |
+| `ECON_OPEN_FRAC` / `ECON_UP_FRAC` | 0.7 / 0.6 | kit: share of bays opened / upgraded |
+| `ECON_GEN_BASE` / `ECON_GEN_DIFF` | 1.0 / 0.35 | generosity floor (≥1 ⇒ 3★ never money-blocked) + difficulty bonus |
+| `ECON_COMBO_REAL` / `ECON_EXPRESS_SHARE` | 0.5 / 0.35 | realistic combo reach / express share |
+| `ECON_CHAOS` | 0.5 | how much difficulty cuts combo/express |
+| `ECON_W_EVENT/TIME/DENS/ENV` | .25/.5/.5/.3 | difficulty weights |
+| `ECON_DIFF_NORM` / `ECON_FLOW_REF` / `ECON_DIFF_CAP` | 2 / 32 / 1.2 | difficulty normalisation, flow reference, cap |
+| `ECON_KIT_FLOOR` | 0.8 | min share of the kit a competent player must afford |
 | `ECON_FLOW_SECS` | 6 | timed maps: estimate one paid plane every N seconds |
 | `TWO_SVC_CHANCE` | 0.45 | chance a plane has 2 tasks (shared by spawn **and** the model) |
 
 Prices (`START_MONEY` 100, `BAY_OPEN_COST` 100, `BAY_UP_COST` 80/160/320) are the **shop** —
 the same everywhere so the player learns them once. Only the **earn-side** is derived.
 
-### Derived pay across the campaign (sanity check)
+### Derived economy across the campaign (sanity check)
 
-| L | flow | svcReward | base £/plane | baseEarn + start | kitCost |
-| - | ---- | --------- | ------------ | ---------------- | ------- |
-| 1 | 8  | 22 | 31.9 | 355 | 440 |
-| 2 | 12 | 22 | 31.9 | 483 | 736 |
-| 3 | 16 | 22 | 31.9 | 610 | 736 |
-| 4 | 20 | 19 | 27.6 | 651 | 736 |
-| 5 | 50 | 10 | 14.5 | 825 | 736 |
-| 6 | 28 | 14 | 20.3 | 668 | 736 |
-| 7 | 22 | 18 | 26.1 | 674 | 736 |
-| 8 | 24 | 16 | 23.2 | 657 | 736 |
-| 9 | 27 | 15 | 21.8 | 677 | 736 |
-| 10 | 32 | 13 | 18.8 | 683 | 736 |
+All maps currently run with combo + express **on**. `realized` = a clean player's income
+(must clear `ECON_KIT_FLOOR × kit`).
 
-(L1–L3 sit at the `SVC_MAX` cap — small tutorial maps where you barely need the apron.
-L5 is the race level: many planes, lowest per-plane pay, highest volume.)
+| L | diff | generosity | skillMult | svcReward | baseEarn+start | realized | kit |
+| - | ---- | ---------- | --------- | --------- | -------------- | -------- | --- |
+| 1 | 0.06 | 1.02 | 1.56 | 19 | 320 | 443 | 440 |
+| 2 | 0.09 | 1.03 | 1.64 | 23 | 500 | 758 | 736 |
+| 3 | 0.13 | 1.04 | 1.63 | 18 | 518 | 782 | 736 |
+| 4 | 0.16 | 1.05 | 1.62 | 14 | 506 | 759 | 736 |
+| 5 | 0.50 | 1.18 | 1.51 | 10 | 825 | 1192 | 736 |
+| 6 | 0.22 | 1.08 | 1.60 | 11 | 547 | 815 | 736 |
+| 7 | 0.23 | 1.08 | 1.60 | 14 | 547 | 813 | 736 |
+| 8 | 0.38 | 1.13 | 1.55 | 14 | 587 | 854 | 736 |
+| 9 | 0.52 | 1.18 | 1.50 | 13 | 599 | 853 | 736 |
+| 10 | 0.56 | 1.20 | 1.49 | 12 | 637 | 907 | 736 |
+
+L5/L9/L10 carry the most difficulty (race timer, event stacks) → highest generosity. When
+combo/express are later disabled on the early maps, their `skillMult` drops to 1 and the
+solver raises `svcReward` to keep the kit affordable on raw pay alone — e.g. L1 jumps 19→26.
 
 ---
 
 ## Invariants (locked by tests)
 
-`validateLevels()` runs `levelEconomy()` for every map and fails the build if either:
+`validateLevels()` runs `levelEconomy()` for every map and fails the build if any of:
 
-1. `svcReward` falls outside `[SVC_MIN, SVC_MAX]`, or
-2. `baseEarn = svcReward · avgNSvc · flow  <  BAY_OPEN_COST` — i.e. a shift wouldn't bank
-   enough for even **one** new bay on raw pay. This is the original bug encoded as a guard,
-   so no future map can regress into "can't afford a box."
+1. `svcReward` falls outside `[SVC_MIN, SVC_MAX]`;
+2. `baseEarn = svcReward · avgNSvc · flow  <  BAY_OPEN_COST` — a shift wouldn't bank enough
+   for even **one** new bay on raw pay (the original bug, encoded as a guard);
+3. `realized = startMoney + baseEarn · skillMult  <  ECON_KIT_FLOOR · kitCost` — a competent
+   player couldn't afford the bulk of the expected build-out (so money would gate 3★).
 
-`validateConfig()` range-checks the `ECON_*` / `SVC_*` knobs. See `tests/logic.test.mjs`
-(section "Экономика уровня").
+`validateConfig()` range-checks the `ECON_*` / `SVC_*` knobs (incl. `ECON_GEN_BASE ≥ 1`).
+See `tests/logic.test.mjs` (section "Экономика уровня").
 
 ---
 

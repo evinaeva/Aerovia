@@ -30,6 +30,8 @@ everything below from config + the `level.t/d/h.<n>` strings.
   runways : 3,
   startMoney : 90,                   // optional, default K.START_MONEY (100)
   events  : { vip, rush, medical, … },  // special flights / dynamics — see "Event ramp"
+  combo   : false,                   // optional, default true — disable the combo money bonus
+  express : false,                   // optional, default true — disable the express money bonus
 }
 ```
 
