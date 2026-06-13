@@ -146,7 +146,10 @@ implementing them; render with `python3 variants.py`.
 - **C · «Tower console»** — run stats (money · combo · goal · timer) on a thin **bottom
   strip**; only lives + pause top-right.
 
-> Pick one of each (or mix) — then they get implemented over the interim versions.
+> **Decision (locked):** Start (01) and HUD (03) keep their **original proposal**
+> (`01-start` and `03-hud` «slim top bar» = HUD variant A); the other variants stay here
+> as reference only. Level select (02) **keeps the shipped «luggage-cart» map** — not
+> replaced.
 
 ## Implementation status (in `index.html`)
 
@@ -158,10 +161,10 @@ hangs off the reserved `HUD_H` top band; that band is left unchanged).
   primary CTA + soft secondary buttons, warm raised cards, **toggle switches** in
   Settings, warmed goal/stat cards. This restyles **Pause, Shift goals, End of shift,
   Settings, Medals** and the menu chrome toward the mockups.
-- ⏳ **Start (01)** & **HUD (03)** — interim look only; full layout pending the variant
-  pick above.
-- ⏳ **Level select (02)** — the game currently ships a deliberate **«luggage-cart» map**;
-  swapping it for the «flight-map» mockup is a separate call (not done automatically).
+- ⏳ **Start (01)** & **HUD (03)** — adopt the shared language now; their full bespoke
+  layout (original proposal — see decision above) is a follow-up.
+- ⛔ **Level select (02)** — keeps the shipped **«luggage-cart» map** by decision; the
+  «flight-map» mockup stays as a reference idea only.
 
 ## Layout tokens (starting targets)
 
