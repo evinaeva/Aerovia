@@ -124,6 +124,45 @@ Start/Menu ──Play──► Level select ──tap level──► Shift goals
 
 ---
 
+## Redesign variants — screens 01 (Start) & 03 (HUD)
+
+Screens 1 and 3 are flagged for a rework. Below are directions to choose between before
+implementing them; render with `python3 variants.py`.
+
+![Variants](../../assets/design/wireframes/variants-overview.png)
+
+**Start (01):**
+- **A · «Boarding pass»** — the whole menu *is* a boarding pass: brand + flight fields on
+  the body, **PLAY as the tear-off stub**, secondary actions as stamps. Most on-theme.
+- **B · «Living airport»** — the real top-down airport runs behind the menu (planes taxi,
+  routes glow); wordmark top-left, a translucent action dock on the right. Most immersive.
+- **C · «Departures board»** — a split-flap board where each menu item is a flight
+  (PLAY = *now boarding*). Playful, text-forward.
+
+**HUD (03):**
+- **A · «Slim top bar»** — the current proposal (screen 03 above): one translucent top bar.
+- **B · «Corners / minimal»** — no top bar; a status pill top-left, a small goal ring
+  top-centre, a round **pause in the bottom-right thumb zone**. Most field-first.
+- **C · «Tower console»** — run stats (money · combo · goal · timer) on a thin **bottom
+  strip**; only lives + pause top-right.
+
+> Pick one of each (or mix) — then they get implemented over the interim versions.
+
+## Implementation status (in `index.html`)
+
+Adopting this design is happening as a **presentation-layer** change only — **gameplay,
+arriving-plane positions and service-box positions are not touched** (the in-game layout
+hangs off the reserved `HUD_H` top band; that band is left unchanged).
+
+- ✅ **Shared design language** (CSS): warm sans-serif headings/body, rounded green
+  primary CTA + soft secondary buttons, warm raised cards, **toggle switches** in
+  Settings, warmed goal/stat cards. This restyles **Pause, Shift goals, End of shift,
+  Settings, Medals** and the menu chrome toward the mockups.
+- ⏳ **Start (01)** & **HUD (03)** — interim look only; full layout pending the variant
+  pick above.
+- ⏳ **Level select (02)** — the game currently ships a deliberate **«luggage-cart» map**;
+  swapping it for the «flight-map» mockup is a separate call (not done automatically).
+
 ## Layout tokens (starting targets)
 
 | Token | Value | Note |
