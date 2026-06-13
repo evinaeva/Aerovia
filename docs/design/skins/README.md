@@ -1,7 +1,7 @@
 # Skins
 
 Visual skins for PlaneFlow. The game ships a runtime **skin switch**
-(`SKIN = 'cozy' | 'neon'`, in `index.html`; selectable in **Settings → Skin**,
+(`SKIN = 'cozy' | 'neon' | 'cartoon'`, in `index.html`; selectable in **Settings → Skin**,
 or via `?skin=<name>` / `localStorage.pf_skin`). Each skin only changes how the
 game *looks* — never the gameplay layout (top-down, planes/runways right, bays on
 bottom/left/top, finger-drawn routes, slim top HUD, no tiny UI).
@@ -9,8 +9,8 @@ bottom/left/top, finger-drawn routes, slim top HUD, no tiny UI).
 | Skin | Status | Where |
 | --- | --- | --- |
 | **cozy** | shipped (default) | cozy sprite atlas — `assets/sprites/` |
-| **neon** | shipped as a **procedural placeholder**; art brief to replace it | [`neon/BRIEF.md`](neon/BRIEF.md) |
-| **cartoon** | **art brief — not yet drawn** | [`cartoon/BRIEF.md`](cartoon/BRIEF.md) |
+| **neon** | shipped — **drawn PNG atlas** (55 ids + menu/brand art) | `assets/sprites/neon/` · brief: [`neon/BRIEF.md`](neon/BRIEF.md) |
+| **cartoon** | shipped — **drawn PNG atlas** (71 ids: terrain, props, menus, brand) | `assets/sprites/cartoon/` · brief: [`cartoon/BRIEF.md`](cartoon/BRIEF.md) |
 
 Each `<skin>/` folder is a **self-contained design brief** (style spec, references,
 engine integration, mini-animation plans, full asset checklist). Hand the folder to
