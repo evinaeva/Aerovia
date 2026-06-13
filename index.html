@@ -1071,13 +1071,14 @@
     const n = LV.runways;
     const top0 = hud + M, bot0 = H - M;
     const gap = 10*ui;
-    const rh = ((bot0-top0) - gap*(n-1)) / n;
+    const rh = 40*ui;                       // ширина ВПП ≈ 1.5× размах борта (~26ui)
+    const rwY0 = top0 + Math.max(0, ((bot0-top0) - (rh*n + gap*(n-1))) / 2); // центрируем по вертикали
     if(!runways.length || runways.length!==n){
       runways = []; for(let i=0;i<n;i++) runways.push({occupied:null, closed:false});
     }
     for(let i=0;i<n;i++){
       const r=runways[i];
-      r.x=rwL; r.y=top0 + i*(rh+gap); r.w=rwR-rwL; r.h=rh;
+      r.x=rwL; r.y=rwY0 + i*(rh+gap); r.w=rwR-rwL; r.h=rh;
       r.cy = r.y + r.h/2;
       r.stopX = rwL + 26*ui;   // куда докатывается севший борт (полевой край)
       r.exitX = rwR + 10*ui;   // правый (водный) край
@@ -1769,23 +1770,32 @@
         pl.serveTime-=dt;
         const frac=Math.max(0,pl.serveTime)/Math.max(0.001,pl.serveMax);
         const cx=b.x+b.w/2, cy=b.y+b.h/2;
-        const along=(Math.abs(o.dx)>=Math.abs(o.dy)) ? b.w : b.h;
-        const parkX=cx - o.dx*along*0.18, parkY=cy - o.dy*along*0.18;                 // у дальней стены
-        const frontX=clampX(cx + o.dx*(along*0.6+24*ui)), frontY=clampY(cy + o.dy*(along*0.6+24*ui)); // перед боксом
+        const vert=Math.abs(o.dy)>Math.abs(o.dx);
+        const half=(vert? b.h : b.w)/2;
+        const L=13*ui, gap=4*ui;                   // полудлина борта + зазор до стены
+        const parkA = -(half - L - gap);           // центр борта у дальней стены (целиком внутри)
+        const frontA =  (half + L + gap);          // центр борта чуть перед воротами
+        // держим борт ровно на оси ворот → нет касания боковых стен
+        if(vert) pl.x += (cx-pl.x)*Math.min(1, dt*6);
+        else     pl.y += (cy-pl.y)*Math.min(1, dt*6);
+        const along = vert ? (pl.y-cy)*o.dy : (pl.x-cx)*o.dx;  // вдоль оси, наружу +
+        const step = taxiSpeed*dt*0.85;
+        const setAlong = a => { if(vert) pl.y=cy+a*o.dy; else pl.x=cx+a*o.dx; };
+        const angIn=Math.atan2(-o.dy,-o.dx), angOut=Math.atan2(o.dy,o.dx);
         if(frac>0.25){
-          // заезд и стоянка носом к стене
-          if(dist(pl.x,pl.y,parkX,parkY)>3*ui) steer(pl, parkX, parkY, taxiSpeed*0.8, dt);
-          else { pl.x=parkX; pl.y=parkY; turnTo(pl, Math.atan2(-o.dy,-o.dx), dt*1.5); }
+          turnTo(pl, angIn, dt*2);                                 // нос к стене
+          setAlong(along + Math.sign(parkA-along)*Math.min(step, Math.abs(parkA-along)));
         } else {
-          // последняя четверть: плавный разворот (за счёт steer) и выезд носом наружу
-          if(dist(pl.x,pl.y,frontX,frontY)>3*ui) steer(pl, frontX, frontY, taxiSpeed*0.9, dt);
-          else { pl.x=frontX; pl.y=frontY; turnTo(pl, Math.atan2(o.dy,o.dx), dt*1.5); }
+          // последняя четверть: разворот НА МЕСТЕ (центр — клиренс), затем выезд
+          let d=angOut-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+          if(Math.abs(d)>0.12){ turnTo(pl, angOut, dt*1.8); }
+          else { turnTo(pl, angOut, dt*2); setAlong(along + Math.sign(frontA-along)*Math.min(step, Math.abs(frontA-along))); }
         }
         if(pl.serveTime<=0){
           b.occupied=null; pl.bay=null; pl.bayPhase=null;
           pl.reqIndex++; ACH.onService(pl); SND.served();
           pulseFx(cx,cy,'success',0.5);
-          pl.zone='field'; pl.x=frontX; pl.y=frontY; pl.moving=false; pl.path=[];
+          pl.zone='field'; setAlong(frontA); pl.x=clampX(pl.x); pl.y=clampY(pl.y); pl.moving=false; pl.path=[];
         }
         continue;
       }
