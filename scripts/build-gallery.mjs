@@ -72,11 +72,15 @@ async function main() {
     out.push('');
   }
 
-  out.push('---');
-  out.push('');
-  out.push('_Версии 0.1–0.6 в галерею не попадают: их код предшествует началу git-истории репозитория,');
-  out.push('отрисовать их не из чего — описание есть только в [`CHANGELOG.md`](../../CHANGELOG.md)._');
-  out.push('');
+  const earliest = versions[versions.length - 1];
+  if (earliest && cmpVer(earliest, '0.1') > 0) {
+    out.push('---');
+    out.push('');
+    out.push(`_Более ранние версии (до ${earliest}) в галерею не попадают: их код предшествует началу`);
+    out.push('git-истории репозитория, отрисовать их не из чего — описание есть только в');
+    out.push('[`CHANGELOG.md`](../../CHANGELOG.md)._');
+    out.push('');
+  }
 
   await writeFile(join(OUT_ROOT, 'README.md'), out.join('\n'));
   console.log(`Галерея собрана: ${versions.length} версий → docs/screenshots/README.md`);
