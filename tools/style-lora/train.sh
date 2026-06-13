@@ -6,6 +6,10 @@
 # .safetensors survives after you kill the pod.
 set -euo pipefail
 
+# RunPod images set HF_HUB_ENABLE_HF_TRANSFER=1 but don't ship hf_transfer,
+# which breaks the small CLIP-tokenizer download. Use the normal downloader.
+export HF_HUB_ENABLE_HF_TRANSFER=0
+
 VOL=/workspace/aerovia-lora
 BASE_MODEL=/workspace/models/sd_xl_base_1.0.safetensors   # download once to the volume
 CFG="$VOL/config"
