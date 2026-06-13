@@ -2009,6 +2009,11 @@
         for(let j=i+1;j<air.length;j++){
           const a=air[i], b=air[j], d=dist(a.x,a.y,b.x,b.y);
           if(d >= K.NEAR_DIST*1.5) continue;                 // далеко — не отслеживаем
+          // на ВПП «уфф» неуместен: садящийся борт идёт по глиссаде и не может
+          // уйти маневром (это будет краш, а не near-miss), а борта на РАЗНЫХ
+          // полосах физически разнесены и не столкнутся — в обоих случаях не «уфф»
+          if(a.landing || b.landing) continue;
+          if(a.zone==='runway' && b.zone==='runway' && a.runway!==b.runway) continue;
           const key = a.id<b.id ? a.id+'-'+b.id : b.id+'-'+a.id;
           const prev = nearMissPairs[key];
           let cool = prev ? prev.cool : 0;
