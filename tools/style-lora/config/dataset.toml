@@ -1,0 +1,17 @@
+# Kohya sd-scripts dataset config for the Aerovia style LoRA.
+# All images are pre-squared to 1024x1024 by prepare_dataset.py, so no
+# aspect-ratio bucketing is needed.
+[general]
+shuffle_caption = false        # captions are short & ordered; keep trigger first
+caption_extension = ".txt"
+keep_tokens = 1                # protect the leading trigger token
+
+[[datasets]]
+resolution = 1024
+batch_size = 2
+
+  [[datasets.subsets]]
+  # Point at the concept folder produced by prepare_dataset.py.
+  # Edit this path to your network-volume location on the pod.
+  image_dir = "/workspace/aerovia-lora/dataset/train/10_aerovia"
+  num_repeats = 10

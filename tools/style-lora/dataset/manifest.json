@@ -1,0 +1,45 @@
+{
+  "trigger": "aerovia_cartoon",
+  "style_suffix": "single warm-dark outline, glossy cartoon, soft cel shading, saturated daytime palette, simple background",
+  "note": "Core ~33 dataset. Captions = 'aerovia_cartoon, <subject>, <view>, <style_suffix>'. View tag lets one LoRA serve both top-down gameplay objects and three-quarter buildings.",
+  "items": [
+    { "file": "plane-vip.png",          "category": "airplane",    "view": "top-down",            "subject": "white private jet airplane with blue trim" },
+    { "file": "plane-emergency.png",     "category": "airplane",    "view": "top-down",            "subject": "red and white emergency medical airplane with red cross" },
+    { "file": "plane-medevac.png",       "category": "airplane",    "view": "top-down",            "subject": "white medevac airplane with red cross markings" },
+
+    { "file": "terminal.png",            "category": "building",    "view": "three-quarter view",  "subject": "blue and white airport terminal building with control glass" },
+    { "file": "bay-fuel.png",            "category": "building",    "view": "three-quarter view",  "subject": "purple fuel service stall building with a gas pump on top" },
+    { "file": "bay-repair.png",          "category": "building",    "view": "three-quarter view",  "subject": "glossy cream repair service stall building" },
+    { "file": "bay-board.png",           "category": "building",    "view": "three-quarter view",  "subject": "glossy cream boarding service stall building" },
+    { "file": "bay-deice.png",           "category": "building",    "view": "three-quarter view",  "subject": "glossy cream de-icing service stall building" },
+    { "file": "bay-locked.png",          "category": "building",    "view": "three-quarter view",  "subject": "locked empty service stall building with a padlock" },
+
+    { "file": "truck.png",               "category": "vehicle",     "view": "side three-quarter view", "subject": "white and blue cartoon service truck with a blue wrench badge" },
+
+    { "file": "tree.png",                "category": "environment", "view": "front view",          "subject": "lush rounded green cartoon tree on a grass tuft" },
+    { "file": "bush.png",                "category": "environment", "view": "front view",          "subject": "round green cartoon bush" },
+    { "file": "cloud.png",               "category": "environment", "view": "front view",          "subject": "fluffy white cartoon cloud" },
+    { "file": "cloud-2.png",             "category": "environment", "view": "front view",          "subject": "small fluffy white cartoon cloud" },
+    { "file": "cloud-3.png",             "category": "environment", "view": "front view",          "subject": "wide thin fluffy white cartoon cloud" },
+    { "file": "shore.png",               "category": "environment", "view": "top-down",            "subject": "sandy shoreline edge between grass and water" },
+    { "file": "runway.png",              "category": "environment", "view": "top-down",            "subject": "grey airport runway strip with center markings" },
+    { "file": "runway-threshold.png",    "category": "environment", "view": "top-down",            "subject": "airport runway threshold with painted stripes" },
+    { "file": "tower-light.png",         "category": "environment", "view": "three-quarter view",  "subject": "airport control tower with a rotating light on top" },
+    { "file": "lamp.png",                "category": "environment", "view": "front view",          "subject": "tall airport lamp post with a warm light" },
+    { "file": "flag.png",                "category": "environment", "view": "front view",          "subject": "marker flag on a pole" },
+    { "file": "bird.png",                "category": "environment", "view": "side view",           "subject": "small flying cartoon bird" },
+
+    { "file": "tile-grass.png",          "category": "ground-tile", "view": "top-down",            "subject": "seamless mowed green grass texture tile" },
+    { "file": "tile-water.png",          "category": "ground-tile", "view": "top-down",            "subject": "seamless blue water texture tile with ripples" },
+
+    { "file": "coin.png",                "category": "token",       "view": "front view",          "subject": "golden dollar coin currency token" },
+    { "file": "heart.png",               "category": "token",       "view": "front view",          "subject": "glossy red heart life token" },
+    { "file": "heart-empty.png",         "category": "token",       "view": "front view",          "subject": "empty grey heart outline life token" },
+    { "file": "heart-crack.png",         "category": "token",       "view": "front view",          "subject": "cracked red heart life token" },
+    { "file": "star.png",                "category": "token",       "view": "front view",          "subject": "glossy yellow five-point star token" },
+    { "file": "star-empty.png",          "category": "token",       "view": "front view",          "subject": "empty grey five-point star outline token" },
+    { "file": "clock.png",               "category": "token",       "view": "front view",          "subject": "cartoon timer clock token" },
+    { "file": "moon.png",                "category": "token",       "view": "front view",          "subject": "crescent moon night token" },
+    { "file": "check.png",               "category": "token",       "view": "front view",          "subject": "green check mark token" }
+  ]
+}
