@@ -270,6 +270,49 @@ test('открытие уровней не вылезает за пределы 
   assert.equal(r.unlocked, 10, 'unlocked не должен превышать LEVELS.length');
 });
 
+// ---------- Бонус-уровни (шуточный «другой мир» каждые 5 уровней) ----------
+
+test('validateBonus() не находит проблем в текущем конфиге бонусов', () => {
+  const { game } = boot();
+  assert.deepEqual([...game.validateBonus()], [], 'конфиг бонус-уровней должен быть валиден');
+});
+
+test('бонус заведён после каждого 5-го уровня (5, 10, …) и кратен 5', () => {
+  const { game } = boot();
+  assert.ok(game.bonusAfter(5), 'должен быть бонус после L5');
+  assert.equal(game.bonusAfter(4), null, 'после не-кратного 5 уровня бонуса нет');
+  game.BONUS.forEach(b => assert.equal(b.after % 5, 0, 'after должен быть кратен 5'));
+});
+
+test('бонус открывается прохождением своего 5-го уровня (≥1★), не двигая кампанию', () => {
+  const { game } = boot();
+  const b = game.bonusAfter(5);
+  assert.equal(game.bonusUnlocked(b), false, 'закрыт, пока L5 не пройден');
+  const unlockedBefore = game.save.unlocked;
+  game.save.stars[4] = 1;                       // L5 (индекс 4) пройден на 1★
+  assert.equal(game.bonusUnlocked(b), true, 'открыт после прохождения L5');
+  assert.equal(game.save.unlocked, unlockedBefore, 'статус бонуса не двигает прогресс кампании');
+});
+
+test('бонус-уровни вынесены из кампании (LEVELS) — не ломают её длину/прогрессию', () => {
+  const { game } = boot();
+  assert.equal(game.LEVELS.length, 10, 'кампания остаётся из 10 уровней');
+  game.LEVELS.forEach(lv => assert.ok(!lv.bonus, 'у уровней кампании нет флага bonus'));
+});
+
+test('имя бонуса берётся из темы (bonus.t.<id>) с фолбэком на bonus.name', () => {
+  const { game } = boot();
+  const b = game.bonusAfter(5);
+  assert.equal(game.bonusName(b), game.t('bonus.t.' + b.id), 'тематическое имя из словаря');
+});
+
+test('validateBonus ловит поломку: after не кратен 5', () => {
+  const { game } = boot();
+  game.BONUS[0].after = 4;                       // имитируем «сломанную» правку
+  const problems = game.validateBonus();
+  assert.ok(problems.some(p => /кратен 5/.test(p)), 'нарушение шага в 5 уровней должно отлавливаться');
+});
+
 // ---------- Сейв: загрузка и миграция ----------
 
 test('загрузка существующего сейва (новый ключ)', () => {
