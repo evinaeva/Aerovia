@@ -536,8 +536,8 @@
   function applySkin(code){
     SKIN = (code === 'neon') ? 'neon' : 'cozy';
     NEON = SKIN === 'neon';
-    COZY = !NEON;
     THEME.tokens = NEON ? Object.assign({}, NEON_TOKENS) : {};
+    refreshSpriteMode();
   }
   const SPRITES = (() => {
     const cache = new Map();
@@ -563,10 +563,15 @@
       const tokens = (color && typeof color === 'object') ? color : null;
       const cstr = (typeof color === 'string') ? color : '';
       const sig = tokens ? tokSig(tokens) : '';
-      const key = id + '@' + pw + 'x' + ph + cstr + (sig ? '#' + sig : '');
+      // пер-скиновый override: при активном не-cozy скине символ `<skin>-<id>`
+      // (если он загружен из assets/sprites/<skin>/) имеет приоритет над базовым.
+      // Так нарисованный неон-арт «встаёт» поверх движка без правок call-site'ов.
+      let symId = id;
+      if(SKIN !== 'cozy' && document.getElementById(SKIN + '-' + id)) symId = SKIN + '-' + id;
+      const key = symId + '@' + pw + 'x' + ph + cstr + (sig ? '#' + sig : '');
       let im = cache.get(key);
       if(!im){
-        const sym = document.getElementById(id);
+        const sym = document.getElementById(symId);
         if(!sym) return null;
         const vb = sym.getAttribute('viewBox') || '0 0 64 64';
         const cattr = cstr ? ' color="'+cstr+'"' : '';
@@ -597,6 +602,7 @@
     }
     const A = {
       ready: false,
+      skinReady: false,   // true когда загружены пер-скиновые листы активного скина
       get palette(){ return PALETTE; },
       // применить/сбросить тему: setTheme({gold:'#fff'}) — частично, setTheme(null) — сброс
       setTheme(tokens){ THEME.tokens = (tokens && typeof tokens === 'object') ? tokens : {}; },
@@ -630,22 +636,61 @@
       }
     };
     const patterns = new Map();
-    // fetch sheets into a hidden holder, then go live (browser only; no-op under the test harness)
+    const SHEETS = ['aircraft', 'field', 'hud', 'effects', 'brand'];
+    const loadedSkins = new Set();
+    // загрузить пер-скиновый набор листов из assets/sprites/<skin>/planeflow-*.svg.
+    // Символы в них должны быть с id-префиксом `<skin>-` (напр. `neon-bay-repair`),
+    // чтобы не конфликтовать с базовыми и резолвиться через img() при активном скине.
+    // Когда хотя бы один символ доехал — A.skinReady=true и режим спрайтов
+    // пересчитывается (см. refreshSpriteMode), так что нарисованный арт включается сам.
+    A.loadSkin = function(skin){
+      if (!skin || skin === 'cozy' || loadedSkins.has(skin)) return;
+      loadedSkins.add(skin);
+      try {
+        if (typeof fetch === 'undefined' || typeof Image === 'undefined') return;
+        const h = document.createElement('div');
+        h.id = 'pf-sprites-' + skin; h.setAttribute('aria-hidden', 'true');
+        h.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+        document.body.appendChild(h);
+        const urls = SHEETS.map(n => 'assets/sprites/' + skin + '/planeflow-' + n + '.svg');
+        Promise.all(urls.map(u => fetch(u).then(r => r.ok ? r.text() : '').catch(() => '')))
+          .then(parts => {
+            const html = parts.join('\n');
+            if (html.trim()) { h.innerHTML = html; A.skinReady = !!h.querySelector('symbol'); }
+            if (typeof refreshSpriteMode === 'function') refreshSpriteMode();
+          }).catch(() => {});
+      } catch (e) { /* ignore */ }
+    };
+    // fetch base sheets into a hidden holder, then go live (browser only; no-op under the test harness)
     try {
       if (typeof fetch !== 'undefined' && typeof Image !== 'undefined') {
         const holder = document.createElement('div');
         holder.id = 'pf-sprites'; holder.setAttribute('aria-hidden', 'true');
         holder.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
         document.body.appendChild(holder);
-        const sheets = ['aircraft', 'field', 'hud', 'effects', 'brand']
-          .map(n => 'assets/sprites/planeflow-' + n + '.svg');
+        const sheets = SHEETS.map(n => 'assets/sprites/planeflow-' + n + '.svg');
         Promise.all(sheets.map(u => fetch(u).then(r => r.ok ? r.text() : '').catch(() => '')))
-          .then(parts => { holder.innerHTML = parts.join('\n'); A.ready = true; })
+          .then(parts => {
+            holder.innerHTML = parts.join('\n'); A.ready = true;
+            if (SKIN !== 'cozy') A.loadSkin(SKIN);   // подтянуть арт активного скина
+            if (typeof refreshSpriteMode === 'function') refreshSpriteMode();
+          })
           .catch(() => {});
       }
     } catch (e) { /* non-DOM env: stay procedural */ }
     return A;
   })();
+
+  // Решает, рисовать ли через спрайт-атлас (COZY=true) или процедурно (false)
+  // для активного скина. cozy → всегда атлас. Не-cozy (напр. neon) → атлас только
+  // когда его пер-скиновые листы загружены (A.skinReady); иначе процедурный
+  // фолбэк (текущий неон), и параллельно подтягиваем арт скина.
+  function refreshSpriteMode(){
+    if (SKIN === 'cozy') { COZY = true; return; }
+    COZY = !!SPRITES.skinReady;
+    if (!SPRITES.skinReady) SPRITES.loadSkin(SKIN);
+  }
+  refreshSpriteMode();
 
   // ---- palette helpers ----
   // COL — палитра для процедурного фолбэка. Значения берутся из :root (дефолтный
@@ -2684,19 +2729,25 @@
     const col=SVC[b.type].color;
     const busy=!!b.occupied;
     ctx.save();
+    // нарисованная цельная панель бокса (пер-скиновый арт, напр. neon): bay-<type>
+    // для открытого, bay-locked для закрытого — заменяет процедурную «стойло»-форму.
+    // По контракту спрайт НЕ запекает иконку/ценник/прогресс — движок рисует их поверх.
+    const panelDrawn = COZY && SPRITES.blitC(b.open ? ('bay-'+b.type) : 'bay-locked', b.x+b.w/2, b.y+b.h/2, b.w, b.h);
     if(!b.open){
       const enough = money>=K.BAY_OPEN_COST;
-      rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=NEON?'#0a1230':'#1f1b2c'; ctx.fill();
-      ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.muted,.25); rr(b.x,b.y,b.w,b.h,9*ui); ctx.stroke();
-      // приглушённая иконка типа + замок
-      ctx.globalAlpha=.35;
-      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.28, 33*ui, 33*ui)))
-        drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.28, 12*ui, COL.muted, '#1f1b2c');
-      ctx.globalAlpha=1;
-      const lx=b.x+b.w/2, ly=b.y+b.h*0.52;
-      ctx.fillStyle=hexa(COL.muted,.8); rr(lx-7*ui,ly-4*ui,14*ui,11*ui,2.5*ui); ctx.fill();
-      ctx.beginPath(); ctx.arc(lx,ly-4*ui,5*ui,Math.PI,0);
-      ctx.lineWidth=2*ui; ctx.strokeStyle=hexa(COL.muted,.8); ctx.stroke();
+      if(!panelDrawn){
+        rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=NEON?'#0a1230':'#1f1b2c'; ctx.fill();
+        ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.muted,.25); rr(b.x,b.y,b.w,b.h,9*ui); ctx.stroke();
+        // приглушённая иконка типа + замок
+        ctx.globalAlpha=.35;
+        if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.28, 33*ui, 33*ui)))
+          drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.28, 12*ui, COL.muted, '#1f1b2c');
+        ctx.globalAlpha=1;
+        const lx=b.x+b.w/2, ly=b.y+b.h*0.52;
+        ctx.fillStyle=hexa(COL.muted,.8); rr(lx-7*ui,ly-4*ui,14*ui,11*ui,2.5*ui); ctx.fill();
+        ctx.beginPath(); ctx.arc(lx,ly-4*ui,5*ui,Math.PI,0);
+        ctx.lineWidth=2*ui; ctx.strokeStyle=hexa(COL.muted,.8); ctx.stroke();
+      }
       // ценник-чип
       const chW=Math.min(b.w-10*ui,56*ui);
       rr(b.x+b.w/2-chW/2, b.y+b.h-19*ui, chW, 14*ui, 7*ui);
@@ -2710,21 +2761,23 @@
     // открытый бокс-«стойло»: пол + стены с трёх сторон, ворота в сторону поля,
     // рамка цвета услуги (ярче и со свечением, когда занят) — борт внутри виден
     const out=dirOut(b);
-    rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=LV.bonus?'#2e3a26':(NEON?'#0b1336':'#2a2440'); ctx.fill();   // бонус: грядка
-    ctx.lineWidth=2;
-    if(busy){ ctx.shadowColor=hexa(col,.6); ctx.shadowBlur=12; }
-    else if(NEON){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=8; }
-    ctx.strokeStyle=hexa(col, busy?0.9:(NEON?0.75:0.45)); bayWalls(b,out,9*ui); ctx.stroke(); ctx.shadowBlur=0;
-    // проём ворот: пунктирный порог + габаритные огни по углам
-    let gx0,gy0,gx1,gy1;
-    if(out.dy===1){ gx0=b.x; gy0=b.y+b.h; gx1=b.x+b.w; gy1=gy0; }
-    else if(out.dy===-1){ gx0=b.x; gy0=b.y; gx1=b.x+b.w; gy1=gy0; }
-    else if(out.dx===-1){ gx0=b.x; gy0=b.y; gx1=gx0; gy1=b.y+b.h; }
-    else { gx0=b.x+b.w; gy0=b.y; gx1=gx0; gy1=b.y+b.h; }
-    ctx.setLineDash([4*ui,5*ui]); ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.22);
-    ctx.beginPath(); ctx.moveTo(gx0,gy0); ctx.lineTo(gx1,gy1); ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle=hexa(col,.8);
-    [[gx0,gy0],[gx1,gy1]].forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],2*ui,0,7); ctx.fill(); });
+    if(!panelDrawn){
+      rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=LV.bonus?'#2e3a26':(NEON?'#0b1336':'#2a2440'); ctx.fill();   // бонус: грядка
+      ctx.lineWidth=2;
+      if(busy){ ctx.shadowColor=hexa(col,.6); ctx.shadowBlur=12; }
+      else if(NEON){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=8; }
+      ctx.strokeStyle=hexa(col, busy?0.9:(NEON?0.75:0.45)); bayWalls(b,out,9*ui); ctx.stroke(); ctx.shadowBlur=0;
+      // проём ворот: пунктирный порог + габаритные огни по углам
+      let gx0,gy0,gx1,gy1;
+      if(out.dy===1){ gx0=b.x; gy0=b.y+b.h; gx1=b.x+b.w; gy1=gy0; }
+      else if(out.dy===-1){ gx0=b.x; gy0=b.y; gx1=b.x+b.w; gy1=gy0; }
+      else if(out.dx===-1){ gx0=b.x; gy0=b.y; gx1=gx0; gy1=b.y+b.h; }
+      else { gx0=b.x+b.w; gy0=b.y; gx1=gx0; gy1=b.y+b.h; }
+      ctx.setLineDash([4*ui,5*ui]); ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.22);
+      ctx.beginPath(); ctx.moveTo(gx0,gy0); ctx.lineTo(gx1,gy1); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle=hexa(col,.8);
+      [[gx0,gy0],[gx1,gy1]].forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],2*ui,0,7); ctx.fill(); });
+    }
     if(busy){
       // центр отдан припаркованному борту (рисуется поверх) —
       // тип услуги мелкой пиктограммой у дальней от ворот стены
@@ -2784,7 +2837,7 @@
 
     // маршрут — cozy-зелёная (radar-фосфор при COZY=off): сплошная тонкая линия
     if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
-      const _rc = COZY ? '#5dca7a' : COL.phosphor;
+      const _rc = NEON ? COL.phosphor : '#5dca7a';
       ctx.save();
       ctx.strokeStyle=hexa(_rc, pl.selected?0.95:0.6);
       ctx.lineWidth=NEON?2.4:1.25; ctx.lineCap='round'; ctx.lineJoin='round'; // сплошная, на 50% тоньше, без мерцания
