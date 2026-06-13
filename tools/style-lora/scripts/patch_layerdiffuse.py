@@ -10,10 +10,15 @@ depends on ComfyUI internals. Idempotent.
 
     python3 tools/style-lora/scripts/patch_layerdiffuse.py
 """
+import os
 import sys
 from pathlib import Path
 
-TARGET = Path("/workspace/ComfyUI/custom_nodes/ComfyUI-layerdiffuse/layered_diffusion.py")
+# Path to the node file: argv[1] > $LAYERDIFFUSE_PY > pod default. Lets the same
+# patch run on the pod and on a local Windows ComfyUI.
+TARGET = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(
+    os.environ.get("LAYERDIFFUSE_PY",
+                   "/workspace/ComfyUI/custom_nodes/ComfyUI-layerdiffuse/layered_diffusion.py"))
 MARKER = "join_image_with_alpha(image, alpha)"
 TAG = "AEROVIA_PATCHED"
 

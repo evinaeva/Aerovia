@@ -1,16 +1,16 @@
 [
-  { "name": "plane",            "view": "top-down",           "size": 256, "subject": "a passenger airliner, glossy white body with blue trim, nose pointing up" },
-  { "name": "plane-vip",        "view": "top-down",           "size": 256, "subject": "a private jet airliner, glossy white body with gold trim, nose pointing up" },
-  { "name": "plane-emergency",  "view": "top-down",           "size": 256, "subject": "an emergency airplane, white body with red accents and a red cross, nose pointing up" },
-  { "name": "plane-medevac",    "view": "top-down",           "size": 256, "subject": "a medevac airplane, white body with red cross markings, nose pointing up" },
+  { "name": "plane",            "view": "top-down",           "size": 256, "subject": "an airliner seen from directly overhead, top-down map view, glossy white body with blue trim, nose pointing straight up, wings spread horizontally and symmetric, flat", "neg": "blurry, photo, realistic, 3d render, side view, profile, three-quarter view, perspective, angled, banking, tilted, multiple objects, sprite sheet, text, letters, signage, watermark, frame, border" },
+  { "name": "plane-vip",        "view": "top-down",           "size": 256, "subject": "a private jet seen from directly overhead, top-down map view, glossy white body with gold trim, nose pointing straight up, wings spread horizontally and symmetric, flat", "neg": "blurry, photo, realistic, 3d render, side view, profile, three-quarter view, perspective, angled, banking, tilted, multiple objects, sprite sheet, text, letters, signage, watermark, frame, border" },
+  { "name": "plane-emergency",  "view": "top-down",           "size": 256, "subject": "an emergency airplane seen from directly overhead, top-down map view, white body with red accents and a red cross, nose pointing straight up, wings horizontal and symmetric, flat", "neg": "blurry, photo, realistic, 3d render, side view, profile, three-quarter view, perspective, angled, banking, tilted, multiple objects, sprite sheet, text, letters, signage, watermark, frame, border" },
+  { "name": "plane-medevac",    "view": "top-down",           "size": 256, "subject": "a medevac airplane seen from directly overhead, top-down map view, white body with red cross markings, nose pointing straight up, wings horizontal and symmetric, flat", "neg": "blurry, photo, realistic, 3d render, side view, profile, three-quarter view, perspective, angled, banking, tilted, multiple objects, sprite sheet, text, letters, signage, watermark, frame, border" },
 
-  { "name": "bay-repair",       "view": "three-quarter view", "size": 320, "subject": "a glossy cream airport service stall building with orange trim, empty open bay" },
-  { "name": "bay-fuel",         "view": "three-quarter view", "size": 320, "subject": "a glossy cream airport service stall building with teal trim, empty open bay" },
-  { "name": "bay-board",        "view": "three-quarter view", "size": 320, "subject": "a glossy cream airport service stall building with pink trim, empty open bay" },
-  { "name": "bay-deice",        "view": "three-quarter view", "size": 320, "subject": "a glossy cream airport service stall building with ice-blue trim, empty open bay" },
-  { "name": "bay-locked",       "view": "three-quarter view", "size": 320, "subject": "a dim dark airport service stall building with grey trim, closed and locked" },
+  { "name": "bay-repair",       "view": "three-quarter view", "size": 320, "subject": "a glossy cream airport service stall building with orange trim, empty open bay, plain roof with no objects on top" },
+  { "name": "bay-fuel",         "view": "three-quarter view", "size": 320, "subject": "a glossy cream airport service stall building with teal trim, empty open bay, plain roof with no objects on top" },
+  { "name": "bay-board",        "view": "three-quarter view", "size": 320, "subject": "a glossy cream airport service stall building with pink trim, empty open bay, plain roof with no objects on top" },
+  { "name": "bay-deice",        "view": "three-quarter view", "size": 320, "subject": "a glossy cream airport service stall building with ice-blue trim, empty open bay, plain roof with no objects on top" },
+  { "name": "bay-locked",       "view": "three-quarter view", "size": 320, "subject": "a dim dark airport service stall building with grey trim, closed and locked, plain roof" },
 
-  { "name": "coin",             "view": "front view",         "size": 96,  "subject": "a single golden dollar coin currency token" },
+  { "name": "coin",             "view": "front view",         "size": 96,  "subject": "a single round gold coin embossed with a dollar sign, only one coin, centered", "neg": "blurry, photo, realistic, 3d render, multiple coins, two coins, three coins, pile of coins, stack of coins, face, portrait, head, text, letters, numbers, words, watermark, frame, border" },
   { "name": "heart",            "view": "front view",         "size": 96,  "subject": "a single glossy red heart life token" },
   { "name": "heart-empty",      "view": "front view",         "size": 96,  "subject": "a single empty grey heart outline token" },
   { "name": "heart-crack",      "view": "front view",         "size": 96,  "subject": "a single cracked red heart token" },
@@ -31,6 +31,6 @@
   { "name": "flag",             "view": "front view",         "size": 256, "subject": "a checkered marker flag on a pole" },
   { "name": "bird",             "view": "side view",          "size": 192, "subject": "a small flying cartoon bird" },
   { "name": "shore",            "view": "top-down",           "size": 256, "subject": "a sandy shoreline edge between grass and water" },
-  { "name": "runway",           "view": "top-down",           "size": 320, "subject": "a grey airport runway strip with dashed center markings" },
-  { "name": "runway-threshold", "view": "top-down",           "size": 320, "subject": "an airport runway threshold with painted stripes" }
+  { "name": "runway",           "view": "top-down",           "size": 320, "subject": "a grey airport runway strip with dashed center markings, flat top-down" },
+  { "name": "runway-threshold", "view": "top-down",           "size": 320, "subject": "an airport runway threshold with painted stripes, flat top-down" }
 ]

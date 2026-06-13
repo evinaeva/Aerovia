@@ -14,6 +14,7 @@ output/gen/, and prints size + % transparent pixels (proof the RGBA worked).
 """
 import argparse
 import json
+import os
 import random
 import time
 import urllib.parse
@@ -22,7 +23,7 @@ from pathlib import Path
 
 from PIL import Image
 
-HOST = "127.0.0.1:8188"
+HOST = os.environ.get("COMFY_HOST", "127.0.0.1:8188")
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent                       # tools/style-lora/
 WF = ROOT / "comfy" / "workflow_api.json"
