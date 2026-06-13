@@ -89,26 +89,26 @@
   .pausegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
   .pausegrid .btn{width:100%}
   /* выбор смены — карточки */
-  .levellist{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:20px 0 8px}
+  .levellist{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:9px;margin:14px 0 6px}
   .levelcard{position:relative;overflow:hidden;text-align:left;font:inherit;color:var(--paper);cursor:pointer;
-    background:#211d33;border:1.5px solid rgba(154,111,212,.25);border-radius:14px;padding:12px 14px 13px;
-    transition:.15s;box-shadow:0 2px 8px rgba(10,8,20,.35)}
-  .levelcard:hover{border-color:rgba(181,140,240,.6);background:#2a2540;box-shadow:0 0 16px rgba(154,111,212,.3)}
+    background:#211d33;border:1px solid rgba(154,111,212,.25);border-radius:10px;padding:7px 9px 8px;
+    transition:.15s;box-shadow:0 1px 5px rgba(10,8,20,.35)}
+  .levelcard:hover{border-color:rgba(181,140,240,.6);background:#2a2540;box-shadow:0 0 12px rgba(154,111,212,.3)}
   .levelcard.locked{background:#1b1726;border-color:rgba(138,140,153,.18);color:var(--muted);cursor:default}
-  .levelcard.locked:hover{border-color:rgba(138,140,153,.18);background:#1b1726;box-shadow:0 2px 8px rgba(10,8,20,.35)}
-  .levelcard .lvthumb{height:46px;border-radius:9px;margin:-2px -3px 8px;overflow:hidden;
+  .levelcard.locked:hover{border-color:rgba(138,140,153,.18);background:#1b1726;box-shadow:0 1px 5px rgba(10,8,20,.35)}
+  .levelcard .lvthumb{height:24px;border-radius:6px;margin:-1px -2px 5px;overflow:hidden;
     background:radial-gradient(120% 120% at 30% 20%,#2a2540,#14111e)}
   .levelcard .lvthumb svg{display:block;width:100%;height:100%}
   .levelcard.locked .lvthumb{opacity:.45}
-  .levelcard .lvkick{font-size:9px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase}
-  .levelcard .lvnum{font-family:"Segoe UI",system-ui,sans-serif;font-weight:800;font-size:29px;line-height:1.05;margin:3px 0 1px;color:#f4eede}
+  .levelcard .lvkick{font-size:7px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+  .levelcard .lvnum{font-family:"Segoe UI",system-ui,sans-serif;font-weight:800;font-size:17px;line-height:1.05;margin:1px 0 0;color:#f4eede}
   .levelcard.locked .lvnum{color:var(--muted)}
-  .levelcard .lvname{font-size:11.5px;color:var(--paper);opacity:.85;margin:0;line-height:1.2;
+  .levelcard .lvname{font-size:9px;color:var(--paper);opacity:.85;margin:0;line-height:1.2;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .levelcard .lvmeta{display:flex;align-items:center;justify-content:space-between;margin-top:7px;min-height:16px}
-  .levelcard .lvstars{display:inline-flex;gap:2px}
-  .levelcard .lvstars svg{width:15px;height:15px;display:block}
-  .levelcard .lvbest{font-size:10.5px;color:var(--gold);font-weight:700;letter-spacing:.02em}
+  .levelcard .lvmeta{display:flex;align-items:center;justify-content:space-between;margin-top:4px;min-height:11px}
+  .levelcard .lvstars{display:inline-flex;gap:1.5px}
+  .levelcard .lvstars svg{width:11px;height:11px;display:block}
+  .levelcard .lvbest{font-size:9px;color:var(--gold);font-weight:700;letter-spacing:.02em}
   .levelcard .lvlock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     background:rgba(20,17,30,.55)}
   .biomecard{min-height:120px}
@@ -215,8 +215,6 @@
       <div class="levellist" id="levelList"></div>
       <div class="ctarow">
         <button class="btn" id="backBtn"><span class="bglyph">←</span><span data-i18n="levels.back"></span></button>
-        <button class="btn" id="medalsBtn2"><span class="bglyph">🏅</span><span data-i18n="medals.btn"></span></button>
-        <button class="btn btn-quiet" id="resetProgBtn" data-i18n="levels.reset"></button>
       </div>
     </div>
   </div>
@@ -244,6 +242,17 @@
       <div class="ctarow">
         <button class="btn btn-rose" id="resetProgBtn2" data-i18n="levels.reset"></button>
         <button class="btn btn-primary" id="settingsBackBtn"><span class="bglyph">←</span><span data-i18n="settings.back"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="confirmScreen">
+    <div class="panel card">
+      <h1 data-i18n="reset.title"></h1>
+      <p data-i18n="reset.msg"></p>
+      <div class="ctarow">
+        <button class="btn" id="resetCancelBtn"><span class="bglyph">←</span><span data-i18n="reset.no"></span></button>
+        <button class="btn btn-rose" id="resetConfirmBtn"><span class="bglyph">⟲</span><span data-i18n="reset.yes"></span></button>
       </div>
     </div>
   </div>
@@ -414,6 +423,7 @@
       'graph.title':'Shift over time', 'graph.load':'Load', 'graph.served':'Served',
       'unit.planes':['plane','planes'], 'unit.upgrades':['upgrade','upgrades'],
       'levels.kicker':'Shift select', 'levels.title':'Levels', 'levels.back':'Back', 'levels.reset':'Reset progress',
+      'reset.title':'Reset progress?', 'reset.msg':'This wipes all unlocked levels, stars and records. Medals are kept.', 'reset.no':'Cancel', 'reset.yes':'Reset',
       'levels.shift':'Shift', 'levels.locked':'Locked',
       'level.name':'Level {n}',
       'level.t.1':'Training', 'level.t.2':'First shift', 'level.t.3':'Money matters',
@@ -546,6 +556,7 @@
       'graph.title':'Смена во времени', 'graph.load':'Нагрузка', 'graph.served':'Принято',
       'unit.planes':['борт','борта','бортов'], 'unit.upgrades':['улучшение','улучшения','улучшений'],
       'levels.kicker':'Выбор смены', 'levels.title':'Уровни', 'levels.back':'Назад', 'levels.reset':'Сбросить прогресс',
+      'reset.title':'Сбросить прогресс?', 'reset.msg':'Сотрёт все открытые уровни, звёзды и рекорды. Медали останутся.', 'reset.no':'Отмена', 'reset.yes':'Сбросить',
       'levels.shift':'Смена', 'levels.locked':'Закрыто',
       'level.name':'Уровень {n}',
       'level.t.1':'Обучение', 'level.t.2':'Первая смена', 'level.t.3':'Деньги решают',
@@ -2780,7 +2791,7 @@
   function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false,tutorialDone:false}; saveGame(); renderLevels(); }
   function buildLevel(idx){ curBiome=null; levelIdx=idx; levelKey=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
   function buildBiome(b){ curBiome=b; levelIdx=-1; levelKey='b_'+b.id; LV=b.level; bays=[]; runways=[]; layout(); }
-  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsPanel','settingsScreen','medalScreen','goalsScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
+  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsPanel','settingsScreen','medalScreen','goalsScreen','confirmScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
   function startLevel(idx){ zen=false; buildLevel(idx); hideAllScreens(); reset(); }
   function startZen(){ zen=true; buildLevel(0); hideAllScreens(); reset(); }
@@ -2836,7 +2847,7 @@
           (best!=null?`<span class="lvbest">✈ ${fmtNum(best)}</span>`:'<span></span>')+`</div>`;
       } else {
         html+=`<div class="lvname">&nbsp;</div><div class="lvmeta"></div>`+
-          `<div class="lvlock"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">`+
+          `<div class="lvlock"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">`+
           `<rect x="5" y="11" width="14" height="9" rx="2" fill="#8a8c99"/>`+
           `<path d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="#8a8c99" stroke-width="2" stroke-linecap="round"/></svg></div>`;
       }
@@ -2868,7 +2879,6 @@
   document.getElementById('startBtn').onclick=showLevels;
   document.getElementById('zenBtn').onclick=startZen;
   document.getElementById('backBtn').onclick=()=>{ hideAllScreens(); document.getElementById('startScreen').classList.remove('hidden'); };
-  document.getElementById('resetProgBtn').onclick=resetProgress;
   document.getElementById('againBtn').onclick=()=>{ document.getElementById('overScreen').classList.add('hidden'); reset(); };
   function backToSelect(){ if(curBiome) showBiomes(); else showLevels(); }
   document.getElementById('toLevelsBtn').onclick=backToSelect;
@@ -2914,7 +2924,10 @@
     document.getElementById('settingsScreen').classList.remove('hidden'); }
   document.getElementById('settingsMenuBtn').onclick=openSettings;
   document.getElementById('settingsBackBtn').onclick=()=>{ hideAllScreens(); document.getElementById('startScreen').classList.remove('hidden'); };
-  document.getElementById('resetProgBtn2').onclick=resetProgress;
+  function askReset(){ document.getElementById('confirmScreen').classList.remove('hidden'); }
+  document.getElementById('resetProgBtn2').onclick=askReset;
+  document.getElementById('resetCancelBtn').onclick=()=>document.getElementById('confirmScreen').classList.add('hidden');
+  document.getElementById('resetConfirmBtn').onclick=()=>{ document.getElementById('confirmScreen').classList.add('hidden'); resetProgress(); };
 
   // ---- окно постановки целей смены ----
   // Показывается в начале каждого раунда (на паузе), а также по кнопке «Цели» в
@@ -3185,7 +3198,6 @@
   function openMedals(from){ medalFrom=from||'start'; renderMedals(); hideAllScreens();
     document.getElementById('medalScreen').classList.remove('hidden'); }
   document.getElementById('medalsBtn').onclick=()=>openMedals('start');
-  document.getElementById('medalsBtn2').onclick=()=>openMedals('levels');
   document.getElementById('medalsBackBtn').onclick=()=>{
     hideAllScreens();
     if(medalFrom==='levels') showLevels();
