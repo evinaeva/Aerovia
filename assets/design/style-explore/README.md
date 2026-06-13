@@ -30,5 +30,20 @@ pick an art direction. Regenerate with `python3 build.py` (needs `cairosvg` + `p
 | 8 | Baroque maximalist | gilded ornate frames, jewel tones, lavish |
 
 `styles-overview.png` is a 2×4 contact sheet of all eight; `style-N.png/.svg` are the
-individual mockups. These are **art-direction exploration only** — not wired into
-`index.html`.
+individual mockups.
+
+## Live neon skin (wired into the game)
+
+Style **#3 (neon)** is implemented as a real, A/B-able skin in `index.html` — not a
+static mockup. It renders on the actual canvas:
+
+- Switch with **`?skin=neon`** in the URL (persists to `localStorage`); `?skin=cozy`
+  resets to the default look.
+- The neon skin turns the cozy sprite atlas off and renders procedurally with a neon
+  palette (`NEON_TOKENS`) + extra glow: dark radar field (rings + sweep), glowing bay
+  borders, neon runway frames, a bloomed finger-route, and a dark neon HUD. All neon
+  code paths are gated behind the `NEON` flag, so the cozy look is untouched.
+
+`neon-ingame.png` / `cozy-ingame.png` are real in-game screenshots (Zen mode).
+`shot.mjs` is the Playwright capture helper used to grab them
+(`PW_CHROME=/path/to/chrome node shot.mjs "http://localhost:8123/index.html?skin=neon" out.png`).

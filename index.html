@@ -465,6 +465,19 @@
   const cv = document.getElementById('c');
   const ctx = cv.getContext('2d');
 
+  // ---- visual skin (A/B-able): 'cozy' (default) | 'neon' ----
+  // Switch with ?skin=neon in the URL (persists to localStorage) or skin=cozy to
+  // reset. The neon skin turns the cozy sprite atlas off (everything renders
+  // procedurally) and swaps the palette for neon tokens + extra glow.
+  let SKIN = 'cozy';
+  try {
+    const _q = new URLSearchParams(location.search).get('skin');
+    const _s = _q || localStorage.getItem('pf_skin');
+    if (_s === 'neon' || _s === 'cozy') SKIN = _s;
+    if (_q === 'neon' || _q === 'cozy') localStorage.setItem('pf_skin', _q);
+  } catch (e) { /* no URL/localStorage in test harness */ }
+  const NEON = SKIN === 'neon';
+
   // ---- палитра спрайтов: единый источник правды для перекраски ----
   // Спрайт-листы (assets/sprites/planeflow-*.svg) хранят цвета как
   // `var(--token, #fallbackhex)`, а не голым hex. Тема (THEME ниже) задаёт
@@ -489,9 +502,18 @@
     'water-wave':'#2a525c', 'water-wave2':'#3a6b76', sand:'#6b5c44',
     wood:'#4a3f33', shadow:'#0a0614', 'sky-low':'#3a2f3e', 'sky-mid':'#241d33',
   };
+  // Неоновая палитра: тёмная база + яркие насыщенные акценты со свечением.
+  // Применяется как переопределение токенов при SKIN==='neon' — перекрашивает и
+  // процедурную отрисовку (COL уважает THEME.tokens), и подписи/иконки.
+  const NEON_TOKENS = {
+    ink:'#070c1c', tarmac:'#0c1430', 'tarmac-2':'#0f1a3c', water:'#081024',
+    phosphor:'#3ad2ff', 'cream-100':'#dff4ff', muted:'#5f7bb0',
+    amber:'#ffb13b', teal:'#22e3c6', ice:'#5fd2ff', rose:'#ff4f9d',
+    gold:'#ffd23b', life:'#ff3b6b',
+  };
   // Активная тема: набор переопределений PALETTE. Пустая = дефолтный вид.
   // Меняй ключи (или подменяй объект целиком), чтобы перекрасить весь арт.
-  const THEME = { tokens: {} };
+  const THEME = { tokens: NEON ? Object.assign({}, NEON_TOKENS) : {} };
 
   // ---- cozy sprite atlas (canvas) ----
   // Sprite sheets (assets/sprites/planeflow-*.svg) are fetched once into a hidden
@@ -504,7 +526,9 @@
   // в blitC/blit объект-переопределение токенов (напр. {gold:'#fff', amber:'#0f0'})
   // — он впрыснется в спрайт как <style>:root{--token:value}. Строка в `color`
   // по-прежнему задаёт `currentColor` (используется только для route-arrow).
-  const COZY = true;
+  // cozy-спрайты включены только в cozy-скине; неон рендерится процедурно
+  // (процедурный путь подхватывает неоновую палитру через THEME.tokens).
+  const COZY = !NEON;
   const SPRITES = (() => {
     const cache = new Map();
     const stripF = s => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)
@@ -2316,6 +2340,7 @@
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     ctx.save(); ctx.translate(5,7); ctx.globalAlpha=.28; planeShape('#000'); ctx.restore();
     if(vip){ ctx.shadowColor=hexa(COL.gold,.6); ctx.shadowBlur=16; }
+    else if(NEON){ ctx.shadowColor=hexa(COL.phosphor,.7); ctx.shadowBlur=10; }
     planeShape(vip?COL.gold:(emergency?'#e7d8cf':COL.paper));
     ctx.shadowBlur=0;
     ctx.fillStyle=hexa(COL.phosphor,.55); ctx.fillRect(-2,-1.2,18,2.4);
@@ -2327,7 +2352,44 @@
     ctx.restore();
   }
 
+  // неоновое поле: тёмный фон + радарная сетка/кольца/развёртка вместо
+  // металлического апрона, терминала, травы и воды (боксы рисуются поверх)
+  function drawNeonField(tm){
+    ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
+    const ax=field.x0, ay=field.y0, aR=field.rwR, ab=field.y1;
+    // лёгкая полноэкранная сетка
+    ctx.save(); ctx.strokeStyle=hexa(COL.phosphor,.045); ctx.lineWidth=1;
+    for(let gx=0; gx<W; gx+=34*ui){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
+    for(let gy=0; gy<H; gy+=34*ui){ ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+    ctx.restore();
+    // панель апрона
+    const fx=ax-8*ui, fy=ay-8*ui, fw=(aR-ax)+16*ui, fh=(ab-ay)+16*ui;
+    rr(fx,fy,fw,fh,16*ui);
+    const fg=ctx.createLinearGradient(0,fy,0,fy+fh); fg.addColorStop(0,'#0c1740'); fg.addColorStop(1,'#070e26');
+    ctx.fillStyle=fg; ctx.fill();
+    // радар внутри апрона
+    const rcx=(ax+aR)/2, rcy=(ay+ab)/2, rmax=Math.min(fw,fh)*0.46;
+    ctx.save(); rr(fx,fy,fw,fh,16*ui); ctx.clip();
+    ctx.strokeStyle=hexa(COL.phosphor,.10); ctx.lineWidth=1.2;
+    for(let k=1;k<=4;k++){ ctx.beginPath(); ctx.arc(rcx,rcy,rmax*k/4,0,7); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(rcx-rmax,rcy); ctx.lineTo(rcx+rmax,rcy);
+    ctx.moveTo(rcx,rcy-rmax); ctx.lineTo(rcx,rcy+rmax); ctx.stroke();
+    // вращающаяся развёртка
+    ctx.save(); ctx.translate(rcx,rcy); ctx.rotate(tm*0.0009);
+    const grad=ctx.createLinearGradient(0,0,rmax,0);
+    grad.addColorStop(0,hexa(COL.phosphor,.20)); grad.addColorStop(1,hexa(COL.phosphor,0));
+    ctx.fillStyle=grad; ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,rmax,-0.20,0.02); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.restore();
+    // светящаяся рамка апрона
+    ctx.save(); ctx.shadowColor=hexa(COL.phosphor,.6); ctx.shadowBlur=14;
+    ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.55); rr(fx,fy,fw,fh,16*ui); ctx.stroke(); ctx.restore();
+    if(LV.biome==='forest') drawForestDecor(tm, ax, ay, aR, ab);
+    if(LV.bonus) drawBonusDecor(tm, ax, ay, aR, ab);
+  }
+
   function drawField(tm){
+    if(NEON){ drawNeonField(tm); return; }
     // ночное небо + звёзды
     ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
     starfield(tm);
@@ -2407,8 +2469,13 @@
 
   function drawRunways(tm){
     runways.forEach((r,i)=>{
-      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':'#1a1d2e'; ctx.fill();  // бонус: садовая дорожка
-      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
+      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':(NEON?'#0a1230':'#1a1d2e'); ctx.fill();  // бонус: садовая дорожка
+      if(NEON && !r.closed){
+        ctx.save(); ctx.shadowColor=hexa(COL.phosphor,.5); ctx.shadowBlur=8;
+        ctx.lineWidth=1.6; ctx.strokeStyle=hexa(COL.phosphor,.5); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke(); ctx.restore();
+      } else {
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
+      }
       // осевая пунктирная
       ctx.strokeStyle=hexa(COL.paper, r.occupied?0.35:0.5);
       ctx.lineWidth=2.5; ctx.setLineDash([18,15]);
@@ -2606,7 +2673,7 @@
     ctx.save();
     if(!b.open){
       const enough = money>=K.BAY_OPEN_COST;
-      rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle='#1f1b2c'; ctx.fill();
+      rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=NEON?'#0a1230':'#1f1b2c'; ctx.fill();
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.muted,.25); rr(b.x,b.y,b.w,b.h,9*ui); ctx.stroke();
       // приглушённая иконка типа + замок
       ctx.globalAlpha=.35;
@@ -2630,10 +2697,11 @@
     // открытый бокс-«стойло»: пол + стены с трёх сторон, ворота в сторону поля,
     // рамка цвета услуги (ярче и со свечением, когда занят) — борт внутри виден
     const out=dirOut(b);
-    rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=LV.bonus?'#2e3a26':'#2a2440'; ctx.fill();   // бонус: грядка
+    rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=LV.bonus?'#2e3a26':(NEON?'#0b1336':'#2a2440'); ctx.fill();   // бонус: грядка
     ctx.lineWidth=2;
-    if(busy){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=12; }
-    ctx.strokeStyle=hexa(col, busy?0.9:0.45); bayWalls(b,out,9*ui); ctx.stroke(); ctx.shadowBlur=0;
+    if(busy){ ctx.shadowColor=hexa(col,.6); ctx.shadowBlur=12; }
+    else if(NEON){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=8; }
+    ctx.strokeStyle=hexa(col, busy?0.9:(NEON?0.75:0.45)); bayWalls(b,out,9*ui); ctx.stroke(); ctx.shadowBlur=0;
     // проём ворот: пунктирный порог + габаритные огни по углам
     let gx0,gy0,gx1,gy1;
     if(out.dy===1){ gx0=b.x; gy0=b.y+b.h; gx1=b.x+b.w; gy1=gy0; }
@@ -2705,11 +2773,12 @@
     if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
       const _rc = COZY ? '#5dca7a' : COL.phosphor;
       ctx.save();
-      ctx.strokeStyle=hexa(_rc, pl.selected?0.85:0.5);
-      ctx.lineWidth=1.25; ctx.lineCap='round'; ctx.lineJoin='round'; // сплошная, на 50% тоньше, без мерцания
+      ctx.strokeStyle=hexa(_rc, pl.selected?0.95:0.6);
+      ctx.lineWidth=NEON?2.4:1.25; ctx.lineCap='round'; ctx.lineJoin='round'; // сплошная, на 50% тоньше, без мерцания
+      if(NEON){ ctx.shadowColor=_rc; ctx.shadowBlur=pl.selected?12:7; }
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
       for(const w of pl.path) ctx.lineTo(w.x,w.y);
-      ctx.stroke();
+      ctx.stroke(); ctx.shadowBlur=0;
       // наконечник-стрелка по направлению последнего сегмента
       {
         const tp=pl.path[pl.path.length-1];
@@ -2770,8 +2839,8 @@
     const hud=HUD_H();
     // плавающая панель
     rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui);
-    ctx.fillStyle='rgba(33,29,51,.85)'; ctx.fill();
-    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui); ctx.stroke();
+    ctx.fillStyle=NEON?'rgba(7,13,30,.82)':'rgba(33,29,51,.85)'; ctx.fill();
+    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,NEON?.3:.12); rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui); ctx.stroke();
     const cy=hud/2;
     ctx.textBaseline='middle';
     // ── левый кластер: жизни · деньги · комбо (мокап 01) ──
@@ -2808,7 +2877,7 @@
       const target=LV.objective.target||1, frac=Math.max(0,Math.min(1,mv/target));
       const bw3=170*ui, bx3=cxC-bw3/2, by3=cy+5*ui, bh3=6*ui;
       rr(bx3,by3,bw3,bh3,bh3/2); ctx.fillStyle='rgba(127,155,176,.20)'; ctx.fill();
-      if(frac>0){ rr(bx3,by3,Math.max(bh3,bw3*frac),bh3,bh3/2); ctx.fillStyle='#5dca7a'; ctx.fill(); }
+      if(frac>0){ rr(bx3,by3,Math.max(bh3,bw3*frac),bh3,bh3/2); ctx.fillStyle=NEON?COL.teal:'#5dca7a'; ctx.fill(); }
     }
 
     // кнопка паузы — cozy-чип (на паузе поверх рисуем «play»)
