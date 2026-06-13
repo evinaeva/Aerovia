@@ -1231,11 +1231,23 @@
     // --- экономика: оплата за услугу и стартовая касса ВЫВОДЯТСЯ из самого уровня
     //     функцией levelEconomy() (см. docs/design/game-design/economy.md). Константы
     //     ниже — настроечные ручки модели, а не деньги напрямую. ---
-    SVC_MIN: 10, SVC_MAX: 22,  // границы оплаты за одну услугу (вип/срочный/мед дают ×bonus сверху)
-    ECON_OPEN_FRAC: 0.7,       // какую долю докупаемых боксов уровень «ожидает» открыть
-    ECON_UP_FRAC:   0.6,       // и долю работающих боксов, что возьмут апгрейд ур.1
-    ECON_TIGHTNESS: 0.9,       // голая оплата (без комбо/экспресса) покрывает ~90% «набора»
-    ECON_FLOW_SECS: 6,         // таймерные карты: оценка потока — один платный борт раз в N сек
+    SVC_MIN: 10, SVC_MAX: 32,   // границы оплаты за услугу (вип/срочный/мед дают ×bonus сверху)
+    ECON_OPEN_FRAC: 0.7,        // какую долю докупаемых боксов уровень «ожидает» открыть
+    ECON_UP_FRAC:   0.6,        // и долю работающих боксов, что возьмут апгрейд ур.1
+    ECON_FLOW_SECS: 6,          // таймерные карты: оценка потока — один платный борт раз в N сек
+    ECON_KIT_FLOOR: 0.8,        // competent-игрок должен суметь купить хотя бы эту долю «набора»
+    // щедрость: набор по карману competent-игроку (×generosity ≥ kit). База ≥1 гарантирует,
+    // что деньги НЕ блокируют 3★; прибавка за сложность компенсирует хаос/штрафы на тяжёлых картах
+    ECON_GEN_BASE: 1.0, ECON_GEN_DIFF: 0.35,
+    // реалистичный «скилл-добор» от ВКЛЮЧЁННЫХ эффектов (комбо/экспресс): сколько игрок
+    // реально берёт сверх базы. Сложность рвёт серии → добор тем меньше, чем сложнее карта.
+    ECON_COMBO_REAL: 0.5,       // доля теоретического максимума комбо, что реально достижима
+    ECON_EXPRESS_SHARE: 0.35,   // базовая доля бортов, уходящих экспрессом
+    ECON_CHAOS: 0.5,            // насколько сложность срезает комбо/экспресс (0..1)
+    // множитель сложности (levelDifficulty): взвешенная сумма сигналов карты, как в жанре
+    // (плотность потока · спецборты · таймер · среда), нормируется в ~[0, ECON_DIFF_CAP]
+    ECON_W_EVENT: 0.25, ECON_W_TIME: 0.5, ECON_W_DENS: 0.5, ECON_W_ENV: 0.3,
+    ECON_DIFF_NORM: 2.0, ECON_FLOW_REF: 32, ECON_DIFF_CAP: 1.2,
     START_LIVES: 3,
     // комбо / экспресс
     COMBO_MAX: 10, COMBO_STEP: 0.1,   // множитель денег до x2 за серию чистых вылетов
@@ -1384,31 +1396,60 @@
   BIOMES.forEach(b=>{ if(b.level) normObjective(b.level.objective); });
   BONUS.forEach(b=>{ if(b.level) normObjective(b.level.objective); });
 
-  // ---- ЭКОНОМИКА УРОВНЯ (деньги выводятся из сложности карты) ----
+  // ---- ЭКОНОМИКА УРОВНЯ (деньги выводятся из сложности карты и её эффектов) ----
   // Деньги живут ВНУТРИ смены (сбрасываются каждый уровень — переноса нет). Чтобы
-  // покупки (открыть/прокачать боксы) ощущались одинаково на ЛЮБОЙ карте — нынешней
-  // и будущей — оплату за услугу (svcReward) и стартовую кассу (startMoney) мы НЕ
-  // задаём вручную по уровням, а ВЫВОДИМ из конфига самого уровня. Две опоры:
+  // покупки (открыть/прокачать боксы) ощущались одинаково на ЛЮБОЙ карте — нынешней и
+  // будущей — оплату за услугу (svcReward) и стартовую кассу (startMoney) мы НЕ задаём
+  // вручную по уровням, а ВЫВОДИМ из конфига уровня. Модель гибкая: смотрит на поток
+  // бортов, сложность и какие денежные эффекты (комбо/экспресс) реально включены.
+  //
+  // Опоры (как в time-management-жанре: Diner Dash и т.п. — база должна окупаться сама,
+  // а «цепочки»/комбо — это бонус сверху за мастерство):
   //
   //   (A) «НАБОР» (buy-side) — что игрок должен суметь купить, пройдя смену на 3★:
-  //        открыть бóльшую часть докупаемых боксов + по апгрейду ур.1 на работающие.
-  //          openable   = Σ(slots − open) по сторонам      // докупаемые боксы
-  //          working    = (стартово открытые) + round(openable · ECON_OPEN_FRAC)
-  //          kitCost    = round(openable · ECON_OPEN_FRAC) · BAY_OPEN_COST
-  //                     + working · BAY_UP_COST[0] · ECON_UP_FRAC
+  //         openable = Σ(slots−open) по сторонам;  working = открытые + round(openable·OPEN_FRAC)
+  //         kitCost  = round(openable·OPEN_FRAC)·BAY_OPEN_COST + working·BAY_UP_COST[0]·UP_FRAC
   //
-  //   (B) «ЗАРАБОТОК» (earn-side) — голая касса за смену БЕЗ комбо/экспресса:
-  //          baseEarn   = svcReward · avgNSvc · flow
-  //        где avgNSvc = 1 + TWO_SVC_CHANCE (средний чек: борт несёт 1 или 2 услуги),
-  //        а flow — сколько ПЛАТНЫХ бортов проходит за смену:
-  //          • served-карты заканчиваются ровно на target бортах → flow = target;
-  //          • таймерные (race / метрика upgrades) — оценка по часам: time / ECON_FLOW_SECS.
+  //   (B) «СЛОЖНОСТЬ» (levelDifficulty 0..~1) — взвешенная сумма сигналов карты: плотность
+  //       потока, активные спецборты, таймер/race, среда (погода/де-айс). Чем сложнее карта,
+  //       тем ЩЕДРЕЕ деньги (generosity = GEN_BASE + GEN_DIFF·difficulty), потому что хаос
+  //       съедает доход штрафами и рвёт серии. GEN_BASE ≥ 1 ⇒ деньги НЕ блокируют 3★.
   //
-  // Связываем (A) и (B): startMoney + baseEarn ≈ ECON_TIGHTNESS · kitCost. То есть
-  // ОДНОЙ голой оплаты впритык НЕ хватает на весь набор (TIGHTNESS<1) — добор идёт
-  // мастерством: комбо (до ×2) и экспресс (×1.5). Это и есть «непросто, но честно и
-  // поощряет умение». Решаем уравнение относительно svcReward и зажимаем в
-  // [SVC_MIN, SVC_MAX], чтобы ранние мелкие карты не богатели, а длинные — не нищали.
+  //   (C) «СКИЛЛ-ДОБОР» (skillMult) — реалистичный множитель ТОЛЬКО от ВКЛЮЧЁННЫХ на карте
+  //       эффектов (levelEffects): комбо (до ×2) и экспресс (×1.5). На ранних/коротких или
+  //       тяжёлых картах добор меньше (серия не успевает вырасти / рвётся хаосом), а если
+  //       эффект на карте ОТКЛЮЧЁН — его вклад 0. Так «комбо/экспресс вводятся постепенно»:
+  //       выключаешь их на первых уровнях — экономика сама поднимает базовую оплату.
+  //
+  // Сводим: реальный доход competent-игрока должен ровно покрывать набор с запасом —
+  //   startMoney + svcReward·avgNSvc·flow·skillMult  =  kitCost·generosity
+  // решаем относительно svcReward и зажимаем в [SVC_MIN, SVC_MAX]. Слабый игрок (без
+  // серий) получит меньше — «непросто»; чистая игра даёт весь набор с запасом — «честно».
+
+  // комбо/экспресс по умолчанию ВКЛЮЧЕНЫ; уровень может их отключить (combo:false /
+  // express:false) — постепенный ввод денежных эффектов. Экономика читает эти же флаги.
+  function levelEffects(lv){
+    return { combo: !(lv && lv.combo === false), express: !(lv && lv.express === false) };
+  }
+  // вес каждого спецсобытия в сложности (mед/час-пик давят сильнее вип-джета)
+  const EVENT_DIFF = { vip:0.5, rush:1.0, medical:1.0, emergency:0.8, fog:0.8, wind:0.8 };
+  function levelFlow(o){
+    const target = o && o.target!=null ? o.target : (o && Array.isArray(o.stars) ? o.stars[o.stars.length-1] : 1);
+    return (o && o.metric==='served' && !o.race) ? Math.max(1, target)
+                                                 : Math.max(1, Math.round(((o&&o.time)||180) / K.ECON_FLOW_SECS));
+  }
+  // множитель сложности уровня 0..~ECON_DIFF_CAP (чистая функция конфига)
+  function levelDifficulty(lv){
+    const o = (lv && lv.objective) || {}, ev = (lv && lv.events) || {};
+    let eventScore = 0; for(const k in EVENT_DIFF) if(ev[k]) eventScore += EVENT_DIFF[k];
+    const dens = Math.min(1, levelFlow(o) / K.ECON_FLOW_REF);     // плотность потока
+    const timeScore = o.race ? 1 : (o.time ? 0.5 : 0);            // давление времени
+    const envScore = ((lv&&lv.weather)?1:0) + ((lv&&lv.deice)?1:0); // погода/де-айс
+    let d = (K.ECON_W_EVENT*eventScore + K.ECON_W_TIME*timeScore
+           + K.ECON_W_DENS*dens + K.ECON_W_ENV*envScore) / K.ECON_DIFF_NORM;
+    if(lv && lv.calm > 0) d /= lv.calm;                          // спокойный мир (бонус) — легче
+    return Math.max(0, Math.min(K.ECON_DIFF_CAP, d));
+  }
   function levelEconomy(lv){
     const o = (lv && lv.objective) || {};
     const sides = (lv && lv.sides) || {};
@@ -1419,24 +1460,30 @@
     }
     const startMoney = (lv && lv.startMoney) || K.START_MONEY;
     const avgNSvc = 1 + K.TWO_SVC_CHANCE;
-    // поток платных бортов за смену
-    const target = o.target != null ? o.target : (Array.isArray(o.stars) ? o.stars[o.stars.length-1] : 1);
-    const flow = (o.metric === 'served' && !o.race)
-      ? Math.max(1, target)
-      : Math.max(1, Math.round((o.time || 180) / K.ECON_FLOW_SECS));
-    // набор, который смена должна профинансировать
+    const flow = levelFlow(o);
+    // (A) набор, который смена должна профинансировать
     const expectOpen  = Math.round(openable * K.ECON_OPEN_FRAC);
     const workingBays = open0 + expectOpen;
     const kitCost = expectOpen * K.BAY_OPEN_COST + workingBays * K.BAY_UP_COST[0] * K.ECON_UP_FRAC;
-    // решаем относительно оплаты за услугу
-    const need = Math.max(0, kitCost * K.ECON_TIGHTNESS - startMoney);
+    // (B) сложность → щедрость
+    const difficulty = levelDifficulty(lv);
+    const generosity = K.ECON_GEN_BASE + K.ECON_GEN_DIFF * difficulty;
+    // (C) реалистичный скилл-добор от включённых эффектов
+    const fx = levelEffects(lv);
+    const comboReach   = Math.min(flow, K.COMBO_MAX) / K.COMBO_MAX;
+    const comboHead    = fx.combo   ? (K.COMBO_STEP*K.COMBO_MAX) * comboReach * (1 - K.ECON_CHAOS*difficulty) * K.ECON_COMBO_REAL : 0;
+    const expressHead  = fx.express ? (K.EXPRESS_BONUS - 1) * K.ECON_EXPRESS_SHARE * (1 - K.ECON_CHAOS*difficulty) : 0;
+    const skillMult    = 1 + Math.max(0, comboHead) + Math.max(0, expressHead);
+    // сводим и решаем относительно оплаты за услугу
+    const need = Math.max(0, kitCost * generosity - startMoney);
     const svcReward = Math.max(K.SVC_MIN, Math.min(K.SVC_MAX,
-      Math.round(need / (avgNSvc * flow))));
-    return { startMoney, svcReward, flow, kitCost, openable };
+      Math.round(need / (avgNSvc * flow * skillMult))));
+    return { startMoney, svcReward, flow, kitCost, openable, difficulty, generosity, skillMult, effects:fx };
   }
 
   let LV = LEVELS[0], curBiome = null, curBonus = null;
-  let econ = levelEconomy(LV);   // {startMoney, svcReward, …} — пересчитывается в reset()
+  let econ = levelEconomy(LV);          // {startMoney, svcReward, …} — пересчитывается в reset()
+  let lvFx = levelEffects(LV);          // какие денежные эффекты включены на текущей карте
   // бонус после прохождения уровня №levelNum (1-based); открыт, если тот пройден на ≥1★
   // (или включён отладочный тумблер «Открыть все уровни» — как у кампании, см. renderLevels)
   function bonusAfter(levelNum){ return BONUS.find(b=>b.after===levelNum) || null; }
@@ -1528,13 +1575,17 @@
       if(lv.startMoney!=null && !(lv.startMoney>0)) p.push(L+'startMoney должен быть > 0');
       if(lv.weather!=null && lv.weather!==true) p.push(L+'weather должен быть true (или отсутствовать)');
       if(lv.deice!=null && lv.deice!==true) p.push(L+'deice должен быть true (или отсутствовать)');
-      // экономика уровня (levelEconomy): оплата в границах и смена окупает хотя бы
-      // ОДИН новый бокс на голой оплате — прямая страховка от «не накопить на бокс»
+      // экономика уровня (levelEconomy): оплата в границах, голая смена окупает хотя бы
+      // ОДИН новый бокс, и с включёнными эффектами весь ожидаемый набор ДОСТИЖИМ —
+      // прямая страховка от «не накопить на бокс» и от того, что деньги блокируют 3★
       if(o){
         const ec = levelEconomy(lv);
         if(!(ec.svcReward>=K.SVC_MIN && ec.svcReward<=K.SVC_MAX)) p.push(L+'svcReward вне [SVC_MIN, SVC_MAX]');
-        const baseEarn = ec.svcReward * (1+K.TWO_SVC_CHANCE) * ec.flow;
+        const avg = 1 + K.TWO_SVC_CHANCE;
+        const baseEarn = ec.svcReward * avg * ec.flow;
         if(!(baseEarn >= K.BAY_OPEN_COST)) p.push(L+'базового дохода смены не хватит даже на открытие одного бокса (экономика)');
+        const realized = ec.startMoney + ec.svcReward * avg * ec.flow * ec.skillMult;
+        if(!(realized >= ec.kitCost * K.ECON_KIT_FLOOR)) p.push(L+'даже с включёнными эффектами competent-игрок не наберёт и '+Math.round(K.ECON_KIT_FLOOR*100)+'% набора (экономика зажата)');
       }
       const ev = lv.events || {};
       Object.keys(ev).forEach(k=>{
@@ -1571,11 +1622,17 @@
     if(!(K.WEATHER_SNOW_TAXI < K.WEATHER_RAIN_TAXI)) p.push('снег должен мешать рулению сильнее дождя');
     if(!WEATHER_KINDS.includes('clear')) p.push('WEATHER_KINDS должен включать "clear"');
     // экономика: ручки модели в допустимых диапазонах (см. levelEconomy)
-    ['ECON_OPEN_FRAC','ECON_UP_FRAC','ECON_TIGHTNESS','TWO_SVC_CHANCE'].forEach(k=>{
+    ['ECON_OPEN_FRAC','ECON_UP_FRAC','TWO_SVC_CHANCE','ECON_COMBO_REAL','ECON_EXPRESS_SHARE','ECON_CHAOS','ECON_KIT_FLOOR'].forEach(k=>{
       if(!(K[k]>=0 && K[k]<=1)) p.push('K.'+k+' должен быть в [0,1]');
     });
     if(!(K.ECON_FLOW_SECS>0)) p.push('K.ECON_FLOW_SECS должен быть > 0');
     if(!(K.SVC_MIN>0 && K.SVC_MIN<=K.SVC_MAX)) p.push('K.SVC_MIN должен быть в (0, SVC_MAX]');
+    if(!(K.ECON_GEN_BASE>=1)) p.push('K.ECON_GEN_BASE должен быть >= 1 (иначе деньги могут блокировать 3★)');
+    if(!(K.ECON_GEN_DIFF>=0)) p.push('K.ECON_GEN_DIFF должен быть >= 0');
+    ['ECON_W_EVENT','ECON_W_TIME','ECON_W_DENS','ECON_W_ENV'].forEach(k=>{ if(!(K[k]>=0)) p.push('K.'+k+' должен быть >= 0'); });
+    if(!(K.ECON_DIFF_NORM>0)) p.push('K.ECON_DIFF_NORM должен быть > 0');
+    if(!(K.ECON_FLOW_REF>0)) p.push('K.ECON_FLOW_REF должен быть > 0');
+    if(!(K.ECON_DIFF_CAP>0)) p.push('K.ECON_DIFF_CAP должен быть > 0');
     if(!(K.BAY_OPEN_COST>0)) p.push('K.BAY_OPEN_COST должен быть > 0');
     if(!(Array.isArray(K.BAY_UP_COST) && K.BAY_UP_COST.length>=1 && K.BAY_UP_COST[0]>0)) p.push('K.BAY_UP_COST должен начинаться с цены > 0');
     return p;
@@ -1847,7 +1904,7 @@
   };
 
   function reset(){
-    econ = levelEconomy(LV);   // оплата за услугу и стартовая касса — из конфига уровня
+    econ = levelEconomy(LV); lvFx = econ.effects;   // оплата/касса и активные денежные эффекты — из уровня
     planes=[]; money=debug.richStart?BIG_MONEY:econ.startMoney; lives=K.START_LIVES; served=0; gameTime=0;
     // раунд начинается с пустого неба: первый борт прилетает через 1–3 секунды
     spawnTimer=1 + Math.random()*2; running=true; paused=false; inMenu=false;
@@ -2236,9 +2293,12 @@
     if(pl.halfPay){                // наземный штраф рвёт серию и режет оплату вдвое
       combo=0; pay = Math.round(pay*0.5);
     } else {
-      combo++;
-      express = (gameTime - pl.landedAt) <= K.EXPRESS_TIME;
-      pay = Math.round(pay * comboMult() * (express?K.EXPRESS_BONUS:1));
+      combo++;                                       // серия растёт всегда (для достижений/HUD)
+      // денежные эффекты применяются, только если ВКЛЮЧЕНЫ на этой карте (lvFx) —
+      // так комбо/экспресс можно вводить постепенно; экономика учитывает это же
+      express = lvFx.express && (gameTime - pl.landedAt) <= K.EXPRESS_TIME;
+      const cm = lvFx.combo ? comboMult() : 1;
+      pay = Math.round(pay * cm * (express?K.EXPRESS_BONUS:1));
       if(express) toast={text:t('toast.express', {money:fmtMoney(pay)}), t:0, good:true};
     }
     money += pay;
@@ -2250,7 +2310,7 @@
     pulseFx(fx, fy+12*ui, 'takeoff', 0.6);   // отрыв: спид-лайны
     // мгновенный дофамин: «×N комбо» за серию и «вовремя!» за экспресс — над «+N ₿»
     let stack = 17*ui;
-    if(combo>=2){ addFloat(fx, fy-stack, t('float.combo',{x:combo}), COL.gold); stack+=17*ui; }
+    if(lvFx.combo && combo>=2){ addFloat(fx, fy-stack, t('float.combo',{x:combo}), COL.gold); stack+=17*ui; }
     if(express){ addFloat(fx, fy-stack, t('float.express'), COL.teal); stack+=17*ui; }
     // бонус-мир: метаморфоза — гусеница вылетает бабочкой 🦋 + премия-нектар
     if(LV.bonus){
@@ -3288,7 +3348,7 @@
     ctx.shadowColor=hexa(COL.gold,.4); ctx.shadowBlur=9*ui;
     ctx.fillText(fmtMoney(money), lx+15*ui, cy); ctx.shadowBlur=0;
     lx += 15*ui + ctx.measureText(fmtMoney(money)).width + 13*ui;
-    if(combo>1){
+    if(lvFx.combo && combo>1){
       const ct='×'+fmtNum(comboMult(),1);
       ctx.font=`800 ${12*ui}px ${MONO}`;
       const cbw=ctx.measureText(ct).width + 16*ui;
@@ -4312,7 +4372,8 @@
   if(typeof location!=='undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
     window.__GAME = {
       VERSION, LEVELS, BIOMES, BONUS, K, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
-      t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, goalRowsHTML, levelEconomy,
+      t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, goalRowsHTML,
+      levelEconomy, levelEffects, levelDifficulty,
       dayCycle, weatherTaxiMult, neededCrew,
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },

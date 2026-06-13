@@ -398,16 +398,72 @@ test('экономика: больше бортов в смене → дешев
   assert.ok(e6.svcReward <= e4.svcReward, 'при большем потоке оплата за борт не растёт');
 });
 
-test('экономика: голая оплата НЕ покрывает весь набор — добор идёт мастерством', () => {
+test('экономика: голая оплата НЕ покрывает весь набор, но с эффектами — набор достижим', () => {
   const { game } = boot();
   const K = game.K;
   const avg = 1 + K.TWO_SVC_CHANCE;
-  // на «средних» по апрону уровнях (L4) базовый доход < полного набора, но комбо×2/экспресс×1.5
-  // дают запас сверх него — «непросто, но выполнимо»
+  // на «среднем» по апрону уровне (L4) голой оплаты не хватает на весь набор, но
+  // реальный доход (с комбо/экспрессом) — покрывает: «непросто, но честно»
   const e = game.levelEconomy(game.LEVELS[3]);
   const baseTotal = e.startMoney + e.svcReward * avg * e.flow;
-  assert.ok(baseTotal < e.kitCost, 'голой оплаты с запасом не должно хватать на весь набор');
-  assert.ok(baseTotal >= e.kitCost * 0.8, 'но впритык — не меньше 80% набора (иначе недостижимо)');
+  const realized = e.startMoney + e.svcReward * avg * e.flow * e.skillMult;
+  assert.ok(e.skillMult > 1, 'на L4 комбо/экспресс включены → скилл-добор > 1');
+  assert.ok(baseTotal < e.kitCost, 'голой оплаты не должно хватать на весь набор');
+  assert.ok(realized >= e.kitCost * K.ECON_KIT_FLOOR, 'с эффектами набор должен быть достижим (≥ floor)');
+});
+
+test('экономика: с эффектами набор достижим на КАЖДОМ уровне (деньги не блокируют 3★)', () => {
+  const { game } = boot();
+  const K = game.K;
+  const avg = 1 + K.TWO_SVC_CHANCE;
+  game.LEVELS.forEach((lv, i) => {
+    const e = game.levelEconomy(lv);
+    const realized = e.startMoney + e.svcReward * avg * e.flow * e.skillMult;
+    assert.ok(realized >= e.kitCost * K.ECON_KIT_FLOOR,
+      `L${i + 1}: набор недостижим даже с эффектами (${Math.round(realized)} < ${Math.round(e.kitCost * K.ECON_KIT_FLOOR)})`);
+  });
+});
+
+test('экономика: сложность растёт со спецсобытиями, таймером и потоком', () => {
+  const { game } = boot();
+  // спокойный обучающий L1 заметно легче событийного капстоуна L10
+  const d1 = game.levelDifficulty(game.LEVELS[0]);
+  const d10 = game.levelDifficulty(game.LEVELS[9]);
+  assert.ok(d1 < d10, `L1 (${d1.toFixed(2)}) должен быть легче L10 (${d10.toFixed(2)})`);
+  // добавление спецсобытия повышает сложность того же уровня
+  const base = game.levelDifficulty(game.LEVELS[0]);
+  const withEvent = game.levelDifficulty(Object.assign({}, game.LEVELS[0], { events: { medical: true } }));
+  assert.ok(withEvent > base, 'спецсобытие должно повышать сложность');
+  // сложнее карта → щедрее деньги (компенсация хаоса)
+  assert.ok(game.levelEconomy(game.LEVELS[9]).generosity > game.levelEconomy(game.LEVELS[0]).generosity,
+    'на сложной карте щедрость должна быть выше');
+});
+
+test('экономика: отключение комбо/экспресса поднимает базовую оплату (гибкость под ramp-in)', () => {
+  const { game } = boot();
+  const L = game.LEVELS[3];   // L4
+  const on = game.levelEconomy(L);
+  const off = game.levelEconomy(Object.assign({}, L, { combo: false, express: false }));
+  assert.equal(on.effects.combo, true);
+  assert.equal(off.effects.combo, false);
+  assert.equal(off.skillMult, 1, 'без эффектов скилл-добора нет (skillMult = 1)');
+  assert.ok(off.svcReward > on.svcReward, 'без комбо/экспресса базовая оплата должна вырасти (компенсация)');
+});
+
+test('эффекты: levelEffects по умолчанию включены, отключаются флагами combo/express', () => {
+  const { game } = boot();
+  // (объекты приходят из vm-реалма — сверяем поля, не deepStrictEqual против main-реалма)
+  const def = game.levelEffects({});
+  assert.ok(def.combo === true && def.express === true, 'по умолчанию оба включены');
+  const noCombo = game.levelEffects({ combo: false });
+  assert.ok(noCombo.combo === false && noCombo.express === true);
+  const noExpress = game.levelEffects({ express: false });
+  assert.ok(noExpress.combo === true && noExpress.express === false);
+  // все уровни кампании пока с эффектами (план — убрать с первых позже)
+  game.LEVELS.forEach((lv, i) => {
+    const fx = game.levelEffects(lv);
+    assert.ok(fx.combo && fx.express, `L${i + 1}: эффекты пока включены`);
+  });
 });
 
 test('экономика: validateLevels ловит сломанную ручку (нереальная оплата → бокс не накопить)', () => {
