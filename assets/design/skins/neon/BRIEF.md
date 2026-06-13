@@ -63,41 +63,51 @@ depart/gold #ffd23b · coin/gold #ffd23b · life #ff3b6b
 
 Plus per-bay border accents seen in `ref-01` (orange/pink/green/cyan/purple).
 
-## 4. Integration — the seam is already built
+## 4. Format & integration — **deliver PNG** (the seam is built)
 
-The engine has a **skin switch** (`SKIN = 'cozy' | 'neon'`, Settings → Skin /
-`?skin=neon`). For neon it currently renders **procedurally**. To swap in real art:
+We use **raster PNG** sprites (not SVG) so the painterly glow/gloss/shadow is
+**baked into the image** — reliable on Android (Chromium WebView) and iOS
+(WKWebView), with no SVG-filter quirks to debug. The engine has a skin switch
+(`SKIN = 'cozy' | 'neon'`, Settings → Skin / `?skin=neon`) and auto-loads PNG art.
 
-**Drop SVG sprite sheets here:**
+**Deliverable — one transparent PNG per asset + a manifest:**
 ```
-assets/sprites/neon/planeflow-aircraft.svg
-assets/sprites/neon/planeflow-field.svg
-assets/sprites/neon/planeflow-hud.svg
-assets/sprites/neon/planeflow-effects.svg
-assets/sprites/neon/planeflow-brand.svg   (optional, menu/brand)
+assets/sprites/neon/<id>.png          # e.g. assets/sprites/neon/bay-repair.png
+assets/sprites/neon/manifest.json     # ["plane","bay-repair","svc-fuel", …]
 ```
 
 **Rules (the engine relies on these):**
-1. **Prefix every `<symbol id>` with `neon-`** — e.g. `neon-plane`, `neon-svc-fuel`,
-   `neon-bay-repair`, `neon-coin`. The atlas resolves `neon-<id>` ahead of the base
-   `<id>` when the neon skin is active, so your art overrides the placeholder
-   automatically; nothing else needs prefixing.
-2. **Same ids / viewBox / sizes** as the base sheets — see
-   [`../../../sprites/README.md`](../../../sprites/README.md). Use `var(--token,#hex)`
-   for colors so they stay recolorable.
-3. As soon as ≥1 neon symbol loads, the engine flips that skin from procedural to
-   sprite-driven (`A.skinReady`) and repaints — no reload, no code edit.
-4. **Bay panels** use a new full-panel hook: author `neon-bay-repair`,
-   `neon-bay-fuel`, `neon-bay-board`, `neon-bay-locked` as the **whole glossy
-   panel** (rounded neon-bordered box + glow). **Do NOT bake the service icon, label,
-   cost, upgrade pips or progress ring** — the engine overlays those on top (so they
-   stay dynamic). Panel size = the bay box (~88–100 px square-ish).
-5. **The field stays engine-drawn** (the neon radar in §2) — you do **not** need to
-   draw the field/terminal/grass/water. Focus art on bays, planes, icons, HUD chips
-   and effects that sit on the radar. (If later we want a drawn field, add
-   `neon-tile-*` / `neon-terminal` and they'll be picked up too.)
-6. **Runways & HUD** are currently engine-drawn neon; recolor only. (Optional future
-   hooks for `neon-runway` / HUD chips can be added if you want full control.)
+1. **File name = the base id + `.png`** (no prefix): `plane.png`, `bay-repair.png`,
+   `svc-fuel.png`, `coin.png`, … The `neon/` folder already namespaces the skin.
+2. **`manifest.json` lists every id you ship** (JSON array of strings). The engine
+   loads it and draws `neon/<id>.png` for each listed id instead of the procedural
+   placeholder — **no code changes, no reload** (repaints when ready).
+3. **Bake everything into the PNG**: glow, gloss, gradients, soft shadow, neon border.
+   No live filters/tokens. **PNG-32 with alpha** (transparent background).
+4. **Author at ~3× on-screen size** for retina (engine scales down crisply). Center
+   the content; **planes nose-up**. Target pixel sizes:
+
+   | id | on-screen | author PNG |
+   | --- | --- | --- |
+   | `bay-repair/fuel/board/deice/locked` | ~96×72 | **320×240** |
+   | `plane`, `plane-vip`, `plane-emergency`, `plane-medevac` | ~50 | **256×256** |
+   | `svc-repair/fuel/board/depart` | ~45 | **160×160** |
+   | `coin`, `heart`, `star`, `clock`, `check` | ~24 | **96×96** |
+   | `pause-btn`, `zen-badge` | ~56 | **192×192** |
+   | `fx-*` | ~56–80 | **256×256** |
+
+5. **Bay panels** = the **whole glossy neon panel** (rounded box, colored neon border,
+   baked glow, gloss). **Do NOT bake the service icon, label, cost, upgrade pips or
+   progress ring** — the engine overlays those live. Panel canvas ≈ 320×240 (the bay
+   aspect; transparent margins ok).
+6. **Field stays engine-drawn** (the neon radar in §2) — you don't draw the field/
+   terminal/water. Focus on bays, planes, icons, HUD chips and effects on top of it.
+7. **Runways & HUD** are engine-drawn neon today; ship HUD PNG chips (`coin`, `heart`,
+   `pause-btn`, …) and they're picked up — otherwise they recolor procedurally.
+
+*(SVG `<symbol>` sheets with a `neon-` id prefix under `assets/sprites/neon/` are
+still accepted as a fallback — resolution order is **PNG → skin-SVG → base →
+procedural** — but **PNG is the target format**.)*
 
 ## 5. Mini-animations
 
@@ -106,37 +116,40 @@ FX in neon: `fx-weld`, `fx-fuel`, `fx-boarding`, `fx-droplet`, `fx-touchdown`,
 `fx-takeoff`, `fx-crash`, `fx-success`, `fx-error`, `fx-ripple` — bright neon
 particles/rings with glow. Optional ambient: radar blips, scanning glints.
 
-## 6. Asset checklist (what to draw) — all ids get the `neon-` prefix
+## 6. Asset checklist (what to draw) — each shipped as `assets/sprites/neon/<id>.png`
 
-### Bays — full glossy neon panels (`planeflow-field.svg`)
-- [ ] `neon-bay-repair` · `neon-bay-fuel` · `neon-bay-board` — panel + colored neon
-      border + glow (no baked icon/label/cost)
-- [ ] `neon-bay-locked` — dark panel + neon border (no baked padlock/cost)
+File names use the **base id** (no prefix); list every shipped id in `manifest.json`.
 
-### Aircraft & icons (`planeflow-aircraft.svg`)
-- [ ] `neon-plane`, `neon-plane-vip`, `neon-plane-emergency`, `neon-plane-medevac`
-      — bright body, colored nose/livery, neon outline + glow, nose-up
-- [ ] `neon-ring-selected`, `neon-ring-patience`, `neon-ring-patience-low`
-- [ ] `neon-svc-repair`, `neon-svc-fuel`, `neon-svc-board`, `neon-svc-depart`
-      — big neon icon chips (used both above planes and as bay/HUD icons)
+### Bays — full glossy neon panels (320×240)
+- [ ] `bay-repair` · `bay-fuel` · `bay-board` · `bay-deice` — panel + colored neon
+      border + baked glow/gloss (no baked icon/label/cost)
+- [ ] `bay-locked` — dark panel + neon border (no baked padlock/cost)
 
-### HUD (`planeflow-hud.svg`)
-- [ ] `neon-heart`, `neon-heart-empty`, `neon-heart-crack`
-- [ ] `neon-coin`, `neon-star`, `neon-star-empty`, `neon-clock`, `neon-pause`,
-      `neon-pause-btn`, `neon-moon`, `neon-zen-badge`, `neon-check`
+### Aircraft & icons
+- [ ] `plane`, `plane-vip`, `plane-emergency`, `plane-medevac` (256×256) — bright
+      body, colored nose/livery, neon outline + baked glow, **nose-up, centered**
+- [ ] `ring-selected`, `ring-patience`, `ring-patience-low` (256×256)
+- [ ] `svc-repair`, `svc-fuel`, `svc-board`, `svc-depart` (160×160) — big neon icon
+      chips (used above planes and as bay/HUD icons)
 
-### Effects (`planeflow-effects.svg`)
+### HUD chips (96×96, except buttons 192×192)
+- [ ] `heart`, `heart-empty`, `heart-crack`
+- [ ] `coin`, `star`, `star-empty`, `clock`, `check`, `moon`
+- [ ] `pause-btn`, `zen-badge`
+
+### Effects (256×256)
 - [ ] neon versions of `fx-weld/fuel/boarding/droplet/touchdown/takeoff/crash/
       success/error/ripple/spark/smoke/dust/board-dot`
 
 ### Optional (later)
-- [ ] `neon-tile-*`, `neon-terminal`, `neon-runway`, `neon-menu-bg`
+- [ ] `tile-*`, `terminal`, `runway`, `menu-bg` (if we want a fully drawn field/menu)
 
 ## 7. Definition of done
 
-- All ✅ items drawn in the neon style; one consistent glow/outline language.
-- `neon-`-prefixed ids, sizes/viewBox per the sprite README, `var(--token,#hex)`.
-- Bay panels carry **no** baked icon/label/cost/progress; planes nose-up & centered.
-- Big & readable: silhouettes read in < 0.5 s; chips ≥ 44 px.
-- Verify by dropping the sheets into `assets/sprites/neon/` and switching
-  Settings → Skin → Neon (or `?skin=neon`): art appears with no code changes.
+- All ✅ items drawn in the neon style; one consistent baked glow/outline language.
+- **PNG-32 + alpha**, base-id file names, listed in `manifest.json`, authored at the
+  target sizes above. Planes nose-up & centered; bay panels carry **no** baked
+  icon/label/cost/progress.
+- Big & readable: silhouettes read in < 0.5 s; on-screen chips ≥ 44 px.
+- Verify by dropping the PNGs + `manifest.json` into `assets/sprites/neon/` and
+  switching Settings → Skin → Neon (or `?skin=neon`): art appears, no code changes.
