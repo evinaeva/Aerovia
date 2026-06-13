@@ -8,6 +8,9 @@
 <title>PlaneFlow</title>
 <link rel="icon" type="image/png" href="assets/icon/icon-512.png">
 <link rel="apple-touch-icon" href="assets/icon/icon-512.png">
+<link rel="manifest" href="manifest.json">
+<meta name="application-name" content="PlaneFlow">
+<meta name="apple-mobile-web-app-title" content="PlaneFlow">
 <meta name="theme-color" content="#16131f">
 <style>
   /* ===== облик «cozy / stylized-flat» (см. CHANGELOG) ===== */
@@ -266,6 +269,18 @@
   #achToast .lbl{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
   #achToast .ttl{font-size:14px;margin-top:3px;color:var(--paper)}
   #achToast .dsc{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.45}
+  /* PWA: «доступно обновление» — тост у нижнего края с кнопкой перезапуска */
+  #pwaUpdate{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(22px);
+    z-index:20;display:flex;gap:14px;align-items:center;padding:11px 14px 11px 18px;border-radius:12px;
+    background:rgba(10,22,34,.96);border:1.5px solid var(--teal);color:var(--paper);
+    box-shadow:0 0 18px rgba(78,205,196,.3), 0 6px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;
+    transition:opacity .32s ease, transform .32s ease;max-width:90%}
+  #pwaUpdate.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  #pwaUpdate .ttl{font-size:13px;color:var(--paper)}
+  #pwaUpdate .btn-upd{font:inherit;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    cursor:pointer;padding:8px 14px;border-radius:9px;border:1.5px solid var(--teal);
+    background:rgba(78,205,196,.16);color:var(--paper)}
+  #pwaUpdate .btn-upd:active{transform:translateY(1px)}
 </style>
 
 <div id="stage">
@@ -399,6 +414,11 @@
   <div id="achToast">
     <div class="ic" id="achIc">🏅</div>
     <div><div class="lbl" data-i18n="ach.toastLabel"></div><div class="ttl" id="achTtl"></div><div class="dsc" id="achDsc"></div></div>
+  </div>
+
+  <div id="pwaUpdate" role="status">
+    <div class="ttl" data-i18n="pwa.updateTitle"></div>
+    <button class="btn-upd" id="pwaUpdateBtn" data-i18n="pwa.updateBtn"></button>
   </div>
 </div>
 
@@ -594,6 +614,7 @@
       _plural: n => (n===1 ? 0 : 1),
       'app.name':'PlaneFlow',
       'app.title':'PlaneFlow — air traffic control',
+      'pwa.updateTitle':'A new version is ready', 'pwa.updateBtn':'Update',
       'start.kicker':'Night controller · Airfield',
       'start.tagline':'Guide the planes with your finger. Calm night flow.',
       'start.play':'Play', 'start.zen':'Zen mode', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
@@ -737,6 +758,7 @@
         return 2; },
       'app.name':'PlaneFlow',
       'app.title':'PlaneFlow — диспетчер',
+      'pwa.updateTitle':'Доступна новая версия', 'pwa.updateBtn':'Обновить',
       'start.kicker':'Ночной диспетчер · Аэродром',
       'start.tagline':'Веди борта пальцем. Спокойный ночной поток.',
       'start.play':'Играть', 'start.zen':'Zen-режим', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
@@ -3705,5 +3727,45 @@
       },
     };
   }
+})();
+</script>
+
+<script>
+/* ===== PWA: регистрация service worker + тост обновления =====
+ * SW даёт офлайн-старт; контент по-прежнему обновляется мгновенно (navigation
+ * грузится network-first). Когда меняется сам sw.js (VERSION), новый воркер
+ * встаёт в ожидание, мы показываем тост, и по нажатию делаем skipWaiting +
+ * единоразовый reload через событие controllerchange. */
+(() => {
+  if (!('serviceWorker' in navigator)) return;
+  const swUrl = new URL('sw.js', location.href).href; // относительно подпапки (GitHub Pages)
+
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return; reloading = true; location.reload();
+  });
+
+  function showUpdate(worker) {
+    const t = document.getElementById('pwaUpdate'); if (!t || !worker) return;
+    t.classList.add('show');
+    const btn = document.getElementById('pwaUpdateBtn');
+    btn.onclick = () => { t.classList.remove('show'); worker.postMessage('SKIP_WAITING'); };
+  }
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(swUrl).then((reg) => {
+      // обновление уже скачалось, пока вкладка была закрыта
+      if (reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing; if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          // controller != null → это апдейт, а не первая установка
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdate(nw);
+        });
+      });
+      // долго открытая вкладка/установленное приложение — периодически проверяем деплой
+      setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+    }).catch(() => { /* нет https / приватный режим — игра работает и без SW */ });
+  });
 })();
 </script>
