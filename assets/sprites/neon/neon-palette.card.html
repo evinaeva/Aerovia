@@ -1,0 +1,120 @@
+<!-- @dsCard group="Neon Skin" viewport="900x620" name="Neon Palette & Controls" subtitle="Muted-neon tokens + button / chip / toggle / progress states for DOM menus" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../../styles.css" />
+<style>
+  html, body { margin: 0; }
+  * { box-sizing: border-box; }
+  body { font-family: var(--font-ui); color: var(--neon-text-body); padding: 26px 30px 34px;
+    background: radial-gradient(120% 90% at 50% 8%, var(--neon-field-core) 0%, var(--neon-tarmac) 44%, var(--neon-ink) 100%); }
+  h2 { font-family: var(--font-display); font-size: 21px; color: var(--neon-text-strong); margin: 0 0 2px; text-shadow: var(--neon-text-glow); }
+  .sub { font-size: 12px; color: var(--neon-text-muted); margin-bottom: 22px; }
+  .sec { font-size: 10.5px; letter-spacing: var(--ls-kicker); text-transform: uppercase; color: var(--neon-cyan); font-weight: 700; margin: 22px 0 12px; }
+
+  /* palette */
+  .pal { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .sw { border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
+  .sw .chip { height: 46px; }
+  .sw .meta { padding: 6px 8px; background: rgba(4,7,15,0.5); }
+  .sw .nm { font-size: 10.5px; font-weight: 700; color: var(--neon-text-body); }
+  .sw .hx { font-size: 9px; color: var(--neon-text-muted); font-family: var(--font-num); margin-top: 1px; }
+
+  /* layout cols */
+  .cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 30px; }
+
+  /* buttons */
+  .btnrow { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .nb { font-family: var(--font-ui); font-weight: 800; font-size: 13px; letter-spacing: var(--ls-label); text-transform: uppercase;
+    border-radius: var(--neon-r-button); padding: 12px 22px; cursor: pointer; transition: all var(--dur-fast) var(--neon-ease);
+    border: 1.5px solid; background: rgba(9,17,38,0.5); }
+  .nb.primary { color: var(--neon-cyan); border-color: rgba(111,198,221,0.6); box-shadow: var(--neon-glow-cyan); }
+  .nb.primary:hover { background: rgba(111,198,221,0.12); box-shadow: 0 0 20px rgba(111,198,221,0.5); }
+  .nb.ghost { color: var(--neon-text-body); border-color: rgba(111,198,221,0.22); box-shadow: none; }
+  .nb.ghost:hover { border-color: rgba(111,198,221,0.45); color: var(--neon-text-strong); }
+  .nb.danger { color: var(--neon-life); border-color: rgba(232,95,126,0.55); box-shadow: var(--neon-glow-life); }
+  .nb.danger:hover { background: rgba(232,95,126,0.12); }
+  .nb:active { transform: scale(0.95); }
+  .nb.disabled { color: var(--neon-text-muted); border-color: rgba(95,123,176,0.3); box-shadow: none; opacity: 0.55; cursor: not-allowed; }
+  .state { font-size: 9px; color: var(--neon-text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 6px; text-align: center; }
+  .bcell { display: flex; flex-direction: column; align-items: center; }
+
+  /* toggle */
+  .toggle { width: 56px; height: 30px; border-radius: 999px; background: rgba(9,17,38,0.7); border: 1px solid rgba(111,198,221,0.25); position: relative; cursor: pointer; transition: all var(--dur-base); }
+  .toggle.on { background: rgba(91,200,180,0.22); border-color: rgba(91,200,180,0.6); box-shadow: var(--neon-glow-teal); }
+  .toggle i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--neon-text-muted); transition: all var(--dur-base) var(--neon-ease); }
+  .toggle.on i { left: 27px; background: var(--neon-teal); box-shadow: 0 0 10px rgba(91,200,180,0.8); }
+
+  /* segmented */
+  .seg { display: inline-flex; background: rgba(9,17,38,0.7); border: 1px solid rgba(111,198,221,0.22); border-radius: 11px; padding: 3px; gap: 3px; }
+  .seg button { font-family: var(--font-ui); font-weight: 700; font-size: 12px; letter-spacing: 0.05em; color: var(--neon-text-muted);
+    border: none; background: none; padding: 7px 16px; border-radius: 8px; cursor: pointer; }
+  .seg button.active { color: var(--neon-ink); background: var(--neon-cyan); box-shadow: var(--neon-glow-cyan); }
+
+  /* chips */
+  .chips { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .chip2 { display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px 6px 9px; border-radius: 999px; font-weight: 800; font-size: 13px; }
+  .chip2 img { height: 18px; width: 18px; }
+  .chip2.cost { background: rgba(9,17,38,0.66); border: 1px solid rgba(230,197,98,0.4); color: var(--neon-gold); }
+  .chip2.stars { background: rgba(9,17,38,0.66); border: 1px solid rgba(230,197,98,0.4); color: var(--neon-gold); }
+  .chip2.combo { background: rgba(111,198,221,0.14); border: 1px solid rgba(111,198,221,0.5); color: var(--neon-cyan); box-shadow: var(--neon-glow-cyan); }
+
+  /* progress */
+  .prog { height: 12px; border-radius: 999px; background: rgba(9,17,38,0.7); border: 1px solid rgba(111,198,221,0.2); overflow: hidden; margin-top: 8px; }
+  .prog i { display: block; height: 100%; width: 64%; border-radius: 999px; background: linear-gradient(90deg, var(--neon-cyan), #9fe3f4); box-shadow: 0 0 10px rgba(111,198,221,0.6); }
+</style>
+</head>
+<body>
+  <h2>Neon palette &amp; controls</h2>
+  <div class="sub">Muted, desaturated neon on deep navy — the calm night-shift skin. These tokens (<code>--neon-*</code>) and DOM states drive the menus, dialogs and HUD.</div>
+
+  <div class="sec">Palette — accents pulled down from the engine's raw NEON_TOKENS</div>
+  <div class="pal" id="pal"></div>
+
+  <div class="cols" style="margin-top:24px">
+    <div>
+      <div class="sec">Buttons — primary · ghost · danger · disabled</div>
+      <div class="btnrow">
+        <div class="bcell"><button class="nb primary">Go</button><div class="state">primary</div></div>
+        <div class="bcell"><button class="nb ghost">Maps</button><div class="state">ghost</div></div>
+        <div class="bcell"><button class="nb danger">Reset</button><div class="state">danger</div></div>
+        <div class="bcell"><button class="nb disabled">Locked</button><div class="state">disabled</div></div>
+      </div>
+      <div class="sec" style="margin-top:24px">Toggle &amp; segmented control</div>
+      <div class="btnrow" style="gap:22px">
+        <div class="toggle on" id="t1"><i></i></div>
+        <div class="seg" id="seg"><button class="active">EN</button><button>RU</button></div>
+        <div class="seg"><button class="active">Cozy</button><button>Neon</button></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec">Chips — cost · stars · combo</div>
+      <div class="chips">
+        <span class="chip2 cost"><img src="coin.png">5,000</span>
+        <span class="chip2 stars"><img src="star.png">3</span>
+        <span class="chip2 combo">×2 combo</span>
+      </div>
+      <div class="sec" style="margin-top:24px">Goal progress</div>
+      <div style="font-size:12px;color:var(--neon-text-body);font-weight:700">Shift goal · 9 / 14</div>
+      <div class="prog"><i></i></div>
+      <div class="sec" style="margin-top:24px">Lives</div>
+      <div class="chips" style="gap:7px">
+        <img src="heart.png" style="height:30px"><img src="heart.png" style="height:30px"><img src="heart-crack.png" style="height:30px"><img src="heart-empty.png" style="height:30px">
+      </div>
+    </div>
+  </div>
+
+<script>
+  const SW = [
+    ['cyan','#6fc6dd'],['teal','#5bc8b4'],['amber','#e0a45a'],['rose','#e07aa6'],['ice','#7fc6e6'],['green','#6cc88f'],
+    ['purple','#a98fd6'],['gold','#e6c562'],['life','#e85f7e'],['locked','#5f7bb0'],['ink','#070c1c'],['text','#dff4ff'],
+  ];
+  document.getElementById('pal').innerHTML = SW.map(([n,h])=>
+    `<div class="sw"><div class="chip" style="background:${h}"></div><div class="meta"><div class="nm">${n}</div><div class="hx">${h}</div></div></div>`).join('');
+  document.getElementById('t1').onclick = e => e.currentTarget.classList.toggle('on');
+  document.getElementById('seg').querySelectorAll('button').forEach(b => b.onclick = () => {
+    document.getElementById('seg').querySelectorAll('button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); });
+</script>
+</body>
+</html>
