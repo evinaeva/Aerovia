@@ -50,11 +50,14 @@
   canvas{position:absolute;inset:0;touch-action:none;display:block}
 
   .overlay{
-    position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;
-    overflow-y:auto;-webkit-overflow-scrolling:touch;
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
     background:radial-gradient(120% 90% at 50% 40%, rgba(6,11,18,.55), rgba(6,11,18,.92));
     backdrop-filter:blur(2px);z-index:5;
   }
+  /* панель масштабируется под экран телефона (см. fitOverlays): origin по центру,
+     чтобы уменьшенная панель оставалась в центре и не появлялся скролл меню. */
+  .overlay>.panel{transform-origin:center center;margin:0}
   /* меню: сцена-радар на канвасе видна целиком */
   #startScreen{background:none;backdrop-filter:none}
   /* старт — две колонки: бренд+арт слева, рейл действий справа (wireframes.md, мокап 01) */
@@ -1728,8 +1731,30 @@
     ui = Math.max(0.7, Math.min(1.5, Math.min(W/1100, H/620)));
     readSafe();
     layout();
+    fitOverlays();
   }
   window.addEventListener('resize', resize);
+
+  // ---- авто-подгон панелей меню под экран телефона ----
+  // Любой оверлей (меню, пауза, итог, настройки…) ужимается до размеров вьюпорта,
+  // если его панель выше/шире экрана — так меню перестаёт скроллиться на телефоне.
+  function fitOverlays(){
+    const vw = window.innerWidth, vh = window.innerHeight, margin = 10;
+    document.querySelectorAll('.overlay').forEach(ov=>{
+      const panel = ov.querySelector('.panel');
+      if(!panel) return;
+      panel.style.transform=''; // сброс перед замером натуральных размеров
+      if(ov.classList.contains('hidden')) return;
+      const r = panel.getBoundingClientRect();
+      const s = Math.min(1, (vh-margin)/r.height, (vw-margin)/r.width);
+      if(s < 0.999) panel.style.transform = 'scale('+s+')';
+    });
+  }
+  // пере-подгон при смене видимости оверлея (show/hide меняют класс hidden)
+  if(typeof MutationObserver==='function'){
+    const _ovFit = new MutationObserver(()=>requestAnimationFrame(fitOverlays));
+    document.querySelectorAll('.overlay').forEach(ov=>_ovFit.observe(ov,{attributes:true,attributeFilter:['class']}));
+  }
 
   // ---- layout: bays, runways, hover slots ----
   let bays=[], runways=[], field={}, pauseBtn={};
