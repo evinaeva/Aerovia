@@ -11,6 +11,29 @@ Chosen because the cartoon look best supports the planned **mini-animations**
 
 ---
 
+## 0. Audience & art intent (read first) — plus an honest genre caveat
+
+**Intended vibe:** bright, friendly, playful — the lively counterpart to the calm
+adult **neon** skin. Saturated, bouncy, "living airport" energy; lots of small
+ambient motion. This is the **mass-casual / younger & family-friendly** look.
+
+**Honest market note (worth weighing before investing):** the framing was
+"cartoon = for teens" — but realistically **teens are not the core of this genre.**
+Route-drawing / airport-manager / time-management games (Flight Control, Airport
+City, Township-likes, Sky Patrol) skew to a **broad adult casual** audience (often
+25–55, strong female share) who play to relax. Teens lean toward social/competitive/
+action titles (Roblox, shooters, sports, battle-royale), not finger-routing tycoon-
+lite. So:
+- Don't narrowly target "teen" aesthetics; aim for **bright, approachable, all-ages
+  casual** — appeals to younger players *and* the genre's real adult-casual base.
+- Think of the two skins as a **mood A/B**, not strict age buckets: **neon = calm,
+  understated, grown-up**; **cartoon = bright, cheerful, broadly casual.**
+
+(If we later learn the actual player base skews very adult, the cartoon skin still
+earns its place as the "bright/cozy" option — just don't over-index on "teen".)
+
+---
+
 ## 1. The locked gameplay layout (must NOT change)
 
 The skin changes how things look, never *where* they are. Honor this exactly
@@ -169,8 +192,31 @@ File names use the **base id** (no prefix); list every shipped id in `manifest.j
 - [ ] **Ambient (new):** tree, bush, cloud (×2–3), bird, control-tower light,
       service truck (side), flag — base PNG + motion notes (engine tweens them)
 
-### Brand / menu (optional first pass)
-- [ ] `menu-bg` (sunny airport), `wordmark`, level-card thumbnail
+### Menus & screens (DOM — themed via a CSS palette + a few backgrounds)
+> Menus are HTML/CSS overlays, not canvas sprites. Deliver a **cartoon CSS palette**
+> (surface/card/border/text/accent) + the background/art bits. Each screen needs a
+> cartoon treatment:
+- [ ] **Start / main menu** — sunny background art, wordmark/logo, action rail
+- [ ] **Level select** — the «luggage-cart» route map: track, **level node** (locked /
+      current / done), star row, back
+- [ ] **Shift goals** dialog · **Pause** (dimmed field + buttons) · **End of shift**
+      (stars + stat chips) · **Settings** (rows + toggles + segmented controls) ·
+      **Medals** grid · **Reset confirm**
+- [ ] **Toasts** (life lost / level passed / +money) · **panels/cards** & dividers
+
+### Buttons & controls (DOM — define cartoon states)
+- [ ] Button styles: **primary**, **secondary/ghost**, **danger** — idle / hover /
+      pressed / disabled (chunky, rounded, soft shadow)
+- [ ] **Toggle switch**, **segmented control** (language, skin), **chips**
+      (cost / stars), **progress bar** (goal), **combo badge**
+
+### Menu icons (consistent chunky set)
+- [ ] `play`, `zen`/moon, `maps`, `medals`, `settings`/gear, `fullscreen`, `share`,
+      `back`, `star`, `lock`
+
+### Brand / app
+- [ ] `wordmark` + logo mark · `menu-bg` (sunny airport) · level-card thumbnail ·
+      **app icon** + splash (store/PWA)
 
 ## 7. Definition of done
 
