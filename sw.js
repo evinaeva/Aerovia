@@ -17,7 +17,7 @@
  *
  * After changing precached assets or wanting to force a refresh, bump VERSION.
  */
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CACHE = 'planeflow-' + VERSION;
 
 // App shell — everything needed to boot offline. Paths are relative so the SW
@@ -73,7 +73,35 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('message', (e) => {
   const d = e.data;
-  if (d === 'SKIP_WAITING' || (d && d.type === 'SKIP_WAITING')) self.skipWaiting();
+  if (d === 'SKIP_WAITING' || (d && d.type === 'SKIP_WAITING')) { self.skipWaiting(); return; }
+
+  // Принудительное обновление по запросу («Проверить обновления» в настройках):
+  // перекачиваем из сети все уже закэшированные same-origin ресурсы — спрайты,
+  // иконки и PNG скинов (которые иначе живут по stale-while-revalidate и
+  // обновляются лишь при следующей загрузке) — и кладём свежие копии. Затем
+  // отвечаем клиенту, сколько штук обновили, чтобы он перезагрузился с новым
+  // артом. Новые, ещё ни разу не запрошенные PNG в кэше отсутствуют — они и так
+  // придут свежими при первом рендере скина после перезагрузки.
+  if (d && d.type === 'REFRESH_ASSETS') {
+    const reply = (msg) => { if (e.source) e.source.postMessage(msg); };
+    e.waitUntil((async () => {
+      let updated = 0;
+      try {
+        const c = await caches.open(CACHE);
+        const reqs = await c.keys();
+        await Promise.all(reqs.map(async (req) => {
+          try {
+            const res = await fetch(req, { cache: 'reload' });
+            if (res && res.status === 200 && res.type === 'basic') {
+              await c.put(req, res.clone());
+              updated++;
+            }
+          } catch { /* офлайн/одиночный 404 не должен валить остальное */ }
+        }));
+      } catch { /* нет доступа к кэшу — просто отвечаем */ }
+      reply({ type: 'ASSETS_REFRESHED', updated });
+    })());
+  }
 });
 
 self.addEventListener('fetch', (e) => {
