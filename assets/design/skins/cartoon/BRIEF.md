@@ -51,30 +51,55 @@ Do: large touch targets · one consistent outline weight · soft shadows · read
 hierarchy. Don't: dense text · tiny tap targets · muddy/desaturated color · flat
 no-shadow shapes · clashing outline weights.
 
-## 3. Integration (how the art plugs in — no code rewrite needed)
+## 3. Format & integration — **deliver PNG** (the seam is built)
 
-The game renders from an SVG **sprite atlas** (`assets/sprites/planeflow-*.svg`),
-where every fill/stroke is `var(--token, #fallbackhex)` so colors are re-themable
-at runtime, with a **procedural fallback** when a sprite is missing. The engine
-already has a **skin switch** (`SKIN = 'cozy' | 'neon'`, Settings → Skin). Adding
-`'cartoon'` will follow the same pattern.
+We use **raster PNG** sprites so the painted gloss, soft shadows and lush textures
+are **baked into the image** — reliable on Android (Chromium WebView) and iOS
+(WKWebView), nothing to debug. The engine auto-loads per-skin PNG art.
 
-Two ways the cartoon art can ship — **prefer (B)** for the bays/planes/field
-because cartoon *shapes* differ from cozy, and (A) for anything that only needs a
-recolor:
+**Deliverable — one transparent PNG per asset + a manifest:**
+```
+assets/sprites/cartoon/<id>.png        # e.g. assets/sprites/cartoon/bay-repair.png
+assets/sprites/cartoon/manifest.json   # ["plane","bay-repair","tile-grass", …]
+```
 
-- **(A) Recolor** — supply a cartoon **token palette** (the `*` values below) that
-  re-tints the existing sprites/procedural shapes. Cheap, partial, good for HUD
-  chips and icons.
-- **(B) New cartoon sprites** — author cartoon **variants** of the field, bays and
-  planes as new `<symbol>`s. Match the **viewBox, id naming and size** conventions
-  in [`../../../sprites/README.md`](../../../sprites/README.md) so they slot into
-  the atlas (e.g. a cartoon bay can be `bay-repair` in a cartoon sheet, or a new id
-  the engine maps when `SKIN==='cartoon'`). Keep `var(--token,#hex)` recolor.
+**Rules (the engine relies on these):**
+1. **File name = the base id + `.png`** (no prefix): `plane.png`, `bay-repair.png`,
+   `tile-grass.png`, `coin.png`, … The `cartoon/` folder namespaces the skin.
+2. **`manifest.json` lists every id you ship** (JSON array). The engine draws
+   `cartoon/<id>.png` for each listed id; resolution order is **PNG → skin-SVG →
+   base cozy → procedural**, live, with no code changes / reload.
+3. **Bake everything into the PNG**: gradients, gloss, soft drop shadow, outline.
+   **PNG-32 + alpha** (transparent background). No live filters.
+4. **Author at ~3× on-screen size**; center content; **planes nose-up**. Sizes:
 
-Deliver as **SVG `<symbol>`s** (vector, crisp at any DPR) following the existing
-sheets, OR high-res PNG sprite sheets at the sizes listed in the sprite README.
-Planes are authored **nose-up**, centered, 100×100 viewBox.
+   | id | on-screen | author PNG |
+   | --- | --- | --- |
+   | `bay-*` panels | ~96×72 | **320×240** |
+   | `plane*` | ~50 | **256×256** |
+   | `svc-*` icons | ~45 | **160×160** |
+   | `tile-grass/water`, `shore` | seamless tile | **256×256 seamless** |
+   | `terminal` | building | **512×384** |
+   | `runway` | strip | **480×140** |
+   | HUD chips (`coin`,`heart`,…) | ~24 | **96×96** |
+   | `pause-btn`,`zen-badge` | ~56 | **192×192** |
+   | `fx-*`, ambient (tree/cloud/truck/…) | ~56–96 | **256×256** |
+
+5. **Bay panels** = the **whole glossy stall/building**; **don't bake the icon,
+   label, cost, pips or progress** — the engine overlays those live.
+6. **Tiles** (`tile-grass`, `tile-water`, `shore`) must be **seamlessly tileable**
+   (the engine repeats them as a pattern).
+
+**Engine notes (small, tracked — not your concern to code):**
+- The PNG seam (`assets/sprites/<skin>/` + manifest) already exists and works for any
+  skin name. Enabling **cartoon** in the UI is a tiny step: add it to the
+  Settings → Skin switch + a cartoon token palette for any procedural bits. We'll do
+  that when your assets land.
+- Unlike neon (engine-drawn radar field), cartoon wants a **drawn field**. Bays /
+  planes / icons / HUD / effects drop in cleanly via PNG; the **apron/field framing**
+  has a couple of baked cozy colors, so a **minor engine tweak** is needed to make the
+  whole field read cartoon once `tile-grass/water` + `terminal` PNGs exist. Tracked —
+  just deliver the tiles and we wire it.
 
 ## 4. Mini-animations (why cartoon)
 
@@ -112,47 +137,48 @@ routes:       green #36d36b route + soft white nodes
 
 (Keep a warm dark outline `#3a2a17` as the single outline color across the set.)
 
-## 6. Asset checklist (what to draw)
+## 6. Asset checklist (what to draw) — each shipped as `assets/sprites/cartoon/<id>.png`
 
-Grouped by the atlas batches. ✅ = needed for the cartoon skin. Match ids/sizes in
-[`../../../sprites/README.md`](../../../sprites/README.md).
+File names use the **base id** (no prefix); list every shipped id in `manifest.json`.
 
-### Field & world (`planeflow-field.svg`)
-- [ ] `tile-grass` — seamless mowed-grass tile (subtle stripes/patches)
-- [ ] `tile-water` — seamless cartoon water (gentle waves)
+### Field & world
+- [ ] `tile-grass` — **seamless** mowed-grass tile (subtle stripes/patches)
+- [ ] `tile-water` — **seamless** cartoon water (gentle waves)
 - [ ] `shore` — grass→sand→water seam tile
 - [ ] `terminal` — cute cartoon terminal building (glossy roof, lit windows)
-- [ ] `runway` — light cartoon runway strip + markings + edge lights
-- [ ] `runway-threshold`, `runway-pointer`, `lamp`
-- [ ] `bay-frame` / `bay-open` / `bay-locked` — glossy rounded stall, padlock + cost
-- [ ] `bay-repair` / `bay-fuel` / `bay-board` — per-service colored stalls
-- [ ] `bay-occupied`, `bay-progress`, `upgrade-pips`
-- [ ] `route-line` / `route-line-selected` / `route-arrow`
+- [ ] `runway` (+ optional `runway-threshold`, `runway-pointer`, `lamp`)
 
-### Aircraft & service icons (`planeflow-aircraft.svg`)
-- [ ] `plane`, `plane-vip`, `plane-emergency`, `plane-medevac` — chunky cartoon, nose-up
+### Bays — full glossy stalls (320×240, no baked icon/label/cost)
+- [ ] `bay-repair` · `bay-fuel` · `bay-board` · `bay-deice` — per-service colored stalls
+- [ ] `bay-locked` — locked stall (no baked padlock/cost)
+
+### Aircraft & service icons
+- [ ] `plane`, `plane-vip`, `plane-emergency`, `plane-medevac` — chunky cartoon, **nose-up**
 - [ ] `ring-selected`, `ring-patience`, `ring-patience-low`
 - [ ] `svc-repair`, `svc-fuel`, `svc-board`, `svc-depart` — big cartoon icon chips
 
-### HUD (`planeflow-hud.svg`)
+### HUD chips
 - [ ] `heart`, `heart-empty`, `heart-crack`
-- [ ] `coin`, `star`, `star-empty`, `clock`, `pause`, `pause-btn`, `moon`, `zen-badge`, `check`
-- [ ] goal progress bar styling + combo badge
+- [ ] `coin`, `star`, `star-empty`, `clock`, `check`, `moon`
+- [ ] `pause-btn`, `zen-badge`
 
-### Effects & mini-animations (`planeflow-effects.svg`)
+### Effects & mini-animations
 - [ ] `fx-weld`, `fx-fuel`, `fx-boarding`, `fx-droplet` (service)
 - [ ] `fx-touchdown`, `fx-takeoff`, `fx-crash`, `fx-success`, `fx-error`, `fx-ripple`
 - [ ] `fx-spark`, `fx-smoke`, `fx-dust`, `fx-board-dot`
 - [ ] **Ambient (new):** tree, bush, cloud (×2–3), bird, control-tower light,
-      service truck (side), flag — base art + motion notes
+      service truck (side), flag — base PNG + motion notes (engine tweens them)
 
-### Brand / menu (`planeflow-brand.svg`) — optional for a first pass
-- [ ] `menu-bg` (sunny airport), `wordmark` styling, level-card thumbnail
+### Brand / menu (optional first pass)
+- [ ] `menu-bg` (sunny airport), `wordmark`, level-card thumbnail
 
 ## 7. Definition of done
 
 - Every ✅ item drawn in the cartoon style, consistent outline weight & palette.
-- Sizes/ids/viewBox match the sprite README so assets drop into the atlas.
-- Colors via `var(--token,#hex)` (recolorable); planes nose-up & centered.
-- Readability check: each silhouette reads in < 0.5 s; chips ≥ 44 px.
-- Mini-animation elements delivered as clean peak-pose art + motion notes.
+- **PNG-32 + alpha**, base-id file names, listed in `manifest.json`, authored at the
+  §3 sizes. Tiles seamless; planes nose-up & centered; bay panels carry **no** baked
+  icon/label/cost/progress.
+- Readability: each silhouette reads in < 0.5 s; on-screen chips ≥ 44 px.
+- Mini-animation elements delivered as clean peak-pose PNGs + motion notes.
+- Verify by dropping the PNGs + `manifest.json` into `assets/sprites/cartoon/` and
+  selecting the cartoon skin (we enable it in Settings when assets land).
