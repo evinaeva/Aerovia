@@ -3021,6 +3021,53 @@
     const iw=(field.x1-ax)*0.30, ih=(ab-ay)*0.28;
     const ix=ax+2*ui, iy=ay+2*ui;
     SPRITES.blit('terminal', ix, iy, iw, ih);
+    // 4) дневной декор: зелень в травяных карманах у ВПП + облака/птица над водой
+    drawCartoonDecor(tm, ax, ay, aR, ab);
+  }
+
+  // Дневной декор классических cartoon-уровней (вариант «Зелёная бухта»): деревья и
+  // кусты в травяных «карманах» колонны ВПП (берём геометрию runways, чтобы не лезть
+  // на сами полосы) + мягко плывущие облака с птицей над водой. Рисуется ФОНОМ — до
+  // полос/боксов/бортов, поэтому ничего из игрового слоя не перекрывает. Всё выводится
+  // детерминированно по геометрии поля и времени кадра: стабильно и resize-safe.
+  // Масштаб привязан к размеру бокса bw (см. layout): дерево ≈1.3×bw, куст ≈0.5×bw.
+  function drawCartoonDecor(tm, ax, ay, aR, ab){
+    if(LV.biome || LV.bonus) return;
+    const bw = Math.min(56*ui*SZ(), (field.x1-field.x0)/2.4);   // размер бокса (как в layout)
+    // — наземная зелень: дерево (w/h 0.681) + куст (1.123), якорим по основанию —
+    const treeH=bw*1.3, treeW=treeH*0.681, bushH=bw*0.52, bushW=bushH*1.123;
+    const tree=(bx,by)=>SPRITES.blit('tree', bx-treeW/2, by-treeH, treeW, treeH);
+    const bush=(bx,by)=>SPRITES.blit('bush', bx-bushW/2, by-bushH, bushW, bushH);
+    if(runways.length){
+      // травяные карманы: над колонной ВПП, под ней и в пропущенной средней полосе.
+      // «Прибрежную» группу ставим у правого края поля (ближе к берегу), как на ref-01.
+      const colT=runways[0].y, last=runways[runways.length-1], colB=last.y+last.h;
+      const xCoast=aR-treeW*0.55, pockets=[];
+      if(colT-ay > treeH*0.75) pockets.push(colT-6*ui);             // верхний карман
+      if(ab-colB > treeH*0.7)  pockets.push(ab-6*ui);               // нижний карман
+      for(let i=1;i<runways.length;i++){                            // средние разрывы
+        const gT=runways[i-1].y+runways[i-1].h, gB=runways[i].y;
+        if(gB-gT > treeH*0.7) pockets.push(gB-6*ui);
+      }
+      pockets.forEach((by,k)=>{
+        tree(xCoast, by);
+        bush(xCoast-treeW*0.72-(k%2)*6*ui, by-2*ui);
+      });
+    }
+    // — облака + птица над водой (мягкий горизонтальный дрейф, фон) —
+    const water0=aR+14*ui, span=W-water0;
+    if(span>16*ui){
+      [['cloud',1.6,1.298],['cloud-2',2.0,1.308]].forEach((c,i)=>{
+        const cw=bw*c[1], ch=cw/c[2], period=span+cw;
+        const drift=((tm*0.006)+i*period*0.5)%period;
+        const cx=water0-cw+drift, cy=ay+(14+i*46)*ui;
+        ctx.save(); ctx.globalAlpha=0.9; SPRITES.blit(c[0], cx, cy, cw, ch); ctx.restore();
+      });
+      const birdW=bw*0.7, birdH=birdW/1.399;     // птица (w/h 1.399)
+      const bx=water0+span*0.55+(Math.sin(tm*0.00045)*0.5+0.5)*span*0.3-birdW/2;
+      const byb=ay+(ab-ay)*0.32+Math.sin(tm*0.0016)*6*ui;
+      ctx.save(); ctx.globalAlpha=0.85; SPRITES.blit('bird', bx, byb, birdW, birdH); ctx.restore();
+    }
   }
 
   function drawRunways(tm){
