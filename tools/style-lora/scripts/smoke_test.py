@@ -6,7 +6,7 @@ Loads SDXL base + the freshest LoRA checkpoint and renders a few test prompts so
 you can eyeball whether the cartoon style transferred. No transparency here
 (that's LayerDiffuse's job at real generation time) — this only checks the look.
 
-    pip install -q diffusers accelerate
+    pip install -q diffusers accelerate peft
     python3 /workspace/aerovia-lora/scripts/smoke_test.py
 """
 import glob
