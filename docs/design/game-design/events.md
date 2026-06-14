@@ -12,14 +12,15 @@ flow state. They should raise tension *briefly* without becoming stressful or un
 
 ## Implemented surprises (from FAQ)
 
-| Event | Effect on gameplay |
-| --- | --- |
-| **Rush hour** ("час пик") | a wave of aircraft arrives at once |
-| **Wind change** ("смена ветра") | one runway closes (marked ✕) — route to other runways |
-| **Fog** ("туман") | taxiing slows down |
+| Event | Effect on gameplay | Status |
+| --- | --- | --- |
+| **Rush hour** ("час пик") | a wave of aircraft arrives at once | active |
+| **Wind change** ("смена ветра") | one runway closes (marked ✕) — route to other runways | **muted on all levels** (code kept) |
+| **Fog** ("туман") | taxiing slows down | **muted on all levels** (code kept) |
 
-These currently surface as in-air/airfield surprises that the player must react to on
-the fly.
+Rush hour is the only surprise the player currently faces. **Wind change and fog are
+disabled on every campaign level** (their mechanics are kept in code and can be turned
+back on); the player no longer sees runway closures or slowed taxiing.
 
 ---
 
@@ -31,8 +32,8 @@ shipped, others are design targets for the "small stories everywhere" pillar.
 | Event | Object on field | Player response | Status |
 | --- | --- | --- | --- |
 | **Snowfall** | snow accumulation + snowplow | call snowplow; runway efficiency −30% until cleared | weather target |
-| **Strong Wind** | windsock straining | accept delays / runway closure | partially (wind change) |
-| **Fog** | low-visibility mood | slower taxiing | implemented |
+| **Strong Wind** | windsock straining | accept delays / runway closure | coded, muted on all levels |
+| **Fog** | low-visibility mood | slower taxiing | coded, muted on all levels |
 | **Tree Fell** | log blocking a runway | clear the block before using the runway | design target |
 | **Beavers** | beavers chewing trees | deal with the critters | design target |
 | **Medical Flight** | ambulance + medical aircraft | priority patient transfer (fast cycle) | aircraft type shipped |
