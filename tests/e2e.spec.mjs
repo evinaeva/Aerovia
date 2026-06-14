@@ -41,8 +41,8 @@ test('старт уровня показывает окно целей с наз
 test('прохождение цели открывает следующий уровень и сохраняется', async ({ page }) => {
   await page.goto('/index.html?test=1');
   // гоняем реальный путь завершения смены через тест-хук (без хрупкого перетаскивания)
-  const res = await page.evaluate(() => window.__GAME.simulateResult({ level: 0, served: 6 }));
-  expect(res.stars).toBe(3);
+  const res = await page.evaluate(() => window.__GAME.simulateResult({ level: 0, served: 8 }));
+  expect(res.stars).toBe(3);  // L1 пороги [6,7,8] — 8 принятых = 3★
   expect(res.unlocked).toBe(2);
 
   // прогресс должен лежать в localStorage и переживать перезагрузку
