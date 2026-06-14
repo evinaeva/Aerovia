@@ -2005,20 +2005,9 @@
     // их методы оставлены пустышками, чтобы не трогать десятки мест вызова.
     return {
       setEnabled(v){ enabled=v; },
-      pick(){ tone(SCALE[ri(5,6)],0.05,'triangle',0.10); },                     // выделение борта
-      land(){ const i=ri(0,2); tone(SCALE[i],0.22,'sine',0.32); tone(SCALE[i]/2,0.30,'sine',0.18); },
-      dock(){ tone(SCALE[ri(2,4)],0.10,'triangle',0.20); },                     // заехал в бокс
-      lock(){ tone(1318.5,0.035,'square',0.13); tone(1760,0.05,'square',0.10,0.025); }, // щелчок: маршрут зафиксирован на боксе
-      served(){ const i=ri(3,5); tone(SCALE[i],0.14,'sine',0.26); tone(SCALE[i+2],0.18,'sine',0.20,0.07); },
-      depart(express){ tone(SCALE[4],0.12,'triangle',0.30); tone(SCALE[6],0.12,'triangle',0.30,0.08);
-        tone(SCALE[express?8:7],0.22,'triangle',0.34,0.16); },                  // арпеджио вверх
-      build(){ tone(196,0.09,'square',0.16); tone(246.9,0.12,'square',0.16,0.07); }, // открыть/прокачать бокс
-      penalty(){ tone(155.6,0.25,'sawtooth',0.18); },                           // наземный штраф
-      crash(){ thud(); tone(98,0.4,'sawtooth',0.22); },
-      medal(){ tone(1046.5,0.12,'sine',0.24); tone(1568,0.22,'sine',0.22,0.10); },
-      alarm(){ tone(880,0.06,'square',0.10); },                                 // терпение на исходе
-      nearmiss(){ whoosh(); },                                                  // «уфф» — борта едва разошлись
-      screech(){ squeal(); },                                                   // визг резины — касание ВПП
+      btn(){ tone(SCALE[ri(4,6)],0.05,'triangle',0.12); },                      // тап по кнопке меню
+      pick(){}, land(){}, dock(){}, lock(){}, served(){}, depart(){}, build(){},
+      penalty(){}, crash(){}, medal(){}, alarm(){}, nearmiss(){}, screech(){},
     };
   })();
   const HAP = { // вибрация: Android — да, iOS веб — молча игнорирует (в обёртке будет плагин)
