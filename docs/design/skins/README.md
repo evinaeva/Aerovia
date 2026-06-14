@@ -1,8 +1,10 @@
 # Skins
 
 Visual skins for PlaneFlow. The game ships a runtime **skin switch**
-(`SKIN = 'cozy' | 'neon' | 'cartoon'`, in `index.html`; selectable in **Settings → Skin**,
-or via `?skin=<name>` / `localStorage.pf_skin`). Each skin only changes how the
+(`SKIN = 'cozy' | 'neon' | 'cartoon'`, in `index.html`; **default `neon`** for a new
+player, selectable in **Settings → Skin**, or via `?skin=<name>` / `localStorage.pf_skin`).
+The main screen (`#startScreen`) ships one per-skin **final layout** each, on a single
+DOM driven by `[data-skin]` (see `docs/DEV.md` → «Экраны и меню»). Each skin only changes how the
 game *looks* — never the gameplay layout (top-down, planes/runways right, bays on
 bottom/left/top, finger-drawn routes, slim top HUD, no tiny UI).
 
@@ -26,8 +28,8 @@ bottom/left/top, finger-drawn routes, slim top HUD, no tiny UI).
 
 | Skin | Status | Where |
 | --- | --- | --- |
-| **cozy** | shipped (default) | cozy sprite atlas — `assets/sprites/` |
-| **neon** | shipped — **drawn PNG atlas** (55 ids + menu/brand art) | `assets/sprites/neon/` · brief: [`neon/BRIEF.md`](neon/BRIEF.md) |
+| **cozy** | shipped | cozy sprite atlas — `assets/sprites/` |
+| **neon** | shipped (default) — **drawn PNG atlas** (55 ids + menu/brand art) | `assets/sprites/neon/` · brief: [`neon/BRIEF.md`](neon/BRIEF.md) |
 | **cartoon** | shipped — **drawn PNG atlas** (71 ids: terrain, props, menus, brand) | `assets/sprites/cartoon/` · brief: [`cartoon/BRIEF.md`](cartoon/BRIEF.md) |
 
 Each `<skin>/` folder is a **self-contained design brief** (style spec, references,
