@@ -1,0 +1,343 @@
+<style>
+  /* ===== облик «cozy / stylized-flat» (см. CHANGELOG) ===== */
+  :root{
+    --ink:#16131f;
+    --tarmac:#242842;
+    --tarmac-2:#2c3150;
+    --water:#1c3a42;
+    --grid:#2a2f4a;
+    --phosphor:#cdb0f7;   /* cozy-акцент (бывш. радарный циан) */
+    --paper:#f4eede;
+    --muted:#9a93b5;
+    --amber:#f2a93b;   /* ремонт */
+    --teal:#4ecdc4;    /* топливо */
+    --ice:#7fd6ff;     /* де-айсинг */
+    --rose:#ef798a;    /* посадка людей */
+    --gold:#f4cf5e;    /* вип / деньги / вылет */
+    --life:#ef5365;
+    --coin:#f4cf5e;
+    --panel:rgba(33,29,51,.96);
+    --raised:#2a2540;          /* warm raised card surface (mockups) */
+    --pur-line:rgba(154,111,212,.32);
+    --card-r:20px;             /* card corner radius (warm rounded) */
+    --serif:Georgia,"Times New Roman",serif;
+    /* UI font: warm sans-serif per wireframes.md (canvas still uses MONO separately) */
+    --ui:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#110e18;overflow:hidden;overscroll-behavior:none;position:fixed;width:100%;inset:0}
+  body{
+    font-family:var(--ui);
+    color:var(--paper);
+    user-select:none;-webkit-user-select:none;
+  }
+  #stage{position:fixed;inset:0}
+  canvas{position:absolute;inset:0;touch-action:none;display:block}
+
+  .overlay{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 40%, rgba(6,11,18,.55), rgba(6,11,18,.92));
+    backdrop-filter:blur(2px);z-index:5;
+  }
+  /* панель масштабируется под экран телефона (см. fitOverlays): origin по центру,
+     чтобы уменьшенная панель оставалась в центре и не появлялся скролл меню. */
+  .overlay>.panel{transform-origin:center center;margin:0}
+  /* меню: сцена-радар на канвасе видна целиком */
+  #startScreen{background:none;backdrop-filter:none}
+  /* старт — две колонки: бренд+арт слева, рейл действий справа (wireframes.md, мокап 01) */
+  .startpanel{max-width:880px;width:94%;display:flex;align-items:center;gap:34px;text-align:left;padding:24px 30px}
+  .start-brand{flex:1 1 auto;min-width:0}
+  .start-brand .wordmark{margin:6px 0 8px;width:min(440px,100%)}
+  .start-brand p{margin:8px 0 0}
+  .start-rail{flex:0 0 248px;display:flex;flex-direction:column;gap:11px;
+    background:var(--raised);border:1.5px solid var(--pur-line);border-radius:24px;
+    padding:18px;box-shadow:0 18px 48px rgba(8,6,16,.5)}
+  .start-rail .btn{width:100%}
+  .start-rail #startBtn{padding:18px 22px;font-size:18px;border-radius:16px}
+  .start-rail-row{display:flex;gap:11px}
+  .start-rail-row .btn{flex:1}
+  .start-rail-row #fsBtn{flex:0 0 52px;padding:14px 0}
+  @media (max-width:620px){.startpanel{flex-direction:column;gap:18px}.start-rail{flex-basis:auto;width:100%}}
+  .panel{text-align:center;padding:30px 26px;max-width:420px;margin:auto;flex:0 0 auto}
+  .panel.wide{max-width:740px}
+  .panel.card{background:var(--raised);border:1.5px solid var(--pur-line);border-radius:var(--card-r);
+    box-shadow:0 18px 48px rgba(8,6,16,.5)}
+  .panel .kicker{font-size:11px;letter-spacing:.28em;color:var(--muted);text-transform:uppercase}
+  .panel h1{
+    font-family:var(--ui);font-weight:800;
+    font-size:38px;letter-spacing:.01em;margin:12px 0 6px;color:var(--paper);
+    text-shadow:0 0 18px rgba(191,233,255,.18);
+  }
+  .wordmark{display:block;width:min(340px,82%);height:auto;margin:14px auto 4px}
+  #startScreen .wm-fallback{display:none} /* бренд — вордмарк-спрайт; текст остаётся фолбэком для ридеров */
+  .panel p{font-size:13px;line-height:1.7;color:var(--muted);margin:10px 0 0}
+  .panel .big{font-size:48px;margin:8px 0 0;letter-spacing:.02em}
+  #finalStars{color:var(--gold);font-size:52px;letter-spacing:.08em;text-shadow:0 0 24px rgba(244,207,94,.5)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;
+    border:1.5px solid var(--pur-line);color:var(--paper);
+    background:rgba(127,155,176,.06);
+    font:inherit;font-weight:600;font-size:14px;letter-spacing:.02em;text-transform:none;
+    padding:14px 24px;border-radius:14px;transition:.15s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn:hover{color:var(--phosphor);border-color:rgba(181,140,240,.7);background:rgba(154,111,212,.12)}
+  .btn-primary{background:#5dca7a;border-color:#5dca7a;color:var(--ink);font-weight:700;box-shadow:0 6px 18px rgba(93,202,122,.32)}
+  .btn-primary:hover{background:#6fdb8b;border-color:#6fdb8b;color:var(--ink);box-shadow:0 8px 26px rgba(93,202,122,.45)}
+  .btn-teal{border-color:rgba(78,205,196,.45);color:var(--teal)}
+  .btn-teal:hover{color:var(--teal);border-color:var(--teal);background:rgba(78,205,196,.10)}
+  .btn-rose{border-color:rgba(239,121,138,.45);color:var(--rose)}
+  .btn-rose:hover{color:var(--rose);border-color:var(--rose);background:rgba(239,121,138,.10)}
+  .btn-quiet{border-color:rgba(127,155,176,.35);color:var(--muted)}
+  .bglyph{margin-right:7px}
+  .ctarow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+  .hidden{display:none}
+  .settings{margin-top:16px;text-align:left;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));column-gap:20px;align-content:start}
+  .settings .full{grid-column:1/-1}
+  .upd-status{font-size:12px;color:var(--muted);text-align:left;margin:2px 2px 0;min-height:15px;line-height:1.3}
+  /* settings rows = label left, big toggle switch right (wireframes.md) */
+  .opt{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;color:var(--paper);
+    margin:2px 0;padding:11px 2px;letter-spacing:0;cursor:pointer;text-transform:none;
+    border-bottom:1px solid rgba(154,111,212,.14)}
+  .opt span{order:1}
+  .opt .langbtns{order:2}
+  .opt input[type=checkbox]{order:2;appearance:none;-webkit-appearance:none;margin:0;position:relative;
+    width:48px;height:26px;border-radius:14px;background:#241f33;border:1.5px solid var(--pur-line);
+    cursor:pointer;transition:.15s;flex:0 0 auto}
+  .opt input[type=checkbox]::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;
+    border-radius:50%;background:var(--muted);transition:.15s}
+  .opt input[type=checkbox]:checked{background:#5dca7a;border-color:#5dca7a}
+  .opt input[type=checkbox]:checked::after{transform:translateX(22px);background:#fff}
+  .subhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--phosphor);margin:18px 0 6px;border-bottom:1px solid rgba(191,233,255,.18);padding-bottom:4px}
+  /* угловые виджеты главного экрана: флаг языка (справа внизу) и отладка (слева внизу) */
+  .corner-flag{position:absolute;right:16px;bottom:16px;z-index:7;width:56px;height:38px;padding:0;
+    border:1.5px solid var(--pur-line);border-radius:9px;background:var(--raised);overflow:hidden;cursor:pointer;
+    box-shadow:0 6px 18px rgba(8,6,16,.5);transition:.15s}
+  .corner-flag:hover{border-color:rgba(181,140,240,.7)}
+  .corner-flag:active{transform:scale(.95)}
+  .corner-flag svg{display:block;width:100%;height:100%;pointer-events:none}
+  .corner-debug{position:absolute;left:16px;bottom:16px;z-index:7}
+  .corner-debug-btn{width:46px;height:46px;padding:0;border:1.5px solid var(--pur-line);border-radius:12px;
+    background:var(--raised);color:var(--muted);font-size:22px;line-height:1;cursor:pointer;
+    box-shadow:0 6px 18px rgba(8,6,16,.5);transition:.15s}
+  .corner-debug-btn:hover{color:var(--phosphor);border-color:rgba(181,140,240,.7)}
+  .corner-debug-btn:active{transform:scale(.95)}
+  .corner-debug-pop{position:absolute;left:0;bottom:54px;min-width:230px;text-align:left;
+    background:var(--raised);border:1.5px solid var(--pur-line);border-radius:14px;padding:6px 14px 8px;
+    box-shadow:0 18px 48px rgba(8,6,16,.6)}
+  .corner-debug-pop .opt{margin:0;cursor:pointer}
+  .corner-debug-pop .opt:last-child{border-bottom:none}
+  .logbox{margin-top:14px;max-height:130px;overflow:auto;border-top:1px solid rgba(127,155,176,.25);padding-top:8px}
+  .logrow{font-size:11px;color:var(--paper);padding:2px 0;letter-spacing:.03em}
+  .logrow.muted{color:var(--muted)}
+  .pausegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
+  .pausegrid .btn{width:100%}
+  .pausegrid-3{grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .pausegrid-3 .btn{padding:13px 6px}
+  /* пауза: живая полоса статуса забега (время · деньги · прогресс цели) */
+  .statstrip{display:flex;justify-content:center;flex-wrap:wrap;gap:22px;margin:6px 0 4px;padding:11px 0;
+    border-top:1px solid rgba(191,233,255,.12);border-bottom:1px solid rgba(191,233,255,.12)}
+  .statstrip .stat{display:flex;align-items:center;gap:7px;font-size:15px;letter-spacing:.04em}
+  .statstrip .si{font-size:14px}
+  .objlabel{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin:16px 0 2px}
+  /* выбор смены — карточки */
+  .levellist{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:9px;margin:14px 0 6px}
+  .levelcard{position:relative;overflow:hidden;text-align:left;font:inherit;color:var(--paper);cursor:pointer;
+    background:#211d33;border:1px solid rgba(154,111,212,.25);border-radius:10px;padding:7px 9px 8px;
+    transition:.15s;box-shadow:0 1px 5px rgba(10,8,20,.35)}
+  .levelcard:hover{border-color:rgba(181,140,240,.6);background:#2a2540;box-shadow:0 0 12px rgba(154,111,212,.3)}
+  .levelcard.locked{background:#1b1726;border-color:rgba(138,140,153,.18);color:var(--muted);cursor:default}
+  .levelcard.locked:hover{border-color:rgba(138,140,153,.18);background:#1b1726;box-shadow:0 1px 5px rgba(10,8,20,.35)}
+  .levelcard .lvthumb{height:24px;border-radius:6px;margin:-1px -2px 5px;overflow:hidden;
+    background:radial-gradient(120% 120% at 30% 20%,#2a2540,#14111e)}
+  .levelcard .lvthumb svg{display:block;width:100%;height:100%}
+  .levelcard.locked .lvthumb{opacity:.45}
+  .levelcard .lvkick{font-size:7px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+  .levelcard .lvnum{font-family:"Segoe UI",system-ui,sans-serif;font-weight:800;font-size:17px;line-height:1.05;margin:1px 0 0;color:#f4eede}
+  .levelcard.locked .lvnum{color:var(--muted)}
+  .levelcard .lvname{font-size:9px;color:var(--paper);opacity:.85;margin:0;line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .levelcard .lvmeta{display:flex;align-items:center;justify-content:space-between;margin-top:4px;min-height:11px}
+  .levelcard .lvstars{display:inline-flex;gap:1.5px}
+  .levelcard .lvstars svg{width:11px;height:11px;display:block}
+  .levelcard .lvbest{font-size:9px;color:var(--gold);font-weight:700;letter-spacing:.02em}
+  .levelcard .lvlock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(20,17,30,.55)}
+  .biomecard{min-height:120px}
+  .biomecard .bioemoji{font-size:30px;line-height:1}
+  .biomecard .lvkick{font-size:13px;letter-spacing:.06em;text-transform:none;color:var(--paper);margin-top:6px}
+  .biomecard .biotag{font-size:10.5px;line-height:1.5;color:var(--muted);margin:4px 0 8px}
+  .biomecard.locked .bioemoji{filter:grayscale(1);opacity:.55}
+  /* ===== карта уровней «багажная тележка» ===== */
+  /* Экран выбора смены — лента багажной тележки аэропорта: тягач тащит вагоны
+     (по 3 чемодана-уровня) к самолёту. Каждый 3-й уровень — узловой: на нём
+     впервые появляется механика, её иконка до открытия спрятана «туманом»
+     («дотянуть до сюрприза»). Между вагонами на земле — выпавшие чемоданы
+     (бонус-уровни, пока тизер «скоро»). Сверху панели — счётчик ★ получено/всего. */
+  .starcount{display:inline-flex;align-items:center;gap:7px;margin:8px auto 0;padding:6px 15px;
+    border:1.5px solid rgba(244,207,94,.4);border-radius:20px;background:rgba(244,207,94,.07);
+    font-size:14px;letter-spacing:.04em;color:var(--gold)}
+  .starcount svg{width:15px;height:15px;display:block}
+  .starcount b{font-weight:800;color:#fbe9a8;font-size:15px}
+  .starcount .sclbl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-left:3px}
+  #levelList{display:block;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+    margin:14px -24px 2px;padding:18px 26px 28px;scrollbar-width:thin;scrollbar-color:#4a4366 transparent;
+    background:linear-gradient(#191522,#241d33 72%,#15111d)}
+  #levelList::-webkit-scrollbar{height:7px}
+  #levelList::-webkit-scrollbar-thumb{background:#4a4366;border-radius:4px}
+  #levelList .cart-row{display:inline-flex;align-items:flex-end;min-width:100%;padding:0 2px}
+  /* вагон-платформа на двух колёсах */
+  #levelList .wagon{flex:0 0 auto;position:relative;margin:0 3px 14px}
+  #levelList .wagon-bed{display:flex;align-items:flex-end;gap:9px;padding:9px 12px 11px;
+    background:linear-gradient(#3c3552,#322b48);border:1.5px solid #4d4569;border-radius:9px;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.06),0 3px 8px rgba(0,0,0,.35)}
+  #levelList .wagon::before,#levelList .wagon::after{content:"";position:absolute;bottom:-11px;
+    width:17px;height:17px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#5a5470,#1c1828);
+    border:2px solid #0e0b16;box-shadow:0 2px 3px rgba(0,0,0,.4)}
+  #levelList .wagon::before{left:16px}#levelList .wagon::after{right:16px}
+  /* сцепка между вагонами + выпавший чемодан (бонус, тизер «скоро») */
+  #levelList .coupling{flex:0 0 auto;align-self:flex-end;position:relative;width:30px;height:5px;
+    margin:0 -1px 27px;background:#3a3550;border-radius:3px}
+  #levelList .bonuscase{position:absolute;left:50%;bottom:-21px;width:27px;height:19px;
+    transform:translateX(-50%) rotate(-13deg);border-radius:4px;
+    background:linear-gradient(#6a5740,#4e3f2c);border:1.5px solid #2c2417;
+    box-shadow:0 2px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;color:#caa15e}
+  #levelList .bonuscase::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;
+    background:rgba(0,0,0,.28);transform:translateY(-1px)}
+  /* чемодан-уровень (сбрасываем оформление .levelcard, id-селектор перебивает) */
+  #levelList .suitcase{position:relative;flex:0 0 auto;width:56px;padding:0;border:0;border-radius:0;
+    background:transparent;box-shadow:none;overflow:visible;font:inherit;color:var(--paper);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px}
+  #levelList .suitcase:hover{background:transparent;box-shadow:none}
+  #levelList .case-stars{display:flex;gap:1px;height:12px}
+  #levelList .case-stars svg{width:12px;height:12px;display:block}
+  #levelList .case-body{position:relative;width:54px;height:44px;border-radius:8px;
+    background:linear-gradient(#caa15e,#a07b46);border:1.5px solid #6e5430;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.22),0 3px 7px rgba(0,0,0,.4);
+    display:flex;align-items:center;justify-content:center;transition:transform .15s,box-shadow .15s}
+  #levelList .case-handle{position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+    width:18px;height:9px;border:2px solid #6e5430;border-bottom:0;border-radius:6px 6px 0 0}
+  #levelList .case-strap{position:absolute;top:0;bottom:0;left:11px;width:4px;background:rgba(0,0,0,.16);
+    box-shadow:30px 0 0 rgba(0,0,0,.16)}
+  #levelList .case-num{position:relative;font-family:"Segoe UI",system-ui,sans-serif;font-weight:800;
+    font-size:16px;color:#3a2c14;text-shadow:0 1px 0 rgba(255,255,255,.25)}
+  #levelList .case-lock{position:absolute}
+  #levelList .suitcase:hover .case-body{transform:translateY(-2px);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.22),0 7px 13px rgba(0,0,0,.45)}
+  #levelList .suitcase.done .case-body{background:linear-gradient(#e7c266,#c89a44);border-color:#8a6b2e}
+  #levelList .suitcase.done .case-handle{border-color:#8a6b2e}
+  #levelList .suitcase.current .case-body{box-shadow:0 0 0 2px var(--phosphor),
+    0 0 16px rgba(205,176,247,.6),inset 0 2px 0 rgba(255,255,255,.22)}
+  #levelList .suitcase.locked{cursor:default}
+  #levelList .suitcase.locked .case-body{background:linear-gradient(#3a3550,#2c2740);border-color:#4a4564;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.05),0 2px 6px rgba(0,0,0,.4)}
+  #levelList .suitcase.locked .case-handle{border-color:#4a4564}
+  #levelList .suitcase.locked .case-strap{opacity:.5}
+  /* бейдж новой механики (узловой уровень): открыт — иконка; закрыт — «туман» с «?» */
+  #levelList .case-feat{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:15px;line-height:1;border:2px solid #5a5276;margin-bottom:3px;
+    box-shadow:0 2px 8px rgba(0,0,0,.45)}
+  #levelList .case-feat.mystery{color:#cfc7e6;font-weight:800;
+    background:repeating-linear-gradient(45deg,#352e4a,#352e4a 4px,#2a2440 4px,#2a2440 8px)}
+  #levelList .case-feat.shown{background:#3c3552;color:#fff}
+  #levelList .case-feat.shown.fvip{background:radial-gradient(circle at 35% 30%,#ffe39a,#e7b94e);border-color:#b78a2e;color:#5a4410}
+  #levelList .case-feat.shown.frush{background:radial-gradient(circle at 35% 30%,#ffd49a,#f2a93b);border-color:#b8701f;color:#5a3410}
+  #levelList .case-feat.shown.fmedical{background:radial-gradient(circle at 35% 30%,#ffd0d8,#ef798a);border-color:#c2566a;color:#5a1420}
+  #levelList .case-feat.shown.femergency{background:radial-gradient(circle at 35% 30%,#bdeee9,#4ecdc4);border-color:#2f9a92;color:#0d3a36}
+  /* тягач справа (тащит вагоны к борту) и финиш-самолёт */
+  #levelList .tractor{flex:0 0 auto;align-self:flex-end;width:54px;height:46px;margin:0 0 14px 2px}
+  #levelList .tractor svg{display:block;width:100%;height:100%;overflow:visible}
+  #levelList .destination{flex:0 0 auto;align-self:flex-end;margin:0 8px 12px 10px;
+    display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--muted)}
+  #levelList .destination .plane{font-size:30px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+  #levelList .destination .dlabel{font-size:8px;letter-spacing:.18em;text-transform:uppercase}
+  /* выпавший чемодан-сюрприз = бонус-уровень: открыт (кликабелен), закрыт, пройден */
+  #levelList .coupling .bonuscase{cursor:default}
+  #levelList .coupling.unlocked .bonuscase{cursor:pointer;color:#3a2c14;
+    background:linear-gradient(#ffc0dd,#ff9ec7);border-color:#c2566a;
+    box-shadow:0 2px 6px rgba(255,158,199,.45),0 0 0 0 rgba(255,158,199,.5)}
+  #levelList .coupling.unlocked .bonuscase:hover{transform:translateX(-50%) rotate(-13deg) translateY(-2px);
+    box-shadow:0 6px 12px rgba(255,158,199,.5)}
+  #levelList .coupling.done .bonuscase{background:linear-gradient(#ffd9ec,#ff9ec7);border-color:#c2566a}
+  /* статистика на экране итога */
+  .stats{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:18px;padding:16px 18px;
+    border:1.5px solid var(--pur-line);border-radius:16px;background:rgba(28,24,48,.6)}
+  .stat{text-align:left}
+  .stat .label{font-size:9px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+  .stat .val{font-size:17px;margin-top:4px}
+  .v-phos{color:var(--phosphor)} .v-gold{color:var(--gold)} .v-life{color:var(--life)} .v-teal{color:var(--teal)}
+  /* график нагрузки/принято на экране итога смены */
+  .langbtns,.skinbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .langbtn{border:1.5px solid rgba(127,155,176,.4);color:var(--muted);background:transparent;
+    font:inherit;font-size:11px;letter-spacing:.08em;padding:6px 12px;border-radius:8px;cursor:pointer}
+  .langbtn:hover{color:var(--phosphor);border-color:var(--phosphor)}
+  .langbtn.on{color:var(--phosphor);border-color:var(--phosphor);background:rgba(191,233,255,.08)}
+  .vno{margin-top:18px;font-size:10px;color:var(--muted);letter-spacing:.12em}
+  /* окно целей смены */
+  .goalrows{margin-top:18px}
+  .goalrow{display:flex;gap:14px;align-items:center;text-align:left;padding:12px 15px;margin:9px 0;
+    border:1.5px solid var(--pur-line);border-radius:12px;background:rgba(28,24,48,.55)}
+  .goalrow .gs{color:var(--gold);font-size:15px;letter-spacing:.05em;flex:0 0 auto;min-width:48px;
+    text-shadow:0 0 10px rgba(244,207,94,.45)}
+  .goalrow .gt{font-size:12.5px;color:var(--paper);line-height:1.5}
+  .goalzen{font-size:13px;line-height:1.7;color:var(--muted);margin-top:16px}
+  /* окно целей: вызов + обучающая строка + цели и звёзды иконками */
+  .goalsboard{margin-top:16px;text-align:center}
+  .goal-challenge{font-size:14px;line-height:1.5;color:var(--paper);margin:0 0 6px}
+  .goal-hint{font-size:12px;line-height:1.5;color:var(--phosphor);opacity:.92;margin:0 0 15px}
+  .goal-objrow{display:flex;justify-content:center;gap:26px;margin:0 0 14px;flex-wrap:wrap}
+  .gobj{display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:700;color:var(--gold)}
+  .gobj.clock{color:var(--phosphor)} .gobj.upg{color:var(--phosphor)}
+  .gicon{width:18px;height:18px;display:block;flex:0 0 auto}
+  .goal-stars{border:1.5px solid var(--pur-line);border-radius:12px;background:rgba(28,24,48,.55);
+    padding:6px 16px;display:inline-block;min-width:200px}
+  .gstar-row{display:flex;align-items:center;gap:14px;padding:8px 2px}
+  .gstar-row+.gstar-row{border-top:1px solid rgba(154,111,212,.16)}
+  .gstar{color:var(--gold);font-size:13px;letter-spacing:1px;min-width:56px;text-align:left;
+    text-shadow:0 0 10px rgba(244,207,94,.45)}
+  .gstar-val{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:700;color:var(--paper)}
+  .gstar-val .gicon{width:16px;height:16px;color:var(--teal)}
+  .gstar-val.upg .gicon{color:var(--phosphor)}
+
+  /* ---- медали ---- */
+  .panel-wide{max-width:580px;width:94%;max-height:88vh;display:flex;flex-direction:column;padding:26px 24px}
+  .medalcount{font-size:12px;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin-top:4px}
+  .medalgrid{overflow:auto;text-align:left;margin:14px 0 6px;padding-right:6px}
+  .tierhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--phosphor);margin:14px 0 6px;border-bottom:1px solid rgba(191,233,255,.18);padding-bottom:4px}
+  .tierhead:first-child{margin-top:0}
+  .medal{display:flex;gap:11px;align-items:flex-start;padding:8px 10px;margin:6px 0;
+    border:1.5px solid rgba(127,155,176,.22);border-radius:10px;background:rgba(127,155,176,.04)}
+  .medal.got{border-color:rgba(244,207,94,.55);background:rgba(244,207,94,.06);box-shadow:0 0 12px rgba(244,207,94,.12)}
+  .medal .ic{font-size:21px;line-height:1.1;filter:grayscale(1);opacity:.45;flex:0 0 auto;width:26px;text-align:center}
+  .medal.got .ic{filter:none;opacity:1}
+  .medal .mt{font-size:12.5px;color:var(--paper);letter-spacing:.02em}
+  .medal.locked .mt{color:var(--muted)}
+  .medal .md{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+  .medal .mp{font-size:10px;color:var(--phosphor);margin-top:3px;letter-spacing:.04em}
+
+  /* ---- всплывашка получения медали ---- */
+  #achToast{position:fixed;left:50%;top:13%;transform:translateX(-50%) translateY(-22px);
+    z-index:9;display:flex;gap:13px;align-items:center;padding:12px 20px;border-radius:12px;
+    background:rgba(10,22,34,.95);border:1.5px solid var(--gold);color:var(--paper);
+    box-shadow:0 0 18px rgba(244,207,94,.35), 0 6px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;
+    transition:opacity .32s ease, transform .32s ease;max-width:86%}
+  #achToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #achToast .ic{font-size:28px}
+  #achToast .lbl{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+  #achToast .ttl{font-size:14px;margin-top:3px;color:var(--paper)}
+  #achToast .dsc{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.45}
+  /* PWA: «доступно обновление» — тост у нижнего края с кнопкой перезапуска */
+  #pwaUpdate{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(22px);
+    z-index:20;display:flex;gap:14px;align-items:center;padding:11px 14px 11px 18px;border-radius:12px;
+    background:rgba(10,22,34,.96);border:1.5px solid var(--teal);color:var(--paper);
+    box-shadow:0 0 18px rgba(78,205,196,.3), 0 6px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;
+    transition:opacity .32s ease, transform .32s ease;max-width:90%}
+  #pwaUpdate.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  #pwaUpdate .ttl{font-size:13px;color:var(--paper)}
+  #pwaUpdate .btn-upd{font:inherit;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    cursor:pointer;padding:8px 14px;border-radius:9px;border:1.5px solid var(--teal);
+    background:rgba(78,205,196,.16);color:var(--paper)}
+  #pwaUpdate .btn-upd:active{transform:translateY(1px)}
+</style>
