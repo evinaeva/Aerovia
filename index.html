@@ -2306,6 +2306,22 @@
     pulseFx(cx+o.dx*half, cy+o.dy*half, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
+  // открытая ВПП под точкой (для фиксации конца маршрута при взлёте/посадке)
+  function openRunwayAt(p){
+    for(const r of runways){ if(!r.closed && rectHit(p.x,p.y,r)) return r; }
+    return null;
+  }
+  // конец маршрута доведён на ВПП → притягиваем к оси полосы и фиксируем, как у бокса
+  // (посадка — створ у небесного торца; взлёт — створ у полевого торца), вспышка + щелчок
+  function lockRouteToRunway(pl, r){
+    while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, r)) pl.path.pop();
+    const tx = (pl.zone==='air') ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
+    const ty = r.cy;
+    pl.path.push({x:tx, y:ty});
+    pl.moving=true;
+    pulseFx(tx, ty, 'lock', 0.28);
+    SND.lock(); HAP.tap();
+  }
   function bayUpCost(b){ if(b.deice) return null; return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
 
   function down(e){
@@ -2357,10 +2373,16 @@
     if(drag.drew && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
       drag.plane.path.push({x:p.x,y:p.y});
       drag.last=p;
-      // конец траектории коснулся открытого бокса → фиксируем маршрут (вспышка + щелчок)
-      if(drag.plane.zone!=='air' && !LV.bonus){
-        const b=openBayAt(p);
-        if(b){ lockRouteToBay(drag.plane, b); drag.locked=true; }
+      // конец траектории доведён в цель → фиксируем маршрут (вспышка + щелчок)
+      if(!LV.bonus){
+        const pl=drag.plane;
+        const b = (pl.zone!=='air') ? openBayAt(p) : null;   // бокс — только с земли
+        if(b){ lockRouteToBay(pl, b); drag.locked=true; }
+        else {
+          // …или на ВПП: посадка (борт в воздухе) / взлёт (на земле, нужда 'depart')
+          const r = openRunwayAt(p);
+          if(r && (pl.zone==='air' || curNeed(pl)==='depart')){ lockRouteToRunway(pl, r); drag.locked=true; }
+        }
       }
     }
   }
@@ -2430,11 +2452,10 @@
     pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
     pl.landing=true; pl.moving=true; pl.path=[]; pl.touched=false;
   }
-  // момент касания (за корпус до полевого торца): толчок + дымок + визг резины.
+  // момент касания (за корпус до полевого торца): толчок + визг резины.
   // FX касания живут здесь, а не в startGround, — это и есть «приземление».
   function touchdown(pl){
     pl.touched=true; pl.y=pl.runway.cy; pl.bounceAt=nowT;
-    pulseFx(pl.x, pl.runway.cy, 'touchdown', 0.7);  // дымок из-под колёс
     SND.screech(); HAP.tap();                        // визг резины
   }
   function startGround(pl){
@@ -2807,11 +2828,9 @@
         for(let j=i+1;j<air.length;j++){
           const a=air[i], b=air[j], d=dist(a.x,a.y,b.x,b.y);
           if(d >= K.NEAR_DIST*1.5) continue;                 // далеко — не отслеживаем
-          // на ВПП «уфф» неуместен: садящийся борт идёт по глиссаде и не может
-          // уйти маневром (это будет краш, а не near-miss), а борта на РАЗНЫХ
-          // полосах физически разнесены и не столкнутся — в обоих случаях не «уфф»
-          if(a.landing || b.landing) continue;
-          if(a.zone==='runway' && b.zone==='runway' && a.runway!==b.runway) continue;
+          // «уфф» — только на поле: в воздухе борта расходятся по высоте, а на ВПП
+          // манёвра нет (сближение там — это уже краш, а не near-miss)
+          if(a.zone!=='field' || b.zone!=='field') continue;
           const key = a.id<b.id ? a.id+'-'+b.id : b.id+'-'+a.id;
           const prev = nearMissPairs[key];
           let cool = prev ? prev.cool : 0;
@@ -3595,12 +3614,12 @@
       ctx.restore();
     }
 
-    // кольцо терпения: бирюза → янтарь → красный (аварийный всегда красный)
+    // кольцо терпения — ТОЛЬКО в воздухе: игрок без тапа видит, сколько борт ещё
+    // потерпит до посадки. На земле (поле/ВПП) и в боксе кольца нет — поле чище.
     // у улетающей бабочки кольца нет — она уже «обслужена»
     let frac=null;
     if(LV.bonus && pl.bug==='fly') frac=null;
     else if(pl.zone==='air') frac=Math.max(0,pl.airTime)/pl.airMax;
-    else if(pl.zone!=='bay') frac=Math.max(0,pl.groundTime)/Math.max(1,pl.groundMax);
     if(frac!=null){
       const rcol = pl.emergency ? COL.life : (frac>0.5 ? COL.teal : frac>0.25 ? COL.amber : COL.life);
       ctx.save(); ctx.translate(pl.x,pl.y);
