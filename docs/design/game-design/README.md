@@ -10,6 +10,9 @@ in [`../FAQ.md`](../../FAQ.md); balance numbers live in `index.html` (see
 | [`events.md`](events.md) | Surprises and weather events + event design rules. |
 | [`airport_types.md`](airport_types.md) | Aircraft varieties and airport facilities (boxes/structures). |
 | [`progression.md`](progression.md) | Levels, stars, in-run economy, Zen mode, achievements. |
+| [`difficulty_curve.md`](difficulty_curve.md) | How challenge grows — the campaign spine, the "one new idea per level" curve, knobs & guarantees. |
+| [`meta_progression.md`](meta_progression.md) | What persists & unlocks between shifts — the light meta (stars, achievements, mechanic/plane-type ladder). |
+| [`ftue.md`](ftue.md) | First-time experience — the silent tutorial and the first-10-minutes arc, beat by beat. |
 | [`level-pattern.md`](level-pattern.md) | Level-config schema + the slow difficulty ramp — the template for new maps. |
 | [`economy.md`](economy.md) | The derived money model (`levelEconomy`) — payout & start cash from level difficulty. |
 
