@@ -52,12 +52,17 @@ its own. We mirror that. `levelDifficulty(lv)` is a pure function of the config,
 
 ```
 eventScore = Σ EVENT_DIFF[k]  for active specials   // vip .5, rush 1, medical 1, emer/fog/wind .8
-dens       = min(1, flow / ECON_FLOW_REF)           // how busy the apron is
+dens       = levelPace(lv)                          // INTENSITY (0..1): arrival rate + concurrency
 timeScore  = race ? 1 : (time ? 0.5 : 0)            // clock pressure
 envScore   = (weather?1:0) + (deice?1:0)            // hostile environment
 difficulty = (W_EVENT·eventScore + W_TIME·timeScore + W_DENS·dens + W_ENV·envScore) / DIFF_NORM
 difficulty = difficulty / calm                       // a "calm" world (bonus maps) is easier
 ```
+
+> **`dens` is now the level's `pace`, not its volume.** Difficulty is keyed to *intensity*
+> (how little the player rests between actions), not the total plane count — see
+> [`difficulty_curve.md`](difficulty_curve.md). `ECON_FLOW_REF` is no longer used by the
+> difficulty score (kept as a range-checked knob); `levelFlow()` below still drives payout.
 
 Harder maps are paid **more generously**, because chaos eats income (penalties, broken
 streaks, crashes that deduct cash):
@@ -134,18 +139,19 @@ All maps currently run with combo + express **on**. `realized` = a clean player'
 
 | L | diff | generosity | skillMult | svcReward | baseEarn+start | realized | kit |
 | - | ---- | ---------- | --------- | --------- | -------------- | -------- | --- |
-| 1 | 0.06 | 1.02 | 1.56 | 19 | 320 | 443 | 440 |
-| 2 | 0.09 | 1.03 | 1.64 | 23 | 500 | 758 | 736 |
-| 3 | 0.13 | 1.04 | 1.63 | 18 | 518 | 782 | 736 |
-| 4 | 0.16 | 1.05 | 1.62 | 14 | 506 | 759 | 736 |
-| 5 | 0.50 | 1.18 | 1.51 | 10 | 825 | 1192 | 736 |
-| 6 | 0.22 | 1.08 | 1.60 | 11 | 547 | 815 | 736 |
-| 7 | 0.23 | 1.08 | 1.60 | 14 | 547 | 813 | 736 |
-| 8 | 0.38 | 1.13 | 1.55 | 14 | 587 | 854 | 736 |
-| 9 | 0.52 | 1.18 | 1.50 | 13 | 599 | 853 | 736 |
-| 10 | 0.56 | 1.20 | 1.49 | 12 | 637 | 907 | 736 |
+| 1 | 0.00 | 1.00 | 1.57 | 19 | 320 | 447 | 440 |
+| 2 | 0.03 | 1.01 | 1.66 | 22 | 483 | 737 | 736 |
+| 3 | 0.06 | 1.02 | 1.66 | 19 | 486 | 739 | 736 |
+| 4 | 0.09 | 1.03 | 1.65 | 15 | 492 | 745 | 736 |
+| 5 | 0.17 | 1.06 | 1.62 | 16 | 518 | 775 | 736 |
+| 6 | 0.24 | 1.08 | 1.60 | 17 | 544 | 808 | 736 |
+| 7 | 0.32 | 1.11 | 1.57 | 15 | 569 | 839 | 736 |
+| 8 | 0.37 | 1.13 | 1.55 | 14 | 587 | 855 | 736 |
+| 9 | 0.40 | 1.14 | 1.54 | 14 | 587 | 850 | 736 |
+| 10 | 0.66 | 1.23 | 1.45 | 13 | 645 | 901 | 736 |
 
-L5/L9/L10 carry the most difficulty (race timer, event stacks) → highest generosity. When
+Difficulty now rises with **`pace`** (intensity) plus event stacks; L10 (max pace + all
+specials) carries the most → highest generosity. When
 combo/express are later disabled on the early maps, their `skillMult` drops to 1 and the
 solver raises `svcReward` to keep the kit affordable on raw pay alone — e.g. L1 jumps 19→26.
 
