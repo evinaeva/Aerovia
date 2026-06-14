@@ -1,6 +1,6 @@
 {
   "packageId": "com.planeflow.game",
-  "host": "REPLACE_WITH_YOUR_DOMAIN",
+  "host": "planeflow.jevgenia.com",
   "name": "PlaneFlow — air traffic control",
   "launcherName": "PlaneFlow",
   "display": "fullscreen",
@@ -14,8 +14,8 @@
   "backgroundColor": "#110e18",
   "enableNotifications": false,
   "startUrl": "/",
-  "iconUrl": "https://REPLACE_WITH_YOUR_DOMAIN/assets/icon/icon-512.png",
-  "maskableIconUrl": "https://REPLACE_WITH_YOUR_DOMAIN/assets/icon/icon-maskable-512.png",
+  "iconUrl": "https://planeflow.jevgenia.com/assets/icon/icon-512.png",
+  "maskableIconUrl": "https://planeflow.jevgenia.com/assets/icon/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
@@ -25,7 +25,7 @@
   "appVersionCode": 1,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://REPLACE_WITH_YOUR_DOMAIN/manifest.json",
+  "webManifestUrl": "https://planeflow.jevgenia.com/manifest.json",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -34,7 +34,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://REPLACE_WITH_YOUR_DOMAIN/",
+  "fullScopeUrl": "https://planeflow.jevgenia.com/",
   "minSdkVersion": 21,
   "fingerprints": []
 }
