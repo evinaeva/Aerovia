@@ -1333,6 +1333,10 @@
     WIND_PERIOD: 28, WIND_DUR: 12,    // смена ветра: период и длительность закрытия ВПП
     FOG_PERIOD: 45, FOG_DUR: 10,      // туман: период и длительность
     FOG_TAXI: 0.55,                   // множитель скорости руления в тумане
+    // «туман»/«ветер» сбивают ритм (меняют скорость бортов и доступность полос),
+    // поэтому глушим их на всех уровнях. Код механик оставлен целиком — достаточно
+    // вернуть флаг в false, чтобы события снова заработали по конфигу уровня/биома.
+    WEATHER_EVENTS_OFF: true,         // глобально отключить туман+ветер во всех режимах
     // атмосфера (чистая логика; визуал — за слоем дизайна, рендер просто читает
     // nightAmount/weather). day/night — фоновые «часы», на сложность не влияют.
     DAYNIGHT_PERIOD: 150,             // сек на полный круг день→ночь→день
@@ -2047,15 +2051,15 @@
       // биом-карты сохраняют исходное поведение динамических событий; у леса — свои
       // помехи на полосах вместо «ветра/тумана»
       nextRush = zen?Infinity:K.RUSH_PERIOD;
-      nextWind = (zen||forest)?Infinity:K.WIND_PERIOD;
-      nextFog  = (zen||forest)?Infinity:K.FOG_PERIOD;
+      nextWind = (zen||forest||K.WEATHER_EVENTS_OFF)?Infinity:K.WIND_PERIOD;
+      nextFog  = (zen||forest||K.WEATHER_EVENTS_OFF)?Infinity:K.FOG_PERIOD;
       nextHazard = (zen||!forest)?Infinity:FOR.SPAWN_FIRST;
     } else {
       // кампания: динамические события включаются только если разрешены уровнем
       const evs = levelEvents();
       nextRush = evs.rush ? K.RUSH_PERIOD : Infinity;
-      nextWind = evs.wind ? K.WIND_PERIOD : Infinity;
-      nextFog  = evs.fog  ? K.FOG_PERIOD  : Infinity;
+      nextWind = (evs.wind && !K.WEATHER_EVENTS_OFF) ? K.WIND_PERIOD : Infinity;
+      nextFog  = (evs.fog  && !K.WEATHER_EVENTS_OFF) ? K.FOG_PERIOD  : Infinity;
       nextHazard = Infinity;
     }
     ACH.onLevelStart();
