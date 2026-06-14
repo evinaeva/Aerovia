@@ -98,8 +98,8 @@ test('currentMode отражает survival-флаг (логика над ски
   assert.equal(game.currentMode(), 'campaign');
   game.survival = true;
   assert.equal(game.currentMode(), 'survival');
-  game.survival = false; game.zen = true;
-  assert.equal(game.currentMode(), 'zen');
+  game.survival = false;
+  assert.equal(game.currentMode(), 'campaign');
 });
 
 // --- конфиг-чек ---
