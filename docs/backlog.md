@@ -49,8 +49,10 @@
 1. **Выбрать провайдера метрик** и подключить заменой `Analytics.sink` (Firebase/GA4
    — готовые retention/funnel/ARPU; либо свой HTTP-эндпоинт + дашборды). Точки
    `track()` не трогаются. **Сложность:** низкая–средняя.
-2. **Упаковка для сторов** — Android TWA, iOS Capacitor/WKWebView. От выбора зависят
-   нативный SDK провайдера, ATT-промпт и install referrer. **Сложность:** средняя.
+2. **Упаковка для сторов** — выбран **Android TWA** (раннбук: [`android-twa.md`](android-twa.md);
+   в репо уже `twa-manifest.json`, `.well-known/assetlinks.json`, `.nojekyll`). Осталось:
+   купить домен → Pages, собрать `.aab` (Bubblewrap), закрытый трек. iOS позже —
+   Capacitor/WKWebView. **Сложность:** средняя.
 3. **Consent-флоу** — GDPR-баннер + iOS ATT; до согласия держать `setConsent(false)`.
    Заполнить **Google Play Data Safety** и **App Store privacy labels** по факту полей
    (userId анонимный). **Сложность:** средняя.

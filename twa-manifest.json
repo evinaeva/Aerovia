@@ -1,0 +1,40 @@
+{
+  "packageId": "com.planeflow.game",
+  "host": "REPLACE_WITH_YOUR_DOMAIN",
+  "name": "PlaneFlow — air traffic control",
+  "launcherName": "PlaneFlow",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "themeColor": "#16131f",
+  "themeColorDark": "#16131f",
+  "navigationColor": "#110e18",
+  "navigationColorDark": "#110e18",
+  "navigationDividerColor": "#110e18",
+  "navigationDividerColorDark": "#110e18",
+  "backgroundColor": "#110e18",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://REPLACE_WITH_YOUR_DOMAIN/assets/icon/icon-512.png",
+  "maskableIconUrl": "https://REPLACE_WITH_YOUR_DOMAIN/assets/icon/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersionName": "1",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://REPLACE_WITH_YOUR_DOMAIN/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://REPLACE_WITH_YOUR_DOMAIN/",
+  "minSdkVersion": 21,
+  "fingerprints": []
+}
