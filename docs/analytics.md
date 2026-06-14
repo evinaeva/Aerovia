@@ -40,7 +40,7 @@
 | `error` | краш JS | `message, source, kind` |
 | `purchase` / `revenue` / `ad_watched` | **спят** — нет монетизации | `value, currency, sku` |
 
-`mode` = `campaign` / `biome` / `bonus` / `zen`.
+`mode` = `campaign` / `survival` / `bonus` (заезды на картах-биомах репортятся как `survival`).
 
 ## Какие метрики из чего считаются (на стороне провайдера)
 
