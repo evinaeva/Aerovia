@@ -1220,6 +1220,7 @@
         <div class="menu-col">
           <button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="startBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="start.play"></span></button>
           <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="zenBtn"><span class="mic" data-mic="moon"></span><span class="m-btn__t" data-i18n="start.zen"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="survivalBtn"><span class="mic" data-mic="inf"></span><span class="m-btn__t" data-i18n="start.survival"></span></button>
           <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="biomesBtn"><span class="mic" data-mic="tree"></span><span class="m-btn__t" data-i18n="menu.biomes"></span></button>
         </div>
       </div>
@@ -1227,6 +1228,7 @@
       <div class="pf-corner">
         <button class="icon-btn" id="fsBtn" aria-label="Fullscreen"><span class="mic" data-mic="expand"></span></button>
         <button class="icon-btn" id="medalsBtn" data-i18n-aria="medals.btn" style="color:var(--m-gold)"><span class="mic" data-mic="medal"></span></button>
+        <button class="icon-btn" id="leaderboardBtn" data-i18n-aria="menu.leaderboard"><span class="mic" data-mic="trophy"></span></button>
         <button class="icon-btn" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="mic" data-mic="gear"></span></button>
         <button class="icon-btn icon-btn--flag" id="langFlagBtn" aria-label="Language"></button>
       </div>
@@ -1376,6 +1378,27 @@
           <div class="medal-grid2" id="medalGrid"></div>
         </div>
         <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="medalsBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="medals.back"></span></button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Экран глобального рейтинга (каркас): срезы all-time/month/week, метрика survival = борта.
+       Данные сейчас от mock-провайдера (Leaderboard.provider); реальный бэкенд — без правок UI. -->
+  <div class="overlay hidden" id="leaderboardScreen">
+    <div class="screen" style="padding:22px 24px 20px">
+      <div class="screen__col">
+        <div class="m-head">
+          <div class="m-kicker" data-i18n="lb.kicker"></div>
+          <h1 class="m-title m-title--md" data-i18n="lb.title"></h1>
+          <div class="m-counter" id="lbMode">✈ Survival</div>
+        </div>
+        <div id="lbTabs" style="display:flex;gap:8px;margin-top:14px"></div>
+        <div class="scroller" style="flex:1;min-height:0;margin-top:12px;justify-content:flex-start">
+          <div id="lbList"></div>
+        </div>
+        <div id="lbFoot"></div>
+        <p class="muted" data-i18n="lb.mock" style="font-size:11px;margin-top:8px;text-align:center;opacity:.6"></p>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="leaderboardBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="lb.back"></span></button></div>
       </div>
     </div>
   </div>
@@ -1918,6 +1941,22 @@
       'ach.daily7.t':'Perfect Week', 'ach.daily7.d':'Complete the Daily Challenge 7 days in a row.',
       'ach.sleepless.t':'Sleepless Tower', 'ach.sleepless.d':'Last 60 minutes in a single run.',
       'ach.zen500.t':'Total Zen', 'ach.zen500.d':'Land 500 planes in one session.',
+      // --- Survival + лидерборды + ранг-медали (каркас) ---
+      'mode.survival':'Survival',
+      'start.survival':'Survival',
+      'goals.survival':'Survival — endless run. Serve as many planes as you can before you run out of lives. Your best run is ranked globally.',
+      'toast.survivalStart':'Survival: serve as many planes as you can',
+      'ach.rank_top100.t':'On the board', 'ach.rank_top100.d':'Reach the global top 100 (any period).',
+      'ach.rank_top10.t':'Top ten', 'ach.rank_top10.d':'Reach the global top 10 (any period).',
+      'ach.rank_1.t':'Number one', 'ach.rank_1.d':'Take #1 on a global leaderboard.',
+      'menu.leaderboard':'Leaderboard',
+      'lb.kicker':'Global ranking', 'lb.title':'Leaderboard', 'lb.back':'Back',
+      'lb.tab.alltime':'All-time', 'lb.tab.month':'Month', 'lb.tab.week':'Week',
+      'lb.col.rank':'#', 'lb.col.player':'Player', 'lb.col.score':'Planes',
+      'lb.you':'You', 'lb.empty':'No scores yet — play Survival to get on the board.',
+      'lb.yourbest':'Your best', 'lb.unranked':'Not ranked yet',
+      'lb.signedin':'Signed in as', 'lb.signin':'Sign in to compete', 'lb.setname':'Set nickname',
+      'lb.mock':'Demo data (local) — real global ranking arrives with the backend.',
       'ach.combo50.t':'Combo God', 'ach.combo50.d':'50 clean departures in a row.',
       'ach.legend.t':'Control Room Legend', 'ach.legend.d':'Unlock all other available medals.',
       'ach.crash10s.t':'That\'s Not Flying', 'ach.crash10s.d':'Lose a plane in the first 10 seconds of a level.',
@@ -2089,6 +2128,22 @@
       'ach.daily7.t':'Идеальная неделя', 'ach.daily7.d':'Пройди Daily Challenge 7 дней подряд.',
       'ach.sleepless.t':'Бессонная вышка', 'ach.sleepless.d':'Продержись 60 минут за один заход.',
       'ach.zen500.t':'Абсолютный дзен', 'ach.zen500.d':'Посади 500 бортов за один сеанс.',
+      // --- Survival + лидерборды + ранг-медали (каркас) ---
+      'mode.survival':'Survival',
+      'start.survival':'Survival',
+      'goals.survival':'Survival — бесконечный заход. Обслужи как можно больше бортов, пока не кончились жизни. Лучший заход попадает в глобальный рейтинг.',
+      'toast.survivalStart':'Survival: обслужи как можно больше бортов',
+      'ach.rank_top100.t':'На табло', 'ach.rank_top100.d':'Попади в мировой топ-100 (за любой период).',
+      'ach.rank_top10.t':'Десятка', 'ach.rank_top10.d':'Попади в мировой топ-10 (за любой период).',
+      'ach.rank_1.t':'Номер один', 'ach.rank_1.d':'Стань №1 в глобальном рейтинге.',
+      'menu.leaderboard':'Рейтинг',
+      'lb.kicker':'Глобальный рейтинг', 'lb.title':'Рейтинг', 'lb.back':'Назад',
+      'lb.tab.alltime':'За всё время', 'lb.tab.month':'За месяц', 'lb.tab.week':'За неделю',
+      'lb.col.rank':'#', 'lb.col.player':'Игрок', 'lb.col.score':'Борта',
+      'lb.you':'Вы', 'lb.empty':'Пока пусто — сыграй Survival, чтобы попасть в таблицу.',
+      'lb.yourbest':'Личный рекорд', 'lb.unranked':'Пока вне рейтинга',
+      'lb.signedin':'Вы вошли как', 'lb.signin':'Войти, чтобы соревноваться', 'lb.setname':'Задать ник',
+      'lb.mock':'Демо-данные (локально) — настоящий глобальный рейтинг появится с бэкендом.',
       'ach.combo50.t':'Комбо-бог', 'ach.combo50.d':'Сделай 50 чистых вылетов подряд.',
       'ach.legend.t':'Легенда диспетчерской', 'ach.legend.d':'Открой все остальные доступные медали.',
       'ach.crash10s.t':'Так не летают', 'ach.crash10s.d':'Потеряй борт в первые 10 секунд уровня.',
@@ -2714,11 +2769,12 @@
     defKeys.forEach(code=>{ if(!SKINS.includes(code)) p.push('skin "'+code+'" есть в SKIN_DEFS, но не указан в SKINS'); });
     return p;
   }
-  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()).concat(validateSkins()); }
+  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()).concat(validateSkins()).concat(validateLeaderboard()); }
   let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
   function currentLevelName(){
+    if(survival) return t('mode.survival');
     if(zen) return t('mode.zen');
     if(LV.bonus) return curBonus ? bonusName(curBonus) : t('bonus.name', {n:''});
     if(LV.biome) return t('biome.'+LV.biome+'.name');
@@ -2731,6 +2787,10 @@
   let weather = 'clear', weatherUntil = 0, nextWeather = 0; // погода: clear|rain|snow
   let dayPhase = 0, nightAmount = 0;                  // «часы» суток (логика; рендер читает)
   let zen = false;                                    // режим без проигрыша
+  let survival = false;                               // survival: режим с условием смерти, счёт за заход → в глобальный рейтинг
+  // единый источник истины о текущем режиме (логика, не контент): survival/zen/biome/bonus/campaign.
+  // Раньше режим вычислялся инлайн-тернарником в нескольких местах — теперь одна функция (см. CLAUDE.md).
+  function currentMode(){ return survival ? 'survival' : (zen ? 'zen' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign'))); }
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
@@ -3118,6 +3178,137 @@
   })();
   // дев-доступ из консоли (и точка подключения провайдера из обёртки): Analytics.dump()
   try{ window.PFAnalytics = Analytics; }catch(e){}
+
+  // ---- Лидерборды: глобальный рейтинг игроков (all-time / month / week) ----
+  // ЛОГИКА, НЕ КОНТЕНТ → одна для всех скинов/биомов/карт (см. CLAUDE.md): скин — лишь
+  // поле в записи, никаких if(SKIN==='…'). Каркас: счёт за заход (метрика survival —
+  // число обслуженных бортов) уходит через СВОПАЕМЫЙ `Leaderboard.provider`. Сейчас
+  // provider = локальный mock-стор в localStorage (+синтетические боты, чтобы таблица не
+  // пустовала); реальный бэкенд (свой API / Firebase / Supabase) подключается ОДНОЙ
+  // заменой Leaderboard.provider — ни submitRun(), ни top() при этом не меняются (тот же
+  // приём, что Analytics.sink). Идентичность игрока — модуль Account со свопаемым
+  // authProvider: сейчас mock «локальный аккаунт», реальный Google Play Games / OAuth
+  // встаёт в ТОТ ЖЕ интерфейс. Периоды (неделя/месяц) — чистая детерминированная функция
+  // periodBucket(ts) в UTC, одинаковая на клиенте и будущем сервере (ISO-8601 неделя).
+  const PERIODS = ['alltime','month','week'];
+  function lbNow(){ return Date.now(); }
+  // ISO-8601: ключ недели 'YYYY-Www' (год определяется четвергом недели) + 'YYYY-MM' месяца.
+  function periodBucket(ts){
+    const d = new Date(ts);
+    const month = d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+    const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const dayNum = (dt.getUTCDay()+6)%7;                 // Пн=0 … Вс=6
+    dt.setUTCDate(dt.getUTCDate() - dayNum + 3);         // четверг текущей недели
+    const firstThu = new Date(Date.UTC(dt.getUTCFullYear(), 0, 4));
+    const week = dt.getUTCFullYear()+'-W'+String(
+      1 + Math.round(((dt - firstThu)/86400000 - 3 + ((firstThu.getUTCDay()+6)%7))/7)
+    ).padStart(2,'0');
+    return { alltime:'all', month, week };
+  }
+
+  // Идентичность: реальные аккаунты (выбор продукт-овнера). Сейчас authProvider — mock
+  // «локальный аккаунт» (id из устойчивого pf_uid, ник задаёт игрок). Реальный вход
+  // (Google Play Games / OAuth) заменяет Account.authProvider, ничего вокруг не трогая.
+  // Аккаунт живёт в своём ключе и ПЕРЕЖИВАЕТ «Сбросить прогресс» (как язык/медали).
+  const Account = (() => {
+    const ACC_KEY='pf_account_v1', UID_KEY='pf_uid';
+    let acct=null;
+    function mockAuth(){
+      let uid=null; try{ uid=localStorage.getItem(UID_KEY); }catch(e){}
+      if(!uid){ uid='local-'+Math.abs((lbNow()^(Math.floor(Math.random()*1e9)))>>>0).toString(36); try{ localStorage.setItem(UID_KEY, uid); }catch(e){} }
+      return Promise.resolve({ id:uid, name:null, provider:'mock' });
+    }
+    let authProvider = mockAuth;
+    function load(){ try{ const a=JSON.parse(localStorage.getItem(ACC_KEY)); if(a&&a.id){ acct=a; } }catch(e){} }
+    function persist(){ try{ localStorage.setItem(ACC_KEY, JSON.stringify(acct)); }catch(e){} }
+    return {
+      init(){ load(); },
+      current(){ return acct; },
+      signedIn(){ return !!(acct&&acct.id); },
+      signIn(){ return Promise.resolve(authProvider()).then(a=>{ acct=Object.assign({name:null}, a); persist(); return acct; }); },
+      signOut(){ acct=null; try{ localStorage.removeItem(ACC_KEY); }catch(e){} },
+      setName(n){ if(!acct) return null; acct.name=String(n||'').trim().slice(0,24)||null; persist(); return acct; },
+      get authProvider(){ return authProvider; }, set authProvider(fn){ if(typeof fn==='function') authProvider=fn; },
+    };
+  })();
+
+  const Leaderboard = (() => {
+    const STORE_KEY='pf_lb_v1', TOP_N=100, RING=5000;
+    const ls = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+                 set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} } };
+    function loadAll(){ try{ const a=JSON.parse(ls.get(STORE_KEY)); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+    function saveAll(a){ ls.set(STORE_KEY, JSON.stringify(a.slice(-RING))); }
+    function defaultName(id){ return 'Player-'+String(id||'').slice(-4).toUpperCase(); }
+    // mock «как бы глобальная» таблица: подсев несколько ботов, чтобы каркас и UI было
+    // видно на пустом устройстве. На реальном бэкенде ботов нет — это деталь mock-провайдера.
+    function seedBots(rows){
+      if(rows.some(r=>r&&r._seed)) return rows;
+      const bots=[['Skylark',38],['Maverick',31],['Tower-9',27],['Otto',22],['Foxtrot',18],['Breeze',14],['Cargo Joe',11],['Nimbus',8]];
+      const base=lbNow();
+      bots.forEach((b,i)=>rows.push({accountId:'bot-'+i, name:b[0], mode:'survival', score:b[1], ts:base-i*3600000, _seed:true}));
+      return rows;
+    }
+    function rankRows(rows, period, mode){
+      const curB = periodBucket(lbNow()), wantAll = (period==='alltime'), best={};
+      rows.forEach(r=>{
+        if(!r || (mode && r.mode!==mode)) return;
+        if(!wantAll && periodBucket(r.ts)[period]!==curB[period]) return;
+        const cur=best[r.accountId];
+        if(!cur || r.score>cur.score || (r.score===cur.score && r.ts<cur.ts)) best[r.accountId]=r;
+      });
+      return Object.keys(best).map(k=>best[k]).sort((a,b)=> b.score-a.score || a.ts-b.ts)
+        .map((r,i)=>({ rank:i+1, accountId:r.accountId, name:r.name||defaultName(r.accountId), score:r.score, ts:r.ts, seed:!!r._seed }));
+    }
+    // ПРОВАЙДЕР по умолчанию — локальный mock. Реальный бэкенд: тот же {submit, top}, но с сетью.
+    const mockProvider = {
+      submit(entry){ const rows=seedBots(loadAll()); rows.push(entry); saveAll(rows); return Promise.resolve(true); },
+      top(period, mode){ return Promise.resolve(rankRows(seedBots(loadAll()), period, mode).slice(0,TOP_N)); },
+    };
+    let provider=mockProvider, started=false;
+    return {
+      init(){ if(started) return; started=true; Account.init(); },
+      account: Account,
+      periodBucket, PERIODS,
+      get provider(){ return provider; }, set provider(p){ if(p&&typeof p.submit==='function'&&typeof p.top==='function') provider=p; },
+      // отправить результат захода. score — число (survival: обслуженные борта). Возвращает
+      // {score, ranks:{alltime,month,week}} — место игрока в каждом срезе (null, если вне TOP_N).
+      submitRun(opts){
+        opts=opts||{}; if(!started) this.init();
+        return Promise.resolve(Account.signedIn()?Account.current():Account.signIn()).then(acct=>{
+          const entry={ accountId:acct.id, name:acct.name||defaultName(acct.id), mode:opts.mode||'survival',
+            score:Math.max(0, Math.round(+opts.score||0)), ts:lbNow(),
+            skin:(typeof SKIN!=='undefined'?SKIN:null), v:(typeof VERSION!=='undefined'?VERSION:null) };
+          return Promise.resolve(provider.submit(entry)).then(()=>{
+            try{ Analytics.track('leaderboard_submit', {mode:entry.mode, score:entry.score}); }catch(e){}
+            const tops=PERIODS.map(p=>Promise.resolve(provider.top(p, entry.mode)).then(list=>{
+              const me=list.find(r=>r.accountId===acct.id); return [p, me?me.rank:null];
+            }));
+            return Promise.all(tops).then(pairs=>{ const ranks={}; pairs.forEach(x=>ranks[x[0]]=x[1]); return {score:entry.score, ranks}; });
+          });
+        });
+      },
+      top(period, mode){ if(!started) this.init(); return Promise.resolve(provider.top(period||'alltime', mode||'survival')); },
+      me(period, mode){ const acct=Account.current(); if(!acct) return Promise.resolve(null);
+        return Promise.resolve(provider.top(period||'alltime', mode||'survival')).then(list=>list.find(r=>r.accountId===acct.id)||null); },
+      // личный рекорд (локальный кэш всех отправленных заходов этого аккаунта)
+      bestScore(mode){ const acct=Account.current(); if(!acct) return 0;
+        return loadAll().filter(r=>r&&r.accountId===acct.id&&(!mode||r.mode===mode)).reduce((m,r)=>Math.max(m,r.score),0); },
+    };
+  })();
+  try{ window.PFLeaderboard = Leaderboard; }catch(e){}
+
+  // конфиг-чек каркаса рейтингов (в духе validateSkins/validateLevels) — зовётся из validateGame()
+  function validateLeaderboard(){
+    const p=[];
+    if(!Array.isArray(PERIODS)||!PERIODS.length){ p.push('PERIODS пуст'); return p; }
+    let b; try{ b=periodBucket(lbNow()); }catch(e){ p.push('periodBucket() кинул исключение'); return p; }
+    PERIODS.forEach(per=>{ if(b[per]==null) p.push('periodBucket() не даёт ключ для периода "'+per+'"'); });
+    ['rank_top100','rank_top10','rank_1'].forEach(id=>{
+      if(!ACH.defs.some(d=>d.id===id)) p.push('ранг-медаль "'+id+'" отсутствует в ACH.defs');
+      Object.keys(I18N).forEach(c=>{ if(I18N[c]['ach.'+id+'.t']==null) p.push('нет перевода ach.'+id+'.t в языке "'+c+'"'); });
+    });
+    return p;
+  }
 
   // Звук тапа по любым кнопкам в оверлеях меню (старт / пауза / уровни / настройки и т.д.).
   // Делегирование на document — ловит и динамически созданные кнопки (язык, скин, список уровней).
@@ -5180,12 +5371,23 @@
     const stars=computeStars(), v=metricValue(), passed=stars>=1;
     Analytics.track(passed ? 'level_complete' : 'level_fail', {
       level: levelKey,
-      mode: zen ? 'zen' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')),
+      mode: currentMode(),
       reason: reasonKey, stars,
       metric: LV.objective && LV.objective.metric, value: v, target: LV.objective && LV.objective.target,
       money, peak: statPeak, time_s: Math.round(gameTime), lives: Math.max(0, lives),
     });
     ACH.onLevelEnd(passed, stars, lives>=K.START_LIVES);
+    // Survival → счёт захода (обслуженные борта) уходит в глобальный рейтинг; место в
+    // таблице открывает пороговые ранг-медали. Каркас: mock-провайдер сейчас, бэкенд потом.
+    // Не-survival режимы рейтинг не трогают (кампания/zen/биомы остаются как есть).
+    if(currentMode()==='survival'){
+      const runScore = served;
+      Leaderboard.submitRun({mode:'survival', score:runScore}).then(res=>{
+        lastShift.survivalScore = runScore;
+        if(res){ lastShift.ranks = res.ranks; ACH.onRank(res.ranks); }
+        if(typeof refreshOverLeaderboard==='function') refreshOverLeaderboard(res);
+      }).catch(()=>{});
+    }
     document.getElementById('overKicker').textContent = t(passed?'over.passed':'over.failed');
     document.getElementById('finalStars').innerHTML = [0,1,2].map(i=>
       '<span class="'+(i<stars?'pop':'off')+'" style="display:inline-flex'+(i<stars?';animation-delay:'+(i*0.13)+'s':'')+'">'+SVGIC('star')+'</span>').join('');
@@ -5370,7 +5572,50 @@
   // заполнить статические плейсхолдеры иконок (<span class="mic" data-mic="...">)
   function applyMenuIcons(root){ try{ (root||document).querySelectorAll('[data-mic]').forEach(el=>{ el.innerHTML=SVGIC(el.dataset.mic); }); }catch(e){} }
 
-  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','medalScreen','goalsScreen','confirmScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
+  // ---- экран рейтинга (каркас): срезы all-time/month/week из Leaderboard (mock-провайдер) ----
+  let lbPeriod = 'alltime';
+  function lbEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function showLeaderboard(){ hideAllScreens(); document.getElementById('leaderboardScreen').classList.remove('hidden'); renderLeaderboard(); }
+  function renderLeaderboard(){
+    const acct = Leaderboard.account.current();
+    const tabs = document.getElementById('lbTabs');
+    if(tabs){ tabs.innerHTML='';
+      PERIODS.forEach(p=>{ const b=document.createElement('button');
+        b.className='m-btn '+(p===lbPeriod?'m-btn--primary':'m-btn--ghost'); b.style.cssText='flex:1;min-width:0;padding:8px 4px';
+        b.textContent=t('lb.tab.'+p); b.onclick=()=>{ if(lbPeriod!==p){ lbPeriod=p; renderLeaderboard(); } }; tabs.appendChild(b); });
+    }
+    const list = document.getElementById('lbList');
+    if(list) list.innerHTML='<div class="muted" style="padding:16px;text-align:center">…</div>';
+    Leaderboard.top(lbPeriod,'survival').then(rows=>{
+      if(!list) return; list.innerHTML='';
+      if(!rows.length){ list.innerHTML='<div class="muted" style="padding:18px;text-align:center">'+lbEsc(t('lb.empty'))+'</div>'; return; }
+      const head=document.createElement('div'); head.style.cssText='display:flex;gap:10px;padding:4px 12px 8px;font-size:12px;opacity:.55';
+      head.innerHTML='<span style="width:36px">'+t('lb.col.rank')+'</span><span style="flex:1">'+t('lb.col.player')+'</span><span>'+t('lb.col.score')+'</span>';
+      list.appendChild(head);
+      rows.forEach(r=>{
+        const me = !!(acct && r.accountId===acct.id);
+        const medal = r.rank===1?'🥇':r.rank===2?'🥈':r.rank===3?'🥉':('#'+r.rank);
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;'+
+          (me?'background:rgba(120,200,255,.16);font-weight:700':(r.rank%2?'background:rgba(255,255,255,.035)':''));
+        row.innerHTML='<span style="width:36px;opacity:.85">'+medal+'</span>'+
+          '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+lbEsc(r.name)+(me?' · '+t('lb.you'):'')+'</span>'+
+          '<span style="font-variant-numeric:tabular-nums">'+fmtNum(r.score)+'</span>';
+        list.appendChild(row);
+      });
+    }).catch(()=>{ if(list) list.innerHTML=''; });
+    const foot = document.getElementById('lbFoot');
+    if(foot){ foot.innerHTML='';
+      const best = Leaderboard.bestScore('survival');
+      const who = acct ? (t('lb.signedin')+': '+lbEsc(acct.name||('Player-'+String(acct.id).slice(-4).toUpperCase()))) : t('lb.signin');
+      const info=document.createElement('div');
+      info.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;font-size:13px';
+      info.innerHTML='<span class="muted">'+who+'</span><span>'+t('lb.yourbest')+': <b>'+(best?fmtNum(best):lbEsc(t('lb.unranked')))+'</b></span>';
+      foot.appendChild(info);
+    }
+  }
+
+  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   // главный экран: чип звёзд = сумма заработанных / максимум по основным уровням
   function updateStartChips(){
     let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;
@@ -5380,12 +5625,17 @@
   }
   function showStart(){ hideAllScreens(); updateStartChips(); document.getElementById('startScreen').classList.remove('hidden'); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
-  function startLevel(idx){ zen=false; buildLevel(idx); hideAllScreens(); reset(); }
-  function startBonus(b){ if(!bonusUnlocked(b)) return; zen=false; buildBonus(b); hideAllScreens(); reset(); }
-  function startZen(){ zen=true; buildLevel(0); hideAllScreens(); reset(); }
+  function startLevel(idx){ zen=false; survival=false; buildLevel(idx); hideAllScreens(); reset(); }
+  function startBonus(b){ if(!bonusUnlocked(b)) return; zen=false; survival=false; buildBonus(b); hideAllScreens(); reset(); }
+  function startZen(){ zen=true; survival=false; buildLevel(0); hideAllScreens(); reset(); }
+  // Survival — каркасный энд-поинт режима: бесконечный заход, счёт = обслуженные борта; на
+  // конце (потеря всех жизней) счёт уходит в глобальный рейтинг (см. endLevel → Leaderboard).
+  // БАЛАНС/КРИВАЯ СЛОЖНОСТИ режима — задача отдельного геймплейного прохода (TODO): пока берём
+  // стартовую раскладку, чтобы каркас рейтинга/медалей был играбелен и тестируем.
+  function startSurvival(){ survival=true; zen=false; buildLevel(0); hideAllScreens(); reset(); }
   // карты биомов: отдельный экран выбора (доступен из главного меню)
   function showBiomes(){ inMenu=true; renderBiomes(); hideAllScreens(); document.getElementById('biomeScreen').classList.remove('hidden'); }
-  function startBiome(b){ if(!b.ready) return; zen=false; buildBiome(b); hideAllScreens(); reset(); }
+  function startBiome(b){ if(!b.ready) return; zen=false; survival=false; buildBiome(b); hideAllScreens(); reset(); }
   function renderBiomes(){
     const list=document.getElementById('biomeList'); list.innerHTML='';
     BIOMES.forEach(b=>{
@@ -5550,6 +5800,7 @@
 
   document.getElementById('startBtn').onclick=showLevels;
   document.getElementById('zenBtn').onclick=startZen;
+  { const b=document.getElementById('survivalBtn'); if(b) b.onclick=startSurvival; }
   document.getElementById('backBtn').onclick=()=>{ showStart(); };
   document.getElementById('againBtn').onclick=()=>{ document.getElementById('overScreen').classList.add('hidden'); reset(); };
   function backToSelect(){ if(curBiome) showBiomes(); else showLevels(); }
@@ -5795,6 +6046,12 @@
       {id:'sleepless',tier:4,ic:'🌙', pending:true},
       {id:'zen500',  tier:4, ic:'🧘', pending:true},
       {id:'combo50', tier:4, ic:'🔥', pending:true},
+      // --- Соревновательные (ранговые): пороговые НАВСЕГДА, по глобальному рейтингу.
+      //     comp:true → НЕ входят в требование «Легенды» (Легенда = мастерство соло-игры,
+      //     не зависит от чужих результатов и наличия сервера). См. ACH.onRank / Leaderboard. ---
+      {id:'rank_top100', tier:4, ic:'🏅', comp:true},
+      {id:'rank_top10',  tier:4, ic:'🏆', comp:true},
+      {id:'rank_1',      tier:4, ic:'👑', comp:true},
       {id:'legend',  tier:4, ic:'🛐'},
       // --- Тир 5: секретные / фановые (скрыты до получения) ---
       {id:'crash10s',tier:5, ic:'💥', hidden:true},
@@ -5822,8 +6079,15 @@
     }
     function checkLegend(){
       if(unlocked.has('legend')) return;
-      const need=defs.filter(x=>x.id!=='legend' && !x.pending);
+      const need=defs.filter(x=>x.id!=='legend' && !x.pending && !x.comp);
       if(need.every(x=>unlocked.has(x.id))) give('legend');
+    }
+    // выдать медаль МИМО RUN_CAP (для редких крупных событий — ранг в глобальном рейтинге).
+    // Лимит «2 за раунд» сделан против шума накопительных медалей; ранг-медаль им не является.
+    function giveForce(id){
+      if(unlocked.has(id)) return;
+      const d=defs.find(x=>x.id===id); if(!d) return;
+      unlocked.add(id); persist(); toastAch(d); checkLegend();
     }
 
     // всплывашка: очередь, по одной, не чаще раза в минуту; на границе раундов
@@ -5927,6 +6191,15 @@
         checkLegend();    // «Легенда» (вся коллекция) — на итогах раунда, не посреди игры
         flushToasts();    // остаток уведомлений — на экран итогов, в новый раунд не утекает
       },
+      // ранг-медали (пороговые навсегда): лучший достигнутый ранг по ЛЮБОМУ срезу
+      // (all-time/month/week) открывает медаль. Зовётся после Leaderboard.submitRun().
+      onRank(ranks){
+        if(!ranks) return;
+        let best=Infinity; for(const k in ranks){ const r=ranks[k]; if(r) best=Math.min(best, r); }
+        if(best<=100) giveForce('rank_top100');
+        if(best<=10)  giveForce('rank_top10');
+        if(best===1)  giveForce('rank_1');
+      },
       flushToasts,
       list(){
         const out=[];
@@ -5934,7 +6207,7 @@
           let prog=null;
           if(d.prog) prog=d.prog(S.stats);
           else if(d.id==='all3star'){ let c=0; for(let i=0;i<LEVELS.length;i++) if((save.stars[i]||0)>=3)c++; prog=[c,LEVELS.length]; }
-          else if(d.id==='legend'){ const tot=defs.filter(x=>x.id!=='legend'&&!x.pending); prog=[tot.filter(x=>unlocked.has(x.id)).length, tot.length]; }
+          else if(d.id==='legend'){ const tot=defs.filter(x=>x.id!=='legend'&&!x.pending&&!x.comp); prog=[tot.filter(x=>unlocked.has(x.id)).length, tot.length]; }
           out.push({id:d.id,tier:d.tier,ic:d.ic,title:t('ach.'+d.id+'.t'),desc:t('ach.'+d.id+'.d'),hidden:!!d.hidden,pending:!!d.pending,got:unlocked.has(d.id),prog});
         }
         return out;
@@ -5983,6 +6256,8 @@
   function openMedals(from){ medalFrom=from||'start'; renderMedals(); hideAllScreens();
     document.getElementById('medalScreen').classList.remove('hidden'); }
   document.getElementById('medalsBtn').onclick=()=>openMedals('start');
+  { const b=document.getElementById('leaderboardBtn'); if(b) b.onclick=showLeaderboard; }
+  { const b=document.getElementById('leaderboardBackBtn'); if(b) b.onclick=()=>{ showStart(); }; }
   document.getElementById('medalsBackBtn').onclick=()=>{
     if(medalFrom==='levels'){ hideAllScreens(); showLevels(); }
     else showStart();
@@ -6024,6 +6299,9 @@
       get lang(){ return lang; },
       get levelIdx(){ return levelIdx; },
       get zen(){ return zen; },        set zen(v){ zen=v; },
+      get survival(){ return survival; }, set survival(v){ survival=v; },
+      currentMode, periodBucket, Leaderboard, ACH, validateLeaderboard, startSurvival,
+      get served(){ return served; }, set served(v){ served=v; },
       // выставить текущий уровень кампании (levelKey=индекс — как в buildLevel)
       setLevel(i){ levelIdx=i; levelKey=i; LV=LEVELS[i]; },
       // выставить бонус-уровень как текущий (без layout/DOM — для проверки окна целей)
