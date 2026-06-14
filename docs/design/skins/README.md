@@ -6,6 +6,24 @@ or via `?skin=<name>` / `localStorage.pf_skin`). Each skin only changes how the
 game *looks* — never the gameplay layout (top-down, planes/runways right, bays on
 bottom/left/top, finger-drawn routes, slim top HUD, no tiny UI).
 
+> ## ⛓️ Architecture rule — logic is the parent, skins only supply look & sound
+>
+> **Anything that is NOT visual appearance or audio content lives ABOVE skins and is
+> identical for every skin, biome and map.** Logic, mechanics, calculations,
+> trajectory, bay-entry, patience, money, stars, events, and *when* a sound fires —
+> all skin-agnostic, never forked per skin. A skin (and a biome/map) changes **only
+> its content**: colors, draw scale, art atlas, optional scene/HUD renderers, icons,
+> animation content, and sound *content* (what an event sounds like). The difference
+> between skins is **only** the content of animation, sound and icons/colors.
+>
+> **In code:** every per-skin difference is *declared* in the **`SKIN_DEFS`** registry
+> in `index.html` (`tokens`, `scale`, `atlas`, `glow`, `field`/`hud`, `sounds`,
+> `label`). Adding a skin/biome/map = add a registry entry (+ a line in `SKINS` + an
+> i18n label key) — **never** add `if (SKIN === '…')` branches in logic/mechanics.
+> `skinDef()` feeds `SZ`/`NEON`/sprite-mode/scene-dispatch/sound-content from the
+> registry; `validateSkins()` fails the config check if a skin is added outside it.
+> Full statement: `CLAUDE.md` and `docs/DEV.md` → «Главный принцип архитектуры».
+
 | Skin | Status | Where |
 | --- | --- | --- |
 | **cozy** | shipped (default) | cozy sprite atlas — `assets/sprites/` |
