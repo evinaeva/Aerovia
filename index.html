@@ -2001,11 +2001,14 @@
       src.connect(f); f.connect(g); g.connect(master); src.start(t0);
     }
     const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); // случайный индекс ноты гаммы
+    // Единственный оставшийся звук — тап по кнопке меню. Игровые звуки убраны:
+    // их методы оставлены пустышками, чтобы не трогать десятки мест вызова.
     return {
       setEnabled(v){ enabled=v; },
       pick(){ tone(SCALE[ri(5,6)],0.05,'triangle',0.10); },                     // выделение борта
       land(){ const i=ri(0,2); tone(SCALE[i],0.22,'sine',0.32); tone(SCALE[i]/2,0.30,'sine',0.18); },
       dock(){ tone(SCALE[ri(2,4)],0.10,'triangle',0.20); },                     // заехал в бокс
+      lock(){ tone(1318.5,0.035,'square',0.13); tone(1760,0.05,'square',0.10,0.025); }, // щелчок: маршрут зафиксирован на боксе
       served(){ const i=ri(3,5); tone(SCALE[i],0.14,'sine',0.26); tone(SCALE[i+2],0.18,'sine',0.20,0.07); },
       depart(express){ tone(SCALE[4],0.12,'triangle',0.30); tone(SCALE[6],0.12,'triangle',0.30,0.08);
         tone(SCALE[express?8:7],0.22,'triangle',0.34,0.16); },                  // арпеджио вверх
@@ -2024,6 +2027,12 @@
     tap(){ this.v(12); }, ok(){ this.v([18,40,24]); }, penalty(){ this.v(35); }, crash(){ this.v([60,40,90]); },
     near(){ this.v([10,30,10]); },
   };
+  // Звук тапа по любым кнопкам в оверлеях меню (старт / пауза / уровни / настройки и т.д.).
+  // Делегирование на document — ловит и динамически созданные кнопки (язык, скин, список уровней).
+  document.addEventListener('pointerdown', e=>{
+    const b = e.target.closest && e.target.closest('.overlay button');
+    if(b && !b.disabled) SND.btn();
+  });
 
   function reset(){
     econ = levelEconomy(LV); lvFx = econ.effects;   // оплата/касса и активные денежные эффекты — из уровня
@@ -2283,6 +2292,27 @@
     for(const b of bays) if(rectHit(p.x,p.y,b)) return b;
     return null;
   }
+  // открытый бокс под точкой (для фиксации конца маршрута)
+  function openBayAt(p){
+    for(const b of bays) if(b.open && rectHit(p.x,p.y,b)) return b;
+    return null;
+  }
+  // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
+  // (подход снаружи → центр), так что въезд получается строго по центру и носом вперёд
+  function lockRouteToBay(pl, b){
+    const o=dirOut(b);
+    const cx=b.x+b.w/2, cy=b.y+b.h/2;
+    const vert=Math.abs(o.dy)>Math.abs(o.dx);
+    const half=(vert?b.h:b.w)/2;
+    const apx=cx+o.dx*(half+22*ui), apy=cy+o.dy*(half+22*ui);  // точка подхода на оси ворот, снаружи
+    // срезаем хвост маршрута, попавший внутрь бокса, и достраиваем «подход → центр»
+    while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, b)) pl.path.pop();
+    pl.path.push({x:apx,y:apy},{x:cx,y:cy});
+    pl.moving=true;
+    // обратная связь игроку: маленькая вспышка + щелчок у ворот
+    pulseFx(cx+o.dx*half, cy+o.dy*half, 'lock', 0.28);
+    SND.lock(); HAP.tap();
+  }
   function bayUpCost(b){ if(b.deice) return null; return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
 
   function down(e){
@@ -2324,6 +2354,7 @@
   function move(e){
     if(!drag||paused) return;
     e.preventDefault();
+    if(drag.locked) return;          // маршрут уже зафиксирован на боксе — дальше не тянем
     const p=pt(e);
     if(!drag.drew && dist(p.x,p.y,drag.start.x,drag.start.y)>10){
       drag.drew=true;
@@ -2333,6 +2364,11 @@
     if(drag.drew && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
       drag.plane.path.push({x:p.x,y:p.y});
       drag.last=p;
+      // конец траектории коснулся открытого бокса → фиксируем маршрут (вспышка + щелчок)
+      if(drag.plane.zone!=='air' && !LV.bonus){
+        const b=openBayAt(p);
+        if(b){ lockRouteToBay(drag.plane, b); drag.locked=true; }
+      }
     }
   }
   // конец воздушной траектории, заведённой на открытую ВПП, притягиваем в центр полосы
@@ -2680,8 +2716,8 @@
         continue;
       }
 
-      // ---- BAY (обслуживание): плавный заезд → стоянка носом к стене →
-      //      на последней четверти времени разворот и выезд носом наружу ----
+      // ---- BAY (обслуживание): плавный заезд по центру носом к стене → стоянка →
+      //      по завершении услуги: к центру, разворот носом наружу, плавный выезд и остановка ----
       if(pl.zone==='bay'){
         const b=pl.bay, o=dirOut(b);
         // бонус-мир: гусеница окуклилась — куколка спокойно сидит в серединке цветка,
@@ -2700,14 +2736,12 @@
           continue;
         }
         if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
-        pl.serveTime-=dt;
-        const frac=Math.max(0,pl.serveTime)/Math.max(0.001,pl.serveMax);
         const cx=b.x+b.w/2, cy=b.y+b.h/2;
         const vert=Math.abs(o.dy)>Math.abs(o.dx);
         const half=(vert? b.h : b.w)/2;
         const L=13*ui, gap=4*ui;                   // полудлина борта + зазор до стены
         const parkA = -(half - L - gap);           // центр борта у дальней стены (целиком внутри)
-        const frontA =  (half + L + gap);          // центр борта чуть перед воротами
+        const exitA =  (half + L + gap);           // центр борта снаружи у ворот — точка остановки после выезда
         // держим борт ровно на оси ворот → нет касания боковых стен
         if(vert) pl.x += (cx-pl.x)*Math.min(1, dt*6);
         else     pl.y += (cy-pl.y)*Math.min(1, dt*6);
@@ -2715,20 +2749,39 @@
         const step = taxiSpeed*dt*0.85;
         const setAlong = a => { if(vert) pl.y=cy+a*o.dy; else pl.x=cx+a*o.dx; };
         const angIn=Math.atan2(-o.dy,-o.dx), angOut=Math.atan2(o.dy,o.dx);
-        if(frac>0.25){
-          turnTo(pl, angIn, dt*2);                                 // нос к стене
-          setAlong(along + Math.sign(parkA-along)*Math.min(step, Math.abs(parkA-along)));
-        } else {
-          // последняя четверть: разворот НА МЕСТЕ (центр — клиренс), затем выезд
-          let d=angOut-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
-          if(Math.abs(d)>0.12){ turnTo(pl, angOut, dt*1.8); }
-          else { turnTo(pl, angOut, dt*2); setAlong(along + Math.sign(frontA-along)*Math.min(step, Math.abs(frontA-along))); }
+        // обслуживание идёт, пока борт заезжает и стоит носом к стене (не во время выезда)
+        if(pl.bayPhase!=='out'){
+          pl.serveTime-=dt;
+          if(pl.serveTime<=0){
+            // услуга выполнена → награда игроку и переход к плавному выезду
+            pl.bayPhase='out';
+            pl.reqIndex++; ACH.onService(pl); SND.served();
+            pulseFx(cx,cy,'success',0.5);
+          }
         }
-        if(pl.serveTime<=0){
-          b.occupied=null; pl.bay=null; pl.bayPhase=null;
-          pl.reqIndex++; ACH.onService(pl); SND.served();
-          pulseFx(cx,cy,'success',0.5);
-          pl.zone='field'; setAlong(frontA); pl.x=clampX(pl.x); pl.y=clampY(pl.y); pl.moving=false; pl.path=[];
+        if(pl.bayPhase==='out'){
+          // ВЫЕЗД: подать к центру (клиренс для разворота) → довернуть носом наружу →
+          // плавно выехать к точке остановки и встать (без рывка/телепорта)
+          let d=angOut-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+          if(along < -0.5){
+            turnTo(pl, angOut, dt*1.6);                          // от дальней стены к центру, попутно доворачивая
+            setAlong(along + Math.min(step, 0-along));
+          } else if(Math.abs(d)>0.12){
+            turnTo(pl, angOut, dt*2);                            // на центре — разворот носом наружу
+          } else {
+            turnTo(pl, angOut, dt*2);
+            setAlong(along + Math.min(step, exitA-along));       // плавный выезд к точке остановки
+            if(along>=exitA-0.5){
+              // выехал целиком — освобождаем бокс, встаём в поле и стоим
+              b.occupied=null; pl.bay=null; pl.bayPhase=null;
+              pl.zone='field'; setAlong(exitA); pl.x=clampX(pl.x); pl.y=clampY(pl.y);
+              pl.moving=false; pl.path=[]; pl.exiting=false;
+            }
+          }
+        } else {
+          // ЗАЕЗД/СТОЯНКА: нос к стене, доезжаем к дальней стене и ждём обслуживания
+          turnTo(pl, angIn, dt*2);
+          setAlong(along + Math.sign(parkA-along)*Math.min(step, Math.abs(parkA-along)));
         }
         continue;
       }
@@ -3779,6 +3832,13 @@
       if(k>=1){ effects.splice(i,1); continue; }
       const a=1-k;
       ctx.save(); ctx.translate(e.x,e.y);
+      if(e.kind==='lock'){
+        // фиксация маршрута на боксе: короткая яркая белая вспышка (без cozy-спрайта)
+        ctx.beginPath(); ctx.arc(0,0,(9+k*15)*ui,0,7);
+        ctx.lineWidth=2.5*a+0.5; ctx.strokeStyle=hexa('#ffffff',.9*a); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0,0,5*(1-k)*ui+1,0,7); ctx.fillStyle=hexa('#ffffff',.85*a); ctx.fill();
+        ctx.restore(); continue;
+      }
       if(COZY){
         const sz=(e.kind==='crash'?(44+k*64):(20+k*56))*ui;
         ctx.globalAlpha=a;
