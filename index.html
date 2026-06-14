@@ -1109,6 +1109,90 @@
   .lvlnode__feat{position:absolute;top:-9px;left:-7px;width:24px;height:24px;border-radius:50%;
     display:grid;place-items:center;font-size:12px;line-height:1;background:var(--m-panel-3);
     border:1.5px solid var(--m-panel-border);box-shadow:var(--shadow-raised);color:var(--m-text-body)}
+
+  /* ============================================================
+     MAIN SCREEN — three per-skin finals (PlaneFlow main-screen handoff).
+     ONE DOM; only positioning / signature treatment differs, driven by
+     [data-skin]. Logic & button components stay shared (see CLAUDE.md).
+       neon (base) : brand left·center  · glass CTA panel right·center
+       cartoon     : big outlined wordmark · no-panel chunky CTA right
+       cozy        : brand upper-left    · glass CTA row in the thumb zone
+     ============================================================ */
+  #startScreen .pf-main{ display:block; }              /* full-bleed canvas, children placed absolutely */
+  #startScreen .pf-main > *{ position:absolute; }
+  #startScreen .pf-scrim{ inset:0; pointer-events:none; z-index:0; }
+  #startScreen .pf-chips{ top:18px; right:18px; display:flex; gap:10px; z-index:7; }
+  #startScreen .pf-corner{ right:18px; bottom:18px; display:flex; gap:10px; z-index:7; }
+  #startScreen .chip--star .chip__ic svg{ color:var(--m-gold); }
+
+  /* brand: kicker · wordmark · tagline · ver */
+  #startScreen .pf-brand{ left:7%; top:50%; transform:translateY(-50%); max-width:min(46%,460px);
+    text-align:left; z-index:2; }
+  #startScreen .brand__mark{ font-family:var(--m-font-display); font-weight:700; font-size:52px;
+    line-height:1; letter-spacing:0; color:var(--m-text-strong); display:inline-flex; align-items:center;
+    gap:.24em; margin:6px 0 0; }
+  #startScreen .brand__mark .mic svg{ width:.78em; height:.78em; }
+  #startScreen .brand__plane{ color:var(--m-accent); filter:drop-shadow(0 0 8px var(--m-accent)); }
+  #startScreen .brand__word{ display:inline-flex; }
+  #startScreen .brand__w1,#startScreen .brand__w2{ display:inline; }
+  #startScreen .brand__kicker{ margin:0 0 12px; }
+  #startScreen .brand__tag{ display:block; margin-top:16px; }
+  #startScreen .brand__tag-ic{ display:none; }
+  #startScreen .brand__ver{ margin-top:18px; }
+
+  /* CTA group — vertical centering via margin (NOT transform: the .panel
+     entrance keyframe ends at transform:none and would clobber translateY). */
+  #startScreen .pf-cta{ right:7%; top:0; bottom:0; height:fit-content; margin-block:auto;
+    width:min(40%,308px); padding:24px 22px; z-index:2; }
+  #startScreen .pf-cta .menu-col{ width:100%; gap:13px; }
+
+  /* ---- neon (base panel = matte glass) ---- */
+  [data-skin="neon"] #startScreen .pf-cta{ background:rgba(14,26,56,.66); backdrop-filter:blur(8px); }
+  [data-skin="neon"] #startScreen .brand__word{ text-shadow:0 0 14px rgba(111,198,221,.55); }
+
+  /* ---- cozy ---- */
+  [data-skin="cozy"] #startScreen .pf-scrim{ background:
+      linear-gradient(115deg, rgba(8,5,18,.55) 0%, transparent 46%),
+      linear-gradient(0deg, rgba(8,5,18,.5), transparent 44%); }
+  [data-skin="cozy"] #startScreen .pf-brand{ top:21%; transform:none; max-width:min(52%,440px); }
+  [data-skin="cozy"] #startScreen .brand__mark{ font-size:clamp(38px,7vw,60px); }
+  [data-skin="cozy"] #startScreen .brand__word{ text-shadow:0 0 26px rgba(255,184,77,.4); }
+  [data-skin="cozy"] #startScreen .pf-cta{ left:7%; right:auto; top:auto; bottom:8%; margin-block:0;
+    height:auto; width:auto; max-width:none; background:none; border:none; box-shadow:none; padding:0; backdrop-filter:none; }
+  [data-skin="cozy"] #startScreen .pf-cta .menu-col{ flex-direction:row; width:auto; gap:14px; align-items:center; }
+  [data-skin="cozy"] #startScreen .pf-cta .m-btn{ width:auto; }
+  [data-skin="cozy"] #startScreen .pf-cta .m-btn--ghost{ background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.28); color:#fff; backdrop-filter:blur(12px); box-shadow:0 6px 18px rgba(0,0,0,.3); }
+
+  /* ---- cartoon ---- */
+  [data-skin="cartoon"] #startScreen .pf-scrim{ background:linear-gradient(90deg, rgba(20,15,25,.16), transparent 46%); }
+  [data-skin="cartoon"] #startScreen .pf-chips{ left:18px; right:auto; }
+  [data-skin="cartoon"] #startScreen .pf-brand{ max-width:min(48%,480px); }
+  [data-skin="cartoon"] #startScreen .brand__plane{ display:none; }
+  [data-skin="cartoon"] #startScreen .brand__word{ display:block; }
+  [data-skin="cartoon"] #startScreen .brand__w1,[data-skin="cartoon"] #startScreen .brand__w2{ display:block; }
+  [data-skin="cartoon"] #startScreen .brand__mark{ font-size:clamp(50px,9vw,80px); line-height:.9; color:#fffaf0;
+    text-shadow:5px 6px 0 #3a2a17, -2px 0 0 #3a2a17, 0 -2px 0 #3a2a17, 0 2px 0 #3a2a17, 2px 0 0 #3a2a17; }
+  [data-skin="cartoon"] #startScreen .brand__kicker{ color:#fffaf0; text-shadow:1.5px 1.5px 0 #3a2a17; }
+  [data-skin="cartoon"] #startScreen .brand__tag{ display:inline-flex; align-items:center; gap:10px;
+    padding:8px 14px; border-radius:999px; background:#fffaf0; border:2.5px solid #3a2a17;
+    box-shadow:0 3px 0 rgba(58,42,23,.3); color:#3a2a17; font-weight:800; white-space:nowrap; text-shadow:none; }
+  [data-skin="cartoon"] #startScreen .brand__tag-ic{ display:inline-flex; color:#ffce3a; filter:drop-shadow(1px 1px 0 #3a2a17); }
+  [data-skin="cartoon"] #startScreen .brand__tag svg{ width:18px; height:18px; }
+  [data-skin="cartoon"] #startScreen .brand__ver{ color:#fffaf0; text-shadow:1px 1px 0 rgba(58,42,23,.6); }
+  [data-skin="cartoon"] #startScreen .pf-cta{ right:8%; width:min(40%,286px); background:none; border:none;
+    box-shadow:none; padding:0; backdrop-filter:none; }
+  [data-skin="cartoon"] #startScreen .pf-cta .menu-col{ gap:14px; }
+  [data-skin="cartoon"] #startScreen .pf-cta .m-btn--primary{ border:3px solid #1f7d3e; box-shadow:0 5px 0 #1f7d3e; }
+  [data-skin="cartoon"] #startScreen .pf-cta .m-btn--ghost{ background:#fffaf0; color:#3a2a17;
+    border:3px solid #3a2a17; box-shadow:0 5px 0 rgba(58,42,23,.45); }
+
+  /* small landscape: keep the two side clusters from colliding */
+  @media (max-width:560px){
+    #startScreen .brand__mark{ font-size:40px; }
+    [data-skin="cartoon"] #startScreen .brand__mark{ font-size:clamp(40px,12vw,58px); }
+    #startScreen .pf-cta{ width:min(46%,260px); }
+  }
 </style>
 
 <div id="stage">
@@ -1116,39 +1200,43 @@
 
   <!-- ===== menu screens — PlaneFlow Design System (menu.css, data-skin) ===== -->
   <div class="overlay" id="startScreen">
-    <div class="screen screen--center">
-      <div class="start-wrap">
-        <div class="brand">
-          <div class="brand__kicker" data-i18n="start.kicker"></div>
-          <div class="brand__mark"><span class="mic" data-mic="star"></span> PLANEFLOW</div>
-          <div class="brand__tag" data-i18n="start.tagline"></div>
-          <div class="brand__ver"><span data-i18n="start.version"></span> <span id="ver"></span></div>
-          <h1 class="wm-fallback" data-i18n="app.name" hidden></h1>
-        </div>
-        <div class="panel" style="--panel-w:320px;padding:26px">
-          <div class="menu-col" style="width:100%">
-            <button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="startBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="start.play"></span></button>
-            <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="zenBtn"><span class="mic" data-mic="moon"></span><span class="m-btn__t" data-i18n="start.zen"></span></button>
-            <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="biomesBtn"><span class="mic" data-mic="tree"></span><span class="m-btn__t" data-i18n="menu.biomes"></span></button>
-          </div>
+    <div class="screen pf-main">
+      <!-- legibility scrim over the live canvas scene (per-skin strength) -->
+      <div class="pf-scrim"></div>
+      <!-- score chips -->
+      <div class="pf-chips">
+        <span class="chip chip--star"><span class="chip__ic"><span class="mic" data-mic="star"></span></span><span id="startStars">0</span><span class="muted" id="startStarsMax">/0</span></span>
+      </div>
+      <!-- brand block: kicker · wordmark · tagline · version -->
+      <div class="brand pf-brand">
+        <div class="brand__kicker" data-i18n="start.kicker"></div>
+        <div class="brand__mark"><span class="mic brand__plane" data-mic="plane"></span><span class="brand__word"><span class="brand__w1">PLANE</span><span class="brand__w2">FLOW</span></span></div>
+        <div class="brand__tag"><span class="mic brand__tag-ic" data-mic="plane"></span><span data-i18n="start.tagline"></span></div>
+        <div class="brand__ver"><span data-i18n="start.version"></span> <span id="ver"></span></div>
+        <h1 class="wm-fallback" data-i18n="app.name" hidden></h1>
+      </div>
+      <!-- primary CTA group (panel for neon; floats/row for cartoon/cozy via [data-skin]) -->
+      <div class="pf-cta panel">
+        <div class="menu-col">
+          <button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="startBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="start.play"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="zenBtn"><span class="mic" data-mic="moon"></span><span class="m-btn__t" data-i18n="start.zen"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="biomesBtn"><span class="mic" data-mic="tree"></span><span class="m-btn__t" data-i18n="menu.biomes"></span></button>
         </div>
       </div>
-      <div class="hud">
-        <div class="hud__br">
-          <button class="icon-btn" id="fsBtn" aria-label="Fullscreen"><span class="mic" data-mic="expand"></span></button>
-          <button class="icon-btn" id="medalsBtn" data-i18n-aria="medals.btn" style="color:var(--m-gold)"><span class="mic" data-mic="medal"></span></button>
-          <button class="icon-btn" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="mic" data-mic="gear"></span></button>
-          <button class="icon-btn icon-btn--flag" id="langFlagBtn" aria-label="Language"></button>
-        </div>
-        <div class="hud__bl">
-          <div class="corner-debug">
-            <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-haspopup="true" aria-expanded="false" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
-            <div class="corner-debug-pop hidden" id="debugPop">
-              <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
-              <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
-              <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
-            </div>
-          </div>
+      <!-- corner icon cluster: fullscreen · medals · settings · language -->
+      <div class="pf-corner">
+        <button class="icon-btn" id="fsBtn" aria-label="Fullscreen"><span class="mic" data-mic="expand"></span></button>
+        <button class="icon-btn" id="medalsBtn" data-i18n-aria="medals.btn" style="color:var(--m-gold)"><span class="mic" data-mic="medal"></span></button>
+        <button class="icon-btn" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="mic" data-mic="gear"></span></button>
+        <button class="icon-btn icon-btn--flag" id="langFlagBtn" aria-label="Language"></button>
+      </div>
+      <!-- dev debug (bottom-left, self-positioned) -->
+      <div class="corner-debug">
+        <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-haspopup="true" aria-expanded="false" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
+        <div class="corner-debug-pop hidden" id="debugPop">
+          <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
+          <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
+          <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
         </div>
       </div>
     </div>
@@ -1320,7 +1408,7 @@
   // атлас, рендереры, звуки) объявляется в SKIN_DEFS ниже — добавляя скин, правь
   // оба места. SKINS остаётся здесь, т.к. парсинг ?skin= идёт раньше токенов.
   const SKINS = ['cozy', 'neon', 'cartoon'];
-  let SKIN = 'cozy';
+  let SKIN = 'neon';   // скин по умолчанию (для нового игрока без сохранённого pf_skin)
   try {
     const _q = new URLSearchParams(location.search).get('skin');
     const _s = _q || localStorage.getItem('pf_skin');
@@ -2604,7 +2692,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.24';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.25';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -5237,6 +5325,14 @@
   function applyMenuIcons(root){ try{ (root||document).querySelectorAll('[data-mic]').forEach(el=>{ el.innerHTML=SVGIC(el.dataset.mic); }); }catch(e){} }
 
   function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','medalScreen','goalsScreen','confirmScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
+  // главный экран: чип звёзд = сумма заработанных / максимум по основным уровням
+  function updateStartChips(){
+    let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;
+    const v=document.getElementById('startStars'), mx=document.getElementById('startStarsMax');
+    if(v) v.textContent=fmtNum(got);
+    if(mx) mx.textContent='/'+fmtNum(LEVELS.length*3);
+  }
+  function showStart(){ hideAllScreens(); updateStartChips(); document.getElementById('startScreen').classList.remove('hidden'); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
   function startLevel(idx){ zen=false; buildLevel(idx); hideAllScreens(); reset(); }
   function startBonus(b){ if(!bonusUnlocked(b)) return; zen=false; buildBonus(b); hideAllScreens(); reset(); }
@@ -5408,12 +5504,12 @@
 
   document.getElementById('startBtn').onclick=showLevels;
   document.getElementById('zenBtn').onclick=startZen;
-  document.getElementById('backBtn').onclick=()=>{ hideAllScreens(); document.getElementById('startScreen').classList.remove('hidden'); };
+  document.getElementById('backBtn').onclick=()=>{ showStart(); };
   document.getElementById('againBtn').onclick=()=>{ document.getElementById('overScreen').classList.add('hidden'); reset(); };
   function backToSelect(){ if(curBiome) showBiomes(); else showLevels(); }
   document.getElementById('toLevelsBtn').onclick=backToSelect;
   document.getElementById('biomesBtn').onclick=showBiomes;
-  document.getElementById('biomesBackBtn').onclick=()=>{ hideAllScreens(); document.getElementById('startScreen').classList.remove('hidden'); };
+  document.getElementById('biomesBackBtn').onclick=()=>{ showStart(); };
   document.getElementById('nextBtn').onclick=()=>{ if(levelIdx+1<LEVELS.length) startLevel(levelIdx+1); };
   document.getElementById('shareBtn').onclick=shareShift;
 
@@ -5493,7 +5589,7 @@
   function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns(); renderSkinBtns(); hideAllScreens();
     document.getElementById('settingsScreen').classList.remove('hidden'); }
   document.getElementById('settingsMenuBtn').onclick=openSettings;
-  document.getElementById('settingsBackBtn').onclick=()=>{ hideAllScreens(); document.getElementById('startScreen').classList.remove('hidden'); };
+  document.getElementById('settingsBackBtn').onclick=()=>{ showStart(); };
 
   // «Проверить обновления»: дёргаем service worker по запросу (помимо
   // авто-проверки раз в 30 мин). Подтягивает новую версию приложения и
@@ -5842,9 +5938,8 @@
     document.getElementById('medalScreen').classList.remove('hidden'); }
   document.getElementById('medalsBtn').onclick=()=>openMedals('start');
   document.getElementById('medalsBackBtn').onclick=()=>{
-    hideAllScreens();
-    if(medalFrom==='levels') showLevels();
-    else document.getElementById('startScreen').classList.remove('hidden');
+    if(medalFrom==='levels'){ hideAllScreens(); showLevels(); }
+    else showStart();
   };
 
   loadGame();
@@ -5854,6 +5949,7 @@
   lang = save.lang || DEFAULT_LANG;   // сохранённый выбор > английский по умолчанию
   applyI18n();
   applyMenuIcons();                   // заполнить статические иконки меню (data-mic)
+  updateStartChips();                 // чип звёзд на главном экране
   Analytics.init();                   // шина метрик: userId/сессия/first_open + ловля крашей
   // мягкая самопроверка конфига при загрузке: в dev сразу видно в консоли, если
   // новая механика/уровень нарушили правила (жёстко это же проверяют тесты)
