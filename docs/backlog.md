@@ -39,6 +39,29 @@
 
 ---
 
+## Soft Launch & Metrics — следующие шаги
+
+> Каркас аналитики уже **в проде** (модуль `Analytics` в `index.html`; событийная
+> шина над скинами, console+буфер sink, consent-гейт, спящая монетизация). Детали и
+> таксономия — [`analytics.md`](analytics.md). Ниже — что осталось до реального
+> soft launch; продукт-овнер решает порядок.
+
+1. **Выбрать провайдера метрик** и подключить заменой `Analytics.sink` (Firebase/GA4
+   — готовые retention/funnel/ARPU; либо свой HTTP-эндпоинт + дашборды). Точки
+   `track()` не трогаются. **Сложность:** низкая–средняя.
+2. **Упаковка для сторов** — Android TWA, iOS Capacitor/WKWebView. От выбора зависят
+   нативный SDK провайдера, ATT-промпт и install referrer. **Сложность:** средняя.
+3. **Consent-флоу** — GDPR-баннер + iOS ATT; до согласия держать `setConsent(false)`.
+   Заполнить **Google Play Data Safety** и **App Store privacy labels** по факту полей
+   (userId анонимный). **Сложность:** средняя.
+4. **Монетизация → расконсервировать события.** Когда появятся IAP/реклама — звать
+   `Analytics.purchase({value,currency,sku})` / `Analytics.adWatched({...})` в точках
+   покупки/показа; это включит conversion и ARPDAU. **Сложность:** средняя.
+5. **Attribution** (install referrer / UTM) — добавить при выборе обёртки, чтобы видеть
+   источники трафика в soft launch. **Сложность:** низкая (в обёртке).
+
+---
+
 ## Техдолг / полировка (хвосты PWA и перекраски)
 - **Maskable-иконка приложения.** Сейчас в `manifest.json` для `purpose:"maskable"`
   стоит full-bleed `icon-512.png` — на круглых/squircle-масках Android обрезает края.
