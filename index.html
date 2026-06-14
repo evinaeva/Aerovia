@@ -125,13 +125,13 @@
   .opt input[type=checkbox]:checked{background:#5dca7a;border-color:#5dca7a}
   .opt input[type=checkbox]:checked::after{transform:translateX(22px);background:#fff}
   .subhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--phosphor);margin:18px 0 6px;border-bottom:1px solid rgba(191,233,255,.18);padding-bottom:4px}
-  /* угловые виджеты главного экрана: столбец справа внизу (настройки, медали, язык) и отладка (слева внизу) */
-  /* один столбец справа внизу: настройки → медали → флаг языка */
-  .corner-actions{position:absolute;right:16px;bottom:16px;z-index:7;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+  /* угловые виджеты главного экрана: флаг языка (справа внизу) и отладка (слева внизу) */
+  /* медали + настройки: ряд справа внизу, прямо над флагом языка */
+  .corner-actions{position:absolute;right:16px;bottom:62px;z-index:7;display:flex;gap:10px}
   .corner-actions .btn{width:56px;height:38px;padding:0;border-radius:9px;font-size:20px;
     background:var(--raised);box-shadow:0 6px 18px rgba(8,6,16,.5)}
   .corner-actions .bglyph{margin:0}
-  .corner-flag{z-index:7;width:56px;height:38px;padding:0;
+  .corner-flag{position:absolute;right:16px;bottom:16px;z-index:7;width:56px;height:38px;padding:0;
     border:1.5px solid var(--pur-line);border-radius:9px;background:var(--raised);overflow:hidden;cursor:pointer;
     box-shadow:0 6px 18px rgba(8,6,16,.5);transition:.15s}
   .corner-flag:hover{border-color:rgba(181,140,240,.7)}
@@ -392,12 +392,13 @@
         <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
       </div>
     </div>
-    <!-- угловой столбец справа внизу: настройки, медали, язык (по тапу флага язык переключается) -->
+    <!-- медали и настройки: ряд справа внизу, над переключателем языка -->
     <div class="corner-actions">
-      <button class="btn btn-quiet" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="bglyph">⚙</span></button>
       <button class="btn btn-quiet" id="medalsBtn" data-i18n-aria="medals.btn"><span class="bglyph">🏅</span></button>
-      <button class="corner-flag" id="langFlagBtn" aria-label="Language"></button>
+      <button class="btn btn-quiet" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="bglyph">⚙</span></button>
     </div>
+    <!-- язык: флаг в правом нижнем углу; по тапу язык переключается (по умолчанию английский) -->
+    <button class="corner-flag" id="langFlagBtn" aria-label="Language"></button>
   </div>
 
   <div class="overlay hidden" id="overScreen">
@@ -1274,6 +1275,8 @@
     // раздувает). Чисто визуально — на столкновения/хваты не влияет.
     PLANE_SKY_SCALE: 1.5, // масштаб борта в небе
     PLANE_GND_SCALE: 1.0, // масштаб на земле/поле
+    LAND_BUMP_MS: 280,    // длительность визуального «толчка» при касании, мс
+    TAKEOFF_HOLD: 0.5,    // крошечная остановка перед разгоном на взлёте, сек
     ARRIVE: 12,
     GRAB: 42,
     CRASH_DIST: 24,       // столкновение на поле
@@ -1817,6 +1820,9 @@
   // поэтому балансировать размер можно одной ручкой — растёт сразу всё. Сейчас крупнее
   // только в cartoon (×2, под референс); cozy/neon — прежний вид (×1).
   const SZ = () => (SKIN==='cartoon' ? 2 : 1);
+  // длина корпуса борта (наземная), px — геометрия касания/отрыва на ВПП. Совпадает
+  // с размером отрисовки drawPlaneBodyAt (62 · ui·0.5·SZ()) при наземном масштабе.
+  const PLANE_LEN = () => 31 * SZ() * ui;
   function layout(){
     const hud = HUD_H();
     const M = 12*ui;
@@ -1981,6 +1987,19 @@
       g.gain.exponentialRampToValueAtTime(0.16,t0+0.06); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
       src.connect(f); f.connect(g); g.connect(master); src.start(t0);
     }
+    function squeal(){ // короткий визг резины при касании: узкополосный шум, тон падает
+      if(!ensure()) return;
+      const t0=ac.currentTime, dur=0.16;
+      const buf=ac.createBuffer(1,Math.floor(ac.sampleRate*dur),ac.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++){ const e=i/d.length; d[i]=(Math.random()*2-1)*(1-e); }
+      const src=ac.createBufferSource(); src.buffer=buf;
+      const f=ac.createBiquadFilter(); f.type='bandpass'; f.Q.value=6;
+      f.frequency.setValueAtTime(1800,t0); f.frequency.exponentialRampToValueAtTime(640,t0+dur);
+      const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t0);
+      g.gain.exponentialRampToValueAtTime(0.20,t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+      src.connect(f); f.connect(g); g.connect(master); src.start(t0);
+    }
     const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); // случайный индекс ноты гаммы
     return {
       setEnabled(v){ enabled=v; },
@@ -1996,6 +2015,7 @@
       medal(){ tone(1046.5,0.12,'sine',0.24); tone(1568,0.22,'sine',0.22,0.10); },
       alarm(){ tone(880,0.06,'square',0.10); },                                 // терпение на исходе
       nearmiss(){ whoosh(); },                                                  // «уфф» — борта едва разошлись
+      screech(){ squeal(); },                                                   // визг резины — касание ВПП
     };
   })();
   const HAP = { // вибрация: Android — да, iOS веб — молча игнорирует (в обёртке будет плагин)
@@ -2315,10 +2335,21 @@
       drag.last=p;
     }
   }
+  // конец воздушной траектории, заведённой на открытую ВПП, притягиваем в центр полосы
+  // на полкорпуса от её правого (небесного) торца — посадка всегда по оси и в одну точку
+  function snapAirPathToRunway(pl){
+    if(pl.zone!=='air' || !pl.path.length) return;
+    const last = pl.path[pl.path.length-1];
+    for(const r of runways){
+      if(r.closed) continue;
+      if(rectHit(last.x, last.y, r)){ last.x = r.x + r.w - PLANE_LEN()*0.5; last.y = r.cy; break; }
+    }
+  }
   function up(){
     if(!drag) return;
     const pl=drag.plane;
     if(drag.drew){
+      snapAirPathToRunway(pl);             // посадочный створ — в центр ВПП
       pl.moving = pl.path.length>0;        // поехали по маршруту
       pl.exiting=false;
     } else {
@@ -2368,7 +2399,14 @@
 
   function land(pl, r){            // начать посадку на полосу r
     pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
-    pl.landing=true; pl.moving=true; pl.path=[];
+    pl.landing=true; pl.moving=true; pl.path=[]; pl.touched=false;
+  }
+  // момент касания (за корпус до полевого торца): толчок + дымок + визг резины.
+  // FX касания живут здесь, а не в startGround, — это и есть «приземление».
+  function touchdown(pl){
+    pl.touched=true; pl.y=pl.runway.cy; pl.bounceAt=nowT;
+    pulseFx(pl.x, pl.runway.cy, 'touchdown', 0.7);  // дымок из-под колёс
+    SND.screech(); HAP.tap();                        // визг резины
   }
   function startGround(pl){
     pl.landing=false; pl.moving=false; pl.zone='runway'; // стоит на полосе, ждёт руления
@@ -2376,8 +2414,7 @@
     pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult * (LV.calm || 1);
     pl.groundTime = pl.groundMax;
     pl.landedAt = gameTime;          // для экспресс-бонуса
-    pulseFx(pl.x, pl.y, 'touchdown', 0.6);  // дымок касания
-    SND.land(); HAP.tap();
+    if(!pl.touched) touchdown(pl);   // страховка, если докатился без отдельного касания
     ACH.onLand(pl);
   }
   // наземный таймаут: −50% оплаты (звук/вибро/всплывающий «−50%» — в одном месте)
@@ -2553,14 +2590,24 @@
       // ---- RUNWAY ----
       if(pl.zone==='runway'){
         if(pl.landing){
-          // докатываемся до полевого края, выравниваясь по оси полосы
+          // идём по оси полосы к полевому торцу; за корпус до него — касание (толчок +
+          // визг), дальше докатываемся уже на земле, не меняя размер
           const r=pl.runway;
           steer(pl, r.stopX, r.cy, K.SPEED_AIR*0.8, dt);
+          if(!pl.touched && pl.x <= r.stopX + PLANE_LEN()) touchdown(pl);
+          if(pl.touched) pl.y += (r.cy - pl.y) * Math.min(1, dt*8);   // держим по оси
           if(pl.x <= r.stopX+2){ pl.x=r.stopX; pl.y=r.cy; startGround(pl); }
           continue;
         }
         if(pl.takeoff){
           if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
+          // крошечная остановка на старте: выравниваемся по оси и замираем, как настоящие
+          // борта перед разгоном — затем плавно ускоряемся к небу, увеличиваясь
+          if(pl.holdT>0){
+            pl.holdT-=dt; turnTo(pl, 0, dt);
+            pl.y += (pl.runway.cy - pl.y) * Math.min(1, dt*8);
+            continue;
+          }
           steer(pl, pl.runway.exitX+200, pl.runway.cy, K.SPEED_TAKEOFF, dt);
           if(pl.x > W+30){ depart(pl); }
           continue;
@@ -2607,7 +2654,7 @@
             if(!r.closed && rectHit(pl.x,pl.y,r)){
               // выезд на ОТКРЫТУЮ полосу под взлёт (крушение — только при контакте на ВПП)
               pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
-              pl.takeoff=true; pl.moving=true; pl.path=[];
+              pl.takeoff=true; pl.moving=true; pl.path=[]; pl.holdT=K.TAKEOFF_HOLD;
               break;
             }
           }
@@ -2875,8 +2922,11 @@
     if(pl.zone==='air') return A;
     if(pl.zone==='runway' && pl.runway && (pl.landing || pl.takeoff)){
       const r=pl.runway;
-      const tr=Math.max(0, Math.min(1, (pl.x - r.stopX) / Math.max(1, r.exitX - r.stopX)));
-      return G + tr*(A-G);
+      const tdX = r.stopX + PLANE_LEN();   // точка касания/отрыва — корпус от полевого торца
+      const skyX = r.x + r.w;              // правый конец ВПП — небо
+      if(pl.x <= tdX) return G;            // наземный участок: катится/стоит, размер фиксирован
+      if(pl.x >= skyX) return A;
+      return G + (pl.x - tdX) / Math.max(1, skyX - tdX) * (A - G);
     }
     return G;   // field / bay / борт стоит на полосе
   }
@@ -3526,8 +3576,15 @@
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([4,5]); ctx.stroke(); ctx.restore();
     }
 
+    // короткий «толчок» при касании: корпус отскакивает вверх и оседает (затухающая дуга)
+    let by = pl.y;
+    if(pl.bounceAt){
+      const p=(nowT - pl.bounceAt)/K.LAND_BUMP_MS;
+      if(p>=0 && p<1) by -= Math.sin(Math.PI*p)*(1-p)*4*ui;
+      else pl.bounceAt=0;
+    }
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
-    else drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5*SZ()*vs, pl.vip, pl.emergency, pl.medical);
+    else drawPlaneBodyAt(pl.x, by, pl.ang, ui*0.5*SZ()*vs, pl.vip, pl.emergency, pl.medical);
 
     // пузырёк нужды над бортом
     if(pl.zone!=='bay'){
