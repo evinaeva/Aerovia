@@ -1,99 +1,104 @@
-# PlaneFlow — Level Pattern (slow difficulty ramp)
+# PlaneFlow — Level Pattern (intensity-based ramp)
 
 > The template for **every** campaign map. Level data lives in the `LEVELS` array in
-> `index.html`; this file explains the **schema** and the **difficulty curve** so new maps
-> stay consistent. See also [`progression.md`](progression.md) (stars) and
-> [`../../FAQ.md`](../../FAQ.md) (player rules).
+> `index.html`; this file explains the **schema**. The *shape* of the difficulty curve and
+> the design rationale live in [`difficulty_curve.md`](difficulty_curve.md). See also
+> [`progression.md`](progression.md) (stars) and [`../../FAQ.md`](../../FAQ.md) (player rules).
 
-The shape is modelled on the icon-driven reference goal cards: **level number + name → a
-one-line challenge → a tutorial hint → objectives and the star ladder as icons**
-(⏱ time · ✈ planes · 🔧 upgrades). The goal window is built by `goalRowsHTML()` and reads
-everything below from config + the `level.t/d/h.<n>` strings.
+The goal card shows: **level number + name → a one-line challenge → a tutorial hint →
+objectives and the star ladder as icons** (⏱ time · ✈ planes · 🔧 upgrades). The window is
+built by `goalRowsHTML()` and reads from config + the `level.t/d/h.<n>` strings.
 
 ---
 
 ## Objective schema
 
 ```js
-{ objective: {
-    metric : 'served' | 'upgrades',  // what we count (planes accepted / upgrades made)
-    stars  : [s1, s2, s3],           // graduated thresholds for 1★ / 2★ / 3★, ascending.
-                                     //   s1 = pass bar (unlocks next level), s3 = ceiling.
-                                     //   target is auto-derived = s3 (see normObjective()).
-    time   : 300,                    // optional: time limit in seconds (countdown at top)
-    race   : true,                   // optional: "serve as many as you can" — planes show ∞,
-                                     //   no spawn cap, the shift ends ONLY on time. Needs time.
-    upg    : [u1, u2, u3],           // optional (metric:'served' only): extra UPGRADE gate per
-                                     //   star — ★★/★★★ need both the count AND the upgrades.
+{ pace : 0.34,                        // REQUIRED 0..1 — intensity (arrival rate + concurrency).
+                                      //   The MAIN difficulty axis. Must NOT decrease across the
+                                      //   campaign. See difficulty_curve.md.
+  objective: {
+    metric : 'served' | 'upgrades',   // what we count (planes accepted / upgrades made)
+    stars  : [s1, s2, s3],            // graduated thresholds for 1★/2★/3★, ascending.
+                                      //   s1 = pass bar (unlocks next), s3 = ceiling = target.
+    time   : 300,                     // optional: time limit in seconds (countdown at top)
+    race   : true,                    // optional: "serve as many as you can" — planes show ∞,
+                                      //   shift ends ONLY on time. Needs time. (Supported; not
+                                      //   used in the current campaign.)
+    upg    : [u1, u2, u3],            // optional (metric:'served'): extra UPGRADE gate per star.
   },
   sides   : { top:{type,slots,open}, left:{…}, bottom:{…} },  // service bays per side
   runways : 3,
-  startMoney : 90,                   // optional, default K.START_MONEY (100)
-  events  : { vip, rush, medical, … },  // special flights / dynamics — see "Event ramp"
-  combo   : false,                   // optional, default true — disable the combo money bonus
-  express : false,                   // optional, default true — disable the express money bonus
+  startMoney : 90,                    // optional, default K.START_MONEY (100) — a tightening lever
+  events  : { vip, emergency, rush, medical, … },  // special flights — only from L5 (see below)
+  combo   : false,                    // optional, default true — disable the combo money bonus
+  express : false,                    // optional, default true — disable the express money bonus
 }
 ```
 
-Naming is data-driven, not stored in config: `level.t.<n>` (name), `level.d.<n>`
-(challenge line), `level.h.<n>` (tutorial hint). Missing `d`/`h` fall back to the plain
-objective sentence. The config validator (`validateLevels()`) enforces all the rules below
-and the test suite locks them in.
+Naming is data-driven: `level.t.<n>` (name), `level.d.<n>` (challenge), `level.h.<n>` (hint).
+`validateLevels()` enforces every rule below and the test suite locks it in.
 
 ---
 
-## The curve: one new idea per level
+## Difficulty rises through INTENSITY (`pace`), not volume
 
-Difficulty rises **one concept at a time**. Each level introduces a single mechanic on top
-of the previous, with the plane count creeping up. The first six levels are the
-**tutorial block** — clean mechanics, **no special events** — then events ramp in.
+The challenge axis is **how little the player rests between actions**, not how long the shift
+runs. The `pace` field (0..1) drives:
 
-### Tutorial block (L1–L6) — clean mechanics
+- **arrival rate** — base spawn interval from `K.PACE_IVL_SLOW` (~4.6 s at pace 0) to
+  `K.PACE_IVL_FAST` (~2.4 s at pace 1), plus a mild within-shift speed-up;
+- **concurrency** — planes allowed in the air at once, from `K.PACE_CAP_LOW` (4) to
+  `K.PACE_CAP_HIGH` (10).
 
-| L | Name | New idea (challenge) | metric | stars | extra |
-| - | --- | --- | --- | --- | --- |
-| 1 | Airport Control | Land & service planes | served | 6 / 7 / 8 | — |
-| 2 | Expanding | Open a second service bay | served | 8 / 10 / 12 | — |
-| 3 | Upgrades | Upgrade bays (cuts service time) | served | 12 / 14 / 16 | `upg` 0 / 2 / 4 |
-| 4 | Full House | Spend money to grow the apron | served | 16 / 18 / 20 | — |
-| 5 | Race the Clock | Serve as many as you can vs a timer | served | 16 / 18 / 20 | `time` 300, `race` |
-| 6 | First Wave | Hold a steady flow under a bigger load | served | 20 / 24 / 28 | — |
+`pace` must be **non-decreasing** across the campaign (validator). Plane counts (`stars`) grow
+only gently — they set shift length and the 3★ ceiling, not the core pressure.
 
-Pattern notes:
-- **Counts grow gently** (~+2–4 between the 1★ bars), and the **star spread per level** is
-  small (1–4) so 1★ is reachable and 3★ is a stretch.
-- **L3** is the only one with the `upg` gate — it *teaches* upgrades, so higher stars
-  require actually upgrading (✈ + 🔧, exactly like the reference card).
-- **L5** is the only `race` level — the timer is the pressure, planes are "∞".
-- Money is **left at the default** (no per-level `startMoney` in the tutorial block); the
-  economy lessons (L3 upgrade, L4 open new bays) work on the standard PlaneFlow scale
-  (`START_MONEY` 100, bay open/upgrade 100/80…). Note the **per-service payout is derived
-  from the map**, not fixed — see [`economy.md`](economy.md). You set `stars`/`sides`/`time`
-  and the economy follows; you don't hand-tune money.
+**Air patience is fixed at `K.AIR_BASE` = 30 s for every level** (specials shorten it by a
+fixed multiplier). It is NOT a per-level knob — see
+[`difficulty_curve.md`](difficulty_curve.md#воздушное-терпение--фиксированное-не-растёт-со-сложностью).
 
-### Event ramp (L7–L10) — specials on top of solid mechanics
+---
 
-Special flights debut **only after** the tutorial block (validator: nothing in L1–L6).
+## Clusters: introduce → consolidate (not one new idea every level)
 
-| L | Name | Debuts | metric | stars | events |
-| - | --- | --- | --- | --- | --- |
-| 7 | Special Guest | **VIP** | served | 18 / 20 / 22 | `vip` |
-| 8 | Rush Hour | **rush** (peak waves) | served | 20 / 22 / 24 | `vip rush` |
-| 9 | Tune-Up Crunch | upgrades under pressure | upgrades | 5 / 6 / 7 | `vip rush` (`time` 160) |
-| 10 | Dispatcher's Exam | **medical** (capstone: all at once) | served | 24 / 28 / 32 | `vip rush medical` |
+New mechanics arrive in **clusters**: introduce one or two (one per level), then a
+**consolidation level** that uses them all together — no new toy, just tighter. This keeps the
+mechanic set memorable. Specials debut **only from L5** (`CALM_LEVELS = 4`).
+
+| L | Name | pace | new idea / role | metric | stars | events |
+| - | --- | --- | --- | --- | --- | --- |
+| 1 | Airport Control | 0.00 | land · service · take off | served | 6 / 7 / 8 | — |
+| 2 | Open a Bay | 0.12 | open a bay (economy) | served | 8 / 10 / 12 | — |
+| 3 | Upgrades | 0.22 | upgrade (🔧 `upg` gate) | served | 10 / 12 / 14 | — |
+| 4 | Full House | 0.34 | **consolidation** of the block | served | 12 / 15 / 18 | — |
+| 5 | Special Guest | 0.44 | VIP | served | 14 / 16 / 18 | `vip` |
+| 6 | Mayday | 0.54 | low-fuel (land first) | served | 14 / 16 / 18 | `emergency` |
+| 7 | Priority Board | 0.64 | **consolidation** vip + emergency | served | 16 / 19 / 22 | `vip emergency` |
+| 8 | Rush Hour | 0.74 | rush waves | served | 18 / 21 / 24 | `vip rush` |
+| 9 | Medevac | 0.86 | medical (priority) | served | 18 / 21 / 24 | `vip medical` |
+| 10 | Dispatcher's Exam | 1.00 | **capstone** — all at once | served | 22 / 26 / 30 | `vip emergency rush medical` |
+
+Notes:
+- **L3** carries the only `upg` gate — it *teaches* upgrades, so ★★/★★★ need both planes **and**
+  upgrades (✈ + 🔧).
+- The per-service payout and start cash are **derived from the level** (`levelEconomy()`), not
+  hand-tuned — see [`economy.md`](economy.md). You set `pace`/`stars`/`sides`; money follows.
 
 ---
 
 ## How to design a new map
 
-1. **Pick the one new idea** the map teaches (or the one knob it turns up). Write it as the
-   `level.d.<n>` challenge and `level.h.<n>` hint.
-2. **Set `stars: [s1, s2, s3]`** ascending. Keep `s1` reachable (the pass bar) and the
-   spread modest. Continue the count from the previous map — don't jump.
-3. Choose the **flavour**: plain `served`, `race` + `time` (timed sprint, planes ∞), or
-   `upgrades`. Add an `upg` gate only when the map is *about* upgrading.
-4. **Tighten resources** sparingly via `startMoney` / fewer open `slots` instead of raw
-   count spikes.
-5. Introduce at most **one new event** per map, and only past the tutorial block.
-6. Run `npm test` — `validateLevels()` checks ascending stars, the `target=s3` invariant,
-   `race` needing `time`, the `upg` rules, and the "no events in L1–L6" boundary.
+1. **Think in clusters, not "new toy every level."** Introduce 1–2 mechanics one per level, then
+   a **consolidation** level using them together. Cap a big block with a capstone that combines
+   everything. Write the role as `level.d.<n>` / `level.h.<n>`.
+2. **Set `pace`** — continue upward from the previous map (step ~0.08–0.12); never decrease it.
+   This is your main difficulty dial.
+3. **Set `stars: [s1, s2, s3]`** ascending, growing the count *gently*; keep `s1` reachable and
+   the spread modest (3★ a stretch, not "mega-hard").
+4. **One new event per map, only from L5.** Tighten resources point-wise (`startMoney`, fewer
+   open `slots`) instead of spiking counts.
+5. **Never touch air patience** — it's the fixed `K.AIR_BASE` constant.
+6. Run `npm test` — `validateLevels()` checks ascending stars, `target=s3`, **`pace` present /
+   in [0,1] / non-decreasing**, the **no-events-before-L5** boundary, `race` needing `time`, the
+   `upg` rules, and the economy invariants.
