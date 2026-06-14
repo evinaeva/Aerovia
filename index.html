@@ -3644,6 +3644,62 @@
     }
   }
 
+  // Карточка выбранного борта в левом верхнем углу: очередь его потребностей
+  // (цепочка услуг) + оставшееся время терпения числом. Появляется только когда
+  // борт выбран — иначе угол остаётся пустым. Общая для всех скинов.
+  function drawPlaneCard(){
+    if(!(selected && !selected.dead)) return;
+    const hud=HUD_H();
+    const chain=selected.requests, n=chain.length;
+    const bw2=30*ui, gap2=16*ui, x0=14*ui, y0=hud+10*ui;
+    const pw=n*bw2+(n-1)*gap2+16*ui;
+    rr(x0,y0,pw,44*ui,9*ui); ctx.fillStyle='rgba(33,29,51,.72)'; ctx.fill();
+    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(x0,y0,pw,44*ui,9*ui); ctx.stroke();
+    const tag = selected.vip ? (t('hud.plane')+' · '+t('hud.vip'))
+              : selected.emergency ? (t('hud.plane')+' '+t('hud.sos'))
+              : selected.medical ? (t('hud.plane')+' · '+t('hud.med'))
+              : t('hud.plane');
+    ctx.fillStyle = selected.emergency?COL.life : selected.medical?COL.rose : hexa(COL.muted,.8);
+    ctx.font=`${7.5*ui}px ${MONO}`; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(tag, x0+8*ui, y0+8*ui);
+    // ── оставшееся терпение борта: число, цвет — по запасу (бирюза→янтарь→красный) ──
+    let prem=null, pmax=null;
+    if(selected.zone==='air'){ prem=selected.airTime; pmax=selected.airMax; }
+    else if(selected.zone!=='bay'){ prem=selected.groundTime; pmax=selected.groundMax; }
+    else if(selected.serveMax){ prem=selected.serveTime; pmax=selected.serveMax; }
+    if(prem!=null && isFinite(prem) && isFinite(pmax) && pmax>0){
+      const pf=Math.max(0,Math.min(1,prem/pmax));
+      const pcol = selected.emergency ? COL.life : (pf>0.5?COL.teal:pf>0.25?COL.amber:COL.life);
+      ctx.textAlign='right'; ctx.fillStyle=pcol; ctx.font=`700 ${10*ui}px ${MONO}`;
+      ctx.fillText(fmtTime(Math.max(0,prem)), x0+pw-8*ui, y0+8*ui);
+    }
+    for(let i=0;i<n;i++){
+      const ty=chain[i];
+      // бонус: цвет/иконки шага — по виду гусеницы (цветок → бабочка), а не услуга
+      const c = (LV.bonus && ty!=='depart') ? BSP[selected.species||0].petal
+              : (LV.bonus && ty==='depart') ? BSP[selected.species||0].wing
+              : SVC[ty].color;
+      const bx=x0+8*ui+i*(bw2+gap2), bcy=y0+26*ui;
+      if(i>0){
+        ctx.strokeStyle=hexa(COL.muted,.4); ctx.lineWidth=2; ctx.setLineDash([3,4]);
+        ctx.beginPath(); ctx.moveTo(bx-gap2+3*ui,bcy); ctx.lineTo(bx-3*ui,bcy); ctx.stroke(); ctx.setLineDash([]);
+      }
+      const active = i===selected.reqIndex;
+      ctx.globalAlpha = i<selected.reqIndex ? 0.3 : 1;
+      rr(bx,y0+15*ui,bw2,22*ui,6*ui);
+      ctx.fillStyle=active?hexa(c,.16):'rgba(127,155,176,.05)'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(c,active?.9:.4);
+      rr(bx,y0+15*ui,bw2,22*ui,6*ui); ctx.stroke();
+      if(LV.bonus){
+        const sp=selected.species||0;
+        if(ty==='depart') drawButterfly(bx+bw2/2, bcy, 0, ui*0.42, sp);   // финал — бабочка
+        else drawFlower(bx+bw2/2, bcy, 9*ui, c);                          // шаг — цветок своего цвета
+      } else if(!(COZY && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 28*ui, 28*ui)))
+        drawIcon(ty, bx+bw2/2, bcy, 12*ui, c, '#211d33');
+      ctx.globalAlpha=1;
+    }
+  }
+
   // Мультяшный HUD: отдельные кремовые пилюли (жизни · таймер · монеты · борта)
   // вдоль верха + кнопка паузы справа — крупные иконки-спрайты, как на референсе.
   function drawCartoonHUD(){
@@ -3669,14 +3725,18 @@
     }
     let x=12*ui; const g=8*ui;
     x = pill(x, 'heart', '❤', '#ff4d5e', String(Math.max(0,lives)), '#c43a48') + g;
-    const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
-    const urgent = LV.objective.time && tShown<=10;
-    x = pill(x, 'clock', '⏱', '#3a2a17', fmtTime(tShown), urgent?'#e0392f':'#3a2a17') + g;
     x = pill(x, 'coin', '🪙', '#caa53a', fmtMoney(money), money<0?'#e0392f':'#5e4a16') + g;
     const endless = zen || LV.objective.race;
     const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
     const ptxt = endless ? fmtNum(served) : (fmtNum(mv)+'/'+fmtNum(LV.objective.target));
     x = pill(x, 'plane', '✈', '#2f6fb0', ptxt, '#23415e') + g;
+    // таймер раунда — в правый верхний угол, перед кнопкой паузы
+    const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
+    const urgent = LV.objective.time && tShown<=10;
+    const ttxt = fmtTime(tShown);
+    ctx.font=`800 ${15*ui}px ${MONO}`;
+    const tpw = Math.round(11*ui + ic + 7*ui + ctx.measureText(ttxt).width + 14*ui);
+    pill(Math.round(pauseBtn.x - g - tpw), 'clock', '⏱', '#3a2a17', ttxt, urgent?'#e0392f':'#3a2a17');
     // пауза — справа
     const pp=pauseBtn, pcx=pp.x+pp.w/2, pcy=pp.y+pp.h/2, ps=Math.max(pp.w,pp.h,PH);
     if(!(COZY && !paused && SPRITES.blitC('pause-btn', pcx, pcy, ps, ps))){
@@ -3686,6 +3746,7 @@
       if(!paused){ ctx.fillRect(pcx-6*ui,pcy-6*ui,4*ui,12*ui); ctx.fillRect(pcx+2*ui,pcy-6*ui,4*ui,12*ui); }
       else { ctx.beginPath(); ctx.moveTo(pcx-5*ui,pcy-6*ui); ctx.lineTo(pcx+7*ui,pcy); ctx.lineTo(pcx-5*ui,pcy+6*ui); ctx.closePath(); ctx.fill(); }
     }
+    drawPlaneCard();   // левый верхний угол: очередь потребностей + терпение
   }
 
   function drawHUD(){
@@ -3753,46 +3814,8 @@
       }
     }
 
-    // цепочка операций выбранного борта — карточка под HUD
-    if(selected && !selected.dead){
-      const chain=selected.requests, n=chain.length;
-      const bw2=30*ui, gap2=16*ui, x0=14*ui, y0=hud+10*ui;
-      const pw=n*bw2+(n-1)*gap2+16*ui;
-      rr(x0,y0,pw,44*ui,9*ui); ctx.fillStyle='rgba(33,29,51,.72)'; ctx.fill();
-      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(x0,y0,pw,44*ui,9*ui); ctx.stroke();
-      const tag = selected.vip ? (t('hud.plane')+' · '+t('hud.vip'))
-                : selected.emergency ? (t('hud.plane')+' '+t('hud.sos'))
-                : selected.medical ? (t('hud.plane')+' · '+t('hud.med'))
-                : t('hud.plane');
-      ctx.fillStyle = selected.emergency?COL.life : selected.medical?COL.rose : hexa(COL.muted,.8);
-      ctx.font=`${7.5*ui}px ${MONO}`; ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillText(tag, x0+8*ui, y0+8*ui);
-      for(let i=0;i<n;i++){
-        const ty=chain[i];
-        // бонус: цвет/иконки шага — по виду гусеницы (цветок → бабочка), а не услуга
-        const c = (LV.bonus && ty!=='depart') ? BSP[selected.species||0].petal
-                : (LV.bonus && ty==='depart') ? BSP[selected.species||0].wing
-                : SVC[ty].color;
-        const bx=x0+8*ui+i*(bw2+gap2), bcy=y0+26*ui;
-        if(i>0){
-          ctx.strokeStyle=hexa(COL.muted,.4); ctx.lineWidth=2; ctx.setLineDash([3,4]);
-          ctx.beginPath(); ctx.moveTo(bx-gap2+3*ui,bcy); ctx.lineTo(bx-3*ui,bcy); ctx.stroke(); ctx.setLineDash([]);
-        }
-        const active = i===selected.reqIndex;
-        ctx.globalAlpha = i<selected.reqIndex ? 0.3 : 1;
-        rr(bx,y0+15*ui,bw2,22*ui,6*ui);
-        ctx.fillStyle=active?hexa(c,.16):'rgba(127,155,176,.05)'; ctx.fill();
-        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(c,active?.9:.4);
-        rr(bx,y0+15*ui,bw2,22*ui,6*ui); ctx.stroke();
-        if(LV.bonus){
-          const sp=selected.species||0;
-          if(ty==='depart') drawButterfly(bx+bw2/2, bcy, 0, ui*0.42, sp);   // финал — бабочка
-          else drawFlower(bx+bw2/2, bcy, 9*ui, c);                          // шаг — цветок своего цвета
-        } else if(!(COZY && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 28*ui, 28*ui)))
-          drawIcon(ty, bx+bw2/2, bcy, 12*ui, c, '#211d33');
-        ctx.globalAlpha=1;
-      }
-    }
+    // очередь потребностей выбранного борта + его терпение — карточка слева сверху
+    drawPlaneCard();
   }
 
   function fmtTime(s){ const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(Math.floor(s%60)).padStart(2,'0'); return m+':'+ss; }
