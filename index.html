@@ -1012,8 +1012,9 @@
 .biome__desc { font-size: 12.5px; color: var(--m-text-muted); margin-top: 6px; line-height: 1.45;
   flex: 1; text-wrap: pretty; }
 .biome__foot { margin-top: 12px; display: flex; align-items: center; gap: 6px; }
-.biome__stars { display: flex; gap: 2px; color: var(--m-gold); }
+.biome__stars { display: flex; align-items: center; gap: 2px; color: var(--m-gold); font-size: 13.5px; font-weight: 600; }
 .biome__stars svg { width: 15px; height: 15px; }
+.biome__best { color: var(--m-text-muted); margin: 0 3px 0 5px; font-size: 12px; font-weight: 500; }
 .biome__lock { display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
   font-weight: 800; color: var(--m-coin); }
 .biome__lock svg { width: 14px; height: 14px; }
@@ -1219,9 +1220,7 @@
       <div class="pf-cta panel">
         <div class="menu-col">
           <button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="startBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="start.play"></span></button>
-          <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="zenBtn"><span class="mic" data-mic="moon"></span><span class="m-btn__t" data-i18n="start.zen"></span></button>
           <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="survivalBtn"><span class="mic" data-mic="inf"></span><span class="m-btn__t" data-i18n="start.survival"></span></button>
-          <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="biomesBtn"><span class="mic" data-mic="tree"></span><span class="m-btn__t" data-i18n="menu.biomes"></span></button>
         </div>
       </div>
       <!-- corner icon cluster: fullscreen · medals · settings · language -->
@@ -1795,11 +1794,12 @@
       'pwa.updateTitle':'A new version is ready', 'pwa.updateBtn':'Update',
       'start.kicker':'Night controller · Airfield',
       'start.tagline':'Guide the planes with your finger. Calm night flow.',
-      'start.play':'Play', 'start.zen':'Zen mode', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
+      'start.play':'Play', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
       'over.next':'Next level', 'over.again':'Play again', 'over.toLevels':'Level select',
       'over.passed':'Level complete', 'over.failed':'Shift over',
       'over.share':'Share image',
       'over.result':'{reason} {desc}. Result: {n} {unit}, bank {money}.',
+      'over.survival':'Survival over', 'over.survResult':'You held the line! Landed {n}. Best {best}. Bank {money}.', 'over.survRecord':'New record! Landed {n} — your best run. Bank {money}.',
       'graph.title':'Shift over time', 'graph.load':'Load', 'graph.served':'Served',
       'unit.planes':['plane','planes'], 'unit.upgrades':['upgrade','upgrades'],
       'levels.kicker':'Shift select', 'levels.title':'Levels', 'levels.back':'Back', 'levels.reset':'Reset progress',
@@ -1849,7 +1849,6 @@
       'pause.settings':'Settings', 'pause.menu':'Main menu', 'pause.goals':'Goals', 'pause.objective':'Objective',
       'goals.kicker':'Shift goals', 'goals.ok':'Got it',
       'goals.star2':'No ground penalties', 'goals.star3':'No crashes',
-      'goals.zen':'Zen mode — endless flow. No lives, no timeouts, no stars: just guide the planes.',
       'settings.title':'Settings', 'settings.back':'Back', 'settings.language':'Language',
       'settings.skin':'Skin', 'settings.skinCozy':'Cozy', 'settings.skinNeon':'Neon', 'settings.skinCartoon':'Cartoon',
       'settings.sound':'Sound', 'settings.vibro':'Vibration (phone)',
@@ -1864,8 +1863,6 @@
       'tut.done':'Nice — you’ve got the hang of it!',
       'log.empty':'no losses yet',
       'svc.repair':'Repair', 'svc.fuel':'Fuel', 'svc.board':'Boarding', 'svc.deice':'De-ice', 'svc.depart':'Departure',
-      'mode.zen':'Zen',
-      'toast.zenStart':'Zen mode: just guide the planes',
       'toast.goal':'Goal: {desc}',
       'toast.express':'EXPRESS +{money}',
       'toast.rush':'Rush hour!',
@@ -1885,8 +1882,7 @@
       'canvas.terminal':'TERMINAL', 'canvas.garden':'GREENHOUSE', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- biomes / maps + forest biome ---
-      'menu.biomes':'Maps',
-      'biomes.kicker':'Airport maps', 'biomes.title':'Biomes', 'biomes.back':'Back', 'biomes.soon':'Coming soon',
+      'biomes.kicker':'Airport maps', 'biomes.title':'Survival', 'biomes.back':'Back', 'biomes.soon':'Coming soon', 'biomes.best':'Best',
       'biome.forest.name':'Forest Airport', 'biome.forest.tag':'Wind, wildlife and trees falling on the strip.',
       'biome.forest.hint':'Keep the runways clear — tap a hazard to send the right crew.',
       'biome.arctic.name':'Arctic Airport', 'biome.arctic.tag':'De-icing, snow and runway ice.',
@@ -1943,7 +1939,7 @@
       'ach.perfectionist.t':'Perfectionist', 'ach.perfectionist.d':'10 perfect shifts in a row.',
       'ach.daily7.t':'Perfect Week', 'ach.daily7.d':'Complete the Daily Challenge 7 days in a row.',
       'ach.sleepless.t':'Sleepless Tower', 'ach.sleepless.d':'Last 60 minutes in a single run.',
-      'ach.zen500.t':'Total Zen', 'ach.zen500.d':'Land 500 planes in one session.',
+      'ach.surv500.t':'Survivor', 'ach.surv500.d':'Land 500 planes in one survival run.',
       // --- Survival + лидерборды + ранг-медали (каркас) ---
       'mode.survival':'Survival',
       'start.survival':'Survival',
@@ -1982,11 +1978,12 @@
       'pwa.updateTitle':'Доступна новая версия', 'pwa.updateBtn':'Обновить',
       'start.kicker':'Ночной диспетчер · Аэродром',
       'start.tagline':'Веди борта пальцем. Спокойный ночной поток.',
-      'start.play':'Играть', 'start.zen':'Zen-режим', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
+      'start.play':'Играть', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
       'over.next':'Следующий уровень', 'over.again':'Ещё раз', 'over.toLevels':'К уровням',
       'over.passed':'Уровень пройден', 'over.failed':'Смена закрыта',
       'over.share':'Поделиться',
       'over.result':'{reason} {desc}. Результат: {n} {unit}, касса {money}.',
+      'over.survival':'Выживание окончено', 'over.survResult':'Ты продержался! Посажено {n}. Рекорд {best}. Касса {money}.', 'over.survRecord':'Новый рекорд! Посажено {n} — лучший заезд. Касса {money}.',
       'graph.title':'Смена во времени', 'graph.load':'Нагрузка', 'graph.served':'Принято',
       'unit.planes':['борт','борта','бортов'], 'unit.upgrades':['улучшение','улучшения','улучшений'],
       'levels.kicker':'Выбор смены', 'levels.title':'Уровни', 'levels.back':'Назад', 'levels.reset':'Сбросить прогресс',
@@ -2036,7 +2033,6 @@
       'pause.settings':'Настройки', 'pause.menu':'В главное меню', 'pause.goals':'Цели', 'pause.objective':'Цель',
       'goals.kicker':'Цели смены', 'goals.ok':'Понятно',
       'goals.star2':'Без наземных штрафов', 'goals.star3':'Без крушений',
-      'goals.zen':'Zen-режим — бесконечный поток. Без жизней, таймаутов и звёзд: просто веди борта.',
       'settings.title':'Настройки', 'settings.back':'Назад', 'settings.language':'Язык',
       'settings.skin':'Стиль', 'settings.skinCozy':'Уютный', 'settings.skinNeon':'Неон', 'settings.skinCartoon':'Мультяшный',
       'settings.sound':'Звук', 'settings.vibro':'Вибрация (телефон)',
@@ -2051,8 +2047,6 @@
       'tut.done':'Отлично — дальше сам!',
       'log.empty':'потерь пока нет',
       'svc.repair':'Ремонт', 'svc.fuel':'Топливо', 'svc.board':'Посадка', 'svc.deice':'Антилёд', 'svc.depart':'Вылет',
-      'mode.zen':'Zen',
-      'toast.zenStart':'Zen-режим: просто веди борта',
       'toast.goal':'Цель: {desc}',
       'toast.express':'ЭКСПРЕСС +{money}',
       'toast.rush':'Час пик!',
@@ -2072,8 +2066,7 @@
       'canvas.terminal':'ТЕРМИНАЛ', 'canvas.garden':'ТЕПЛИЦА', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- биомы / карты + лесной биом ---
-      'menu.biomes':'Карты',
-      'biomes.kicker':'Карты аэропортов', 'biomes.title':'Биомы', 'biomes.back':'Назад', 'biomes.soon':'Скоро',
+      'biomes.kicker':'Карты аэропортов', 'biomes.title':'Выживание', 'biomes.back':'Назад', 'biomes.soon':'Скоро', 'biomes.best':'Рекорд',
       'biome.forest.name':'Лесной аэропорт', 'biome.forest.tag':'Ветер, звери и падающие на полосу деревья.',
       'biome.forest.hint':'Держи полосы свободными — тапни по помехе, чтобы выслать нужную бригаду.',
       'biome.arctic.name':'Арктический аэропорт', 'biome.arctic.tag':'Обледенение, снег и лёд на полосе.',
@@ -2130,7 +2123,7 @@
       'ach.perfectionist.t':'Перфекционист', 'ach.perfectionist.d':'10 идеальных смен подряд.',
       'ach.daily7.t':'Идеальная неделя', 'ach.daily7.d':'Пройди Daily Challenge 7 дней подряд.',
       'ach.sleepless.t':'Бессонная вышка', 'ach.sleepless.d':'Продержись 60 минут за один заход.',
-      'ach.zen500.t':'Абсолютный дзен', 'ach.zen500.d':'Посади 500 бортов за один сеанс.',
+      'ach.surv500.t':'Выживший', 'ach.surv500.d':'Посади 500 бортов за один заезд выживания.',
       // --- Survival + лидерборды + ранг-медали (каркас) ---
       'mode.survival':'Survival',
       'start.survival':'Survival',
@@ -2273,8 +2266,9 @@
     SPAWN_DECAY: 0.04,    // на сколько укорачивается интервал за каждый принятый борт
     PACE_CAP_LOW: 4,      // лимит одновременных бортов при pace=0
     PACE_CAP_HIGH: 10,    // лимит одновременных бортов при pace=1
-    PACE_DEFAULT: 0.25,   // pace для не-кампании (Zen/биом/бонус) — спокойный фон
-    MAX_PLANES: 10,       // жёсткий потолок одновременных бортов (Zen/биом/бонус)
+    PACE_DEFAULT: 0.25,   // pace для не-кампании (биом/бонус) — спокойный фон
+    MAX_PLANES: 10,       // жёсткий потолок одновременных бортов (биом/бонус)
+    SURV_RAMP_SECS: 300,  // Survival: за сколько сек стартовый темп карты (level.pace) выходит на максимум (1.0)
     START_MONEY: 100,
     BAY_OPEN_COST: 100,
     BAY_UP_COST: [80,160,320], // апгрейд до ур.1/2/3
@@ -2507,6 +2501,15 @@
   }
   // лимит одновременных бортов в небе от темпа: pace 0 → CAP_LOW, pace 1 → CAP_HIGH.
   function paceCap(pace){ return Math.round(K.PACE_CAP_LOW + (K.PACE_CAP_HIGH - K.PACE_CAP_LOW) * pace); }
+  // SURVIVAL: темп нарастает со временем заезда от стартового (level.pace, иначе спокойный
+  // дефолт) до 1.0 за SURV_RAMP_SECS (или level.survRamp). Чем дольше держишься — тем плотнее
+  // поток и больше бортов в небе разом: это и есть растущая «сложность выживания» карты.
+  function survivalPace(){
+    const start = (LV && LV.pace!=null) ? levelPace(LV) : K.PACE_DEFAULT;
+    const ramp  = (LV && LV.survRamp) || K.SURV_RAMP_SECS;
+    const k = Math.max(0, Math.min(1, gameTime / ramp));
+    return Math.min(1, start + (1 - start) * k);
+  }
   // воздушное терпение борта (сек): ФИКС. окно K.AIR_BASE, спецборты урезают множителем;
   // от уровня/темпа НЕ зависит (только спец-тип и calm-бонус спокойного мира).
   function airPatience(flags, calm){
@@ -2585,11 +2588,11 @@
     return o.time ? t('obj.servedTimed', params) : t('obj.served', params);
   }
   // какие события активны на текущем уровне. Кампания — по конфигу уровня
-  // (LV.events). Zen и биом-карты — все спецборты включены, а динамические события
+  // (LV.events). Биом-карты (Survival) — все спецборты включены, а динамические события
   // для них настраиваются отдельно в reset() (у леса — свои помехи вместо ветра/тумана).
   function levelEvents(){
-    return (zen || LV.biome) ? { vip:true, emergency:true, medical:true, rush:false, fog:false, wind:false }
-                             : (LV.events || {});
+    return LV.biome ? { vip:true, emergency:true, medical:true, rush:false, fog:false, wind:false }
+                    : (LV.events || {});
   }
   // имя уровня кампании: t('level.t.<n>') если задано, иначе общий «Уровень N»
   function levelName(idx){
@@ -2777,8 +2780,6 @@
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
   function currentLevelName(){
-    if(survival) return t('mode.survival');
-    if(zen) return t('mode.zen');
     if(LV.bonus) return curBonus ? bonusName(curBonus) : t('bonus.name', {n:''});
     if(LV.biome) return t('biome.'+LV.biome+'.name');
     return levelName();      // кампания: красивое имя уровня (level.t.<n>) с фолбэком
@@ -2789,11 +2790,10 @@
   let fogUntil = 0, nextFog = 0;                      // туман
   let weather = 'clear', weatherUntil = 0, nextWeather = 0; // погода: clear|rain|snow
   let dayPhase = 0, nightAmount = 0;                  // «часы» суток (логика; рендер читает)
-  let zen = false;                                    // режим без проигрыша
-  let survival = false;                               // survival: режим с условием смерти, счёт за заход → в глобальный рейтинг
-  // единый источник истины о текущем режиме (логика, не контент): survival/zen/biome/bonus/campaign.
+  let survival = false;                               // survival (на картах): режим с условием смерти, счёт за заход → в глобальный рейтинг
+  // единый источник истины о текущем режиме (логика, не контент): survival/biome/bonus/campaign.
   // Раньше режим вычислялся инлайн-тернарником в нескольких местах — теперь одна функция (см. CLAUDE.md).
-  function currentMode(){ return survival ? 'survival' : (zen ? 'zen' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign'))); }
+  function currentMode(){ return survival ? 'survival' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')); }
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
@@ -3336,16 +3336,16 @@
     rushUntil=0; windUntil=0; fogUntil=0;
     // атмосфера: «часы» суток идут всегда; погода — опциональный движок (флаг weather)
     dayPhase=0; nightAmount=0; weather='clear'; weatherUntil=0;
-    nextWeather = (!zen && LV.weather) ? K.WEATHER_PERIOD : Infinity;
+    nextWeather = LV.weather ? K.WEATHER_PERIOD : Infinity;
     hazards=[]; crews=[]; hazardSeq=0;
     const forest = LV.biome==='forest';
     if(LV.biome){
-      // биом-карты сохраняют исходное поведение динамических событий; у леса — свои
-      // помехи на полосах вместо «ветра/тумана»
-      nextRush = zen?Infinity:K.RUSH_PERIOD;
-      nextWind = (zen||forest||K.WEATHER_EVENTS_OFF)?Infinity:K.WIND_PERIOD;
-      nextFog  = (zen||forest||K.WEATHER_EVENTS_OFF)?Infinity:K.FOG_PERIOD;
-      nextHazard = (zen||!forest)?Infinity:FOR.SPAWN_FIRST;
+      // биом-карты (Survival) сохраняют динамику час-пика; у леса — свои помехи на
+      // полосах вместо «ветра/тумана»
+      nextRush = K.RUSH_PERIOD;
+      nextWind = (forest||K.WEATHER_EVENTS_OFF)?Infinity:K.WIND_PERIOD;
+      nextFog  = (forest||K.WEATHER_EVENTS_OFF)?Infinity:K.FOG_PERIOD;
+      nextHazard = forest?FOR.SPAWN_FIRST:Infinity;
     } else {
       // кампания: динамические события включаются только если разрешены уровнем
       const evs = levelEvents();
@@ -3355,12 +3355,12 @@
       nextHazard = Infinity;
     }
     ACH.onLevelStart();
-    // тихий туториал «покажи и дай сделать»: только при первом запуске и не в Zen —
+    // тихий туториал «покажи и дай сделать»: только в кампании при первом запуске —
     // первый борт ведём за руку (подсветка + подсказка), без стены текста
-    tut = (!zen && !save.tutorialDone && !LV.biome && !LV.bonus) ? {step:'land', plane:null} : null;
+    tut = (!save.tutorialDone && !LV.biome && !LV.bonus) ? {step:'land', plane:null} : null;
     Analytics.track('level_start', {
       level: levelKey,
-      mode: zen ? 'zen' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')),
+      mode: currentMode(),
       objective: LV.objective && LV.objective.metric,
       target: LV.objective && LV.objective.target,
       startMoney: money,
@@ -3442,8 +3442,8 @@
     });
     // в туториале первый прилетевший борт становится «учебным» — его и ведём
     if(tut && !tut.plane) tut.plane = planes[planes.length-1];
-    // анонс мини-события (срочные борта «ломают рутину»); не на старте/в Zen/в туториале
-    if(gameTime>0 && !zen && !tut){
+    // анонс мини-события (срочные борта «ломают рутину»); не на старте/в туториале
+    if(gameTime>0 && !tut){
       if(emergency) toast={text:t('toast.emergency'), t:0, good:false};
       else if(medical) toast={text:t('toast.medical'), t:0, good:false};
     }
@@ -3521,7 +3521,7 @@
     if(h.runway.hazard===h.id) h.runway.hazard=null;
     h.runway.closed = false;
     hazards = hazards.filter(x=>x!==h);
-    if(rewarded && !zen){
+    if(rewarded){
       money += FOR.REWARD;
       addFloat(h.x, h.y-18*ui, '+'+fmtMoney(FOR.REWARD), COL.coin);
       SND.served(); HAP.ok();
@@ -3826,7 +3826,11 @@
     return s;
   }
   function recordResult(){
-    if(zen) return;                  // Zen не влияет на звёзды/прогресс
+    // Survival: только личный рекорд карты (обслуженные борта); звёзды/прогресс кампании не трогаем
+    if(survival){
+      if(save.best[levelKey]==null || served>save.best[levelKey]) save.best[levelKey]=served;
+      saveGame(); return;
+    }
     const stars=computeStars();
     if(save.best[levelKey]==null || served>save.best[levelKey]) save.best[levelKey]=served;
     if(save.stars[levelKey]==null || stars>save.stars[levelKey]) save.stars[levelKey]=stars;
@@ -3871,7 +3875,7 @@
   }
 
   function update(dt){
-    // динамические события (в Zen отключены: next* = Infinity)
+    // динамические события (на чистых картах отключены: next* = Infinity)
     if(gameTime>=nextRush){ rushUntil=gameTime+K.RUSH_DUR; nextRush=gameTime+K.RUSH_PERIOD; toast={text:t('toast.rush'), t:0, good:false}; }
     if(gameTime>=nextWind){
       const open=runways.filter(r=>!r.closed);
@@ -3896,18 +3900,19 @@
     // spawn — ТЕМП уровня (pace) задаёт и частоту прилёта, и лимит одновременных бортов:
     // чем выше pace, тем короче интервал и больше бортов в небе разом → меньше «простоя».
     spawnTimer-=dt;
-    const campaign = !zen && !LV.biome && !LV.bonus;
-    const pace = campaign ? levelPace(LV) : K.PACE_DEFAULT;
+    const campaign = !LV.biome && !LV.bonus;
+    // survival: темп (и потолок неба) растёт со временем; кампания — фикс. pace уровня; бонус — спокойный фон
+    const pace = campaign ? levelPace(LV) : (survival ? survivalPace() : K.PACE_DEFAULT);
     const interval = paceInterval(pace, served, rush);
     // в туториале держим в небе только один борт — спокойно ведём его за руку
-    const cap = tut ? 1 : (campaign ? paceCap(pace) : K.MAX_PLANES);
-    // на уровнях «посадить N» всего прилетает ровно N бортов (не в Zen и не на апгрейды)
-    const spawnCap = (!zen && LV.objective.metric==='served' && !LV.objective.race) ? LV.objective.target : Infinity;
+    const cap = tut ? 1 : ((campaign || survival) ? paceCap(pace) : K.MAX_PLANES);
+    // кампания «посадить N»: всего прилетает ровно N бортов. Survival/race — поток бесконечный.
+    const spawnCap = (!survival && LV.objective.metric==='served' && !LV.objective.race) ? LV.objective.target : Infinity;
     if(spawnTimer<=0 && planes.length<cap && spawnedTotal<spawnCap){ spawnPlane(); spawnTimer=interval; }
 
     updateTutorial();
     ACH.onTick(dt);
-    if(LV.biome==='forest' && !zen) updateForest(dt);
+    if(LV.biome==='forest') updateForest(dt);
 
     for(const pl of planes){
       if(pl.dead) continue;
@@ -3923,7 +3928,7 @@
             else continue;
           }
         }
-        if(!zen){ pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; } }
+        pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; }
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_AIR, dt);
         }
@@ -3954,7 +3959,7 @@
           continue;
         }
         if(pl.takeoff){
-          if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
+          pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl);
           // крошечная остановка на старте: выравниваемся по оси и замираем, как настоящие
           // борта перед разгоном — затем плавно ускоряемся к небу, увеличиваясь
           if(pl.holdT>0){
@@ -3967,7 +3972,7 @@
           continue;
         }
         // стоит на полосе, ждёт руления к боксу
-        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
+        pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl);
         if(pl.moving && pl.path.length){
           followPath(pl, taxiSpeed, dt);
           if(!rectHit(pl.x,pl.y,pl.runway)){          // съехал с полосы на поле
@@ -3981,7 +3986,7 @@
       // ---- FIELD (руление) ----
       if(pl.zone==='field'){
         // бонус-мир: терпение гусеницы тикает, но улетающую бабочку не штрафуем
-        if(!zen && !(LV.bonus && pl.bug==='fly')){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
+        if(!(LV.bonus && pl.bug==='fly')){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
         const need=curNeed(pl);
         // бонус-мир: бабочка упорхивает к правому краю (без ВПП) и «вылетает»
         if(LV.bonus && pl.bug==='fly'){
@@ -4018,7 +4023,7 @@
             if(!b.open) continue;
             if(rectHit(pl.x,pl.y,b)){
               if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
-              if(b.occupied && b.occupied!==pl){ if(!zen && !LV.bonus){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
+              if(b.occupied && b.occupied!==pl){ if(!LV.bonus){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
               else {
                 pl.zone='bay'; pl.bay=b; b.occupied=pl;
                 pl.moving=false; pl.path=[];
@@ -4053,7 +4058,7 @@
           }
           continue;
         }
-        if(!zen){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
+        pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl);
         const cx=b.x+b.w/2, cy=b.y+b.h/2;
         const vert=Math.abs(o.dy)>Math.abs(o.dx);
         const half=(vert? b.h : b.w)/2;
@@ -4105,11 +4110,11 @@
       }
     }
 
-    // столкновения (в Zen отключены — поток без проигрыша)
+    // столкновения (в спокойном бонус-мире отключены — поток без проигрыша)
     // Физический контакт любых двух наземных бортов — на поле И на полосе, в т.ч.
     // межзонно: садящийся/взлетающий борт, въезжающий в стоящего на торце ВПП, —
     // это крушение, а не «уфф» (борта в воздухе «сверху», в краш не входят).
-    if(!zen && !LV.bonus){
+    if(!LV.bonus){
       const phys = planes.filter(p=>!p.dead && (p.zone==='field' || p.zone==='runway'));
       for(let i=0;i<phys.length;i++)
         for(let j=i+1;j<phys.length;j++){
@@ -4122,8 +4127,8 @@
     }
 
     // near-miss «уфф»: два борта едва разошлись (ближе NEAR_DIST, но не краш) и
-    // именно СБЛИЖАЛИСЬ в этот миг — вспышка + лёгкое замедление + «уфф». Работает и
-    // в Zen (это украшение, без штрафа). Антидребезг — по паре бортов (NEAR_COOL),
+    // именно СБЛИЖАЛИСЬ в этот миг — вспышка + лёгкое замедление + «уфф». Это
+    // украшение, без штрафа. Антидребезг — по паре бортов (NEAR_COOL),
     // карта пар пересобирается каждый кадр (сама чистит ушедшие/севшие борта).
     if(!LV.bonus){           // спокойный луг — гусеницы/бабочки не пугают друг друга
       const air = planes.filter(p=>!p.dead && p.zone!=='bay' && !p.entering);
@@ -4158,7 +4163,7 @@
 
     // тревожный бип: у кого-то терпение на исходе (дублирует красное кольцо звуком;
     // чем меньше осталось — тем чаще бип)
-    if(!zen && gameTime>=alarmAt){
+    if(gameTime>=alarmAt){
       let mf=1;
       for(const pl of planes){
         if(pl.dead) continue;
@@ -4170,23 +4175,21 @@
       if(mf<0.25){ SND.alarm(); alarmAt=gameTime+0.45+mf*2.4; }
     }
 
-    if(!zen){
-      if(lives<=0){ endLevel('end.lives'); return; }
-      // race (L5) кончается только по времени — потолка по принятым нет
-      if(!LV.objective.race && metricValue() >= LV.objective.target){ endLevel('end.goal'); return; }
-      // все борты прилетели и поле пусто, а цель не набрана — смена окончена (без софтлока)
-      if(LV.objective.metric==='served' && !LV.objective.race && spawnedTotal>=LV.objective.target && planes.length===0 && served<LV.objective.target){ endLevel('end.done'); return; }
-    }
+    if(lives<=0){ endLevel('end.lives'); return; }
+    // survival/race — без потолка по принятым: survival кончается по жизням, race по времени
+    if(!survival && !LV.objective.race && metricValue() >= LV.objective.target){ endLevel('end.goal'); return; }
+    // все борты прилетели и поле пусто, а цель не набрана — смена окончена (без софтлока)
+    if(!survival && LV.objective.metric==='served' && !LV.objective.race && spawnedTotal>=LV.objective.target && planes.length===0 && served<LV.objective.target){ endLevel('end.done'); return; }
     // статистика смены: пик одновременной нагрузки + редкие отсчёты для графика
     if(planes.length>statPeak) statPeak=planes.length;
     if(gameTime>=statNextAt){
       statSamples.push({t:gameTime, load:planes.length, served});
       statNextAt = gameTime + statStep;
-      // в Zen ряд может расти бесконечно — прорежаем и удваиваем шаг
+      // в survival ряд может расти бесконечно — прорежаем и удваиваем шаг
       if(statSamples.length>180){ statSamples = statSamples.filter((_,i)=>i%2===0); statStep*=2; }
     }
     gameTime+=dt;
-    if(!zen && LV.objective.time && gameTime>=LV.objective.time){ endLevel('end.time'); return; }
+    if(!survival && LV.objective.time && gameTime>=LV.objective.time){ endLevel('end.time'); return; }
   }
   function dirOut(b){ // направление "наружу из бокса" в поле
     if(b.side==='top') return {dx:0,dy:1};
@@ -5148,7 +5151,7 @@
     let x=12*ui; const g=8*ui;
     x = pill(x, 'heart', '❤', '#ff4d5e', String(Math.max(0,lives)), '#c43a48') + g;
     x = pill(x, 'coin', '🪙', '#caa53a', fmtMoney(money), money<0?'#e0392f':'#5e4a16') + g;
-    const endless = zen || LV.objective.race;
+    const endless = survival || LV.objective.race;
     const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
     const ptxt = endless ? fmtNum(served) : (fmtNum(mv)+'/'+fmtNum(LV.objective.target));
     x = pill(x, 'plane', '✈', '#2f6fb0', ptxt, '#23415e') + g;
@@ -5206,7 +5209,7 @@
     ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy);
     // ── центр: уровень + счёт + полоса прогресса цели ──
     const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
-    const endless = zen || LV.objective.race;   // race (L5): «без лимита», без потолка
+    const endless = survival || LV.objective.race;   // race (L5): «без лимита», без потолка
     const cxC = W*0.5;
     ctx.textAlign='center';
     const cnt = endless ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+'  /  '+fmtNum(LV.objective.target));
@@ -5468,7 +5471,7 @@
   }
 
   function endLevel(reasonKey){          // reasonKey — ключ i18n (end.*)
-    running=false; recordResult();
+    running=false; const prevBest = save.best[levelKey]||0; recordResult();
     const stars=computeStars(), v=metricValue(), passed=stars>=1;
     Analytics.track(passed ? 'level_complete' : 'level_fail', {
       level: levelKey,
@@ -5480,7 +5483,7 @@
     ACH.onLevelEnd(passed, stars, lives>=K.START_LIVES);
     // Survival → счёт захода (обслуженные борта) уходит в глобальный рейтинг; место в
     // таблице открывает пороговые ранг-медали. Каркас: mock-провайдер сейчас, бэкенд потом.
-    // Не-survival режимы рейтинг не трогают (кампания/zen/биомы остаются как есть).
+    // Не-survival режимы рейтинг не трогают (кампания/бонусы остаются как есть).
     if(currentMode()==='survival'){
       const runScore = served;
       Leaderboard.submitRun({mode:'survival', score:runScore}).then(res=>{
@@ -5489,22 +5492,25 @@
         if(typeof refreshOverLeaderboard==='function') refreshOverLeaderboard(res);
       }).catch(()=>{});
     }
-    document.getElementById('overKicker').textContent = t(passed?'over.passed':'over.failed');
-    document.getElementById('finalStars').innerHTML = [0,1,2].map(i=>
+    document.getElementById('overKicker').textContent = survival ? t('over.survival') : t(passed?'over.passed':'over.failed');
+    document.getElementById('finalStars').innerHTML = survival
+      ? '<span class="pop" style="display:inline-flex;color:var(--m-gold)">'+SVGIC('trophy')+'</span>'
+      : [0,1,2].map(i=>
       '<span class="'+(i<stars?'pop':'off')+'" style="display:inline-flex'+(i<stars?';animation-delay:'+(i*0.13)+'s':'')+'">'+SVGIC('star')+'</span>').join('');
     const unit = t(LV.objective.metric==='upgrades'?'unit.upgrades':'unit.planes', {n:v});
-    document.getElementById('overMsg').textContent =
-      t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
+    document.getElementById('overMsg').textContent = survival
+      ? t(served>prevBest ? 'over.survRecord' : 'over.survResult', {n:fmtNum(served), best:fmtNum(Math.max(served,prevBest)), money:fmtMoney(money)})
+      : t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
     // снимок смены — для карточки статистики, графика и шеринга
     lastShift = {
-      passed, stars, metric:LV.objective.metric, v, target:LV.objective.target,
+      passed, stars, surv:survival, metric:LV.objective.metric, v, target:survival?null:LV.objective.target,
       money, peak:statPeak, time:gameTime,
       levelName: currentLevelName(),
       samples: statSamples.slice(),
     };
     // карточка статистики смены
     const statsBox=document.getElementById('overStats'); statsBox.innerHTML='';
-    [[LV.objective.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), fmtNum(v)+' / '+fmtNum(LV.objective.target), 'v-phos'],
+    [[LV.objective.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), survival?fmtNum(v):(fmtNum(v)+' / '+fmtNum(LV.objective.target)), 'v-phos'],
      [t('stats.money'), fmtMoney(money), 'v-gold'],
      [t('stats.peak'), '✈ '+fmtNum(statPeak), 'v-teal'],
      [t('stats.lives'), '♥ '+fmtNum(Math.max(0,lives))+' / '+fmtNum(K.START_LIVES), 'v-life'],
@@ -5575,13 +5581,13 @@
     g.textAlign='center';
     g.fillStyle=COL.phosphor; g.font=`700 64px ${MONO}`; g.fillText(t('app.name'), S/2, 130);
     g.fillStyle=hexa(COL.muted,.9); g.font=`24px ${MONO}`;
-    g.fillText((shift.passed?t('over.passed'):t('over.failed'))+' · '+shift.levelName, S/2, 178);
+    g.fillText((shift.surv?t('over.survival'):(shift.passed?t('over.passed'):t('over.failed')))+' · '+shift.levelName, S/2, 178);
     // звёзды
     g.fillStyle=COL.gold; g.font=`80px ${MONO}`; g.shadowColor=hexa(COL.gold,.5); g.shadowBlur=24;
-    g.fillText('★'.repeat(shift.stars)+'☆'.repeat(3-shift.stars), S/2, 290); g.shadowBlur=0;
+    g.fillText(shift.surv?('✈ '+fmtNum(shift.v)):('★'.repeat(shift.stars)+'☆'.repeat(3-shift.stars)), S/2, 290); g.shadowBlur=0;
     // плитки статистики 2×2
     const tiles=[
-      [shift.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), fmtNum(shift.v)+' / '+fmtNum(shift.target), COL.phosphor],
+      [shift.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), shift.surv?fmtNum(shift.v):(fmtNum(shift.v)+' / '+fmtNum(shift.target)), COL.phosphor],
       [t('stats.money'), fmtMoney(shift.money), COL.gold],
       [t('stats.peak'), '✈ '+fmtNum(shift.peak), COL.teal],
       [t('stats.time'), fmtTime(shift.time), COL.phosphor],
@@ -5726,27 +5732,23 @@
   }
   function showStart(){ hideAllScreens(); updateStartChips(); document.getElementById('startScreen').classList.remove('hidden'); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
-  function startLevel(idx){ zen=false; survival=false; buildLevel(idx); hideAllScreens(); reset(); }
-  function startBonus(b){ if(!bonusUnlocked(b)) return; zen=false; survival=false; buildBonus(b); hideAllScreens(); reset(); }
-  function startZen(){ zen=true; survival=false; buildLevel(0); hideAllScreens(); reset(); }
-  // Survival — каркасный энд-поинт режима: бесконечный заход, счёт = обслуженные борта; на
-  // конце (потеря всех жизней) счёт уходит в глобальный рейтинг (см. endLevel → Leaderboard).
-  // БАЛАНС/КРИВАЯ СЛОЖНОСТИ режима — задача отдельного геймплейного прохода (TODO): пока берём
-  // стартовую раскладку, чтобы каркас рейтинга/медалей был играбелен и тестируем.
-  function startSurvival(){ survival=true; zen=false; buildLevel(0); hideAllScreens(); reset(); }
-  // карты биомов: отдельный экран выбора (доступен из главного меню)
+  function startLevel(idx){ survival=false; buildLevel(idx); hideAllScreens(); reset(); }
+  function startBonus(b){ if(!bonusUnlocked(b)) return; survival=false; buildBonus(b); hideAllScreens(); reset(); }
+  // карты-биомы = режим SURVIVAL: отдельный экран выбора (из главного меню). Survival живёт
+  // ИМЕННО на картах — бесконечный заход с жизнями, счёт = обслуженные борта; на конце (потеря
+  // всех жизней) счёт уходит в глобальный рейтинг (см. endLevel → Leaderboard). Интенсивность
+  // нарастает со временем (survivalPace); карты различаются своим pace/survRamp и помехами.
   function showBiomes(){ inMenu=true; renderBiomes(); hideAllScreens(); document.getElementById('biomeScreen').classList.remove('hidden'); }
-  function startBiome(b){ if(!b.ready) return; zen=false; survival=false; buildBiome(b); hideAllScreens(); reset(); }
+  function startBiome(b){ if(!b.ready) return; survival=true; buildBiome(b); hideAllScreens(); reset(); }
   function renderBiomes(){
     const list=document.getElementById('biomeList'); list.innerHTML='';
     BIOMES.forEach(b=>{
-      const stars=save.stars['b_'+b.id]||0;
+      const best=save.best['b_'+b.id]||0;
       const card=document.createElement('div');
       card.className='biome'+(b.ready?'':' locked');
       card.style.cursor=b.ready?'pointer':'default';
-      const starsHtml=[0,1,2].map(n=>'<span style="display:inline-flex;color:'+(n<stars?'var(--m-gold)':'var(--m-text-muted)')+'">'+SVGIC('star')+'</span>').join('');
       const foot = b.ready
-        ? `<span class="biome__stars">${starsHtml}</span>`
+        ? `<span class="biome__stars">${SVGIC('trophy')}<span class="biome__best">${t('biomes.best')}</span> ✈ ${fmtNum(best)}</span>`
         : `<span class="biome__lock">${SVGIC('lock')} ${t('biomes.soon')}</span>`;
       card.innerHTML=`<div class="biome__ic">${b.emoji}</div>`+
         `<div class="biome__name">${t('biome.'+b.id+'.name')}</div>`+
@@ -5900,13 +5902,12 @@
   ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev, ()=>{ if(inFullscreen()) lockLandscape(); resize(); }));
 
   document.getElementById('startBtn').onclick=showLevels;
-  document.getElementById('zenBtn').onclick=startZen;
-  { const b=document.getElementById('survivalBtn'); if(b) b.onclick=startSurvival; }
+  // «Выживание» ведёт прямо на экран карт (карты-биомы = режим Survival)
+  { const b=document.getElementById('survivalBtn'); if(b) b.onclick=showBiomes; }
   document.getElementById('backBtn').onclick=()=>{ showStart(); };
   document.getElementById('againBtn').onclick=()=>{ document.getElementById('overScreen').classList.add('hidden'); reset(); };
   function backToSelect(){ if(curBiome) showBiomes(); else showLevels(); }
   document.getElementById('toLevelsBtn').onclick=backToSelect;
-  document.getElementById('biomesBtn').onclick=showBiomes;
   document.getElementById('biomesBackBtn').onclick=()=>{ showStart(); };
   document.getElementById('nextBtn').onclick=()=>{ if(levelIdx+1<LEVELS.length) startLevel(levelIdx+1); };
   document.getElementById('shareBtn').onclick=shareShift;
@@ -5921,11 +5922,11 @@
   // прогресс цели) и пороги звёзд. Зовётся при открытии и при смене языка.
   function buildPauseInfo(){
     document.getElementById('pauseTitle').textContent = currentLevelName();
-    document.getElementById('pauseObjLabel').classList.toggle('hidden', zen);
+    document.getElementById('pauseObjLabel').classList.toggle('hidden', false);
     document.getElementById('pauseGoals').innerHTML = goalRowsHTML();
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
     const mv = LV.objective.metric==='upgrades' ? upgradesDone : served;
-    const prog = (zen||LV.objective.race) ? fmtNum(served) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target));
+    const prog = (survival||LV.objective.race) ? fmtNum(served) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target));
     const stats=[
       [SVGIC('clock'), fmtTime(tShown), ''],
       [SVGIC('coin'), fmtNum(money), money<0?'var(--m-life)':'var(--m-gold)'],
@@ -6017,10 +6018,10 @@
   // ---- окно постановки целей смены ----
   // Показывается в начале каждого раунда (на паузе), а также по кнопке «Цели» в
   // паузе. Закрыть: «Понятно» или тап мимо карточки. Звёзды: 1★ цель, 2★ без
-  // наземных штрафов, 3★ без крушений (см. computeStars). В Zen — текст без звёзд.
+  // наземных штрафов, 3★ без крушений (см. computeStars). В Survival — рекорд без звёзд.
   let goalsFromPause=false;
   // Цели смены одной разметкой: звёзды (1★ цель, 2★ без наземных штрафов, 3★ без
-  // крушений) + подсказка биома. В Zen — текст без звёзд. Используется и окном
+  // крушений) + подсказка биома. В Survival — рекорд без звёзд. Используется и окном
   // постановки целей в начале раунда, и встроенным блоком в паузе.
   // иконки целей (24×24, цвет наследуется через currentColor — раскрашиваем в CSS)
   const GICON = {
@@ -6035,7 +6036,13 @@
   // окно/блок целей: вызов + обучающая строка + цели и звёзды-градация иконками.
   // Та же разметка для окна постановки целей и для встроенного блока в паузе.
   function goalRowsHTML(){
-    if(zen) return `<p class="m-subtitle" style="max-width:34ch">${t('goals.zen')}</p>`;
+    if(survival){
+      const best = save.best[levelKey]||0;
+      const hint = LV.biome ? `<p class="m-subtitle">${t('biome.'+LV.biome+'.hint')}</p>` : '';
+      return `${hint}<p class="m-subtitle">${t('goals.survival')}</p>`+
+        `<div class="goal-line"><span class="g g--inf">${GICON.clock}${INF}</span>`+
+        `<span class="g g--target">${GICON.plane}${fmtNum(best)}</span></div>`;
+    }
     const o = LV.objective, stars = o.stars || [o.target, o.target, o.target];
     // основная метрика: гусеница на лугу бабочек, 🔧 на апгрейд-уровнях, иначе ✈
     const primary = LV.bonus==='butterfly' ? GICON.caterpillar
@@ -6145,7 +6152,7 @@
       {id:'perfectionist',tier:4,ic:'🥇', prog:S=>[S.perfect,10]},
       {id:'daily7',  tier:4, ic:'📅', pending:true},
       {id:'sleepless',tier:4,ic:'🌙', pending:true},
-      {id:'zen500',  tier:4, ic:'🧘', pending:true},
+      {id:'surv500', tier:4, ic:'🛟'},
       {id:'combo50', tier:4, ic:'🔥', pending:true},
       // --- Соревновательные (ранговые): пороговые НАВСЕГДА, по глобальному рейтингу.
       //     comp:true → НЕ входят в требование «Легенды» (Легенда = мастерство соло-игры,
@@ -6229,7 +6236,7 @@
         if(S.stats.landed>=100) give('land100');
         if(S.stats.landed>=10000) give('land10000');
         if(S.stats.noCrashStreak>=1000) give('streak1000');
-        if(run.landed>=500) give('zen500');
+        if(run.landed>=500) give('surv500');
         const cut=gameTime-60; while(run.landTimes.length && run.landTimes[0]<cut) run.landTimes.shift();
         if(run.landTimes.length>=20) give('speed20');
       },
@@ -6399,20 +6406,21 @@
       get save(){ return save; },     set save(v){ save=v; },
       get lang(){ return lang; },
       get levelIdx(){ return levelIdx; },
-      get zen(){ return zen; },        set zen(v){ zen=v; },
       get survival(){ return survival; }, set survival(v){ survival=v; },
-      currentMode, periodBucket, Leaderboard, ACH, validateLeaderboard, startSurvival,
+      currentMode, periodBucket, Leaderboard, ACH, validateLeaderboard,
       get served(){ return served; }, set served(v){ served=v; },
       // выставить текущий уровень кампании (levelKey=индекс — как в buildLevel)
       setLevel(i){ levelIdx=i; levelKey=i; LV=LEVELS[i]; },
       // выставить бонус-уровень как текущий (без layout/DOM — для проверки окна целей)
       setBonus(b){ curBiome=null; curBonus=b; levelIdx=-1; levelKey='bonus_'+b.id; LV=b.level; },
+      // выставить биом-карту (Survival) как текущую — для тестов levelEvents/Survival
+      setBiome(b){ curBiome=b; curBonus=null; survival=true; levelIdx=-1; levelKey='b_'+b.id; LV=b.level; },
       // прогон РЕАЛЬНОГО пути завершения смены: выставляем результат и зовём те же
       // computeStars()/recordResult(), что и в игре — проверяем звёзды, открытие
       // следующего уровня и сохранение, не трогая отрисовку и ввод.
       simulateResult(opts){
         opts = opts || {};
-        zen = false;
+        survival = false;
         levelIdx = opts.level||0; levelKey = levelIdx; LV = LEVELS[levelIdx];
         served = opts.served||0; upgradesDone = opts.upgrades||0;
         runPenalties = opts.penalties||0; runCrashes = opts.crashes||0;

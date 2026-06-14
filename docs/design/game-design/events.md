@@ -64,3 +64,22 @@ shipped, others are design targets for the "small stories everywhere" pillar.
 Weather skins layer onto the time-of-day spectrum (Day · Sunset · Evening · Night) and
 the environment variations (Summer Night, Rainy Night, Snowy Night, Foggy Morning).
 Weather always stays readable — atmosphere never beats clarity.
+
+---
+
+## Survival mode — per-map difficulty & events
+
+The biome maps are played as **Survival** (see [`progression.md`](progression.md)): endless
+runs with lives, where intensity ramps up over time. This is the natural home for the
+"different events on different maps" idea — each map expresses a distinct *survival difficulty*:
+
+- **Pace / ramp** — a map's starting `level.pace` and `level.survRamp` set how fast the sky
+  fills up. Harder maps start busier and/or ramp faster (to max over `SURV_RAMP_SECS`).
+- **Per-biome hazards** — each biome brings its own field events: 🌲 Forest already ships
+  falling trees, beavers, deer and birds (tap the hazard → the right crew rolls out).
+  Arctic/tropical/desert/mountain/megacity get their own (de-icing, sandstorms, gulls, …) as they ship.
+- **Specials always on** — VIP / emergency / medical aircraft are enabled on every survival
+  map (`levelEvents()`), plus the rush-hour wave.
+
+Design target: tune each map so its difficulty curve and event mix feel distinct, giving
+players a reason to chase a personal best (and a leaderboard rank) on every airport.

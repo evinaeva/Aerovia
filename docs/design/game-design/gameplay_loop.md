@@ -106,6 +106,6 @@ A loss log with causes is available in Pause → Settings.
   clean combo/express play funds the rest. The model lives in `levelEconomy()` — see
   [`economy.md`](economy.md) for the formula.
 
-See [`progression.md`](progression.md) for levels, stars, and Zen mode. Aircraft
+See [`progression.md`](progression.md) for levels, stars, and Survival mode. Aircraft
 varieties and surprise events are in [`airport_types.md`](airport_types.md) and
 [`events.md`](events.md).

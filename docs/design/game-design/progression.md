@@ -61,14 +61,15 @@ capacity (style-guide panel 08).
 
 ---
 
-## Zen mode (relax)
+## Survival mode (maps)
 
-A no-lose variant of the same airport: no lives, nothing crashes, no time pressure, no
-surprise events. Pure routing for enjoyment. **Does not affect stars or progress.**
-
-Zen mode is the clearest expression of the cozy / cognitive-flow pillars (see
-[`../art-direction/visual_pillars.md`](../art-direction/visual_pillars.md)) — calm, warm,
-low-stress, high-focus.
+The **Survival** button (main menu) opens the **maps** screen (airport biomes). Each map is
+an **endless run with lives** (`startBiome` sets `survival=true`): no "land N" target — you
+play until your lives run out, and intensity ramps up the longer you last (a map's starting
+`pace` climbs to max over `SURV_RAMP_SECS`, or a per-map `survRamp`). Instead of 3 stars each
+map keeps a **personal best** (planes landed); the run score also feeds the global
+leaderboard (see [`leaderboards.md`](leaderboards.md)). Maps are meant to differ by *survival
+difficulty* — their own pace/ramp and, per biome, their own hazards (see [`events.md`](events.md)).
 
 ---
 
@@ -83,5 +84,5 @@ progression.
 ## Design intent
 
 Stars give skill-expression and replay value without gating content harshly (1 star
-unlocks the next level). Zen mode protects the "calm, not stressful" promise for players
-who want flow without failure.
+unlocks the next level). Survival adds an endless, score-chasing track on the biome maps
+for players who want flow and a personal best to beat.
