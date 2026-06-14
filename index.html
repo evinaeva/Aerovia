@@ -530,6 +530,9 @@
   // cartoon skin is a bright daytime recolour: it keeps the cozy atlas but injects
   // the saturated `--cartoon-*` palette via CARTOON_TOKENS, and auto-upgrades to
   // bespoke cartoon PNGs the moment assets/sprites/cartoon/ ships them.
+  // порядок и состав скинов для UI/валидации; КОНТЕНТ каждого (палитра, масштаб,
+  // атлас, рендереры, звуки) объявляется в SKIN_DEFS ниже — добавляя скин, правь
+  // оба места. SKINS остаётся здесь, т.к. парсинг ?skin= идёт раньше токенов.
   const SKINS = ['cozy', 'neon', 'cartoon'];
   let SKIN = 'cozy';
   try {
@@ -538,7 +541,7 @@
     if (SKINS.includes(_s)) SKIN = _s;
     if (SKINS.includes(_q)) localStorage.setItem('pf_skin', _q);
   } catch (e) { /* no URL/localStorage in test harness */ }
-  let NEON = SKIN === 'neon';
+  let NEON = SKIN === 'neon';   // bootstrap; authoritative источник — skinDef().glow (SKIN_DEFS ниже)
 
   // ---- палитра спрайтов: единый источник правды для перекраски ----
   // Спрайт-листы (assets/sprites/planeflow-*.svg) хранят цвета как
@@ -599,12 +602,41 @@
     chip:'#4a3a28', 'navy-900':'#3a6b3a', 'purple-700':'#4d9433', 'purple-600':'#5aa83c',
     'gray-500':'#9a855f', 'gray-600':'#6b5333', muted:'#9a855f', white:'#ffffff',
   };
+  // ──────────────────────────────────────────────────────────────────────────
+  // РЕЕСТР СКИНОВ — единственное место, где скин «объявляет» свой контент.
+  // ──────────────────────────────────────────────────────────────────────────
+  // ПРАВИЛО «ЛОГИКА — РОДИТЕЛЬ НАД СКИНАМИ» (действует на скины, биомы и карты):
+  //   Всё, что НЕ внешний вид и НЕ звуковой контент — общая логика, механика,
+  //   расчёты, траектория, заезд в бокс, терпение, деньги, звёзды, события —
+  //   живёт ВЫШЕ скинов и работает ОДИНАКОВО для всех скинов/биомов/карт. Скин
+  //   меняет ТОЛЬКО содержание: палитру, масштаб отрисовки, какой атлас его
+  //   подложка, опц. собственные рендереры сцены/HUD и набор звуков.
+  //   Добавить скин/биом/карту = добавить запись СЮДА (+ строку в SKINS и i18n-
+  //   ключ метки). НИКОГДА не форкать логику/механику/расчёты под имя скина —
+  //   иначе придётся править траекторию и заезд в бокс на каждом скине и карте.
+  //
+  // Поля записи (всё — только облик/звук, без логики):
+  //   tokens — переопределения PALETTE/COL (ТОЛЬКО цвета);
+  //   scale  — визуальный масштаб техники (см. SZ). Геометрия (касание ВПП,
+  //            столкновения) выводится из него ОДНОЙ общей формулой для всех
+  //            скинов — меняется лишь число, а не расчёт;
+  //   atlas  — 'cozy': подложка = перекрашенный cozy-атлас; 'procedural': рисуем
+  //            процедурно, пока не доедет собственный арт (assets/sprites/<skin>/);
+  //   glow   — неоновое свечение в процедурной отрисовке (флаг NEON);
+  //   field/hud — опц. собственные рендереры сцены/HUD (ТОЛЬКО облик, без логики);
+  //   sounds — опц. таблица переопределений ЗВУКОВОГО КОНТЕНТА по имени события
+  //            (КОГДА звук играет — общая логика в местах вызова SND.*; ЧЕМ он
+  //            звучит — контент скина). null = общий набор звуков;
+  //   label  — i18n-ключ названия скина для переключателя в настройках.
+  const SKIN_DEFS = {
+    cozy:    { tokens: {},             scale: 1, atlas: 'cozy',       glow: false, field: null,             hud: null,           sounds: null, label: 'settings.skinCozy' },
+    neon:    { tokens: NEON_TOKENS,    scale: 1, atlas: 'procedural', glow: true,  field: drawNeonField,    hud: null,           sounds: null, label: 'settings.skinNeon' },
+    cartoon: { tokens: CARTOON_TOKENS, scale: 2, atlas: 'cozy',       glow: false, field: drawCartoonField, hud: drawCartoonHUD, sounds: null, label: 'settings.skinCartoon' },
+  };
+  // дескриптор активного скина (фолбэк на cozy для неизвестных кодов)
+  const skinDef = () => SKIN_DEFS[SKIN] || SKIN_DEFS.cozy;
   // имя скина → объект-переопределение PALETTE (пустой = дефолтный cozy-вид)
-  function skinTokens(skin){
-    if(skin === 'neon') return Object.assign({}, NEON_TOKENS);
-    if(skin === 'cartoon') return Object.assign({}, CARTOON_TOKENS);
-    return {};
-  }
+  function skinTokens(skin){ return Object.assign({}, (SKIN_DEFS[skin] || SKIN_DEFS.cozy).tokens); }
   // Активная тема: набор переопределений PALETTE. Пустая = дефолтный вид.
   // Меняй ключи (или подменяй объект целиком), чтобы перекрасить весь арт.
   const THEME = { tokens: skinTokens(SKIN) };
@@ -628,7 +660,7 @@
   // ключуется по подписи темы, поэтому подхватывается автоматически).
   function applySkin(code){
     SKIN = SKINS.includes(code) ? code : 'cozy';
-    NEON = SKIN === 'neon';
+    NEON = skinDef().glow;   // свечение объявляет скин (SKIN_DEFS), не имя
     THEME.tokens = skinTokens(SKIN);
     refreshSpriteMode();
   }
@@ -807,13 +839,14 @@
   // когда его пер-скиновые листы загружены (A.skinReady); иначе процедурный
   // фолбэк (текущий неон), и параллельно подтягиваем арт скина.
   function refreshSpriteMode(){
-    if (SKIN === 'cozy') { COZY = true; return; }
-    // cartoon: пока нет своих листов/PNG — рисуем перекрашенный cozy-атлас (а не
-    // тёмный процедурный фолбэк), и параллельно тянем cartoon-арт; как только
-    // PNG/SVG скина доедут, img() сам отдаст их приоритетно (COZY можно не трогать).
-    if (SKIN === 'cartoon') { COZY = true; if (!SPRITES.skinReady) SPRITES.loadSkin(SKIN); return; }
-    COZY = !!SPRITES.skinReady;
-    if (!SPRITES.skinReady) SPRITES.loadSkin(SKIN);
+    // подтянуть собственный арт активного не-cozy скина (PNG/SVG), если ещё не везли
+    if (SKIN !== 'cozy' && !SPRITES.skinReady) SPRITES.loadSkin(SKIN);
+    // режим подложки объявляет скин (SKIN_DEFS.atlas):
+    //   'cozy'       → всегда (перекрашенный) cozy-атлас (так живёт и cartoon, пока
+    //                  не доедет его собственный арт — img() сам отдаст PNG приоритетно);
+    //   'procedural' → атлас только когда доехал собственный арт скина (neon),
+    //                  иначе процедурный фолбэк.
+    COZY = skinDef().atlas === 'cozy' ? true : !!SPRITES.skinReady;
   }
   refreshSpriteMode();
 
@@ -1744,7 +1777,23 @@
     });
     return p;
   }
-  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()); }
+  // скины: каждый код из SKINS объявлен в реестре SKIN_DEFS (контент — там, а не
+  // форком логики), реестр не несёт лишних скинов, и у каждого есть валидная метка
+  // i18n и режим атласа. Страховка под правило «логика — родитель над скинами».
+  function validateSkins(){
+    const p = [], defKeys = Object.keys(SKIN_DEFS);
+    SKINS.forEach(code=>{
+      const d = SKIN_DEFS[code];
+      if(!d){ p.push('skin "'+code+'" есть в SKINS, но нет записи в SKIN_DEFS'); return; }
+      if(!(d.scale>0)) p.push('skin "'+code+'": scale должен быть > 0');
+      if(d.atlas!=='cozy' && d.atlas!=='procedural') p.push('skin "'+code+'": atlas должен быть "cozy" или "procedural"');
+      if(!d.label) p.push('skin "'+code+'": нет i18n-ключа label');
+      else Object.keys(I18N).forEach(c=>{ if(I18N[c][d.label]==null) p.push('skin "'+code+'": нет перевода метки "'+d.label+'" в языке "'+c+'"'); });
+    });
+    defKeys.forEach(code=>{ if(!SKINS.includes(code)) p.push('skin "'+code+'" есть в SKIN_DEFS, но не указан в SKINS'); });
+    return p;
+  }
+  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()).concat(validateSkins()); }
   let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
@@ -1764,7 +1813,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.23';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.24';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -1820,10 +1869,10 @@
 
   // ---- layout: bays, runways, hover slots ----
   let bays=[], runways=[], field={}, pauseBtn={};
-  // Единый масштаб «крупности» техники: размеры борта, ВПП и бокса выводятся из него,
-  // поэтому балансировать размер можно одной ручкой — растёт сразу всё. Сейчас крупнее
-  // только в cartoon (×2, под референс); cozy/neon — прежний вид (×1).
-  const SZ = () => (SKIN==='cartoon' ? 2 : 1);
+  // Единый масштаб «крупности» техники: размеры борта, ВПП и бокса выводятся из него
+  // ОДНОЙ общей формулой (общая для всех скинов — меняется лишь число). Само число —
+  // визуальный контент скина (SKIN_DEFS.scale): cartoon ×2 под референс, cozy/neon ×1.
+  const SZ = () => skinDef().scale;
   // длина корпуса борта (наземная), px — геометрия касания/отрыва на ВПП. Совпадает
   // с размером отрисовки drawPlaneBodyAt (62 · ui·0.5·SZ()) при наземном масштабе.
   const PLANE_LEN = () => 31 * SZ() * ui;
@@ -2005,14 +2054,27 @@
       src.connect(f); f.connect(g); g.connect(master); src.start(t0);
     }
     const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); // случайный индекс ноты гаммы
-    // Оставлены только три звука: тап по меню, щелчок фиксации маршрута (вспышка
-    // в конце траектории) и визг колёс при посадке. Остальные игровые звуки —
-    // пустышки (намеренно выключены), чтобы не трогать десятки мест вызова.
+    // Базовые рецепты звуков (cozy). Оставлены только три: тап по меню, щелчок
+    // фиксации маршрута (вспышка в конце траектории) и визг колёс при посадке.
+    // Остальные игровые звуки — пустышки (намеренно выключены), чтобы не трогать
+    // десятки мест вызова.
+    const RECIPES = {
+      btn(){ tone(SCALE[ri(4,6)],0.05,'triangle',0.12); },                       // тап по кнопке меню
+      lock(){ tone(1318.5,0.035,'square',0.13); tone(1760,0.05,'square',0.10,0.025); }, // щелчок: маршрут зафиксирован
+      screech(){ squeal(); },                                                    // визг резины — касание ВПП
+    };
+    // Проигрыватель именованного события. ПРАВИЛО «логика — родитель над скинами»:
+    // КОГДА звук играет — общая логика (места вызова SND.* в update/вводе, без
+    // ветвления по скину); ЧЕМ он звучит — контент скина: SKIN_DEFS[скин].sounds
+    // может переопределить рецепт по имени. null → общий базовый набор.
+    function play(name){
+      const over = skinDef().sounds;
+      const fn = (over && over[name]) || RECIPES[name];
+      if(fn) fn();
+    }
     return {
       setEnabled(v){ enabled=v; },
-      btn(){ tone(SCALE[ri(4,6)],0.05,'triangle',0.12); },                      // тап по кнопке меню
-      lock(){ tone(1318.5,0.035,'square',0.13); tone(1760,0.05,'square',0.10,0.025); }, // щелчок: маршрут зафиксирован
-      screech(){ squeal(); },                                                   // визг резины — касание ВПП
+      btn(){ play('btn'); }, lock(){ play('lock'); }, screech(){ play('screech'); },
       pick(){}, land(){}, dock(){}, served(){}, depart(){}, build(){},
       penalty(){}, crash(){}, medal(){}, alarm(){}, nearmiss(){},
     };
@@ -3057,8 +3119,8 @@
   }
 
   function drawField(tm){
-    if(NEON){ drawNeonField(tm); return; }
-    if(SKIN==='cartoon'){ drawCartoonField(tm); return; }
+    const sd = skinDef();
+    if(sd.field){ sd.field(tm); return; }   // собственный рендерер сцены скина (только облик)
     // ночное небо + звёзды
     ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
     starfield(tm);
@@ -3772,7 +3834,8 @@
   }
 
   function drawHUD(){
-    if(SKIN==='cartoon'){ drawCartoonHUD(); return; }
+    const sd = skinDef();
+    if(sd.hud){ sd.hud(); return; }   // собственный рендерер HUD скина (только облик)
     const hud=HUD_H();
     // плавающая панель
     rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui);
@@ -4441,10 +4504,10 @@
   function renderSkinBtns(){
     const box=document.getElementById('skinBtns'); if(!box) return;
     box.innerHTML='';
-    for(const [code,labelKey] of [['cozy','settings.skinCozy'],['neon','settings.skinNeon'],['cartoon','settings.skinCartoon']]){
+    for(const code of SKINS){   // состав — из SKINS, метка — из реестра (SKIN_DEFS[code].label)
       const b=document.createElement('button');
       b.className='langbtn'+(code===SKIN?' on':'');
-      b.textContent=t(labelKey);
+      b.textContent=t((SKIN_DEFS[code]||SKIN_DEFS.cozy).label);
       b.onclick=()=>setSkin(code);
       box.appendChild(b);
     }
