@@ -92,6 +92,8 @@ export function boot(initialStorage = {}) {
     cancelAnimationFrame: () => {},
     setTimeout: () => 0, clearTimeout: () => {}, setInterval: () => 0, clearInterval: () => {},
     devicePixelRatio: 2, innerWidth: 1100, innerHeight: 620,
+    performance: { now: () => 0 },          // нужен пути выдачи медали (toastAch→pump)
+    Date, Math, JSON, Promise,              // явные интринсики (на случай строгого контекста)
     addEventListener() {}, removeEventListener() {},
     matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
   };
