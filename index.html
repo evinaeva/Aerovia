@@ -1474,6 +1474,9 @@
     phosphor:'#3ad2ff', 'cream-100':'#dff4ff', muted:'#5f7bb0',
     amber:'#ffb13b', teal:'#22e3c6', ice:'#5fd2ff', rose:'#ff4f9d',
     gold:'#ffd23b', life:'#ff3b6b',
+    // neon-геймплей (handoff): праймари-зелёный (купленный апгрейд), сирень (цель/VIP),
+    // тёмно-синий «сердечник» апрона — см. docs/design/skins/neon/handoff/
+    green:'#5de08a', 'green-bright':'#7df0a4', purple:'#b98cff', core:'#16245e',
   };
   // Мультяшная палитра: яркий дневной recolor (зелёное поле, голубая вода, кремовые
   // глянцевые боксы, сочные акценты). Зеркалит tokens/cartoon.css (`--cartoon-*`):
@@ -2869,38 +2872,36 @@
     const bh = bw*0.72;
 
     // build bays once (preserve open/level state across resize)
+    // НЕОН-КОМПОЗИЦИЯ (handoff, docs/design/skins/neon/handoff/): боксы всех услуг
+    // раскладываются в ДВЕ сквозные ангары — вдоль верхней и нижней кромок апрона.
+    // Левой рейки нет; услуги (fuel/board/repair) ЧЕРЕДУЮТСЯ между ангарами. Это
+    // ОБЩАЯ раскладка (одинакова для всех скинов).
     if(!bays.length){
       bays = [];
+      const all = [];
       for(const side of ['top','left','bottom']){
         const cfg = LV.sides[side];
-        for(let i=0;i<cfg.slots;i++){
-          bays.push({side, type:cfg.type, slot:i,
-                     open:i<cfg.open, lvl:0, occupied:null,
-                     x:0,y:0,w:bw,h:bh});
-        }
+        for(let i=0;i<cfg.slots;i++) all.push({type:cfg.type, open:i<cfg.open});
       }
+      all.forEach((b,i)=>{
+        bays.push({ side:(i%2===0?'top':'bottom'), type:b.type, slot:i,
+                    open:b.open, open0:b.open, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh });
+      });
       // отдельный бокс де-айсинга (инфраструктура: всегда открыт, без апгрейда) —
       // у правого края поля, ворота в поле; нужен только в снегопад (см. spawnPlane)
       if(LV.deice) bays.push({side:'deice', type:'deice', slot:0, deice:true,
                               open:true, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh});
     }
-    // position bays
+    // position bays — две сплошные ангары: стойла встык по всей ширине апрона
     const bySide = s => bays.filter(b=>b.side===s);
-    function spread(n, a, b){ // n centers within [a,b]
-      const out=[]; const span=b-a; const step=span/(n+1);
-      for(let i=0;i<n;i++) out.push(a+step*(i+1));
-      return out;
+    const hangH = Math.max(bh, Math.round((fy1-fy0)*0.13));   // ангара чуть выше под стойло-проезд
+    function packRow(arr, yTop){
+      const n=arr.length; if(!n) return;
+      const cellW=(fx1-fx0)/n;
+      arr.forEach((b,i)=>{ b.w=cellW; b.h=hangH; b.x=fx0+i*cellW; b.y=yTop; });
     }
-    const top=bySide('top'), left=bySide('left'), bot=bySide('bottom');
-    spread(top.length, fx0+bw*0.6, fx1-bw*0.6).forEach((cx,i)=>{
-      top[i].w=bw; top[i].h=bh; top[i].x=cx-bw/2; top[i].y=fy0;
-    });
-    spread(bot.length, fx0+bw*0.6, fx1-bw*0.6).forEach((cx,i)=>{
-      bot[i].w=bw; bot[i].h=bh; bot[i].x=cx-bw/2; bot[i].y=fy1-bh;
-    });
-    spread(left.length, fy0+bh*0.7, fy1-bh*0.7).forEach((cy,i)=>{
-      left[i].w=bw; left[i].h=bh; left[i].x=fx0; left[i].y=cy-bh/2;
-    });
+    packRow(bySide('top'), fy0);
+    packRow(bySide('bottom'), fy1-hangH);
     // де-айс-бокс — у правого края поля, по центру по вертикали
     const de = bays.find(b=>b.side==='deice');
     if(de){ de.w=bw; de.h=bh; de.x=fx1-bw; de.y=(fy0+fy1)/2-bh/2; }
@@ -2912,10 +2913,9 @@
     const gap = 14*ui*SZ();                 // просвет между полосами (растёт вместе с ВПП)
     const rh = 38*ui*SZ();                  // ширина ВПП привязана к SZ() (≈ размах борта)
     const rwY0 = top0 + Math.max(0, ((bot0-top0) - (rh*n + gap*(n-1))) / 2); // центрируем n-слотов по вертикали
-    // средняя ВПП удалена: раскладываем n вертикальных слотов как раньше, но
-    // пропускаем центральный (нечётный n≥3) — крайние полосы остаются на своих местах
-    const skip = (n>=3 && n%2===1) ? (n>>1) : -1;
-    const slots = []; for(let i=0;i<n;i++) if(i!==skip) slots.push(i);
+    // НЕОН-КОМПОЗИЦИЯ: показываем ВСЕ n ВПП вертикально-симметрично (центральная
+    // больше не пропускается) — см. docs/design/skins/neon/handoff/
+    const slots = []; for(let i=0;i<n;i++) slots.push(i);
     if(!runways.length || runways.length!==slots.length){
       runways = slots.map(()=>({occupied:null, closed:false}));
     }
@@ -3326,7 +3326,9 @@
     document.getElementById('pauseScreen').classList.add('hidden');
     bays.forEach(b=>{ b.occupied=null;
       if(b.deice){ b.open=true; b.lvl=0; return; }   // де-айс — инфраструктура, всегда открыт
-      const cfg=LV.sides[b.side]; b.open = b.slot < cfg.open; b.lvl=0; });
+      // НЕОН-КОМПОЗИЦИЯ: исходное «открыт» хранится на боксе (open0) при сборке —
+      // side-агностично (стороны теперь только top/bottom, см. layout)
+      b.open = (b.open0!=null) ? !!b.open0 : (LV.sides[b.side] ? b.slot < LV.sides[b.side].open : false); b.lvl=0; });
     runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0; spawnedTotal=0;
@@ -4325,37 +4327,77 @@
   // неоновое поле: тёмный фон + радарная сетка/кольца/развёртка вместо
   // металлического апрона, терминала, травы и воды (боксы рисуются поверх)
   function drawNeonField(tm){
+    // НЕОН-ГЕЙМПЛЕЙ (handoff, docs/design/skins/neon/handoff/): спокойный ночной УВД.
+    // Апрон — ОГРАНИЧЕННАЯ зона руления слева с неон-рамкой (верх/лево/низ сплошные,
+    // право открыто на ВПП). БЕЗ вращающейся радар-развёртки/антенны. Справа, ВНЕ
+    // рамки — небо: звёзды, силуэт вышки УВД с маяком, зарево и силуэт города.
     ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
-    const ax=field.x0, ay=field.y0, aR=field.rwR, ab=field.y1;
-    // лёгкая полноэкранная сетка
-    ctx.save(); ctx.strokeStyle=hexa(COL.phosphor,.045); ctx.lineWidth=1;
-    for(let gx=0; gx<W; gx+=34*ui){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
-    for(let gy=0; gy<H; gy+=34*ui){ ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
-    ctx.restore();
-    // панель апрона
-    const fx=ax-8*ui, fy=ay-8*ui, fw=(aR-ax)+16*ui, fh=(ab-ay)+16*ui;
+    const ax=field.x0, ay=field.y0, ab=field.y1;
+    const apR=field.x1;                          // правый край апрона (перед ВПП)
+    const skyL=(field.rwR||W*0.85);              // левая кромка «неба» (правее ВПП)
+
+    // ===== небо справа (вне апрона) =====
+    // звёзды (детерминированный разброс, мягкое мерцание)
+    for(let i=0;i<30;i++){
+      const sx=apR+22*ui + ((i*9973)%Math.max(1,Math.round(W-apR-26*ui)));
+      const sy=12*ui + ((i*6131)%Math.max(1,Math.round((ab-ay)*0.6)));
+      const tw=0.35+0.5*Math.abs(Math.sin(tm*0.0011+i));
+      ctx.fillStyle=hexa('#cfeaff',.5*tw);
+      ctx.beginPath(); ctx.arc(sx,sy,(i%3?1.4:2.2)*ui,0,7); ctx.fill();
+    }
+    // зарево + силуэт небоскрёбов вдоль нижней правой кромки
+    const cg=ctx.createRadialGradient(W*0.9,H,0,W*0.9,H,Math.min(W,H)*0.55);
+    cg.addColorStop(0,hexa(COL.phosphor,.10)); cg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=cg; ctx.fillRect(skyL,H*0.45,W-skyL,H*0.55);
+    const bn=8, bw=(W-skyL-14*ui)/bn;
+    for(let i=0;i<bn;i++){
+      const bx=skyL+8*ui+i*bw, bh=(16+((i*53)%34))*ui;
+      ctx.fillStyle='#0b1a36'; ctx.fillRect(bx,H-bh,bw-5*ui,bh);
+      ctx.fillStyle=hexa(COL.phosphor,.32); ctx.fillRect(bx,H-bh,bw-5*ui,2*ui);
+      ctx.fillStyle=hexa(COL.gold,.65); ctx.fillRect(bx+4*ui,H-bh+7*ui,2*ui,2*ui);
+    }
+    // вышка УВД (справа сверху) + мигающий маяк
+    const twx=W-30*ui, twy=ay+8*ui;
+    ctx.fillStyle='#0b1832'; ctx.fillRect(twx,twy+18*ui,6*ui,44*ui);
+    rr(twx-9*ui,twy+4*ui,24*ui,16*ui,4*ui); ctx.fillStyle='#0e1f44'; ctx.fill();
+    ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.6); rr(twx-9*ui,twy+4*ui,24*ui,16*ui,4*ui); ctx.stroke();
+    ctx.fillStyle=hexa(COL.rose,.4+.5*(0.5+0.5*Math.sin(tm*0.004)));
+    ctx.beginPath(); ctx.arc(twx+3*ui,twy,3.4*ui,0,7); ctx.fill();
+
+    // ===== панель апрона (ограниченная зона руления) =====
+    const fx=ax-8*ui, fy=ay-8*ui, fw=(apR-ax)+16*ui, fh=(ab-ay)+16*ui;
     rr(fx,fy,fw,fh,16*ui);
-    const fg=ctx.createLinearGradient(0,fy,0,fy+fh); fg.addColorStop(0,'#0c1740'); fg.addColorStop(1,'#070e26');
+    const fg=ctx.createLinearGradient(0,fy,0,fy+fh); fg.addColorStop(0,'#0e1a40'); fg.addColorStop(1,'#070e26');
     ctx.fillStyle=fg; ctx.fill();
-    // радар внутри апрона
-    const rcx=(ax+aR)/2, rcy=(ay+ab)/2, rmax=Math.min(fw,fh)*0.46;
+    // лёгкая сетка + статичные кольца (БЕЗ вращающейся развёртки и креста)
     ctx.save(); rr(fx,fy,fw,fh,16*ui); ctx.clip();
-    ctx.strokeStyle=hexa(COL.phosphor,.10); ctx.lineWidth=1.2;
-    for(let k=1;k<=4;k++){ ctx.beginPath(); ctx.arc(rcx,rcy,rmax*k/4,0,7); ctx.stroke(); }
-    ctx.beginPath(); ctx.moveTo(rcx-rmax,rcy); ctx.lineTo(rcx+rmax,rcy);
-    ctx.moveTo(rcx,rcy-rmax); ctx.lineTo(rcx,rcy+rmax); ctx.stroke();
-    // вращающаяся развёртка
-    ctx.save(); ctx.translate(rcx,rcy); ctx.rotate(tm*0.0009);
-    const grad=ctx.createLinearGradient(0,0,rmax,0);
-    grad.addColorStop(0,hexa(COL.phosphor,.20)); grad.addColorStop(1,hexa(COL.phosphor,0));
-    ctx.fillStyle=grad; ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,rmax,-0.20,0.02); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle=hexa(COL.phosphor,.05); ctx.lineWidth=1;
+    for(let gx=fx; gx<fx+fw; gx+=34*ui){ ctx.beginPath(); ctx.moveTo(gx,fy); ctx.lineTo(gx,fy+fh); ctx.stroke(); }
+    for(let gy=fy; gy<fy+fh; gy+=34*ui){ ctx.beginPath(); ctx.moveTo(fx,gy); ctx.lineTo(fx+fw,gy); ctx.stroke(); }
+    const rcx=fx+fw*0.42, rcy=fy+fh*0.5, rmax=Math.min(fw,fh)*0.5;
+    ctx.strokeStyle=hexa(COL.phosphor,.07); ctx.lineWidth=1.2;
+    for(let k=1;k<=3;k++){ ctx.beginPath(); ctx.arc(rcx,rcy,rmax*k/3,0,7); ctx.stroke(); }
     ctx.restore();
-    ctx.restore();
-    // светящаяся рамка апрона
-    ctx.save(); ctx.shadowColor=hexa(COL.phosphor,.6); ctx.shadowBlur=14;
-    ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.55); rr(fx,fy,fw,fh,16*ui); ctx.stroke(); ctx.restore();
-    if(LV.biome==='forest') drawForestDecor(tm, ax, ay, aR, ab);
-    if(LV.bonus) drawBonusDecor(tm, ax, ay, aR, ab);
+
+    // ===== неон-рамка: верх/лево/низ сплошные, право — короткие стабы =====
+    ctx.save(); ctx.shadowColor=hexa(COL.phosphor,.6); ctx.shadowBlur=12;
+    ctx.lineWidth=2.4; ctx.strokeStyle=hexa(COL.phosphor,.6);
+    ctx.beginPath();
+    ctx.moveTo(fx,fy); ctx.lineTo(fx+fw,fy);              // верх
+    ctx.moveTo(fx,fy+fh); ctx.lineTo(fx+fw,fy+fh);        // низ
+    ctx.moveTo(fx,fy); ctx.lineTo(fx,fy+fh);              // лево
+    const stub=Math.min(54*ui,fh*0.18);
+    ctx.moveTo(fx+fw,fy); ctx.lineTo(fx+fw,fy+stub);       // правый верхний стаб
+    ctx.moveTo(fx+fw,fy+fh-stub); ctx.lineTo(fx+fw,fy+fh); // правый нижний стаб (середина открыта)
+    ctx.stroke(); ctx.restore();
+    // краевые огни вдоль верх/низ кромки
+    ctx.fillStyle=hexa(COL.phosphor,.7);
+    for(let i=0;i<=10;i++){ const lx=fx+12*ui+i*((fw-24*ui)/10);
+      ctx.beginPath(); ctx.arc(lx,fy,1.7*ui,0,7); ctx.fill();
+      ctx.beginPath(); ctx.arc(lx,fy+fh,1.7*ui,0,7); ctx.fill(); }
+
+    if(LV.biome==='forest') drawForestDecor(tm, ax, ay, field.rwR, ab);
+    if(LV.bonus) drawBonusDecor(tm, ax, ay, field.rwR, ab);
   }
 
   function drawField(tm){
@@ -4528,15 +4570,16 @@
   function drawRunways(tm){
     const CART = SKIN==='cartoon';
     runways.forEach((r,i)=>{
-      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':(NEON?'#0a1230':(CART?'#c7cfd6':'#1a1d2e')); ctx.fill();  // бонус: садовая дорожка; cartoon: светлый асфальт
+      const NTONE=[COL.phosphor,COL.rose,COL.green]; const nt=NTONE[i%NTONE.length];   // тон ВПП по индексу (27/18/09)
+      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':(NEON?'#0a1226':(CART?'#c7cfd6':'#1a1d2e')); ctx.fill();  // бонус: садовая дорожка; cartoon: светлый асфальт
       if(NEON && !r.closed){
-        ctx.save(); ctx.shadowColor=hexa(COL.phosphor,.5); ctx.shadowBlur=8;
-        ctx.lineWidth=1.6; ctx.strokeStyle=hexa(COL.phosphor,.5); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke(); ctx.restore();
+        ctx.save(); ctx.shadowColor=hexa(nt,.5); ctx.shadowBlur=9;
+        ctx.lineWidth=1.8; ctx.strokeStyle=hexa(nt,.7); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke(); ctx.restore();
       } else {
         ctx.lineWidth=CART?2:1.5; ctx.strokeStyle=CART?hexa('#5a6470',.55):hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
       }
       // осевая пунктирная (cartoon — белая, поверх светлого асфальта)
-      ctx.strokeStyle=CART?hexa('#ffffff',r.occupied?0.6:0.92):hexa(COL.paper, r.occupied?0.35:0.5);
+      ctx.strokeStyle=CART?hexa('#ffffff',r.occupied?0.6:0.92):(NEON?hexa(nt,r.occupied?0.5:0.8):hexa(COL.paper, r.occupied?0.35:0.5));
       ctx.lineWidth=2.5; ctx.setLineDash([18,15]);
       ctx.beginPath(); ctx.moveTo(r.x+12*ui,r.cy); ctx.lineTo(r.x+r.w-12*ui,r.cy); ctx.stroke(); ctx.setLineDash([]);
       // пороговые отметки с обоих торцов (cartoon — красные пороги как на референсе)
@@ -4547,7 +4590,7 @@
       }
       // огни кромок: золотые / янтарные (занята) / красные (закрыта), мерцают
       const blink=0.4+0.6*Math.abs(Math.sin(tm*0.004+i));
-      const lc = r.closed?COL.life:(r.occupied?COL.amber:'#ffb84d'); // amber-glow по спеке cozy
+      const lc = r.closed?COL.life:(NEON?nt:(r.occupied?COL.amber:'#ffb84d')); // neon: тон ВПП; cozy: amber-glow
       for(let k=0;k<=8;k++){
         const lx=r.x+9*ui+k*(r.w-18*ui)/8;
         ctx.fillStyle=hexa(lc,blink);
@@ -4564,7 +4607,7 @@
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText(t('canvas.closed'), cx, r.y+r.h-12*ui);
       } else {
-        ctx.fillStyle=CART?hexa(COL.ink,.6):hexa(COL.muted,.7); ctx.font=`${(CART?15:9)*ui}px ${MONO}`;
+        ctx.fillStyle=CART?hexa(COL.ink,.6):(NEON?nt:hexa(COL.muted,.7)); ctx.font=`${(CART?15:NEON?13:9)*ui}px ${MONO}`;
         ctx.textAlign='left'; ctx.textBaseline='middle';
         ctx.fillText(t('canvas.rwy',{n:'0'+(i+1)}), r.x+(CART?16:12)*ui, r.y+(CART?15:12)*ui);
       }
@@ -4779,7 +4822,65 @@
     else { ctx.moveTo(x1,y0); ctx.arcTo(x0,y0,x0,y1,r); ctx.arcTo(x0,y1,x1,y1,r); ctx.lineTo(x1,y1); }
   }
 
+  // НЕОН-БОКС (handoff): глянцевое сквозное стойло. Непрозрачный бейдж услуги в углу
+  // задней стены, точки апгрейда (зелёная=куплено / полая=доступно) в плашке по центру
+  // стены, чип ↑ в противоположном углу (исчезает при макс-прокачке), замок+цена на
+  // непрозрачной подложке у закрытого. Стойла встык → читаются как сплошная ангара.
+  function drawNeonBay(b){
+    const TONE={fuel:'teal',repair:'amber',board:'rose',deice:'ice'};
+    const tone=TONE[b.type]||'phosphor', col=COL[tone];
+    const x=b.x, y=b.y, w=b.w, h=b.h, top=(b.side!=='bottom');
+    const wt=Math.max(8*ui, Math.min(h*0.22, 18*ui)), r=0, busy=!!b.occupied, pad=5*ui;  // r=0 → стойла встык = сплошная ангара
+    ctx.save();
+    if(!b.open){
+      const afford=money>=K.BAY_OPEN_COST, oc=afford?COL.green:COL.muted;
+      rr(x,y,w,h,r); const bg=ctx.createLinearGradient(0,y,0,y+h); bg.addColorStop(0,'#101a36'); bg.addColorStop(1,'#070e22'); ctx.fillStyle=bg; ctx.fill();
+      ctx.save(); if(afford){ctx.shadowColor=hexa(COL.green,.5); ctx.shadowBlur=14;} ctx.lineWidth=2; ctx.strokeStyle=hexa(oc,afford?.9:.4); ctx.setLineDash(afford?[7*ui,5*ui]:[]); rr(x,y,w,h,r); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+      const pw=Math.min(w-12*ui,96*ui), ph=Math.min(h-12*ui,38*ui), px=x+w/2-pw/2, py=y+h/2-ph/2;
+      rr(px,py,pw,ph,9*ui); ctx.fillStyle='#0a1326'; ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle=hexa(oc,.55); rr(px,py,pw,ph,9*ui); ctx.stroke();
+      const ls=ph*0.30, lx=px+ph*0.55, ly=py+ph/2;
+      ctx.fillStyle=oc; ctx.strokeStyle=oc; ctx.lineWidth=Math.max(1.6,ls*0.34);
+      rr(lx-ls*0.6,ly-ls*0.2,ls*1.2,ls*0.95,ls*0.22); ctx.fill();
+      ctx.beginPath(); ctx.arc(lx,ly-ls*0.2,ls*0.45,Math.PI,0); ctx.stroke();
+      ctx.fillStyle=afford?COL.coin:COL.muted; ctx.font=`700 ${Math.round(ph*0.42)}px ${MONO}`; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText(fmtMoney(K.BAY_OPEN_COST), px+ph*1.05, py+ph/2);
+      ctx.restore(); return;
+    }
+    rr(x,y,w,h,r); const fg=ctx.createLinearGradient(0,y,0,y+h); fg.addColorStop(0,hexa(col,.10)); fg.addColorStop(1,'#0a1430'); ctx.fillStyle=fg; ctx.fill();
+    ctx.fillStyle=hexa(col,.22); ctx.fillRect(x+w*0.5-12*ui, top?y+h*0.62:y+h*0.36-2*ui, 24*ui, 2*ui);
+    const wallG=(yy,hh)=>{const g=ctx.createLinearGradient(0,yy,0,yy+hh); g.addColorStop(0,'#243a66'); g.addColorStop(1,'#0d1b3c'); return g;};
+    const backY=top?y:y+h-wt;
+    ctx.fillStyle=wallG(backY,wt); ctx.fillRect(x,backY,w,wt);
+    ctx.fillStyle=wallG(y,h); ctx.fillRect(x,y,wt,h); ctx.fillRect(x+w-wt,y,wt,h);
+    ctx.save(); ctx.shadowColor=hexa(col,busy?.7:.45); ctx.shadowBlur=busy?12:7; ctx.fillStyle=hexa(col,busy?.95:.6); ctx.fillRect(x, top?y:y+h-2*ui, w, 2*ui); ctx.restore();
+    ctx.fillStyle='rgba(255,255,255,.18)'; ctx.fillRect(x, backY, w, 1.4*ui);
+    { const dir=top?1:-1, oy=top?y+h-3*ui:y+3*ui, sp=5*ui;
+      ctx.save(); ctx.strokeStyle=hexa(col,.6); ctx.lineWidth=2.2*ui; ctx.lineCap='round'; ctx.lineJoin='round';
+      for(let i=0;i<2;i++){ const yy=oy+dir*i*5*ui; ctx.beginPath(); ctx.moveTo(x+w/2-sp,yy-dir*sp*0.7); ctx.lineTo(x+w/2,yy); ctx.lineTo(x+w/2+sp,yy-dir*sp*0.7); ctx.stroke(); } ctx.restore(); }
+    const bSize=Math.min(w*0.34,h*0.5,40*ui), bx=x+pad, by=top?y+pad:y+h-pad-bSize;
+    rr(bx,by,bSize,bSize,bSize*0.28); ctx.fillStyle='#0c1736'; ctx.fill();
+    ctx.save(); ctx.shadowColor=hexa(col,.55); ctx.shadowBlur=10; ctx.lineWidth=2; ctx.strokeStyle=col; rr(bx,by,bSize,bSize,bSize*0.28); ctx.stroke(); ctx.restore();
+    drawIcon(b.type, bx+bSize/2, by+bSize/2, bSize*0.30, col, '#0c1736');
+    const up=bayUpCost(b);
+    if(up!=null){ const afford=money>=up, cs=Math.min(bSize*0.72,28*ui), cx2=x+w-pad-cs, cy2=top?y+pad:y+h-pad-cs;
+      rr(cx2,cy2,cs,cs,cs*0.3); ctx.fillStyle=afford?hexa(COL.green,.18):'#0c1736'; ctx.fill();
+      ctx.save(); if(afford){ctx.shadowColor=hexa(COL.green,.5); ctx.shadowBlur=10;} ctx.lineWidth=1.5; ctx.strokeStyle=afford?COL.green:hexa(COL.muted,.6); rr(cx2,cy2,cs,cs,cs*0.3); ctx.stroke(); ctx.restore();
+      ctx.strokeStyle=afford?COL.green:COL.muted; ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.lineJoin='round';
+      const ax=cx2+cs/2, ay=cy2+cs/2, ar=cs*0.26; ctx.beginPath(); ctx.moveTo(ax,ay+ar); ctx.lineTo(ax,ay-ar); ctx.moveTo(ax-ar*0.7,ay-ar*0.3); ctx.lineTo(ax,ay-ar); ctx.lineTo(ax+ar*0.7,ay-ar*0.3); ctx.stroke(); }
+    const totalDots=Math.max(1,Math.min(4,K.BAY_MAX_LVL)), dotR=3.2*ui, dgap=4*ui;
+    const plW=totalDots*(dotR*2+dgap)+dgap, plH=dotR*2+6*ui, plX=x+w/2-plW/2, plY=top?y+pad:y+h-pad-plH;
+    rr(plX,plY,plW,plH,plH/2); ctx.fillStyle='rgba(8,14,30,.72)'; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.18); rr(plX,plY,plW,plH,plH/2); ctx.stroke();
+    for(let i=0;i<totalDots;i++){ const dx=plX+dgap+i*(dotR*2+dgap)+dotR, dy=plY+plH/2, on=i<b.lvl;
+      ctx.beginPath(); ctx.arc(dx,dy,dotR,0,7);
+      if(on){ ctx.save(); ctx.shadowColor=hexa(COL.green,.7); ctx.shadowBlur=6; ctx.fillStyle=COL.green; ctx.fill(); ctx.restore(); ctx.lineWidth=1.4; ctx.strokeStyle=COL.green; ctx.stroke(); }
+      else { ctx.fillStyle='rgba(7,12,28,.6)'; ctx.fill(); ctx.lineWidth=1.4; ctx.strokeStyle=hexa(COL.muted,.7); ctx.stroke(); } }
+    if(busy && b.occupied.serveMax){ const frac=1-Math.max(0,b.occupied.serveTime)/b.occupied.serveMax, ccx=bx+bSize+8*ui, ccy=by+bSize/2;
+      ctx.beginPath(); ctx.arc(ccx,ccy,6*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.strokeStyle=col; ctx.stroke(); }
+    ctx.restore();
+  }
+
   function drawBay(b){
+    if(NEON && !b.deice && !LV.bonus){ drawNeonBay(b); return; }
     const col=LV.bonus ? BSP[bSpec(b.type)].petal : SVC[b.type].color;   // бонус: цвет цветка по виду
     const busy=!!b.occupied;
     ctx.save();
