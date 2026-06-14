@@ -1256,6 +1256,7 @@
     if(!I18N[code]) return;
     lang = code; save.lang = code; saveGame();
     applyI18n();
+    Analytics.track('setting_changed', {key:'lang', value:code});
   }
   function applyI18n(){
     document.documentElement.lang = lang;
@@ -2085,6 +2086,119 @@
     tap(){ this.v(12); }, ok(){ this.v([18,40,24]); }, penalty(){ this.v(35); }, crash(){ this.v([60,40,90]); },
     near(){ this.v([10,30,10]); },
   };
+  // ---- Analytics: единая шина событий для soft-launch-метрик ----
+  // ЭТО ЛОГИКА, НЕ КОНТЕНТ → одна для всех скинов/биомов/карт (см. CLAUDE.md). Скин —
+  // это просто поле `skin` в каждом событии, никаких if(SKIN==='…'). Сейчас sink =
+  // console + кольцевой буфер в localStorage; реальный провайдер (Firebase/GA4 или
+  // свой бэкенд) подключается ОДНОЙ заменой Analytics.sink — ни одна точка track() не
+  // меняется. Метрики (retention/session length/churn/conversion/ARPDAU/tutorial
+  // dropoff) считаются на стороне провайдера из этих сырых событий.
+  const Analytics = (() => {
+    const UID_KEY='pf_uid', FIRST_KEY='pf_first_open', BUF_KEY='pf_evt_buffer';
+    const BUF_MAX=500;              // кольцевой буфер: не растём бесконечно в localStorage
+    const SESSION_GAP=30*60*1000;   // >30 мин без активности — это уже новая сессия
+    let userId=null, sessionId=null, seq=0, sessionStartedAt=0, lastEventAt=0;
+    let consent=true;               // до согласия события буферизуются, но sink молчит (задел под ATT/GDPR в сторах)
+    let buffer=[], started=false, sink=defaultSink;
+
+    const ls = {
+      get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+      set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+    };
+    function now(){ return Date.now(); }
+    function uuid(){
+      try{ if(self.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r=Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16);
+      });
+    }
+    // дефолтный sink: тихий console.debug. Подмени Analytics.sink, чтобы лить провайдеру.
+    function defaultSink(evt){ try{ if(console&&console.debug) console.debug('[evt]', evt.event, evt); }catch(e){} }
+
+    function loadBuffer(){ try{ const a=JSON.parse(ls.get(BUF_KEY)); if(Array.isArray(a)) buffer=a; }catch(e){} }
+    function persistBuffer(){ ls.set(BUF_KEY, JSON.stringify(buffer.slice(-BUF_MAX))); }
+
+    // базовый контекст, который прикладывается к КАЖДОМУ событию
+    function ctxBase(){
+      let plat='web';
+      try{ if(window.matchMedia && matchMedia('(display-mode: standalone)').matches) plat='pwa'; }catch(e){}
+      return {
+        userId, sessionId, seq:++seq, ts:now(),
+        appVersion: (typeof VERSION!=='undefined' ? VERSION : null),
+        skin: (typeof SKIN!=='undefined' ? SKIN : null),
+        lang: (typeof lang!=='undefined' ? lang : null),
+        platform: plat,
+        screenW: (typeof innerWidth!=='undefined' ? innerWidth : 0),
+        screenH: (typeof innerHeight!=='undefined' ? innerHeight : 0),
+      };
+    }
+    function emit(evt){
+      buffer.push(evt);
+      if(buffer.length>BUF_MAX) buffer.splice(0, buffer.length-BUF_MAX);
+      if(consent && !evt._sent){ try{ sink(evt); evt._sent=true; }catch(e){} }
+      persistBuffer();
+    }
+    function touchSession(){
+      const t=now();
+      if(!sessionId || (t-lastEventAt)>SESSION_GAP){ if(sessionId) endSession(); startSession(); }
+      lastEventAt=t;
+    }
+    function startSession(){
+      sessionId=uuid(); sessionStartedAt=now(); lastEventAt=sessionStartedAt;
+      emit(Object.assign(ctxBase(), {event:'session_start'}));
+    }
+    function endSession(){
+      if(!sessionId) return;
+      emit(Object.assign(ctxBase(), {event:'session_end', duration_ms: now()-sessionStartedAt}));
+      sessionId=null;
+    }
+    // главная точка: зови track('level_start', {...}) из ЛЮБОГО места логики
+    function track(event, props){
+      if(!started) return;          // до init() нет userId/сессии — молчим
+      touchSession();
+      emit(Object.assign(ctxBase(), {event}, props||{}));
+    }
+    function init(){
+      if(started) return;
+      loadBuffer();
+      userId = ls.get(UID_KEY); if(!userId){ userId=uuid(); ls.set(UID_KEY, userId); }
+      const isFirst = !ls.get(FIRST_KEY);
+      if(isFirst) ls.set(FIRST_KEY, String(now()));
+      started=true;
+      startSession();
+      if(isFirst) emit(Object.assign(ctxBase(), {event:'first_open'}));
+      // конец сессии при уходе со вкладки/закрытии; возврат позже gap → новая сессия
+      try{
+        document.addEventListener('visibilitychange', ()=>{
+          if(document.visibilityState==='hidden') endSession(); else touchSession();
+        });
+        window.addEventListener('pagehide', endSession);
+      }catch(e){}
+      // краши: для soft launch критично понимать, на чём отваливаются
+      try{
+        window.addEventListener('error', e=>track('error', {
+          message:String((e&&e.message)||(e&&e.type)||'error'),
+          source:((e&&e.filename)||'')+':'+((e&&e.lineno)||0), kind:'error' }));
+        window.addEventListener('unhandledrejection', e=>{
+          const r=e&&e.reason; track('error', {message:String((r&&r.message)||r||'rejection'), kind:'unhandledrejection'}); });
+      }catch(e){}
+    }
+    return {
+      init, track,
+      // consent-гейт под сторы: при отказе sink молчит; при согласии дольём накопленное
+      setConsent(v){ consent=!!v; if(consent) buffer.forEach(e=>{ if(!e._sent){ try{ sink(e); e._sent=true; }catch(_){} } }); persistBuffer(); },
+      get sink(){ return sink; }, set sink(fn){ if(typeof fn==='function') sink=fn; },
+      dump(){ return buffer.slice(); }, clear(){ buffer=[]; persistBuffer(); },
+      get userId(){ return userId; }, get sessionId(){ return sessionId; },
+      // СПЯЩИЕ монетизационные хелперы: определены, но пока не вызываются (нет IAP/рекламы).
+      // Когда появятся — зови Analytics.purchase({value,currency,sku}) / Analytics.adWatched({...}).
+      purchase(o){ track('purchase', o||{}); track('revenue', {value:o&&o.value, currency:o&&o.currency, sku:o&&o.sku, kind:'iap'}); },
+      adWatched(o){ track('ad_watched', o||{}); track('revenue', {value:o&&o.value, currency:o&&o.currency, kind:'ad'}); },
+    };
+  })();
+  // дев-доступ из консоли (и точка подключения провайдера из обёртки): Analytics.dump()
+  try{ window.PFAnalytics = Analytics; }catch(e){}
+
   // Звук тапа по любым кнопкам в оверлеях меню (старт / пауза / уровни / настройки и т.д.).
   // Делегирование на document — ловит и динамически созданные кнопки (язык, скин, список уровней).
   document.addEventListener('pointerdown', e=>{
@@ -2131,6 +2245,14 @@
     // тихий туториал «покажи и дай сделать»: только при первом запуске и не в Zen —
     // первый борт ведём за руку (подсветка + подсказка), без стены текста
     tut = (!zen && !save.tutorialDone && !LV.biome && !LV.bonus) ? {step:'land', plane:null} : null;
+    Analytics.track('level_start', {
+      level: levelKey,
+      mode: zen ? 'zen' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')),
+      objective: LV.objective && LV.objective.metric,
+      target: LV.objective && LV.objective.target,
+      startMoney: money,
+    });
+    if(tut) Analytics.track('tutorial_start', {step: tut.step});
     showGoals(false);          // крупное окно постановки целей в начале раунда (заодно ставит на паузу)
   }
 
@@ -3998,14 +4120,17 @@
   function completeTutorial(){
     if(!tut) return;
     tut=null; save.tutorialDone=true; saveGame();
+    Analytics.track('tutorial_complete', {});
     toast={text:t('tut.done'), t:0, good:true};
   }
   function updateTutorial(){
     if(!tut || !tut.plane) return;
     const p=tut.plane;
     if(p.dead){ tut.plane=null; tut.step='land'; return; }   // разбился — учим на следующем
+    const prev=tut.step;
     if(tut.step==='land' && p.zone!=='air') tut.step='service';
     if(tut.step==='service' && curNeed(p)==='depart') tut.step='takeoff';
+    if(tut.step!==prev) Analytics.track('tutorial_step', {step: tut.step});
     // завершение — в depart(): полный цикл от посадки до вылета пройден
   }
   function tutTarget(){
@@ -4129,6 +4254,13 @@
   function endLevel(reasonKey){          // reasonKey — ключ i18n (end.*)
     running=false; recordResult();
     const stars=computeStars(), v=metricValue(), passed=stars>=1;
+    Analytics.track(passed ? 'level_complete' : 'level_fail', {
+      level: levelKey,
+      mode: zen ? 'zen' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')),
+      reason: reasonKey, stars,
+      metric: LV.objective && LV.objective.metric, value: v, target: LV.objective && LV.objective.target,
+      money, peak: statPeak, time_s: Math.round(gameTime), lives: Math.max(0, lives),
+    });
     ACH.onLevelEnd(passed, stars, lives>=K.START_LIVES);
     document.getElementById('overKicker').textContent = t(passed?'over.passed':'over.failed');
     document.getElementById('finalStars').textContent = '★'.repeat(stars)+'☆'.repeat(3-stars);
@@ -4494,8 +4626,8 @@
     const s=document.getElementById('optSound2'); if(s) s.checked=save.sound!==false;
     const v=document.getElementById('optVibro2'); if(v) v.checked=save.vibro!==false;
   }
-  function setSound(on){ save.sound=on; saveGame(); SND.setEnabled(on); syncSettingsUI(); }
-  function setVibro(on){ save.vibro=on; saveGame(); HAP.on=on; syncSettingsUI(); }
+  function setSound(on){ save.sound=on; saveGame(); SND.setEnabled(on); syncSettingsUI(); Analytics.track('setting_changed', {key:'sound', value:!!on}); }
+  function setVibro(on){ save.vibro=on; saveGame(); HAP.on=on; syncSettingsUI(); Analytics.track('setting_changed', {key:'vibro', value:!!on}); }
   document.getElementById('optSound2').onchange=ev=>setSound(ev.target.checked);
   document.getElementById('optVibro2').onchange=ev=>setVibro(ev.target.checked);
 
@@ -4512,7 +4644,7 @@
       box.appendChild(b);
     }
   }
-  function setSkin(code){ applySkin(code); try{ localStorage.setItem('pf_skin', code); }catch(e){} renderSkinBtns(); }
+  function setSkin(code){ applySkin(code); try{ localStorage.setItem('pf_skin', code); }catch(e){} renderSkinBtns(); Analytics.track('setting_changed', {key:'skin', value:code}); }
 
   // настройки из стартового меню (звук / язык / скин / сброс прогресса)
   function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns(); renderSkinBtns(); hideAllScreens();
@@ -4866,6 +4998,7 @@
   ACH.init();
   lang = save.lang || DEFAULT_LANG;   // сохранённый выбор > английский по умолчанию
   applyI18n();
+  Analytics.init();                   // шина метрик: userId/сессия/first_open + ловля крашей
   // мягкая самопроверка конфига при загрузке: в dev сразу видно в консоли, если
   // новая механика/уровень нарушили правила (жёстко это же проверяют тесты)
   try{ const _pr = validateGame(); if(_pr.length) console.error('[PlaneFlow] проблемы конфига:\n  '+_pr.join('\n  ')); }catch(e){ console.error(e); }
@@ -4888,7 +5021,7 @@
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
       validateGame, validateLevels, validateBonus, validateI18n, validateConfig,
-      saveGame, loadGame, setLang, detectLang,
+      saveGame, loadGame, setLang, detectLang, Analytics,
       get save(){ return save; },     set save(v){ save=v; },
       get lang(){ return lang; },
       get levelIdx(){ return levelIdx; },
