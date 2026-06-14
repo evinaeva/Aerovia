@@ -1270,6 +1270,11 @@
     SPEED_AIR: 60,        // скорость захода на посадку
     SPEED_TAXI: 45,       // скорость руления по земле
     SPEED_TAKEOFF: 150,   // разгон на взлёте
+    // визуальная «перспектива»: в небе борт ближе к наблюдателю — крупнее, на земле
+    // мельче. На ВПП масштаб плавно меняется по ходу полосы (посадка ужимает, взлёт
+    // раздувает). Чисто визуально — на столкновения/хваты не влияет.
+    PLANE_SKY_SCALE: 1.5, // масштаб борта в небе
+    PLANE_GND_SCALE: 1.0, // масштаб на земле/поле
     ARRIVE: 12,
     GRAB: 42,
     CRASH_DIST: 24,       // столкновение на поле
@@ -2532,12 +2537,16 @@
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_AIR, dt);
         }
-        // заход на посадку: пересёк правый край полос -> захват ближайшей ОТКРЫТОЙ
-        // (садимся даже на занятую — крушение только при физическом контакте)
+        // заход на посадку: с неба на поле — ТОЛЬКО через ВПП. Сесть можно, лишь когда
+        // борт идёт по оси открытой полосы (в пределах её полотна по вертикали). Если
+        // маршрут ведёт мимо полос — рубеж ВПП работает как стена: дальше борт не
+        // пускаем, он скользит вдоль неё, пока не выйдет на створ свободной полосы.
+        // (садимся даже на занятую полосу — крушение только при физическом контакте)
         if(pl.x <= field.rwR){
-          let best=null, bd=1e9;
-          for(const r of runways){ if(r.closed) continue; const d=Math.abs(pl.y-r.cy); if(d<bd){bd=d;best=r;} }
+          let best=null;
+          for(const r of runways){ if(r.closed) continue; if(pl.y>=r.y && pl.y<=r.y+r.h){ best=r; break; } }
           if(best) land(pl, best);
+          else pl.x = field.rwR;   // мимо полосы — упёрся в рубеж ВПП
         }
         continue;
       }
@@ -2857,6 +2866,21 @@
     ctx.beginPath(); ctx.moveTo(-16,2.5); ctx.lineTo(-24,10); ctx.lineTo(-27,9.5); ctx.lineTo(-20,2.5); ctx.closePath(); ctx.fill(); }
   // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый,
   // медицинский — белый с красным крестом на фюзеляже
+  // визуальный масштаб борта (перспектива небо↔земля). На ВПП во время посадки/взлёта
+  // меняется ПЛАВНО по позиции вдоль полосы: у полевого торца (stopX) — наземный,
+  // у небесного края (exitX) — небесный. Одна формула покрывает оба направления:
+  // садящийся борт едет stopX←exitX (ужимается), взлетающий exitX→stopX… наоборот
+  // (раздувается) — обоим достаточно интерполяции по x.
+  function planeScale(pl){
+    const A=K.PLANE_SKY_SCALE, G=K.PLANE_GND_SCALE;
+    if(pl.zone==='air') return A;
+    if(pl.zone==='runway' && pl.runway && (pl.landing || pl.takeoff)){
+      const r=pl.runway;
+      const tr=Math.max(0, Math.min(1, (pl.x - r.stopX) / Math.max(1, r.exitX - r.stopX)));
+      return G + tr*(A-G);
+    }
+    return G;   // field / bay / борт стоит на полосе
+  }
   function drawPlaneBodyAt(x,y,ang,s,vip,emergency,medical){
     if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)
     if(COZY){
@@ -3443,6 +3467,7 @@
   function drawPlane(pl){
     const need=curNeed(pl);
     const ncol=SVC[need].color;
+    const vs=planeScale(pl);   // визуальная «перспектива»: кольца/пузырёк тянутся за бортом
 
     // маршрут — cozy-зелёная (radar-фосфор при COZY=off): сплошная тонкая линия
     if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
@@ -3484,8 +3509,8 @@
     if(frac!=null){
       const rcol = pl.emergency ? COL.life : (frac>0.5 ? COL.teal : frac>0.25 ? COL.amber : COL.life);
       ctx.save(); ctx.translate(pl.x,pl.y);
-      ctx.beginPath(); ctx.arc(0,0,16*ui,0,7); ctx.lineWidth=3; ctx.strokeStyle=hexa(COL.ink,.6); ctx.stroke();
-      ctx.beginPath(); ctx.arc(0,0,16*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
+      ctx.beginPath(); ctx.arc(0,0,16*ui*vs,0,7); ctx.lineWidth=3; ctx.strokeStyle=hexa(COL.ink,.6); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,16*ui*vs,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
       ctx.lineWidth=3; ctx.lineCap='round'; ctx.strokeStyle=rcol;
       ctx.shadowColor=rcol; ctx.shadowBlur=9; ctx.stroke();
       ctx.restore();
@@ -3493,7 +3518,7 @@
     // пульсирующее кольцо срочного борта в воздухе (аварийный — красный, медицинский — розовый)
     if((pl.emergency||pl.medical) && pl.zone==='air'){
       const p=0.5+0.5*Math.sin(nowT*0.006), pc=pl.emergency?COL.life:COL.rose;
-      ctx.beginPath(); ctx.arc(pl.x,pl.y,20*ui+p*3*ui,0,7);
+      ctx.beginPath(); ctx.arc(pl.x,pl.y,(20*ui+p*3*ui)*vs,0,7);
       ctx.lineWidth=2; ctx.strokeStyle=hexa(pc,.4+.4*p); ctx.stroke();
     }
     // выделение — cozy-кольцо (спрайт) с фолбэком на пунктир (масштаб ⟂ SZ())
@@ -3503,11 +3528,11 @@
     }
 
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
-    else drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5*SZ(), pl.vip, pl.emergency, pl.medical);
+    else drawPlaneBodyAt(pl.x, pl.y, pl.ang, ui*0.5*SZ()*vs, pl.vip, pl.emergency, pl.medical);
 
     // пузырёк нужды над бортом
     if(pl.zone!=='bay'){
-      const _ny = pl.y-28*ui;
+      const _ny = pl.y-28*ui*vs;
       if(LV.bonus){
         // бонус: над гусеницей — цветок нужного цвета (её цель). Куколка/бабочка — без пузырька.
         if(pl.bug==='cat') drawFlower(pl.x, _ny, 9*ui, BSP[pl.species||0].petal);
