@@ -5405,8 +5405,73 @@
   }
 
   // сцена главного меню: радар с разверткой, дрейфующий борт, свечение горизонта
-  function drawMenuScene(tm){
-    if(COZY){
+    // ---- Neon main-screen landing animation (port of handoff hero-final.jsx) ----
+  const _qss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+  const _qlerp=(a,b,t)=>a+(b-a)*t;
+  const _qcub=(a,b,c,d,t)=>{const m=1-t;return m*m*m*a+3*m*m*t*b+3*m*t*t*c+t*t*t*d;};
+  function _qbez(P,n){const o=[];for(let i=0;i<n;i++){const t=i/n;o.push([_qcub(P[0][0],P[1][0],P[2][0],P[3][0],t),_qcub(P[0][1],P[1][1],P[2][1],P[3][1],t)]);}return o;}
+  function _qdep(ty,x1,y){if(ty==='leftClimb')return[[x1,y],[x1-150,y-10],[10,y-150],[-120,y-215]];if(ty==='down')return[[x1,y],[x1-130,y+8],[70,y+90],[150,520]];return[[x1,y],[x1-160,y],[-10,y-26],[-120,y-36]];}
+  const _QAN=200,_QRN=170,_QDN=250;
+  const _QCFG={rw:{y:368,x0:486,x1:128},boxes:[{x:360,kind:'fuel'},{x:232,kind:'gate'}],exit:'leftClimb',period:9500,cruiseV:1,groundV:0.5};
+  let _qpath=null;
+  function _qbuild(cfg){
+    const y=cfg.rw.y,x0=cfg.rw.x0,x1=cfg.rw.x1;
+    const approach=_qbez([[1030,356],[770,356],[x0+130,y],[x0,y]],_QAN);
+    const runway=[];for(let i=0;i<=_QRN;i++)runway.push([_qlerp(x0,x1,i/_QRN),y]);
+    const dd=_qdep(cfg.exit,x1,y);const dep=_qbez(dd,_QDN);dep.push(dd[3]);
+    const samples=approach.concat(runway.slice(1),dep.slice(1));
+    const N=samples.length;const cum=[0];let L=0;
+    for(let i=1;i<N;i++){L+=Math.hypot(samples[i][0]-samples[i-1][0],samples[i][1]-samples[i-1][1]);cum.push(L);}
+    const fOfS=cum.map(cc=>cc/L);
+    const iRwStart=_QAN-1,iRwEnd=_QAN-1+_QRN;
+    const rwStartF=fOfS[iRwStart],rwEndF=fOfS[iRwEnd];
+    const boxes=cfg.boxes.map(bx=>{const i=iRwStart+Math.round((x0-bx.x)/(x0-x1)*_QRN);return{x:samples[i][0],y:y,kind:bx.kind,sf:fOfS[Math.max(iRwStart,Math.min(i,iRwEnd))]};});
+    const stSf=boxes.map(bb=>bb.sf);const sh=0.03;
+    const vf=samples.map((p,i)=>{const f=fOfS[i];const ground=_qss(rwStartF-sh,rwStartF+sh,f)*(1-_qss(rwEndF-sh,rwEndF+sh,f));let v=_qlerp(cfg.cruiseV||1,cfg.groundV||0.5,ground);for(const sf of stSf)v*=1-0.82*Math.exp(-Math.pow((f-sf)/0.011,2));return Math.max(v,0.06);});
+    const tcum=[0];let T=0;for(let i=1;i<N;i++){T+=(cum[i]-cum[i-1])/vf[i];tcum.push(T);}
+    const M=1024,fOf=new Array(M+1);let si=0;
+    for(let j=0;j<=M;j++){const tt=(j/M)*T;while(si<N-1&&tcum[si+1]<tt)si++;const t0=tcum[si],t1=(tcum[si+1]!=null?tcum[si+1]:t0),a=t1>t0?(tt-t0)/(t1-t0):0;fOf[j]=_qlerp(fOfS[si],fOfS[Math.min(si+1,N-1)],a);}
+    const fb=boxes.find(bb=>bb.kind==='fuel')||boxes[0];const gb=boxes.find(bb=>bb.kind==='gate')||boxes[boxes.length-1];
+    return{samples:samples,fOfS:fOfS,fOf:fOf,M:M,x0:x0,x1:x1,y:y,boxes:boxes,fuelSf:fb.sf,gateSf:gb.sf};
+  }
+  function _qsample(b,f){const fa=b.fOfS,s=b.samples,N=s.length;let lo=0,hi=N-1;while(lo<hi){const mid=(lo+hi+1)>>1;if(fa[mid]<=f)lo=mid;else hi=mid-1;}const i=Math.min(lo,N-2),f0=fa[i],f1=fa[i+1],a=f1>f0?(f-f0)/(f1-f0):0;const A=s[i],B=s[i+1];return{x:A[0]+(B[0]-A[0])*a,y:A[1]+(B[1]-A[1])*a,ang:Math.atan2(B[1]-A[1],B[0]-A[0])};}
+  function _qbox(cx,cy,kind,scale){
+    const fuel=kind==='fuel',color=fuel?'#ffc14d':'#22e3c6';
+    const sz=32*scale,r=9*scale;
+    ctx.save();ctx.translate(cx,cy);
+    ctx.shadowColor=color;ctx.shadowBlur=13*scale;ctx.fillStyle='#0c1838';
+    ctx.beginPath();ctx.roundRect(-sz/2,-sz/2,sz,sz,r);ctx.fill();ctx.shadowBlur=0;
+    ctx.lineWidth=1.6*scale;ctx.strokeStyle=color;ctx.beginPath();ctx.roundRect(-sz/2,-sz/2,sz,sz,r);ctx.stroke();
+    ctx.fillStyle=color;ctx.strokeStyle=color;
+    if(fuel){const g=7.5*scale;ctx.beginPath();ctx.moveTo(0,-g);ctx.bezierCurveTo(g*0.95,-g*0.05,g*0.78,g*0.95,0,g);ctx.bezierCurveTo(-g*0.78,g*0.95,-g*0.95,-g*0.05,0,-g);ctx.fill();}
+    else{ctx.lineWidth=2.1*scale;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.arc(0,-4*scale,3.1*scale,0,7);ctx.stroke();ctx.beginPath();ctx.arc(0,9.5*scale,6.4*scale,Math.PI*1.18,Math.PI*1.82);ctx.stroke();}
+    ctx.restore();
+  }
+  function drawMenuLanding(tm){
+    if(!_qpath)_qpath=_qbuild(_QCFG);
+    const b=_qpath;
+    const S=W/960,offY=H-444*S;
+    const MX=function(lx){return lx*S;},MY=function(ly){return offY+ly*S;};
+    const HOLD=0.9,period=_QCFG.period,tail=0.0040,QTRAIL=32;
+    const pr=(tm%period)/period,pa=pr/HOLD;
+    let f;if(pa>=1)f=1;else{const fi=pa*b.M,j=Math.floor(fi);f=_qlerp(b.fOf[j],b.fOf[Math.min(j+1,b.M)],fi-j);}
+    const s0=_qsample(b,f);
+    const offscr=s0.x<-34||s0.x>994||s0.y<-34||s0.y>478||pa>=1;
+    ctx.save();ctx.lineCap='round';
+    ctx.globalAlpha=0.16;ctx.strokeStyle='#22e3c6';ctx.lineWidth=26*S;
+    ctx.beginPath();ctx.moveTo(MX(b.x0),MY(b.y));ctx.lineTo(MX(b.x1),MY(b.y));ctx.stroke();
+    ctx.globalAlpha=1;ctx.strokeStyle='rgba(234,255,255,0.42)';ctx.lineWidth=2*S;ctx.setLineDash([14*S,14*S]);
+    ctx.beginPath();ctx.moveTo(MX(b.x0),MY(b.y));ctx.lineTo(MX(b.x1),MY(b.y));ctx.stroke();
+    ctx.setLineDash([]);ctx.restore();
+    ctx.save();ctx.fillStyle='#3ad2ff';ctx.shadowColor='#3ad2ff';
+    for(let k=0;k<QTRAIL;k++){const ff=f-(k+1)*tail;if(ff<0||pa>=1)continue;const sp=_qsample(b,ff),q=1-k/QTRAIL;ctx.globalAlpha=Math.pow(q,1.6)*0.85;ctx.shadowBlur=7*S;ctx.beginPath();ctx.arc(MX(sp.x),MY(sp.y),(1.6+2.4*q)*S,0,7);ctx.fill();}
+    ctx.restore();
+    const occl=Math.max(0,...b.boxes.map(bx=>Math.exp(-Math.pow((f-bx.sf)/0.009,2))));
+    if(!offscr){ctx.save();ctx.globalAlpha=Math.max(0,1-0.92*occl);drawPlaneBodyAt(MX(s0.x),MY(s0.y),s0.ang,S,false,false);ctx.restore();}
+    for(const bx of b.boxes){const act=pa>=1?0:Math.exp(-Math.pow((f-bx.sf)/0.02,2));_qbox(MX(bx.x),MY(bx.y),bx.kind,(1+0.2*act)*S);}
+  }
+function drawMenuScene(tm){
+    if(COZY && !NEON){   // neon: процедурный радар + анимация посадки (drawMenuLanding ниже)
       // cozy menu background (cover-fit); falls back to the radar scene if not ready
       const ar=1280/720; let dw=W, dh=W/ar; if(dh<H){ dh=H; dw=H*ar; }
       if(SPRITES.blit('menu-bg', (W-dw)/2, (H-dh)/2, dw, dh)) return;
@@ -5431,13 +5496,16 @@
       ctx.fillStyle=hexa(COL.phosphor,f); ctx.beginPath(); ctx.arc(x,y,2.5,0,7); ctx.fill();
     });
     ctx.restore();
-    // дрейфующий борт по небу
-    const px=((tm*0.025)%(W+240))-120, py=H*0.24+Math.sin(tm*0.0008)*14;
-    drawPlaneBodyAt(px,py,Math.sin(tm*0.0008)*0.06,ui*0.6,false,false);
+    // дрейфующий борт по небу (cozy/cartoon); neon рисует посадку ниже, поверх зарева
+    if(!NEON){
+      const px=((tm*0.025)%(W+240))-120, py=H*0.24+Math.sin(tm*0.0008)*14;
+      drawPlaneBodyAt(px,py,Math.sin(tm*0.0008)*0.06,ui*0.6,false,false);
+    }
     // бирюзовое свечение горизонта
     const hg=ctx.createLinearGradient(0,H-120*ui,0,H);
     hg.addColorStop(0,'rgba(16,48,58,0)'); hg.addColorStop(1,hexa(COL.teal,.10));
     ctx.fillStyle=hg; ctx.fillRect(0,H-120*ui,W,120*ui);
+    if(NEON) drawMenuLanding(tm);
     vignette();
   }
 
