@@ -125,13 +125,13 @@
   .opt input[type=checkbox]:checked{background:#5dca7a;border-color:#5dca7a}
   .opt input[type=checkbox]:checked::after{transform:translateX(22px);background:#fff}
   .subhead{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--phosphor);margin:18px 0 6px;border-bottom:1px solid rgba(191,233,255,.18);padding-bottom:4px}
-  /* угловые виджеты главного экрана: флаг языка (справа внизу) и отладка (слева внизу) */
-  /* медали + настройки: ряд справа внизу, прямо над флагом языка */
-  .corner-actions{position:absolute;right:16px;bottom:62px;z-index:7;display:flex;gap:10px}
+  /* угловые виджеты главного экрана: столбец справа внизу (настройки, медали, язык) и отладка (слева внизу) */
+  /* один столбец справа внизу: настройки → медали → флаг языка */
+  .corner-actions{position:absolute;right:16px;bottom:16px;z-index:7;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
   .corner-actions .btn{width:56px;height:38px;padding:0;border-radius:9px;font-size:20px;
     background:var(--raised);box-shadow:0 6px 18px rgba(8,6,16,.5)}
   .corner-actions .bglyph{margin:0}
-  .corner-flag{position:absolute;right:16px;bottom:16px;z-index:7;width:56px;height:38px;padding:0;
+  .corner-flag{z-index:7;width:56px;height:38px;padding:0;
     border:1.5px solid var(--pur-line);border-radius:9px;background:var(--raised);overflow:hidden;cursor:pointer;
     box-shadow:0 6px 18px rgba(8,6,16,.5);transition:.15s}
   .corner-flag:hover{border-color:rgba(181,140,240,.7)}
@@ -392,13 +392,12 @@
         <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
       </div>
     </div>
-    <!-- медали и настройки: ряд справа внизу, над переключателем языка -->
+    <!-- угловой столбец справа внизу: настройки, медали, язык (по тапу флага язык переключается) -->
     <div class="corner-actions">
-      <button class="btn btn-quiet" id="medalsBtn" data-i18n-aria="medals.btn"><span class="bglyph">🏅</span></button>
       <button class="btn btn-quiet" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="bglyph">⚙</span></button>
+      <button class="btn btn-quiet" id="medalsBtn" data-i18n-aria="medals.btn"><span class="bglyph">🏅</span></button>
+      <button class="corner-flag" id="langFlagBtn" aria-label="Language"></button>
     </div>
-    <!-- язык: флаг в правом нижнем углу; по тапу язык переключается (по умолчанию английский) -->
-    <button class="corner-flag" id="langFlagBtn" aria-label="Language"></button>
   </div>
 
   <div class="overlay hidden" id="overScreen">
