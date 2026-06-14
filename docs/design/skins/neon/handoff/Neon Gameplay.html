@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PlaneFlow — Neon Gameplay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: "Nunito", system-ui, sans-serif; background: #05080f; color: #dff4ff; overflow: hidden; }
+  #root { height: 100vh; display: flex; flex-direction: column; }
+
+  /* ---------- page chrome ---------- */
+  .top { flex: 0 0 auto; display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: #0a0f1c; border-bottom: 1px solid rgba(58,210,255,.14); }
+  .top__title { font-family: "Fredoka", sans-serif; font-weight: 700; font-size: 15px; color: #eafaff; display: flex; align-items: center; gap: 9px; }
+  .top__title .dot { width: 9px; height: 9px; border-radius: 50%; background: #3ad2ff; box-shadow: 0 0 12px #3ad2ff; }
+  .top__mood { font-size: 12.5px; color: #5f7bb0; font-weight: 700; }
+  .top__mood b { color: #9fd6e8; font-weight: 800; }
+  .spacer { flex: 1; }
+  .toggle { display: flex; background: #0e1730; border: 1px solid rgba(58,210,255,.2); border-radius: 11px; padding: 3px; gap: 2px; }
+  .toggle button { border: 0; background: transparent; color: #7f9bc4; font-family: inherit; font-weight: 800; font-size: 12.5px; padding: 7px 14px; border-radius: 8px; cursor: pointer; letter-spacing: .02em; }
+  .toggle button.on { background: rgba(58,210,255,.16); color: #dff4ff; }
+  .pickers { display: flex; gap: 14px; align-items: center; }
+  .picker { display: flex; align-items: center; gap: 8px; }
+  .picker__lbl { font-size: 10px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: #5f7bb0; }
+
+  .stage { flex: 1; min-height: 0; min-width: 0; overflow: hidden; padding: 26px; position: relative;
+    background: radial-gradient(70% 70% at 50% 36%, #0a1020 0%, #05080f 100%); }
+  .stage__fit { position: absolute; left: 50%; top: 50%; transform-origin: center; }
+
+  /* ---------- the game frame (phone-landscape, locked layout) ---------- */
+  .nx-frame { position: relative; width: 1600px; height: 900px; border-radius: 30px; overflow: hidden; background: #070c1c;
+    box-shadow: 0 40px 110px rgba(0,0,0,.7), 0 0 0 11px #0c1326, 0 0 0 12px #1a2647, 0 0 60px rgba(58,210,255,.12); }
+  /* camera punch-hole (safe-area) — left edge, background only; HUD/bays keep clear */
+  .nx-frame::after { content: ""; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; border-radius: 50%; background: #04060c; z-index: 60;
+    box-shadow: 0 0 0 4px rgba(4,7,16,.7), inset 0 0 0 2px rgba(58,210,255,.28), inset 0 1px 2px rgba(58,210,255,.4); }
+
+  /* ---------- glossy neon surface system (the ref-01 finish) ---------- */
+  .nx-gloss { position: relative; background: linear-gradient(168deg, #1a2c54 0%, #101e42 46%, #0a1430 100%);
+    border: 2px solid var(--c, #3ad2ff); border-radius: 14px;
+    box-shadow: 0 0 16px var(--g, rgba(58,210,255,.5)), 0 0 40px var(--g, rgba(58,210,255,.5)),
+      0 12px 26px rgba(2,6,20,.6), inset 0 1px 0 rgba(255,255,255,.24), inset 0 -16px 26px rgba(2,6,20,.5); }
+  .nx-gloss::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.05) 20%, transparent 46%); }
+
+  .nx-bay { composes: nx-gloss; position: relative; border-radius: 14px;
+    background: linear-gradient(168deg, #1a2c54 0%, #101e42 46%, #0a1430 100%);
+    border: 2px solid var(--c); box-shadow: 0 0 15px var(--g), 0 0 34px var(--g), 0 10px 22px rgba(2,6,20,.6),
+      inset 0 1px 0 rgba(255,255,255,.22), inset 0 -14px 24px rgba(2,6,20,.5); transition: transform .12s ease; }
+  .nx-bay::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,.04) 22%, transparent 48%); }
+  .nx-bay__in { position: relative; z-index: 2; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; padding: 9px; }
+  .nx-chip { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+    background: linear-gradient(160deg, rgba(255,255,255,.12), rgba(10,20,48,.55)); border: 1.5px solid var(--c);
+    box-shadow: 0 0 12px var(--g), inset 0 1px 0 rgba(255,255,255,.3); }
+  .nx-chip--lg { width: 54px; height: 54px; border-radius: 14px; }
+  .nx-bay__txt { text-align: center; line-height: 1.05; }
+  .nx-bay__lbl { font-family: "Nunito",sans-serif; font-weight: 800; font-size: 12px; letter-spacing: .06em; }
+  .nx-bay__cost { font-family: "Fredoka",sans-serif; font-weight: 700; font-size: 17px; margin-top: 3px; }
+  .nx-cost { display: flex; align-items: center; gap: 5px; font-family: "Fredoka",sans-serif; font-weight: 700; font-size: 14px; }
+
+  .nx-hudbar { background: linear-gradient(180deg, rgba(20,36,72,.82) 0%, rgba(9,17,40,.86) 100%); border: 1.5px solid rgba(58,210,255,.3);
+    border-radius: 18px; backdrop-filter: blur(10px);
+    box-shadow: 0 0 22px rgba(58,210,255,.16), 0 14px 32px rgba(2,6,20,.55), inset 0 1px 0 rgba(255,255,255,.16); }
+  .nx-hudbar::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 40%); }
+
+  .nx-progress { height: 12px; border-radius: 999px; background: rgba(2,8,24,.6); border: 1px solid rgba(58,210,255,.18); overflow: hidden; }
+  .nx-progress__fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2f8fd6, #3ad2ff); box-shadow: 0 0 12px rgba(58,210,255,.7); }
+
+  .nx-fab { position: relative; border-radius: 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(168deg, #1a2c54, #0c1736 60%, #0a1430); border: 2px solid var(--c);
+    box-shadow: 0 0 16px var(--g), 0 8px 18px rgba(2,6,20,.55), inset 0 1px 0 rgba(255,255,255,.22), inset 0 -10px 18px rgba(2,6,20,.5);
+    transition: transform .1s ease, filter .12s ease; }
+  .nx-fab::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.2), transparent 46%); }
+
+  .nx-card { position: relative; padding: 10px 14px; border-radius: 16px; z-index: 40;
+    background: linear-gradient(168deg, rgba(22,38,76,.92), rgba(10,20,46,.94)); border: 1.5px solid var(--c);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0 18px var(--g), 0 10px 22px rgba(2,6,20,.5), inset 0 1px 0 rgba(255,255,255,.18); }
+  .nx-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 36%); }
+
+  .nx-rwy { position: relative; border-radius: 12px; overflow: visible;
+    background: linear-gradient(180deg, rgba(10,18,42,.9), rgba(5,10,26,.95)); border: 1.5px solid var(--c);
+    box-shadow: 0 0 14px var(--g), inset 0 0 22px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08); }
+  .nx-rwy__num { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-family: "Fredoka",sans-serif; font-weight: 700; font-size: 26px; }
+  .nx-lamp { position: absolute; width: 5px; height: 5px; border-radius: 50%; animation: nx-pulse 3.6s ease-in-out infinite; }
+
+  .nx-ring { position: absolute; left: 50%; top: 50%; width: 70px; height: 70px; margin: -35px 0 0 -35px; border-radius: 50%;
+    border: 2px solid var(--c); box-shadow: 0 0 16px var(--g), inset 0 0 12px var(--g); animation: nx-ringpulse 2.4s ease-in-out infinite; }
+  .nx-tap { position: absolute; left: -18px; top: -18px; width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--c);
+    box-shadow: 0 0 16px var(--c); animation: nx-tappulse 2s ease-out infinite; }
+
+  .pf-btn:hover { filter: brightness(1.1); }
+  .pf-btn:active { transform: translateY(1px) scale(.97); }
+
+  /* ---------- token / spec drawer (compact single strip) ---------- */
+  .spec { flex: 0 0 auto; background: #0a0f1c; border-top: 1px solid rgba(58,210,255,.14); padding: 11px 20px; overflow-x: auto; }
+  .spec__row { display: flex; align-items: center; gap: 20px; min-width: max-content; }
+  .spec__grp { display: flex; flex-direction: column; gap: 7px; }
+  .spec__lbl { font-size: 9.5px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; color: #5f7bb0; white-space: nowrap; }
+  .swatches { display: flex; gap: 7px; }
+  .sw { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .sw__c { width: 34px; height: 34px; border-radius: 9px; border: 1px solid rgba(255,255,255,.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.2); }
+  .sw__n { font-size: 9px; font-weight: 800; color: #8fb0d8; }
+  .sw__h { font-size: 8px; color: #5f7bb0; font-family: ui-monospace, monospace; }
+  .spec__div { width: 1px; align-self: stretch; background: rgba(58,210,255,.14); }
+  .chips { display: flex; gap: 6px; }
+  .pchip { font-size: 11px; font-weight: 700; color: #b9d2e8; background: #0e1730; border: 1px solid rgba(58,210,255,.18); border-radius: 8px; padding: 5px 9px; white-space: nowrap; }
+  .pchip b { color: #eafaff; }
+  .pchip--ok { border-color: rgba(93,224,138,.4); color: #b9f0cf; }
+
+  /* ---------- motion (slow & soft — BRIEF §5) ---------- */
+  @keyframes nx-sweep { to { transform: rotate(360deg); } }
+  @keyframes nx-breath { 0%,100% { opacity: .6; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.06); } }
+  @keyframes nx-flow { to { stroke-dashoffset: -28; } }
+  @keyframes nx-finger { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-4px,5px); } }
+  @keyframes nx-bob1 { 0%,100% { transform: var(--r, rotate(0)) translateY(0); } 50% { transform: var(--r, rotate(0)) translateY(-6px); } }
+  @keyframes nx-bob2 { 0%,100% { transform: var(--r, rotate(0)) translateY(0); } 50% { transform: var(--r, rotate(0)) translateY(5px); } }
+  @keyframes nx-pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+  @keyframes nx-ringpulse { 0%,100% { transform: scale(.9); opacity: .8; } 50% { transform: scale(1.08); opacity: 1; } }
+  @keyframes nx-tappulse { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.7); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="neon-gameplay/neon-field.jsx"></script>
+<script type="text/babel" src="neon-gameplay/neon-hud.jsx"></script>
+
+<script type="text/babel">
+const { useState, useLayoutEffect, useRef } = React;
+
+function useFit(ref, w, h, pad = 0) {
+  const [s, setS] = useState(0.2);
+  useLayoutEffect(() => {
+    const el = ref.current; if (!el) return;
+    const calc = () => { const r = el.getBoundingClientRect(); if (r.width && r.height) setS(Math.min((r.width - pad) / w, (r.height - pad) / h)); };
+    calc();
+    const ro = new ResizeObserver(calc); ro.observe(el);
+    window.addEventListener("resize", calc);
+    const t = setTimeout(calc, 120);
+    return () => { ro.disconnect(); window.removeEventListener("resize", calc); clearTimeout(t); };
+  }, []);
+  return s;
+}
+
+const PALETTE = [
+  ["ink", N.ink], ["tarmac", N.tarmac], ["water", N.water], ["paper", N.paper],
+  ["amber", N.amber], ["teal", N.teal], ["ice", N.ice], ["rose", N.rose],
+  ["gold", N.gold], ["life", N.life], ["phosphor", N.phosphor],
+];
+
+function Spec() {
+  return (
+    <div className="spec">
+      <div className="spec__row">
+        <div className="spec__grp">
+          <div className="spec__lbl">Palette · game tokens</div>
+          <div className="swatches">
+            {PALETTE.map(([n, h]) => (
+              <div className="sw" key={n}>
+                <div className="sw__c" style={{ background: h }}></div>
+                <div className="sw__n">{n}</div>
+                <div className="sw__h">{h}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="spec__div"></div>
+        <div className="spec__grp">
+          <div className="spec__lbl">Skin params</div>
+          <div className="chips">
+            <span className="pchip">glow <b>strong</b></span>
+            <span className="pchip">scale <b>×3</b></span>
+            <span className="pchip">atlas <b>PNG</b></span>
+            <span className="pchip">icons <b>neon line</b></span>
+            <span className="pchip">field <b>radar</b></span>
+          </div>
+        </div>
+        <div className="spec__div"></div>
+        <div className="spec__grp">
+          <div className="spec__lbl">Ties to menu (--m-*) · locked-layout check</div>
+          <div className="chips">
+            <span className="pchip">board <b>radial 122046→070c1c</b></span>
+            <span className="pchip">radius <b>14px</b></span>
+            <span className="pchip">primary <b>green #5de08a</b></span>
+            <span className="pchip pchip--ok">positions locked</span>
+            <span className="pchip pchip--ok">safe-area</span>
+            <span className="pchip pchip--ok">≥10 planes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function useStored(key, def) {
+  const [v, setV] = useState(() => {
+    try { const s = localStorage.getItem(key); return s == null ? def : JSON.parse(s); } catch (e) { return def; }
+  });
+  const set = (nv) => { setV(nv); try { localStorage.setItem(key, JSON.stringify(nv)); } catch (e) {} };
+  return [v, set];
+}
+
+function Seg({ label, value, set, options }) {
+  return (
+    <div className="picker">
+      <span className="picker__lbl">{label}</span>
+      <div className="toggle">
+        {options.map((o) => <button key={o.v} className={value === o.v ? "on" : ""} onClick={() => set(o.v)}>{o.t}</button>)}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [view, setView] = useState("states");
+  const [hangar, setHangar] = useStored("nx_hangar", 1);
+  const [info, setInfo] = useStored("nx_info", 2);
+  const stageRef = useRef(null);
+  const s = useFit(stageRef, 1600, 900, 8);
+  const hName = ["", "Sawtooth", "Gantry", "Quonset", "Pier", "Container"][hangar];
+  return (
+    <>
+      <div className="top">
+        <div className="top__title"><span className="dot"></span>PlaneFlow · Neon Gameplay</div>
+        <div className="pickers">
+          <Seg label="Hangar" value={hangar} set={setHangar} options={[{ v: 1, t: "Sawtooth" }, { v: 2, t: "Gantry" }, { v: 3, t: "Quonset" }, { v: 4, t: "Pier" }, { v: 5, t: "Container" }]} />
+          <Seg label="Info" value={info} set={setInfo} options={[{ v: 1, t: "Mini" }, { v: 2, t: "Bar" }, { v: 3, t: "Detail" }]} />
+        </div>
+        <div className="spacer"></div>
+        <div className="toggle">
+          <button className={view === "states" ? "on" : ""} onClick={() => setView("states")}>Boxes</button>
+          <button className={view === "borts" ? "on" : ""} onClick={() => setView("borts")}>Borts</button>
+          <button className={view === "tokens" ? "on" : ""} onClick={() => setView("tokens")}>Tokens</button>
+          <button className={view === "hide" ? "on" : ""} onClick={() => setView("hide")}>Hide</button>
+        </div>
+      </div>
+      <div className="stage" ref={stageRef}>
+        <div className="stage__fit" style={{ transform: `translate(-50%,-50%) scale(${s})` }}><GameWindow hangar={hangar} info={info} /></div>
+      </div>
+      {view === "states" && (
+        <div className="spec">
+          <div className="spec__lbl" style={{ marginBottom: 10 }}>Состояния бокса · ангар: {hName}</div>
+          <StatesGallery style={hangar} />
+        </div>
+      )}
+      {view === "borts" && (
+        <div className="spec">
+          <div className="spec__lbl" style={{ marginBottom: 10 }}>Состояния борта · текущая нужда</div>
+          <PlaneStates />
+        </div>
+      )}
+      {view === "tokens" && <Spec />}
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

@@ -64,3 +64,24 @@
 - **Полноэкранный режим** на телефоне (кнопка + Fullscreen API, защита от прокрутки),
   отступ паузы под safe-area, пустое небо на старте (v0.15).
 - **Переименование Tower → PlaneFlow** (v0.13) — название везде + миграция сейва.
+
+## Бренд и визуал
+- **Дизайн-система PlaneFlow** интегрирована: канонические спрайты `assets/sprites/`,
+  меню на едином языке системы (`menu.css`, токены `--m-*`, переключение через `data-skin`).
+- **Логотип / вордмарк** — `mark` / `wordmark` / `wordmark-lockup`, локап на стартовом экране.
+- **Иконка приложения** — 512 full-bleed + Android adaptive (bg/fg) + **maskable** (192/512,
+  арт в safe-zone) в `assets/icon/`; подключена как favicon / apple-touch / manifest.
+- **Скины нарисованы** — cozy (визуальный ре-скин), **neon** и **cartoon** (свои PNG-атласы;
+  cartoon — финальный арт, 55 спрайтов); выбор в Настройки → Скин. Главный экран — три
+  финала по скинам, neon по умолчанию (v0.25).
+
+## Платформа и публикация
+- **PWA** — `manifest.json` + `sw.js`: установка на главный экран, офлайн-старт, тост
+  «Доступна новая версия» (навигация network-first → контент обновляется сразу после пуша).
+- **Свой домен** `planeflow.jevgenia.com` на GitHub Pages (файл `CNAME`).
+- **Android TWA** — каркас под Google Play: `twa-manifest.json`,
+  `.well-known/assetlinks.json`, `.nojekyll`; **`.aab` собран** (Bubblewrap),
+  `android.keystore` есть. Раннбук — [`android-twa.md`](android-twa.md).
+- **Иконки для стора** — 512 + adaptive + maskable (см. «Бренд и визуал»).
+- _Осталось до релиза_ (в [`backlog.md`](backlog.md)): скриншоты / feature graphic,
+  Developer-аккаунт, закрытый трек, AdMob.
