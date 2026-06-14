@@ -360,149 +360,935 @@
     cursor:pointer;padding:8px 14px;border-radius:9px;border:1.5px solid var(--teal);
     background:rgba(78,205,196,.16);color:var(--paper)}
   #pwaUpdate .btn-upd:active{transform:translateY(1px)}
+
+  /* ============================================================
+     PlaneFlow Design System — unified menu styles (menus/menu.css,
+     inlined as-is minus its html/body/.stage shell resets). Skins switch
+     via data-skin on <html>; menu tokens are --m-*. See menus/HANDOFF.md.
+     ============================================================ */
+
+  /* base DS tokens referenced bare by the menu system (from tokens/effects.css) */
+  :root{
+    --text-glow-gold: 0 0 22px rgba(244,207,94,0.5);
+    --shadow-raised: 0 2px 8px rgba(10,6,20,0.35);
+    --glow-gold: 0 0 14px rgba(244,207,94,0.5);
+  }
+
+/* ============================================================
+   PlaneFlow — Unified Menu System
+   One consistent menu language across all screens, skinnable.
+   Built on the design-system tokens (tokens/*.css via styles.css).
+
+   Principle observed from the shipped screens: every menu PANEL
+   stays a dark warm navy-purple surface with cream text in ALL
+   skins. What a skin changes is the BOARD behind, the panel
+   roundness, the signature glow/accent, the primary green, and
+   how chunky the buttons feel.  All menu tokens are `--m-*`.
+   ============================================================ */
+
+/* -------- BASE / default = "Уютный" (cozy night) ---------- */
+:root {
+  /* surfaces */
+  --m-panel:        #221d33;
+  --m-panel-2:      #1a1726;          /* sunken well / table */
+  --m-panel-3:      #2a2440;          /* raised inner chip / row */
+  --m-panel-border: rgba(181,140,240,0.20);
+  --m-panel-edge:   rgba(255,255,255,0.05); /* top gloss hairline */
+  --m-panel-shadow: 0 24px 60px rgba(8,5,18,0.62);
+  --m-divider:      rgba(181,140,240,0.14);
+
+  /* radii */
+  --m-r-panel:  20px;
+  --m-r-card:   16px;
+  --m-r-chip:   11px;
+  --m-r-btn:    13px;
+
+  /* text */
+  --m-text-strong: #f4eede;
+  --m-text-body:   #e8e0cf;
+  --m-text-muted:  #9b9aa8;
+  --m-kicker:      #8f8aa3;
+
+  /* semantic accents */
+  --m-primary:        #5dca7a;
+  --m-primary-deep:   #3f9e5a;
+  --m-primary-text:   #11331e;
+  --m-primary-glow:   0 0 20px rgba(93,202,122,0.40);
+  --m-danger:         #e0584f;
+  --m-danger-soft:    rgba(224,88,79,0.55);
+  --m-gold:           #f4cf5e;
+  --m-life:           #ef5365;
+  --m-plane:          #4ecdc4;
+  --m-coin:           #f2a93b;
+  --m-accent:         #b58cf0;        /* skin signature (active states) */
+  --m-accent-glow:    0 0 22px rgba(181,140,240,0.40);
+
+  /* ghost / neutral button */
+  --m-ghost-bg:     #2a2440;
+  --m-ghost-border: rgba(181,140,240,0.40);
+  --m-ghost-text:   #e8e0cf;
+
+  /* buttons */
+  --m-btn-h:    52px;
+  --m-btn-h-lg: 60px;
+  --m-btn-h-sm: 42px;
+  --m-btn-stroke: 1.5px;
+  --m-btn-lift: 0px;          /* cartoon adds a chunky bottom edge */
+
+  /* board */
+  --m-board: radial-gradient(120% 120% at 50% -10%, #2a2440 0%, #1a1d2e 46%, #14111e 100%);
+  --m-scrim: rgba(12,9,22,0.58);
+  --m-board-blur: 3px;
+
+  /* type roles (from DS) */
+  --m-font-display: "Fredoka", system-ui, sans-serif;
+  --m-font-ui: "Nunito", system-ui, sans-serif;
+
+  /* motion */
+  --m-ease: cubic-bezier(0.34, 1.2, 0.5, 1);
+  --m-ease-bounce: cubic-bezier(0.34, 1.56, 0.5, 1);
+  --m-dur: 0.24s;
+}
+
+/* -------- "Мультяшный" (Cartoon — bright daytime) --------- */
+[data-skin="cartoon"] {
+  --m-panel:        #262238;
+  --m-panel-2:      #1d1a2b;
+  --m-panel-3:      #322c48;
+  --m-panel-border: rgba(255,255,255,0.10);
+  --m-panel-edge:   rgba(255,255,255,0.09);
+  --m-panel-shadow: 0 22px 46px rgba(20,40,18,0.40), 0 6px 0 rgba(20,16,30,0.30);
+
+  --m-r-panel: 26px;
+  --m-r-card:  20px;
+  --m-r-chip:  13px;
+  --m-r-btn:   18px;
+
+  --m-primary:      #36d36b;
+  --m-primary-deep: #1f9e4c;
+  --m-primary-text: #0d3a1e;
+  --m-primary-glow: 0 0 22px rgba(54,211,107,0.42);
+  --m-danger:       #ff4d5e;
+  --m-gold:         #ffce3a;
+  --m-life:         #ff4d5e;
+  --m-plane:        #1fb6d8;
+  --m-coin:         #ffce3a;
+  --m-accent:       #b58cf0;
+  --m-accent-glow:  0 0 22px rgba(181,140,240,0.42);
+
+  --m-ghost-bg:     #322c48;
+  --m-ghost-border: rgba(255,255,255,0.16);
+
+  --m-btn-h:    56px;
+  --m-btn-h-lg: 64px;
+  --m-btn-stroke: 0px;
+  --m-btn-lift: 4px;
+
+  --m-board: linear-gradient(180deg, #bfe6f7 0%, #a6dcf2 52%, #9fd96f 52%, #6fbf4a 100%);
+  --m-scrim: rgba(18,32,16,0.42);
+  --m-board-blur: 2px;
+  --m-ease: var(--m-ease-bounce);
+}
+
+/* -------- "Неон" (muted night radar) --------------------- */
+[data-skin="neon"] {
+  --m-panel:        #0f1c3c;
+  --m-panel-2:      #0a1228;
+  --m-panel-3:      #14264e;
+  --m-panel-border: rgba(111,198,221,0.32);
+  --m-panel-edge:   rgba(111,198,221,0.12);
+  --m-panel-shadow: 0 24px 60px rgba(3,7,20,0.7), 0 0 30px rgba(111,198,221,0.10);
+  --m-divider:      rgba(111,198,221,0.18);
+
+  --m-r-panel: 14px;
+  --m-r-card:  12px;
+  --m-r-chip:  10px;
+  --m-r-btn:   12px;
+
+  --m-text-strong: #dff4ff;
+  --m-text-body:   #b9d2e8;
+  --m-text-muted:  #6f88b5;
+  --m-kicker:      #6f88b5;
+
+  --m-primary:      #6cc88f;
+  --m-primary-deep: #3f9e6a;
+  --m-primary-text: #05140d;
+  --m-primary-glow: 0 0 22px rgba(108,200,143,0.40);
+  --m-danger:       #e85f7e;
+  --m-gold:         #e6c562;
+  --m-life:         #e85f7e;
+  --m-plane:        #6fc6dd;
+  --m-coin:         #e6c562;
+  --m-accent:       #6fc6dd;
+  --m-accent-glow:  0 0 22px rgba(111,198,221,0.40);
+
+  --m-ghost-bg:     rgba(20,38,78,0.7);
+  --m-ghost-border: rgba(111,198,221,0.32);
+  --m-ghost-text:   #b9d2e8;
+
+  --m-btn-h:    52px;
+  --m-btn-h-lg: 60px;
+
+  --m-board: radial-gradient(80% 80% at 50% 42%, #122046 0%, #0c1430 55%, #070c1c 100%);
+  --m-scrim: rgba(5,9,22,0.6);
+  --m-board-blur: 3px;
+  --m-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   BOARD  (the airport behind the menus)
+   ============================================================ */
+.board { position: absolute; inset: 0; overflow: hidden; }
+.board__art { position: absolute; inset: 0; transition: filter var(--m-dur) ease; }
+.scene--dimmed .board__art { filter: blur(var(--m-board-blur)) brightness(0.82); }
+
+/* cartoon sky decorations */
+.cloud {
+  position: absolute; background: rgba(255,255,255,0.9);
+  border-radius: 999px; filter: blur(2px);
+  box-shadow: 0 8px 24px rgba(120,160,190,0.25);
+}
+.sun {
+  position: absolute; width: 92px; height: 92px; border-radius: 999px;
+  background: radial-gradient(circle at 38% 36%, #fff4c2, #ffd34d 60%, #ffc62e);
+  box-shadow: 0 0 60px rgba(255,206,58,0.6);
+}
+/* cozy lamp glow blobs */
+.lamp {
+  position: absolute; width: 180px; height: 180px; border-radius: 999px;
+  background: radial-gradient(circle, rgba(255,184,77,0.30), rgba(255,184,77,0) 70%);
+}
+/* neon radar */
+.radar-ring {
+  position: absolute; border-radius: 999px;
+  border: 1px solid rgba(111,198,221,0.16);
+}
+
+/* abstract building/plane silhouettes on the board */
+.blob { position: absolute; border-radius: 30px; opacity: 0.9; }
+
+/* fullscreen scrim for navigation screens */
+.scrim { position: absolute; inset: 0; background: var(--m-scrim); }
+
+/* ============================================================
+   SCREEN LAYERS
+   ============================================================ */
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.screen--center { align-items: center; justify-content: center; }
+
+/* entrance animates TRANSFORM only — base state stays visible so a
+   paused/background iframe never hides content (frozen = visible). */
+@media (prefers-reduced-motion: no-preference) {
+  .screen { animation: screenIn var(--m-dur) var(--m-ease) both; }
+  .panel  { animation: panelIn var(--m-dur) var(--m-ease) both; }
+}
+@keyframes screenIn { from { transform: translateY(8px); } to { transform: none; } }
+@keyframes panelIn {
+  from { transform: translateY(14px) scale(0.985); }
+  to   { transform: none; }
+}
+
+/* ============================================================
+   PANEL  (the modal card)
+   ============================================================ */
+.panel {
+  position: relative;
+  width: var(--panel-w, 432px);
+  max-width: calc(100% - 48px);
+  background: var(--m-panel);
+  border: 1px solid var(--m-panel-border);
+  border-radius: var(--m-r-panel);
+  box-shadow: var(--m-panel-shadow), inset 0 1px 0 var(--m-panel-edge);
+  padding: 26px 30px 28px;
+}
+.panel--wide { --panel-w: 600px; }
+.panel--wide2 { --panel-w: 680px; }
+.panel--wide3 { --panel-w: 720px; }
+
+/* horizontal two-column body */
+.h-split { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; margin-top: 18px; }
+.h-split--bias { grid-template-columns: 1.05fr 0.95fr; }
+.h-split--text { grid-template-columns: 1.2fr 0.8fr; }
+.h-split > .m-actions { margin-top: 0; align-self: stretch; justify-content: center; }
+
+/* vertical stat list (pause, horizontal layout) */
+.stat-list { display: flex; flex-direction: column; gap: 11px; }
+.stat-list .rs { display: inline-flex; align-items: center; gap: 9px; justify-content: flex-start; font-size: 17px; }
+.stat-list .rs .lbl { color: var(--m-text-muted); font-weight: 700; font-size: 12px;
+  text-transform: uppercase; letter-spacing: .08em; }
+
+/* horizontal main-menu button row */
+.menu-row { display: flex; flex-direction: row; gap: 14px; }
+.menu-row > .m-btn { flex: 1; min-width: 150px; }
+.panel__corner {
+  position: absolute; top: 16px; right: 16px; width: 38px; height: 38px;
+  display: grid; place-items: center; cursor: pointer;
+  border-radius: 11px; background: var(--m-panel-3);
+  border: 1px solid var(--m-panel-border); color: var(--m-text-muted);
+  transition: filter var(--m-dur) ease, color var(--m-dur) ease, border-color var(--m-dur) ease;
+}
+.panel__corner svg { width: 17px; height: 17px; }
+.panel__corner:hover { color: var(--m-text-body); border-color: var(--m-accent); filter: brightness(1.1); }
+
+/* ============================================================
+   HEADER  (kicker + Fredoka title + optional counter)
+   one consistent header across every screen
+   ============================================================ */
+.m-head { text-align: center; }
+.m-kicker {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--m-kicker);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.m-kicker svg { width: 13px; height: 13px; }
+.m-title {
+  font-family: var(--m-font-display);
+  font-weight: 700; color: var(--m-text-strong);
+  margin: 8px 0 0; line-height: 1.06; letter-spacing: 0.005em;
+}
+.m-title--xl { font-size: 40px; }
+.m-title--lg { font-size: 32px; }
+.m-title--md { font-size: 26px; }
+.m-subtitle {
+  color: var(--m-text-muted); font-size: 15px; line-height: 1.5;
+  text-align: center; margin: 8px auto 0; max-width: 30ch; text-wrap: pretty;
+}
+
+/* counter pill (stars / medals) */
+.m-counter {
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  padding: 7px 16px; border-radius: var(--m-r-pill, 999px);
+  background: rgba(16,12,24,0.55); backdrop-filter: blur(6px);
+  border: 1px solid rgba(244,207,94,0.45);
+  color: var(--m-gold); font-weight: 800; font-size: 15px;
+  margin-top: 14px;
+}
+.m-counter svg { width: 16px; height: 16px; }
+.m-counter .muted { color: var(--m-text-muted); font-weight: 700; }
+.m-counter .unit { color: var(--m-text-muted); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.14em; text-transform: uppercase; }
+
+/* ============================================================
+   BUTTONS  — fixed height, single line, icon-left, unified gaps
+   variants: primary (green) · ghost (dark outline) · danger (red)
+   sizes: default · lg · sm   modifier: block (full width)
+   ============================================================ */
+.m-btn {
+  appearance: none; cursor: pointer; user-select: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 10px; height: var(--m-btn-h); padding: 0 22px;
+  font-family: var(--m-font-ui); font-weight: 800; font-size: 15px;
+  letter-spacing: 0.01em; white-space: nowrap; line-height: 1;
+  border-radius: var(--m-r-btn);
+  border: var(--m-btn-stroke) solid transparent;
+  transition: transform var(--m-dur) var(--m-ease),
+              box-shadow var(--m-dur) ease, filter var(--m-dur) ease,
+              background var(--m-dur) ease;
+}
+.m-btn > span.m-btn__t { overflow: hidden; text-overflow: ellipsis; }
+.m-btn svg { width: 18px; height: 18px; flex: none; }
+.m-btn--lg { height: var(--m-btn-h-lg); font-size: 17px; padding: 0 28px; }
+.m-btn--sm { height: var(--m-btn-h-sm); font-size: 13px; padding: 0 16px; }
+.m-btn--block { width: 100%; }
+
+.m-btn--primary {
+  background: var(--m-primary); color: var(--m-primary-text);
+  box-shadow: 0 var(--m-btn-lift) 0 var(--m-primary-deep), var(--m-primary-glow);
+}
+.m-btn--primary:hover { filter: brightness(1.05); }
+
+.m-btn--ghost {
+  background: var(--m-ghost-bg); color: var(--m-ghost-text);
+  border-color: var(--m-ghost-border);
+  box-shadow: 0 var(--m-btn-lift) 0 rgba(0,0,0,0.25);
+}
+.m-btn--ghost:hover { filter: brightness(1.1); border-color: var(--m-accent); }
+
+.m-btn--danger {
+  background: transparent; color: var(--m-danger);
+  border: 1.5px solid var(--m-danger-soft, var(--m-danger));
+}
+.m-btn--danger:hover { background: rgba(224,88,79,0.12); box-shadow: 0 0 16px rgba(224,88,79,0.30); }
+
+.m-btn:active { transform: translateY(var(--m-btn-lift)) scale(0.97); box-shadow: none; }
+.m-btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* a consistent action area at the bottom of a panel */
+.m-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.m-actions__row { display: flex; gap: 12px; flex-wrap: wrap; }
+.m-actions__row > .m-btn { flex: 1 1 auto; min-width: 0; }
+
+/* the canonical "Назад" — ghost, centered, bottom */
+.m-back-wrap { display: flex; justify-content: center; margin-top: 14px; }
+.m-back { min-width: 184px; }
+
+/* ============================================================
+   HUD CHIPS  (top bars + bottom corner icons) — unified
+   ============================================================ */
+.hud { position: absolute; inset: 0; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.hud__tl { position: absolute; top: 16px; left: 16px; display: flex; gap: 10px; }
+.hud__tr { position: absolute; top: 16px; right: 16px; display: flex; gap: 10px; }
+.hud__br { position: absolute; bottom: 16px; right: 16px; display: flex; flex-direction: column; gap: 10px; }
+.hud__bl { position: absolute; bottom: 16px; left: 16px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; height: 40px;
+  padding: 0 14px 0 10px; border-radius: 999px;
+  background: rgba(20,16,28,0.72); backdrop-filter: blur(8px);
+  border: 1px solid var(--m-panel-border);
+  color: var(--m-text-body); font-weight: 800; font-size: 15px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+.chip__ic {
+  width: 26px; height: 26px; border-radius: 8px; flex: none;
+  display: grid; place-items: center; background: rgba(255,255,255,0.06);
+}
+.chip__ic svg { width: 16px; height: 16px; }
+.chip--life .chip__ic svg { color: var(--m-life); }
+.chip--coin .chip__ic svg { color: var(--m-coin); }
+.chip--plane .chip__ic svg { color: var(--m-plane); }
+.chip--time .chip__ic svg { color: var(--m-text-muted); }
+.chip .muted { color: var(--m-text-muted); font-weight: 700; }
+
+.icon-btn {
+  width: 48px; height: 48px; border-radius: 14px; cursor: pointer;
+  display: grid; place-items: center;
+  background: rgba(20,16,28,0.78); backdrop-filter: blur(8px);
+  border: 1px solid var(--m-panel-border); color: var(--m-text-body);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  transition: filter var(--m-dur) ease, transform var(--m-dur) var(--m-ease), border-color var(--m-dur) ease;
+}
+.icon-btn:hover { filter: brightness(1.15); border-color: var(--m-accent); }
+.icon-btn:active { transform: scale(0.94); }
+.icon-btn svg { width: 22px; height: 22px; }
+.icon-btn--flag { padding: 0; overflow: hidden; font-size: 24px; }
+.icon-btn--danger { color: var(--m-danger); }
+
+/* ============================================================
+   STAT WELL + GRID  (results / pause readouts)
+   ============================================================ */
+.stat-well {
+  background: var(--m-panel-2); border: 1px solid var(--m-divider);
+  border-radius: var(--m-r-card); padding: 14px 18px;
+}
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 12px; }
+.stat { text-align: center; }
+.stat__k {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase;
+  color: var(--m-text-muted); margin-bottom: 5px;
+}
+.stat__v { font-size: 20px; font-weight: 800; color: var(--m-text-strong);
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.stat__v svg { width: 16px; height: 16px; }
+.stat__v--money { color: var(--m-gold); }
+.stat__v--plane { color: var(--m-plane); }
+.stat__v--life { color: var(--m-life); }
+
+/* inline stat row (pause header) */
+.stat-row { display: flex; align-items: center; justify-content: center; gap: 20px;
+  padding: 11px 0; border-top: 1px solid var(--m-divider); border-bottom: 1px solid var(--m-divider); }
+.stat-row .rs { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: 16px; color: var(--m-text-strong); }
+.stat-row .rs svg { width: 16px; height: 16px; }
+
+/* ============================================================
+   GOAL + THRESHOLDS TABLE
+   ============================================================ */
+.goal-line { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 14px; }
+.goal-line .g { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; font-size: 17px; }
+.goal-line .g--target { color: var(--m-gold); }
+.goal-line .g--inf { color: var(--m-text-muted); }
+.goal-line svg { width: 18px; height: 18px; }
+
+.thresholds {
+  margin-top: 18px; background: var(--m-panel-2);
+  border: 1px solid var(--m-divider); border-radius: var(--m-r-card);
+  overflow: hidden;
+}
+.thresholds .row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 20px;
+}
+.thresholds .row + .row { border-top: 1px solid var(--m-divider); }
+.thresholds .stars { display: inline-flex; gap: 3px; color: var(--m-gold); }
+.thresholds .stars svg { width: 17px; height: 17px; }
+.thresholds .stars .off { color: var(--m-text-muted); opacity: 0.35; }
+.thresholds .req { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; color: var(--m-text-strong); }
+.thresholds .req svg { width: 17px; height: 17px; color: var(--m-plane); }
+
+/* ============================================================
+   STARS (big rating row)
+   ============================================================ */
+.star-row { display: flex; justify-content: center; gap: 12px; margin: 8px 0 2px; }
+.star-row svg { width: 46px; height: 46px; color: var(--m-gold);
+  filter: drop-shadow(0 0 14px rgba(244,207,94,0.55)); }
+.star-row .off { color: var(--m-text-muted); opacity: 0.3; filter: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .star-row .pop { animation: starPop 0.5s var(--m-ease-bounce) both; }
+}
+@keyframes starPop { 0% { transform: scale(0.6) rotate(-14deg); } 100% { transform: none; } }
+
+/* ---- triumph (results) ---- */
+.triumph-kicker { font-size: 12.5px; font-weight: 800; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--m-gold); }
+.star-row--xl { margin: 12px 0 8px; gap: 14px; }
+.star-row--xl svg { width: 62px; height: 62px;
+  filter: drop-shadow(0 0 18px rgba(244,207,94,0.6)); }
+.reward { font-family: var(--m-font-display); font-weight: 700; font-size: 40px;
+  color: var(--m-gold); text-shadow: var(--text-glow-gold); line-height: 1; margin: 6px 0 2px; }
+.reward-sub { color: var(--m-text-muted); font-size: 14px; margin: 4px auto 0; max-width: 36ch; }
+.result-stats { display: flex; justify-content: center; margin: 18px 0 2px; }
+.result-stats .rstat { padding: 0 22px; position: relative; text-align: center; }
+.result-stats .rstat + .rstat::before { content: ""; position: absolute; left: 0; top: 50%;
+  transform: translateY(-50%); width: 1px; height: 30px; background: var(--m-divider); }
+.result-stats .rstat .k { font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--m-text-muted); }
+.result-stats .rstat .v { font-size: 19px; font-weight: 800; color: var(--m-text-strong);
+  margin-top: 4px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.result-stats .rstat .v svg { width: 15px; height: 15px; }
+
+/* ---- objective sub-label (pause / goals) ---- */
+.obj-sub { text-align: center; font-size: 12px; font-weight: 800; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--m-accent); margin-top: 8px; }
+
+/* ---- level title with inline number badge (pause / goals) ---- */
+.lvl-head { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.lvl-badge {
+  flex: none; min-width: 40px; height: 40px; padding: 0 10px; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--m-font-display); font-weight: 700; font-size: 20px;
+  background: rgba(181,140,240,0.16); border: 1.5px solid var(--m-accent);
+  color: var(--m-accent); box-shadow: var(--m-accent-glow);
+}
+.lvl-head .m-title { margin: 0; white-space: nowrap; }
+
+/* ---- centered objective block ("Цели" merged with thresholds) ---- */
+.obj-block { max-width: 380px; margin: 18px auto 0; }
+.obj-block__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 4px 10px;
+}
+.obj-block__head .lbl { font-size: 12px; font-weight: 800; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--m-accent); }
+.obj-block__head .tgt { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-weight: 800; font-size: 15px; color: var(--m-gold); }
+.obj-block__head .tgt svg { width: 16px; height: 16px; }
+.obj-block .thresholds { margin-top: 0; }
+
+/* ---- subtle text button (settings reset) ---- */
+.m-text-btn { appearance: none; background: none; border: 0; cursor: pointer;
+  font-family: var(--m-font-ui); font-weight: 700; font-size: 12.5px; color: var(--m-text-muted);
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px;
+  transition: color var(--m-dur) ease, background var(--m-dur) ease; }
+.m-text-btn svg { width: 14px; height: 14px; }
+.m-text-btn:hover { color: var(--m-danger); background: rgba(224,88,79,0.08); }
+
+/* ============================================================
+   TOGGLE SWITCH + SEGMENTED + ROWS  (settings)
+   ============================================================ */
+.set-row { display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 0; border-top: 1px solid var(--m-divider); }
+.set-row__label { font-weight: 700; font-size: 16px; color: var(--m-text-body); }
+.set-row__hint { font-size: 12.5px; color: var(--m-text-muted); margin-top: 2px; }
+
+.switch { width: 56px; height: 32px; border-radius: 999px; cursor: pointer; flex: none;
+  background: var(--m-panel-3); border: 1px solid var(--m-panel-border); position: relative;
+  transition: background var(--m-dur) ease; }
+.switch.on { background: var(--m-primary); border-color: transparent; }
+.switch .knob { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px;
+  border-radius: 999px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+  transition: left var(--m-dur) var(--m-ease); }
+.switch.on .knob { left: 27px; }
+
+.segmented { display: inline-flex; gap: 6px; background: var(--m-panel-2);
+  padding: 5px; border-radius: 999px; border: 1px solid var(--m-divider); }
+.segmented button { appearance: none; cursor: pointer; border: 0; background: transparent;
+  color: var(--m-text-muted); font-family: var(--m-font-ui); font-weight: 800; font-size: 13px;
+  padding: 8px 16px; border-radius: 999px; transition: all var(--m-dur) ease; white-space: nowrap; }
+.segmented button.active { background: var(--m-accent); color: #fff;
+  box-shadow: var(--m-accent-glow); }
+
+/* ============================================================
+   LEVEL BOARD  (Уровни) — paginated, with a bonus branch
+   ============================================================ */
+.lvlmap { flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 14px; width: 100%; }
+.lvlmap__arrow {
+  align-self: center; width: 52px; height: 52px; flex: none; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; background: var(--m-ghost-bg);
+  border: 1px solid var(--m-ghost-border); color: var(--m-text-body);
+  transition: filter var(--m-dur) ease, transform var(--m-dur) var(--m-ease), border-color var(--m-dur) ease;
+}
+.lvlmap__arrow:hover:not(:disabled) { filter: brightness(1.12); border-color: var(--m-accent); }
+.lvlmap__arrow:active:not(:disabled) { transform: scale(0.94); }
+.lvlmap__arrow:disabled { opacity: 0.3; cursor: default; }
+.lvlmap__arrow svg { width: 24px; height: 24px; }
+
+.lvlmap__stage {
+  flex: 1; min-width: 0; position: relative; border-radius: 24px;
+  background: var(--m-panel-2); border: 1px solid var(--m-divider);
+  overflow: hidden; display: flex; align-items: center;
+}
+.lvlmap__line { position: absolute; left: 6%; right: 6%; top: 50%; transform: translateY(-50%);
+  height: 6px; border-radius: 999px; background: var(--m-panel-3); }
+.lvlmap__nodes { position: relative; z-index: 1; flex: 1; display: flex;
+  justify-content: space-around; align-items: center; padding: 0 14px; }
+
+.lvlnode {
+  width: 92px; height: 92px; border-radius: 22px; position: relative; flex: none; cursor: pointer;
+  display: grid; place-items: center; background: var(--m-panel-3);
+  border: 1.5px solid var(--m-panel-border); color: var(--m-text-body);
+  box-shadow: inset 0 1px 0 var(--m-panel-edge), var(--shadow-raised);
+  transition: transform var(--m-dur) var(--m-ease), filter var(--m-dur) ease;
+}
+.lvlnode:hover { filter: brightness(1.08); }
+.lvlnode.locked { color: var(--m-text-muted); background: var(--m-panel-2); cursor: default; opacity: 0.85; }
+.lvlnode.locked svg { width: 28px; height: 28px; opacity: 0.7; }
+.lvlnode.done { background: rgba(93,202,122,0.14); border-color: rgba(93,202,122,0.5); }
+.lvlnode.active { border: 2.5px solid var(--m-gold); color: var(--m-gold);
+  box-shadow: var(--glow-gold); transform: scale(1.1); }
+.lvlnode__num { font-family: var(--m-font-display); font-weight: 700; font-size: 30px; }
+.lvlnode__stars { position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 3px; }
+.lvlnode__stars svg { width: 16px; height: 16px; color: var(--m-gold); }
+.lvlnode__stars .off { color: var(--m-text-muted); opacity: 0.35; }
+.lvlnode__label { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%);
+  white-space: nowrap; font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--m-gold); }
+
+/* bonus level in a branch above the line, after the 5th level */
+.lvlmap__bonus { position: absolute; right: 5%; bottom: 50%; z-index: 2; margin-bottom: 3px;
+  display: flex; flex-direction: column; align-items: center; }
+.lvlmap__bonus .branch { width: 2px; height: 26px;
+  background: repeating-linear-gradient(var(--m-accent) 0 4px, transparent 4px 8px); opacity: 0.7; }
+.lvlnode.bonus { width: 72px; height: 72px; border-radius: 20px; box-shadow: var(--m-accent-glow);
+  background: rgba(181,140,240,0.18); border: 1.5px dashed var(--m-accent); color: var(--m-accent); }
+.lvlnode.bonus svg { width: 30px; height: 30px; }
+.bonus-tag { position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--m-accent); background: var(--m-panel); padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--m-panel-border); white-space: nowrap; }
+
+.lvlmap__dots { display: flex; justify-content: center; gap: 7px; margin-top: 14px; }
+.lvlmap__dots .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--m-panel-3);
+  border: 1px solid var(--m-panel-border); cursor: pointer; transition: all var(--m-dur) ease; }
+.lvlmap__dots .dot.on { background: var(--m-accent); border-color: transparent;
+  box-shadow: var(--m-accent-glow); width: 22px; }
+
+/* ---- per-skin theming of the level map ---- */
+[data-skin="cartoon"] .lvlmap__stage {
+  background: linear-gradient(180deg, rgba(122,196,108,0.22), rgba(60,120,60,0.34));
+  border-color: rgba(255,255,255,0.14); }
+[data-skin="cartoon"] .lvlmap__line { height: 14px;
+  background: #b98a52; box-shadow: inset 0 2px 0 rgba(255,255,255,0.18), inset 0 -3px 0 rgba(0,0,0,0.2);
+  border-top: 2px dashed rgba(255,255,255,0.4); border-image: none; }
+[data-skin="cartoon"] .lvlnode { box-shadow: 0 5px 0 rgba(20,16,30,0.4); }
+
+[data-skin="neon"] .lvlmap__stage {
+  background: radial-gradient(120% 100% at 50% 50%, rgba(18,32,70,0.6), rgba(9,17,38,0.72)); }
+[data-skin="neon"] .lvlmap__line { height: 2px; background: var(--m-accent);
+  box-shadow: var(--m-accent-glow); opacity: 0.55; }
+[data-skin="neon"] .lvlnode { border-radius: 999px; }
+[data-skin="neon"] .lvlnode.bonus { border-radius: 999px; }
+
+[data-skin="cozy"] .lvlmap__line {
+  background: repeating-linear-gradient(90deg, var(--m-panel-3) 0 18px, transparent 18px 30px); }
+
+/* ============================================================
+   BIOME GRID  (Биомы)
+   ============================================================ */
+.biome-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  width: 100%; max-width: 760px; margin: 0 auto; }
+.biome {
+  background: var(--m-panel); border: 1px solid var(--m-panel-border);
+  border-radius: var(--m-r-card); padding: 15px 16px; position: relative;
+  display: flex; flex-direction: column; min-height: 128px;
+  box-shadow: inset 0 1px 0 var(--m-panel-edge);
+}
+.biome.locked { opacity: 0.72; }
+.biome__ic { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--m-panel-3); font-size: 22px; margin-bottom: 10px; }
+.biome__name { font-family: var(--m-font-display); font-weight: 600; font-size: 17px;
+  color: var(--m-text-strong); line-height: 1.15; }
+.biome__desc { font-size: 12.5px; color: var(--m-text-muted); margin-top: 6px; line-height: 1.45;
+  flex: 1; text-wrap: pretty; }
+.biome__foot { margin-top: 12px; display: flex; align-items: center; gap: 6px; }
+.biome__stars { display: flex; gap: 2px; color: var(--m-gold); }
+.biome__stars svg { width: 15px; height: 15px; }
+.biome__lock { display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+  font-weight: 800; color: var(--m-coin); }
+.biome__lock svg { width: 14px; height: 14px; }
+
+/* ============================================================
+   MEDALS — trophy case (Медали)
+   ============================================================ */
+.medal-cat { font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--m-accent); margin: 2px 2px 0; }
+
+/* progress toward all medals */
+.medal-progress { width: 100%; max-width: 760px; margin: 0 auto 12px; }
+.medal-progress__track { height: 9px; border-radius: 999px; background: var(--m-panel-2);
+  border: 1px solid var(--m-divider); overflow: hidden; }
+.medal-progress__fill { height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--m-gold), var(--m-coin));
+  box-shadow: 0 0 14px rgba(244,207,94,0.5); }
+
+.medal-grid2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  width: 100%; max-width: 820px; margin: 0 auto; }
+.medal-grid2 .medal-cat { grid-column: 1 / -1; margin-bottom: -4px; }
+
+.medal2 { position: relative; text-align: center; padding: 12px 10px 11px;
+  border-radius: var(--m-r-card); background: var(--m-panel);
+  border: 1px solid var(--m-panel-border); box-shadow: inset 0 1px 0 var(--m-panel-edge);
+  overflow: hidden; }
+.medal2__disc { width: 50px; height: 50px; border-radius: 999px; margin: 0 auto 8px;
+  display: grid; place-items: center; position: relative; color: #fff;
+  border: 2px solid rgba(255,255,255,0.25); }
+.medal2__disc svg { width: 24px; height: 24px; }
+.medal2__name { font-weight: 800; font-size: 14px; color: var(--m-text-strong); }
+.medal2__desc { font-size: 11.5px; color: var(--m-text-muted); margin-top: 4px; line-height: 1.4;
+  text-wrap: pretty; }
+
+/* rarity disc colors */
+.medal2.r-common  .medal2__disc { background: radial-gradient(circle at 38% 30%, #86e3a6, #3f9e6a); }
+.medal2.r-rare    .medal2__disc { background: radial-gradient(circle at 38% 30%, #7fd0ea, #3a8fc4); }
+.medal2.r-epic    .medal2__disc { background: radial-gradient(circle at 38% 30%, #c4a3f0, #7b53c4); }
+.medal2.r-legend  .medal2__disc { background: radial-gradient(circle at 38% 30%, #ffe79a, #f2a400); }
+
+/* unlocked = glow + shine; locked = drained */
+.medal2.unlocked { border-color: rgba(244,207,94,0.4); }
+.medal2.unlocked .medal2__disc { box-shadow: 0 0 22px rgba(244,207,94,0.55); }
+.medal2.unlocked::before { content: ""; position: absolute; top: -40%; left: -30%; width: 60%; height: 180%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.14) 50%, transparent 60%);
+  transform: rotate(8deg); pointer-events: none; }
+.medal2.locked .medal2__disc { background: var(--m-panel-3); color: var(--m-text-muted);
+  border-color: var(--m-panel-border); box-shadow: none; }
+.medal2.locked .medal2__name { color: var(--m-text-body); }
+.medal2__check { position: absolute; top: 10px; right: 10px; width: 22px; height: 22px;
+  border-radius: 999px; background: var(--m-gold); color: var(--navy-950, #14111e);
+  display: grid; place-items: center; }
+.medal2__check svg { width: 14px; height: 14px; }
+.medal2__rar { display: inline-block; margin-top: 6px; font-size: 9.5px; font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+.r-common  .medal2__rar { color: #86e3a6; background: rgba(93,202,122,0.14); }
+.r-rare    .medal2__rar { color: #7fd0ea; background: rgba(74,180,214,0.14); }
+.r-epic    .medal2__rar { color: #c4a3f0; background: rgba(154,111,212,0.16); }
+.r-legend  .medal2__rar { color: var(--m-gold); background: rgba(244,207,94,0.14); }
+
+/* main-menu brand block */
+.brand { text-align: left; max-width: 230px; }
+.brand__kicker, .brand__mark, .brand__tag, .brand__ver { text-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+.brand__kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--m-text-muted); line-height: 1.7; }
+.brand__mark { font-family: var(--m-font-display); font-weight: 700; font-size: 18px;
+  color: var(--m-gold); letter-spacing: 0.14em; display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 14px; }
+.brand__mark svg { width: 15px; height: 15px; }
+.brand__tag { font-size: 15px; color: var(--m-text-body); line-height: 1.5; text-wrap: pretty; }
+.brand__ver { font-size: 12px; color: var(--m-text-muted); margin-top: 16px; }
+
+.menu-col { display: flex; flex-direction: column; gap: 14px; width: 300px; }
+
+/* scrollable region inside fullscreen screens */
+.scroller { width: 100%; display: flex; flex-direction: column; align-items: center;
+  overflow-y: auto; overflow-x: hidden; }
+.scroller::-webkit-scrollbar { width: 8px; }
+.scroller::-webkit-scrollbar-thumb { background: var(--m-panel-3); border-radius: 999px; }
+
+
+  /* ---- project glue between the game shell and the inlined menu system ---- */
+  .start-wrap{display:flex;align-items:center;justify-content:center;gap:clamp(24px,5vw,60px);flex-wrap:wrap}
+  .screen__col{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;width:100%}
+  .mic{display:inline-flex;align-items:center;justify-content:center}
+  .icon-btn--flag svg{width:100%;height:100%;display:block}
+  /* legacy id-specificity rules must not override the new menu classes */
+  #startScreen{background:none;backdrop-filter:none}
+  #levelList{display:flex;flex-direction:column;flex:1;min-height:0;background:none;overflow:visible;margin:0;padding:0}
+  #finalStars{font-size:inherit;color:inherit;text-shadow:none;letter-spacing:0}
+
+  /* feature badge on a level node (new-mechanic levels) */
+  .lvlnode{position:relative}
+  .lvlnode__feat{position:absolute;top:-9px;left:-7px;width:24px;height:24px;border-radius:50%;
+    display:grid;place-items:center;font-size:12px;line-height:1;background:var(--m-panel-3);
+    border:1.5px solid var(--m-panel-border);box-shadow:var(--shadow-raised);color:var(--m-text-body)}
 </style>
 
 <div id="stage">
   <canvas id="c"></canvas>
 
+  <!-- ===== menu screens — PlaneFlow Design System (menu.css, data-skin) ===== -->
   <div class="overlay" id="startScreen">
-    <div class="panel startpanel">
-      <div class="start-brand">
-        <div class="kicker" data-i18n="start.kicker"></div>
-        <svg class="wordmark" viewBox="0 0 520 88" aria-label="PlaneFlow"><use href="#wordmark-lockup"></use></svg>
-        <h1 class="wm-fallback" data-i18n="app.name"></h1>
-        <p data-i18n="start.tagline"></p>
-        <div class="vno"><span data-i18n="start.version"></span> <span id="ver"></span></div>
+    <div class="screen screen--center">
+      <div class="start-wrap">
+        <div class="brand">
+          <div class="brand__kicker" data-i18n="start.kicker"></div>
+          <div class="brand__mark"><span class="mic" data-mic="star"></span> PLANEFLOW</div>
+          <div class="brand__tag" data-i18n="start.tagline"></div>
+          <div class="brand__ver"><span data-i18n="start.version"></span> <span id="ver"></span></div>
+          <h1 class="wm-fallback" data-i18n="app.name" hidden></h1>
+        </div>
+        <div class="panel" style="--panel-w:320px;padding:26px">
+          <div class="menu-col" style="width:100%">
+            <button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="startBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="start.play"></span></button>
+            <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="zenBtn"><span class="mic" data-mic="moon"></span><span class="m-btn__t" data-i18n="start.zen"></span></button>
+            <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="biomesBtn"><span class="mic" data-mic="tree"></span><span class="m-btn__t" data-i18n="menu.biomes"></span></button>
+          </div>
+        </div>
       </div>
-      <div class="start-rail">
-        <button class="btn btn-primary" id="startBtn"><span class="bglyph">▶</span><span data-i18n="start.play"></span></button>
-        <button class="btn btn-teal" id="zenBtn"><span class="bglyph">☾</span><span data-i18n="start.zen"></span></button>
-        <button class="btn" id="biomesBtn"><span class="bglyph">🌲</span><span data-i18n="menu.biomes"></span></button>
-        <div class="start-rail-row">
-          <button class="btn btn-quiet" id="fsBtn"><span class="bglyph">⛶</span></button>
+      <div class="hud">
+        <div class="hud__br">
+          <button class="icon-btn" id="fsBtn" aria-label="Fullscreen"><span class="mic" data-mic="expand"></span></button>
+          <button class="icon-btn" id="medalsBtn" data-i18n-aria="medals.btn" style="color:var(--m-gold)"><span class="mic" data-mic="medal"></span></button>
+          <button class="icon-btn" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="mic" data-mic="gear"></span></button>
+          <button class="icon-btn icon-btn--flag" id="langFlagBtn" aria-label="Language"></button>
+        </div>
+        <div class="hud__bl">
+          <div class="corner-debug">
+            <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-haspopup="true" aria-expanded="false" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
+            <div class="corner-debug-pop hidden" id="debugPop">
+              <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
+              <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
+              <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <!-- отладка: иконка в левом нижнем углу; по тапу — попап с галочками (состояние в localStorage) -->
-    <div class="corner-debug">
-      <button class="corner-debug-btn" id="debugToggleBtn" aria-haspopup="true" aria-expanded="false" aria-label="Debug">🐞</button>
-      <div class="corner-debug-pop hidden" id="debugPop">
-        <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
-        <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
-        <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
-      </div>
-    </div>
-    <!-- медали и настройки: ряд справа внизу, над переключателем языка -->
-    <div class="corner-actions">
-      <button class="btn btn-quiet" id="medalsBtn" data-i18n-aria="medals.btn"><span class="bglyph">🏅</span></button>
-      <button class="btn btn-quiet" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="bglyph">⚙</span></button>
-    </div>
-    <!-- язык: флаг в правом нижнем углу; по тапу язык переключается (по умолчанию английский) -->
-    <button class="corner-flag" id="langFlagBtn" aria-label="Language"></button>
   </div>
 
   <div class="overlay hidden" id="overScreen">
-    <div class="panel card">
-      <div class="kicker" id="overKicker"></div>
-      <div class="big" id="finalStars">☆☆☆</div>
-      <p id="overMsg"></p>
-      <div class="stats" id="overStats"></div>
-      <div class="ctarow">
-        <button class="btn btn-quiet" id="shareBtn"><span class="bglyph">⇪</span><span data-i18n="over.share"></span></button>
-      </div>
-      <div class="ctarow">
-        <button class="btn btn-teal" id="toLevelsBtn"><span class="bglyph">≡</span><span data-i18n="over.toLevels"></span></button>
-        <button class="btn btn-primary" id="againBtn"><span class="bglyph">↻</span><span data-i18n="over.again"></span></button>
-        <button class="btn btn-primary" id="nextBtn"><span class="bglyph">⏭</span><span data-i18n="over.next"></span></button>
+    <div class="screen screen--center">
+      <div class="panel panel--wide" style="--panel-w:560px;text-align:center">
+        <button class="panel__corner" id="shareBtn" data-i18n-aria="over.share"><span class="mic" data-mic="share"></span></button>
+        <div class="triumph-kicker" id="overKicker"></div>
+        <div class="star-row star-row--xl" id="finalStars"></div>
+        <p class="reward-sub" id="overMsg"></p>
+        <div class="result-stats" id="overStats"></div>
+        <div class="m-actions__row" style="margin-top:20px">
+          <button class="m-btn m-btn--ghost" id="toLevelsBtn"><span class="mic" data-mic="list"></span><span class="m-btn__t" data-i18n="over.toLevels"></span></button>
+          <button class="m-btn m-btn--ghost" id="againBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="over.again"></span></button>
+          <button class="m-btn m-btn--primary" id="nextBtn"><span class="mic" data-mic="next"></span><span class="m-btn__t" data-i18n="over.next"></span></button>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="overlay hidden" id="levelScreen">
-    <div class="panel wide">
-      <div class="kicker" data-i18n="levels.kicker"></div>
-      <h1 data-i18n="levels.title"></h1>
-      <div class="starcount" id="starCount"></div>
-      <div class="levellist" id="levelList"></div>
-      <div class="ctarow">
-        <button class="btn" id="backBtn"><span class="bglyph">←</span><span data-i18n="levels.back"></span></button>
+    <div class="screen" style="padding:22px 24px 18px">
+      <div class="screen__col">
+        <div class="m-head">
+          <h1 class="m-title m-title--lg" data-i18n="levels.title"></h1>
+          <div class="m-counter" id="starCount"></div>
+        </div>
+        <div id="levelList"></div>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="backBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="levels.back"></span></button></div>
       </div>
     </div>
   </div>
 
   <div class="overlay hidden" id="biomeScreen">
-    <div class="panel wide">
-      <div class="kicker" data-i18n="biomes.kicker"></div>
-      <h1 data-i18n="biomes.title"></h1>
-      <div class="levellist" id="biomeList"></div>
-      <div class="ctarow">
-        <button class="btn" id="biomesBackBtn"><span class="bglyph">←</span><span data-i18n="biomes.back"></span></button>
+    <div class="screen" style="padding:22px 24px 20px">
+      <div class="screen__col">
+        <div class="m-head">
+          <div class="m-kicker" data-i18n="biomes.kicker"></div>
+          <h1 class="m-title m-title--lg" data-i18n="biomes.title"></h1>
+        </div>
+        <div class="scroller" style="flex:1;min-height:0;margin-top:16px;justify-content:flex-start">
+          <div class="biome-grid" id="biomeList"></div>
+        </div>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="biomesBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="biomes.back"></span></button></div>
       </div>
     </div>
   </div>
 
   <div class="overlay hidden" id="settingsScreen">
-    <div class="panel card">
-      <div class="kicker">⚙</div>
-      <h1 data-i18n="settings.title"></h1>
-      <div class="settings">
-        <div class="opt full" style="cursor:default"><span data-i18n="settings.skin"></span><div class="skinbtns" id="skinBtns"></div></div>
-        <label class="opt"><input type="checkbox" id="optSound2"> <span data-i18n="settings.sound"></span></label>
-        <label class="opt"><input type="checkbox" id="optVibro2"> <span data-i18n="settings.vibro"></span></label>
-        <div class="opt full" style="cursor:default"><span data-i18n="settings.updates"></span><button class="btn btn-quiet" id="checkUpdatesBtn"><span class="bglyph">⟳</span><span data-i18n="settings.checkUpdates"></span></button></div>
-        <div class="upd-status full" id="updStatus" role="status" aria-live="polite"></div>
-      </div>
-      <div class="ctarow">
-        <button class="btn btn-rose" id="resetProgBtn2" data-i18n="levels.reset"></button>
-        <button class="btn btn-primary" id="settingsBackBtn"><span class="bglyph">←</span><span data-i18n="settings.back"></span></button>
+    <div class="screen screen--center">
+      <div class="panel panel--wide2" style="position:relative">
+        <div class="m-head"><h1 class="m-title m-title--md" data-i18n="settings.title"></h1></div>
+        <div class="set-row" style="border-top:none;margin-top:8px">
+          <div class="set-row__label" data-i18n="settings.skin"></div>
+          <div class="segmented" id="skinBtns"></div>
+        </div>
+        <div class="h-split" style="margin-top:0">
+          <div>
+            <div class="set-row">
+              <div class="set-row__label" data-i18n="settings.sound"></div>
+              <div class="switch" id="optSound2" role="switch" tabindex="0" aria-label="sound"><span class="knob"></span></div>
+            </div>
+            <div class="set-row">
+              <div class="set-row__label" data-i18n="settings.vibro"></div>
+              <div class="switch" id="optVibro2" role="switch" tabindex="0" aria-label="vibro"><span class="knob"></span></div>
+            </div>
+          </div>
+          <div>
+            <div class="set-row">
+              <div style="min-width:0">
+                <div class="set-row__label" data-i18n="settings.updates"></div>
+                <div class="set-row__hint" id="updStatus" role="status" aria-live="polite"></div>
+              </div>
+              <button class="m-btn m-btn--ghost m-btn--sm" id="checkUpdatesBtn"><span class="mic" data-mic="refresh"></span><span class="m-btn__t" data-i18n="settings.checkUpdates"></span></button>
+            </div>
+          </div>
+        </div>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="settingsBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="settings.back"></span></button></div>
+        <button class="m-text-btn" id="resetProgBtn2" style="position:absolute;left:20px;bottom:22px"><span class="mic" data-mic="again"></span> <span data-i18n="levels.reset"></span></button>
       </div>
     </div>
   </div>
 
   <div class="overlay hidden" id="confirmScreen">
-    <div class="panel card">
-      <h1 data-i18n="reset.title"></h1>
-      <p data-i18n="reset.msg"></p>
-      <div class="ctarow">
-        <button class="btn" id="resetCancelBtn"><span class="bglyph">←</span><span data-i18n="reset.no"></span></button>
-        <button class="btn btn-rose" id="resetConfirmBtn"><span class="bglyph">⟲</span><span data-i18n="reset.yes"></span></button>
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:400px;text-align:center">
+        <div class="m-head"><h1 class="m-title m-title--lg" data-i18n="reset.title"></h1><p class="m-subtitle" data-i18n="reset.msg"></p></div>
+        <div class="m-actions"><div class="m-actions__row">
+          <button class="m-btn m-btn--ghost" id="resetCancelBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="reset.no"></span></button>
+          <button class="m-btn m-btn--danger" id="resetConfirmBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="reset.yes"></span></button>
+        </div></div>
       </div>
     </div>
   </div>
 
   <div class="overlay hidden" id="pauseScreen">
-    <div class="panel card">
-      <div class="kicker">‖&nbsp;&nbsp;<span data-i18n="pause.kicker"></span></div>
-      <h1 id="pauseTitle"></h1>
-      <div class="statstrip" id="pauseStats"></div>
-      <div class="objlabel" id="pauseObjLabel" data-i18n="pause.objective"></div>
-      <div class="goalrows" id="pauseGoals"></div>
-      <div class="pausegrid pausegrid-3">
-        <button class="btn btn-primary" id="resumeBtn"><span class="bglyph">▶</span><span data-i18n="pause.resume"></span></button>
-        <button class="btn btn-teal" id="restartBtn"><span class="bglyph">↻</span><span data-i18n="pause.restart"></span></button>
-        <button class="btn btn-rose" id="menuBtn"><span class="bglyph">⌂</span><span data-i18n="pause.menu"></span></button>
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:560px;text-align:center">
+        <div class="m-kicker" style="justify-content:center"><span class="mic" data-mic="pause"></span><span data-i18n="pause.kicker"></span></div>
+        <div class="lvl-head" style="margin-top:8px"><h1 class="m-title m-title--md" id="pauseTitle"></h1></div>
+        <div class="stat-row" id="pauseStats"></div>
+        <div class="obj-block">
+          <div class="obj-block__head"><span class="lbl" id="pauseObjLabel" data-i18n="pause.objective"></span></div>
+          <div id="pauseGoals"></div>
+        </div>
+        <div class="m-actions"><div class="m-actions__row">
+          <button class="m-btn m-btn--primary" id="resumeBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="pause.resume"></span></button>
+          <button class="m-btn m-btn--ghost" id="restartBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="pause.restart"></span></button>
+          <button class="m-btn m-btn--danger" id="menuBtn"><span class="mic" data-mic="home"></span><span class="m-btn__t" data-i18n="pause.menu"></span></button>
+        </div></div>
       </div>
     </div>
   </div>
 
   <div class="overlay hidden" id="goalsScreen">
-    <div class="panel card">
-      <div class="kicker" id="goalsKicker"></div>
-      <h1 id="goalsTitle"></h1>
-      <div class="goalrows" id="goalsBody"></div>
-      <div class="ctarow">
-        <button class="btn btn-primary" id="goalsOk"><span class="bglyph">✓</span><span data-i18n="goals.ok"></span></button>
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:480px;text-align:center">
+        <div class="m-kicker" id="goalsKicker" style="justify-content:center"></div>
+        <div class="lvl-head"><h1 class="m-title m-title--md" id="goalsTitle"></h1></div>
+        <div id="goalsBody"></div>
+        <div class="m-actions"><button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="goalsOk"><span class="mic" data-mic="check"></span><span class="m-btn__t" data-i18n="goals.ok"></span></button></div>
       </div>
     </div>
   </div>
 
   <div class="overlay hidden" id="medalScreen">
-    <div class="panel panel-wide">
-      <div class="kicker" data-i18n="medals.kicker"></div>
-      <h1 data-i18n="medals.title"></h1>
-      <div class="medalcount" id="medalCount"></div>
-      <div class="medalgrid" id="medalGrid"></div>
-      <button class="btn" id="medalsBackBtn" data-i18n="medals.back"></button>
+    <div class="screen" style="padding:22px 24px 20px">
+      <div class="screen__col">
+        <div class="m-head">
+          <div class="m-kicker" data-i18n="medals.kicker"></div>
+          <h1 class="m-title m-title--md" data-i18n="medals.title"></h1>
+          <div class="m-counter" id="medalCount"></div>
+        </div>
+        <div class="scroller" style="flex:1;min-height:0;margin-top:14px;justify-content:flex-start">
+          <div class="medal-grid2" id="medalGrid"></div>
+        </div>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="medalsBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="medals.back"></span></button></div>
+      </div>
     </div>
   </div>
 
@@ -542,6 +1328,9 @@
     if (SKINS.includes(_q)) localStorage.setItem('pf_skin', _q);
   } catch (e) { /* no URL/localStorage in test harness */ }
   let NEON = SKIN === 'neon';   // bootstrap; authoritative источник — skinDef().glow (SKIN_DEFS ниже)
+  // меню-стили (menu.css) переключаются атрибутом data-skin на корне — выставляем
+  // его сразу на бутстрапе и далее в applySkin (логика рендера канваса не зависит).
+  try { if (typeof document !== 'undefined' && document.documentElement) document.documentElement.setAttribute('data-skin', SKIN); } catch (e) {}
 
   // ---- палитра спрайтов: единый источник правды для перекраски ----
   // Спрайт-листы (assets/sprites/planeflow-*.svg) хранят цвета как
@@ -662,6 +1451,7 @@
     SKIN = SKINS.includes(code) ? code : 'cozy';
     NEON = skinDef().glow;   // свечение объявляет скин (SKIN_DEFS), не имя
     THEME.tokens = skinTokens(SKIN);
+    try { document.documentElement.setAttribute('data-skin', SKIN); } catch (e) {}  // меню (menu.css) реагирует на data-skin
     refreshSpriteMode();
   }
   const SPRITES = (() => {
@@ -4263,7 +5053,8 @@
     });
     ACH.onLevelEnd(passed, stars, lives>=K.START_LIVES);
     document.getElementById('overKicker').textContent = t(passed?'over.passed':'over.failed');
-    document.getElementById('finalStars').textContent = '★'.repeat(stars)+'☆'.repeat(3-stars);
+    document.getElementById('finalStars').innerHTML = [0,1,2].map(i=>
+      '<span class="'+(i<stars?'pop':'off')+'" style="display:inline-flex'+(i<stars?';animation-delay:'+(i*0.13)+'s':'')+'">'+SVGIC('star')+'</span>').join('');
     const unit = t(LV.objective.metric==='upgrades'?'unit.upgrades':'unit.planes', {n:v});
     document.getElementById('overMsg').textContent =
       t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
@@ -4282,8 +5073,8 @@
      [t('stats.lives'), '♥ '+fmtNum(Math.max(0,lives))+' / '+fmtNum(K.START_LIVES), 'v-life'],
      [t('stats.time'), fmtTime(gameTime), 'v-phos']
     ].forEach(s2=>{
-      const d=document.createElement('div'); d.className='stat';
-      d.innerHTML=`<div class="label">${s2[0]}</div><div class="val ${s2[2]}">${s2[1]}</div>`;
+      const d=document.createElement('div'); d.className='rstat';
+      d.innerHTML=`<div class="k">${s2[0]}</div><div class="v ${s2[2]}">${s2[1]}</div>`;
       statsBox.appendChild(d);
     });
     const hasNext = !LV.biome && !LV.bonus && levelIdx+1<LEVELS.length && (debug.unlockAll||(levelIdx+1)<save.unlocked);
@@ -4403,6 +5194,48 @@
   function buildBiome(b){ curBiome=b; curBonus=null; levelIdx=-1; levelKey='b_'+b.id; LV=b.level; bays=[]; runways=[]; layout(); }
   // бонус-уровень: своя тема и строковый ключ сохранения (как биом — кампанию не двигает)
   function buildBonus(b){ curBiome=null; curBonus=b; levelIdx=-1; levelKey='bonus_'+b.id; LV=b.level; bays=[]; runways=[]; layout(); }
+  // ---- menu icons (Lucide-style, inlined from the design system's ui.jsx) ----
+  // Иконки меню — подстановка в стиле Lucide (см. HANDOFF.md). SVGIC(name) → строка;
+  // статичные кнопки несут <span class="mic" data-mic="name">, заполняется на старте
+  // applyMenuIcons(); рендереры зовут SVGIC() напрямую. Цвет наследуется (currentColor).
+  const _ICO_STROKE = {
+    moon:'<path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8Z"/>',
+    tree:'<path d="M12 3 5 13h4l-3 5h12l-3-5h4L12 3Z"/><path d="M12 18v3"/>',
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+    medal:'<circle cx="12" cy="14" r="6"/><path d="M8.5 8 6 3M15.5 8 18 3M9.5 5.5 12 2l2.5 3.5"/>',
+    share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
+    list:'<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+    again:'<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/>',
+    refresh:'<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/>',
+    home:'<path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9.5h12V10"/><path d="M10 19.5v-5h4v5"/>',
+    check:'<path d="m5 13 4 4L19 6"/>',
+    back:'<path d="M15 5l-7 7 7 7"/>',
+    fwd:'<path d="M9 5l7 7-7 7"/>',
+    lock:'<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    gift:'<rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M4 13h16M12 9v11"/><path d="M12 9C12 9 9.5 3.5 7.2 5.3 5.4 6.7 8.8 9 12 9ZM12 9c0 0 2.5-5.5 4.8-3.7C18.6 6.7 15.2 9 12 9Z"/>',
+    trophy:'<path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4.5A1.5 1.5 0 0 0 3 7.5C3 9 4 10.5 7 11M17 6h2.5A1.5 1.5 0 0 1 21 7.5C21 9 20 10.5 17 11M9.5 14h5M12 13v3M9 20h6M10 16h4l.5 4h-5L10 16Z"/>',
+    bug:'<rect x="8" y="7" width="8" height="11" rx="4"/><path d="M12 7V4M9 5 7.5 3.5M15 5l1.5-1.5M8 11H4M20 11h-4M8 15H4.5M19.5 15H16"/>',
+    hand:'<path d="M8 11V5.5a1.5 1.5 0 0 1 3 0V11M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a5 5 0 0 1-3.6-1.5L4 15.5a1.6 1.6 0 0 1 2.3-2.2L8 15"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+    inf:'<path d="M6.5 9a3 3 0 1 0 0 6c1.7 0 2.8-1.5 5.5-3s3.8-3 5.5-3a3 3 0 1 1 0 6c-1.7 0-2.8-1.5-5.5-3"/>',
+    expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  };
+  const _ICO_FILL = {
+    play:'<path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z"/>',
+    next:'<path d="M5 5.5v13a1 1 0 0 0 1.5.87L14 15v3.5a1 1 0 0 0 1.5.87l8-6.5a1 1 0 0 0 0-1.74l-8-6.5A1 1 0 0 0 14 5.5V9L6.5 4.63A1 1 0 0 0 5 5.5Z"/>',
+    plane:'<path d="M21 15.5 13.5 13V6.5a1.5 1.5 0 0 0-3 0V13L3 15.5V18l7.5-2v3l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-3l8 2v-2.5Z"/>',
+    heart:'<path d="M12 20.5 4.3 13a4.7 4.7 0 0 1 6.6-6.7l1.1 1 1.1-1A4.7 4.7 0 0 1 19.7 13L12 20.5Z"/>',
+    star:'<path d="m12 3 2.6 5.5 6 .8-4.4 4.2 1.1 6L12 16.9 6.7 19.5l1.1-6L3.4 9.3l6-.8L12 3Z"/>',
+    coin:'<circle cx="12" cy="12" r="9"/>',
+    pause:'<rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/>',
+  };
+  function SVGIC(name){
+    if(_ICO_FILL[name]) return '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">'+_ICO_FILL[name]+'</svg>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(_ICO_STROKE[name]||'')+'</svg>';
+  }
+  // заполнить статические плейсхолдеры иконок (<span class="mic" data-mic="...">)
+  function applyMenuIcons(root){ try{ (root||document).querySelectorAll('[data-mic]').forEach(el=>{ el.innerHTML=SVGIC(el.dataset.mic); }); }catch(e){} }
+
   function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','medalScreen','goalsScreen','confirmScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
   function startLevel(idx){ zen=false; buildLevel(idx); hideAllScreens(); reset(); }
@@ -4415,13 +5248,17 @@
     const list=document.getElementById('biomeList'); list.innerHTML='';
     BIOMES.forEach(b=>{
       const stars=save.stars['b_'+b.id]||0;
-      const card=document.createElement('button');
-      card.className='levelcard biomecard'+(b.ready?'':' locked');
-      const foot = b.ready ? ('★'.repeat(stars)+'☆'.repeat(3-stars)) : ('🔒 '+t('biomes.soon'));
-      card.innerHTML=`<div class="bioemoji">${b.emoji}</div>`+
-        `<div class="lvkick">${t('biome.'+b.id+'.name')}</div>`+
-        `<div class="biotag">${t('biome.'+b.id+'.tag')}</div>`+
-        `<div class="lvstars">${foot}</div>`;
+      const card=document.createElement('div');
+      card.className='biome'+(b.ready?'':' locked');
+      card.style.cursor=b.ready?'pointer':'default';
+      const starsHtml=[0,1,2].map(n=>'<span style="display:inline-flex;color:'+(n<stars?'var(--m-gold)':'var(--m-text-muted)')+'">'+SVGIC('star')+'</span>').join('');
+      const foot = b.ready
+        ? `<span class="biome__stars">${starsHtml}</span>`
+        : `<span class="biome__lock">${SVGIC('lock')} ${t('biomes.soon')}</span>`;
+      card.innerHTML=`<div class="biome__ic">${b.emoji}</div>`+
+        `<div class="biome__name">${t('biome.'+b.id+'.name')}</div>`+
+        `<div class="biome__desc">${t('biome.'+b.id+'.tag')}</div>`+
+        `<div class="biome__foot">${foot}</div>`;
       if(b.ready) card.onclick=()=>startBiome(b);
       list.appendChild(card);
     });
@@ -4466,69 +5303,73 @@
     '<circle cx="19" cy="33" r="7" fill="#1c1828" stroke="#0e0b16" stroke-width="2"/>'+
     '<circle cx="38" cy="33" r="7" fill="#1c1828" stroke="#0e0b16" stroke-width="2"/>'+
     '<circle cx="19" cy="33" r="2.4" fill="#5a5470"/><circle cx="38" cy="33" r="2.4" fill="#5a5470"/></svg>';
+  // карта уровней (дизайн-система): пагинация по LV_PER, ветка бонус-уровня,
+  // узлы со звёздами/замком/бейджем механики. Данные те же (LEVELS, save.stars,
+  // save.unlocked, bonusAfter/bonusUnlocked) — меняется только облик.
+  let levelPage = 0, levelPageInit = false;
+  const LV_PER = 5;
   function renderLevels(){
-    const list=document.getElementById('levelList'); list.innerHTML='';
-    // счётчик звёзд сверху: получено / всего возможно (по 3 на уровень)
+    const host=document.getElementById('levelList'); host.innerHTML='';
     let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;
     const max=LEVELS.length*3, sc=document.getElementById('starCount');
-    if(sc) sc.innerHTML=starSvg(true)+`<span><b>${got}</b> / ${max}</span><span class="sclbl">${t('levels.stars')}</span>`;
+    if(sc) sc.innerHTML=SVGIC('star')+` <b>${got}</b> <span class="muted">/ ${max}</span> <span class="unit">${t('levels.stars')}</span>`;
 
-    const feats=levelFeatures(), PER=3;                 // 3 чемодана = один вагон
-    const curIdx=Math.min(save.unlocked-1, LEVELS.length-1);   // докуда дошёл игрок
-    const row=document.createElement('div'); row.className='cart-row';
-    let curEl=null, bed=null, inWagon=0, first=true;
-    // открыть новый вагон; между вагонами — сцепка (с бонус-чемоданом, если он тут)
-    const openWagon=(bn)=>{
-      if(!first) row.appendChild(couplingEl(bn||null));
-      first=false;
-      const wag=document.createElement('div'); wag.className='wagon';
-      bed=document.createElement('div'); bed.className='wagon-bed';
-      wag.appendChild(bed); row.appendChild(wag); inWagon=0;
-    };
-    openWagon();
-    for(let i=0;i<LEVELS.length;i++){
-      if(inWagon===PER) openWagon();                    // вагон заполнен → следующий
-      const unlocked=debug.unlockAll||i<save.unlocked, stars=save.stars[i]||0, isCur=i===curIdx, feat=feats[i];
-      const b=document.createElement('button');
-      b.className='levelcard suitcase'+(unlocked?'':' locked')+(stars>0?' done':'')+(isCur?' current':'')+(feat?' node':'');
-      let html='';
-      if(feat){                                         // узловой бейдж (новая механика в уровне): открыт — иконка, закрыт — «тайна»
-        const key=feat[0], meta=FEATURE_META[key]||{icon:'?',cls:''};
-        html+= unlocked
-          ? `<span class="case-feat shown ${meta.cls}" title="${t('feat.'+key)}">${meta.icon}</span>`
-          : `<span class="case-feat mystery" title="${t('feat.mystery')}">?</span>`;
-      }
-      html+=`<span class="case-stars">`+(unlocked?[0,1,2].map(n=>starSvg(n<stars)).join(''):'')+`</span>`;
-      html+=`<span class="case-body"><span class="case-handle"></span><span class="case-strap"></span>`+
-        `<span class="case-num">${String(i+1).padStart(2,'0')}</span>`+(unlocked?'':LOCK_SVG)+`</span>`;
-      b.innerHTML=html;
+    const feats=levelFeatures();
+    const pages=Math.max(1, Math.ceil(LEVELS.length/LV_PER));
+    const cur=Math.min(save.unlocked-1, LEVELS.length-1);   // текущий играбельный (0-based)
+    if(!levelPageInit){ levelPage=Math.floor(cur/LV_PER); levelPageInit=true; }  // открыть на текущем
+    if(levelPage>=pages) levelPage=pages-1; if(levelPage<0) levelPage=0;
+    const start=levelPage*LV_PER;
+    const tiles=[]; for(let i=start;i<Math.min(start+LV_PER,LEVELS.length);i++) tiles.push(i);
+
+    const map=document.createElement('div'); map.className='lvlmap';
+    const prev=document.createElement('button'); prev.className='lvlmap__arrow'; prev.innerHTML=SVGIC('back');
+    prev.disabled=levelPage===0; prev.onclick=()=>{ levelPage--; renderLevels(); };
+    const next=document.createElement('button'); next.className='lvlmap__arrow'; next.innerHTML=SVGIC('fwd');
+    next.disabled=levelPage>=pages-1; next.onclick=()=>{ levelPage++; renderLevels(); };
+    const stage=document.createElement('div'); stage.className='lvlmap__stage';
+    const line=document.createElement('div'); line.className='lvlmap__line'; stage.appendChild(line);
+
+    // бонус-уровень, чей «after» попадает на эту страницу — ветка над лентой
+    let pageBonus=null; for(const i of tiles){ const bn=bonusAfter(i+1); if(bn){ pageBonus=bn; break; } }
+    if(pageBonus){
+      const unl=bonusUnlocked(pageBonus);
+      const wrap=document.createElement('div'); wrap.className='lvlmap__bonus';
+      const node=document.createElement('div'); node.className='lvlnode bonus'+(unl?'':' locked');
+      node.style.cursor=unl?'pointer':'default';
+      node.innerHTML=`<div class="bonus-tag">${pageBonus.emoji||'★'}</div>`+SVGIC('gift');
+      node.title = unl ? (bonusName(pageBonus)+(pageBonus.emoji?' '+pageBonus.emoji:'')) : t('bonus.req',{n:pageBonus.after});
+      if(unl) node.onclick=()=>startBonus(pageBonus);
+      const branch=document.createElement('div'); branch.className='branch';
+      wrap.appendChild(node); wrap.appendChild(branch); stage.appendChild(wrap);
+    }
+
+    const nodes=document.createElement('div'); nodes.className='lvlmap__nodes';
+    tiles.forEach(i=>{
+      const unlocked=debug.unlockAll||i<save.unlocked, stars=save.stars[i]||0;
+      const st = !unlocked ? 'locked' : (i===cur ? 'active' : 'done');
+      const node=document.createElement('div'); node.className='lvlnode '+st;
+      let inner='';
+      if(unlocked) inner+='<div class="lvlnode__stars">'+[0,1,2].map(n=>'<span'+(n<stars?'':' class="off"')+' style="display:inline-flex">'+SVGIC('star')+'</span>').join('')+'</div>';
+      inner+= unlocked ? `<span class="lvlnode__num">${String(i+1).padStart(2,'0')}</span>` : SVGIC('lock');
+      const feat=feats[i];
+      if(feat){ const meta=FEATURE_META[feat[0]]||{icon:'?'}; inner+=`<span class="lvlnode__feat" title="${unlocked?t('feat.'+feat[0]):t('feat.mystery')}">${unlocked?meta.icon:'?'}</span>`; }
+      if(st==='active') inner+=`<div class="lvlnode__label">${t('start.play')}</div>`;
+      node.innerHTML=inner;
       let label=t('level.name',{n:i+1})+' — '+levelName(i);
       if(!unlocked) label+=' — '+t('levels.locked');
       else if(feat) label+=' — '+t('feat.'+feat[0]);
-      b.setAttribute('aria-label', label);
-      if(unlocked) b.onclick=()=>startLevel(i);
-      if(isCur) curEl=b;
-      bed.appendChild(b); inWagon++;
-      // бонус-уровень «каждые 5»: после уровня N разрываем ленту и кладём на сцепку
-      // выпавший чемодан-сюрприз — целый бонус-уровень N½ (а каждые 3 — это уже
-      // узловой бейдж новой механики на самом чемодане-уровне выше)
-      const bn=bonusAfter(i+1);
-      if(bn && i+1<LEVELS.length) openWagon(bn);
-    }
-    // бонус после последнего уровня кампании (напр. 10½) — сцепка перед тягачом
-    const tailBonus=bonusAfter(LEVELS.length);
-    if(tailBonus) row.appendChild(couplingEl(tailBonus));
-    // тягач + финиш-самолёт справа (вся лента «едет» к борту)
-    const tug=document.createElement('div'); tug.className='tractor'; tug.innerHTML=TUG_SVG; row.appendChild(tug);
-    const dest=document.createElement('div'); dest.className='destination';
-    dest.innerHTML=`<span class="plane">✈</span><span class="dlabel">${t('levels.dest')}</span>`;
-    row.appendChild(dest);
-    list.appendChild(row);
-    // доскроллить ленту до текущего уровня (после раскладки)
-    if(curEl) requestAnimationFrame(()=>{
-      const cr=curEl.getBoundingClientRect(), lr=list.getBoundingClientRect();
-      list.scrollLeft += (cr.left+cr.width/2)-(lr.left+lr.width/2);
+      node.setAttribute('aria-label',label);
+      if(unlocked) node.onclick=()=>startLevel(i);
+      nodes.appendChild(node);
     });
+    stage.appendChild(nodes);
+    map.appendChild(prev); map.appendChild(stage); map.appendChild(next);
+
+    const dots=document.createElement('div'); dots.className='lvlmap__dots';
+    for(let p=0;p<pages;p++){ const d=document.createElement('span'); d.className='dot'+(p===levelPage?' on':''); d.onclick=()=>{ levelPage=p; renderLevels(); }; dots.appendChild(d); }
+
+    host.appendChild(map); host.appendChild(dots);
   }
   // сцепка между вагонами; если bn задан — на ней «выпавший чемодан» = бонус-уровень N½
   // (открыт — кликабелен и показывает 🦋, закрыт — «?» с подсказкой про нужный уровень)
@@ -4592,12 +5433,12 @@
     const mv = LV.objective.metric==='upgrades' ? upgradesDone : served;
     const prog = (zen||LV.objective.race) ? fmtNum(served) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target));
     const stats=[
-      ['◷', fmtTime(tShown), 'var(--phosphor)'],
-      ['🪙', fmtNum(money), money<0?'var(--life)':'var(--coin)'],
-      ['✈', prog, 'var(--teal)'],
+      [SVGIC('clock'), fmtTime(tShown), ''],
+      [SVGIC('coin'), fmtNum(money), money<0?'var(--m-life)':'var(--m-gold)'],
+      [SVGIC('plane'), prog, 'var(--m-plane)'],
     ];
     document.getElementById('pauseStats').innerHTML = stats.map(s=>
-      `<div class="stat"><span class="si" style="color:${s[2]}">${s[0]}</span>${s[1]}</div>`).join('');
+      `<span class="rs"${s[2]?` style="color:${s[2]}"`:''}>${s[0]}<span>${s[1]}</span></span>`).join('');
   }
   document.getElementById('resumeBtn').onclick=()=>setPaused(false);
   document.getElementById('restartBtn').onclick=()=>reset();
@@ -4621,15 +5462,17 @@
     const codes=Object.keys(I18N); const i=codes.indexOf(lang);
     setLang(codes[(i+1)%codes.length]);
   };
-  // звук/вибро — единственная копия чекбоксов в экране «Настройки» главного меню
+  // звук/вибро — переключатели-тоглы (.switch) в экране «Настройки» главного меню
   function syncSettingsUI(){
-    const s=document.getElementById('optSound2'); if(s) s.checked=save.sound!==false;
-    const v=document.getElementById('optVibro2'); if(v) v.checked=save.vibro!==false;
+    const s=document.getElementById('optSound2'); if(s){ s.classList.toggle('on', save.sound!==false); s.setAttribute('aria-checked', String(save.sound!==false)); }
+    const v=document.getElementById('optVibro2'); if(v){ v.classList.toggle('on', save.vibro!==false); v.setAttribute('aria-checked', String(save.vibro!==false)); }
   }
   function setSound(on){ save.sound=on; saveGame(); SND.setEnabled(on); syncSettingsUI(); Analytics.track('setting_changed', {key:'sound', value:!!on}); }
   function setVibro(on){ save.vibro=on; saveGame(); HAP.on=on; syncSettingsUI(); Analytics.track('setting_changed', {key:'vibro', value:!!on}); }
-  document.getElementById('optSound2').onchange=ev=>setSound(ev.target.checked);
-  document.getElementById('optVibro2').onchange=ev=>setVibro(ev.target.checked);
+  (function(){
+    const s=document.getElementById('optSound2'); if(s) s.onclick=()=>setSound(!(save.sound!==false));
+    const v=document.getElementById('optVibro2'); if(v) v.onclick=()=>setVibro(!(save.vibro!==false));
+  })();
 
   // переключатель визуального скина (сегмент-контрол, как у языка); применяется
   // сразу, без перезагрузки, и запоминается в localStorage (ключ pf_skin)
@@ -4638,7 +5481,7 @@
     box.innerHTML='';
     for(const code of SKINS){   // состав — из SKINS, метка — из реестра (SKIN_DEFS[code].label)
       const b=document.createElement('button');
-      b.className='langbtn'+(code===SKIN?' on':'');
+      b.className=(code===SKIN?'active':'');
       b.textContent=t((SKIN_DEFS[code]||SKIN_DEFS.cozy).label);
       b.onclick=()=>setSkin(code);
       box.appendChild(b);
@@ -4698,34 +5541,36 @@
   // окно/блок целей: вызов + обучающая строка + цели и звёзды-градация иконками.
   // Та же разметка для окна постановки целей и для встроенного блока в паузе.
   function goalRowsHTML(){
-    if(zen) return `<p class="goalzen">${t('goals.zen')}</p>`;
+    if(zen) return `<p class="m-subtitle" style="max-width:34ch">${t('goals.zen')}</p>`;
     const o = LV.objective, stars = o.stars || [o.target, o.target, o.target];
-    // основная метрика: 🐛 на лугу бабочек, 🔧 на апгрейд-уровнях, иначе ✈
+    // основная метрика: гусеница на лугу бабочек, 🔧 на апгрейд-уровнях, иначе ✈
     const primary = LV.bonus==='butterfly' ? GICON.caterpillar
                   : o.metric==='upgrades' ? GICON.wrench : GICON.plane;
     // вызов (краткое описание) + обучающая строка
     let head;
-    if(LV.biome) head = `<p class="goal-challenge">${t('biome.'+LV.biome+'.hint')}</p>`;
-    else if(LV.bonus) head = `<p class="goal-challenge">${objectiveDesc()}</p>`;
+    if(LV.biome) head = `<p class="m-subtitle">${t('biome.'+LV.biome+'.hint')}</p>`;
+    else if(LV.bonus) head = `<p class="m-subtitle">${objectiveDesc()}</p>`;
     else {
       const n = levelIdx+1, dk='level.d.'+n, hk='level.h.'+n;
-      head = `<p class="goal-challenge">${hasI18n(dk) ? t(dk) : objectiveDesc()}</p>`;
-      if(hasI18n(hk)) head += `<p class="goal-hint">${t(hk)}</p>`;
+      head = `<p class="m-subtitle">${hasI18n(dk) ? t(dk) : objectiveDesc()}</p>`;
+      if(hasI18n(hk)) head += `<p class="m-subtitle" style="color:var(--m-accent)">${t(hk)}</p>`;
     }
     // сводка целей: ⏱ время/∞  +  основная метрика (потолок или ∞ для race)
     const timeStr = o.time ? fmtTime(o.time) : INF;
     const headTarget = o.race ? INF : fmtNum(o.target);
-    let obj = `<div class="goal-objrow"><span class="gobj clock">${GICON.clock}${timeStr}</span>`+
-              `<span class="gobj">${primary}${headTarget}</span>`;
-    if(o.upg) obj += `<span class="gobj upg">${GICON.wrench}${fmtNum(o.upg[o.upg.length-1])}</span>`;
-    obj += `</div>`;
-    // лестница звёзд (3★ сверху): ★-метки + порог по метрике (+ 🔧 на L3)
-    const ladder = [2,1,0].map(i=>{
-      let val = `<span class="gstar-val">${primary}${fmtNum(stars[i])}</span>`;
-      if(o.upg && o.upg[i]>0) val += `<span class="gstar-val upg">${GICON.wrench}${fmtNum(o.upg[i])}</span>`;
-      return `<div class="gstar-row"><span class="gstar">${'★'.repeat(i+1)}</span>${val}</div>`;
+    let line = `<div class="goal-line"><span class="g g--inf">${GICON.clock}${timeStr}</span>`+
+               `<span class="g g--target">${primary}${headTarget}</span>`;
+    if(o.upg) line += `<span class="g g--target">${GICON.wrench}${fmtNum(o.upg[o.upg.length-1])}</span>`;
+    line += `</div>`;
+    // пороги звёзд (3★ сверху): ★-иконки + порог по метрике (+ 🔧 на старших)
+    const rows = [2,1,0].map(i=>{
+      const st=i+1;
+      const starsHtml=[0,1,2].map(n=>'<span'+(n<st?'':' class="off"')+' style="display:inline-flex">'+SVGIC('star')+'</span>').join('');
+      let req = `<span class="req">${primary}${fmtNum(stars[i])}</span>`;
+      if(o.upg && o.upg[i]>0) req = `<span class="req">${primary}${fmtNum(stars[i])} <span class="req-upg">${GICON.wrench}${fmtNum(o.upg[i])}</span></span>`;
+      return `<div class="row"><span class="stars">${starsHtml}</span>${req}</div>`;
     }).join('');
-    return `<div class="goalsboard">${head}${obj}<div class="goal-stars">${ladder}</div></div>`;
+    return `${head}${line}<div class="thresholds">${rows}</div>`;
   }
   function buildGoalsContent(){
     document.getElementById('goalsKicker').textContent = t('goals.kicker');
@@ -4957,28 +5802,38 @@
 
   // ---- экран медалей ----
   let medalFrom='start';
+  const MEDAL_RAR=['r-common','r-rare','r-epic','r-legend','r-legend'];   // tier 1..5 → редкость диска
   function renderMedals(){
     const list=ACH.list();
-    document.getElementById('medalCount').textContent =
-      t('medals.count', {got:list.filter(m=>m.got).length, total:list.length});
+    const got=list.filter(m=>m.got).length, total=list.length;
+    document.getElementById('medalCount').innerHTML =
+      SVGIC('medal')+` <b>${got}</b> <span class="muted">/ ${total}</span>`;
     const grid=document.getElementById('medalGrid'); grid.innerHTML='';
+    const pct=total?Math.round(got/total*100):0;
+    const prog=document.createElement('div'); prog.className='medal-progress'; prog.style.gridColumn='1 / -1';
+    prog.innerHTML=`<div class="medal-progress__track"><div class="medal-progress__fill" style="width:${pct}%"></div></div>`;
+    grid.appendChild(prog);
     for(const tier of [1,2,3,4,5]){
-      const head=document.createElement('div'); head.className='tierhead';
+      const items=list.filter(x=>x.tier===tier); if(!items.length) continue;
+      const head=document.createElement('div'); head.className='medal-cat';
       head.textContent=t('medals.tier'+tier); grid.appendChild(head);
-      for(const m of list.filter(x=>x.tier===tier)){
+      for(const m of items){
         const masked = m.hidden && !m.got;             // секретная и ещё не открыта
+        const rar = MEDAL_RAR[tier-1]||'r-common';
         const el=document.createElement('div');
-        el.className='medal'+(m.got?' got':' locked');
+        el.className='medal2 '+rar+(m.got?' unlocked':' locked');
         const ic = masked ? '❔' : m.ic;
         const title = masked ? t('medals.secretTitle') : m.title;
         let desc = masked ? t('medals.secretDesc') : m.desc;
         if(m.pending && !m.got && !masked) desc += t('medals.pendingNote');
-        let prog='';
+        let foot;
         if(m.prog && !m.got && !masked){
           const c=Math.min(m.prog[0],m.prog[1]);
-          prog=`<div class="mp">${fmtNum(c)} / ${fmtNum(m.prog[1])}</div>`;
-        }
-        el.innerHTML=`<div class="ic">${ic}</div><div><div class="mt">${title}</div><div class="md">${desc}</div>${prog}</div>`;
+          foot=`<div class="medal2__desc" style="color:var(--m-gold);font-weight:800">${fmtNum(c)} / ${fmtNum(m.prog[1])}</div>`;
+        } else foot=`<span class="medal2__rar">${t('medals.tier'+tier)}</span>`;
+        el.innerHTML=(m.got?`<span class="medal2__check">${SVGIC('check')}</span>`:'')+
+          `<div class="medal2__disc">${m.got?ic:SVGIC('lock')}</div>`+
+          `<div class="medal2__name">${title}</div><div class="medal2__desc">${desc}</div>${foot}`;
         grid.appendChild(el);
       }
     }
@@ -4998,6 +5853,7 @@
   ACH.init();
   lang = save.lang || DEFAULT_LANG;   // сохранённый выбор > английский по умолчанию
   applyI18n();
+  applyMenuIcons();                   // заполнить статические иконки меню (data-mic)
   Analytics.init();                   // шина метрик: userId/сессия/first_open + ловля крашей
   // мягкая самопроверка конфига при загрузке: в dev сразу видно в консоли, если
   // новая механика/уровень нарушили правила (жёстко это же проверяют тесты)
