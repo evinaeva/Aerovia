@@ -17,7 +17,7 @@
 ## Project Overview
 
 - **Game name:** PlaneFlow
-- **Genre:** Cozy airport flow management game
+- **Genre:** Calm, warm airport flow management game
 - **Platform:** Mobile (landscape only)
 
 **Core fantasy:**
@@ -28,7 +28,7 @@ The game should feel:
 
 - mentally engaging
 - visually relaxing
-- cozy
+- warm and inviting
 - highly readable
 - satisfying
 - low stress but high focus
@@ -48,13 +48,13 @@ Visual direction:
 - top-down view
 - stylized flat rendering
 - warm atmosphere
-- cozy lighting
+- warm lighting
 - simplified geometry
 - soft shading
 - visually rich but uncluttered
 - highly readable gameplay
 
-Think: **Mini Metro readability** + **cozy management game atmosphere** + **mobile-first clarity**.
+Think: **Mini Metro readability** + **warm management game atmosphere** + **mobile-first clarity**.
 
 > **Note on the reference image.** The style-guide reference in
 > [`references/`](references/) is rendered with a light isometric tilt for presentation
@@ -68,7 +68,7 @@ Think: **Mini Metro readability** + **cozy management game atmosphere** + **mobi
 Full detail in [`visual_pillars.md`](visual_pillars.md). Summary:
 
 1. **Readability first** — gameplay clarity always wins over realism.
-2. **Cozy atmosphere** — the airport feels alive and emotionally pleasant.
+2. **Warm atmosphere** — the airport feels alive and emotionally pleasant.
 3. **Cognitive flow** — supports a calm, "brain occupied" focus state.
 4. **Stylized, not realistic** — simplified shapes, clean silhouettes, soft warmth.
 
@@ -134,7 +134,7 @@ Color system (canonical — see [`color_palette.md`](color_palette.md)):
 
 ## Lighting
 
-Soft and cozy. Avoid hard realism.
+Soft and warm. Avoid hard realism.
 
 - **Day:** soft warm sunlight.
 - **Night:** warm airport lamps, glowing taxiways, subtle ambient lighting.

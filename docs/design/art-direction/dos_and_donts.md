@@ -15,7 +15,7 @@
 
 **Atmosphere**
 - Add small living moments (idle vehicles, red carpet, snowplow at work).
-- Use warm lamp glow at night for cozy mood.
+- Use warm lamp glow at night for an inviting mood.
 - Keep the world cute and alive.
 
 **Style**

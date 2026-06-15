@@ -1,6 +1,6 @@
-# PlaneFlow — design assets · Batch 1 (cozy)
+# PlaneFlow — design assets · Batch 1
 
-Cozy / stylized-flat, top-down vector assets. Delivered as an inline-SVG
+Stylized-flat, top-down vector assets. Delivered as an inline-SVG
 `<symbol>` sprite sheet so they stay crisp at any DPI (important for mobile).
 
 Colours are taken from the PlaneFlow design-system tokens (`tokens/colors.css`).

@@ -1,8 +1,7 @@
 # Analytics & soft-launch metrics
 
 Основа под soft launch и метрики. **Это логика, не контент** — единая шина событий
-живёт над скинами (см. `CLAUDE.md`): скин/биом/карта попадают в событие как поле
-`skin`, никаких `if(SKIN==='…')`. Реализация — модуль `Analytics` в `index.html`
+живёт над оформлением. Реализация — модуль `Analytics` в `index.html`
 (рядом с `SND`/`HAP`).
 
 ## Как устроено
@@ -23,7 +22,7 @@
 
 ## Базовый контекст (в каждом событии)
 
-`userId, sessionId, seq, ts, appVersion, skin, lang, platform, screenW, screenH`.
+`userId, sessionId, seq, ts, appVersion, lang, platform, screenW, screenH`.
 
 ## События
 
@@ -36,7 +35,7 @@
 | `tutorial_start` | туториал показан | `step` |
 | `tutorial_step` | смена шага туториала | `step` (`service`/`takeoff`) |
 | `tutorial_complete` | туториал пройден | — |
-| `setting_changed` | смена настройки | `key` (`lang`/`sound`/`vibro`/`skin`), `value` |
+| `setting_changed` | смена настройки | `key` (`lang`/`sound`/`vibro`), `value` |
 | `error` | краш JS | `message, source, kind` |
 | `purchase` / `revenue` / `ad_watched` | **спят** — нет монетизации | `value, currency, sku` |
 

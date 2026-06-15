@@ -58,7 +58,7 @@ Start/Menu ──Play──► Level select ──tap level──► Shift goals
 ### 01 · Start / Main menu
 ![Start](../wireframes/01-start.png)
 
-- **Left half:** wordmark + cozy top-down art (planes), no buttons — it breathes.
+- **Left half:** wordmark + warm top-down art (planes), no buttons — it breathes.
 - **Right rail (thumb side):** one oversized **PLAY**, then a stack of secondary tiles —
   **Zen · Levels · Medals · Settings**. Version number quiet at the bottom.
 - Sizes: primary CTA ≈ 200×58, secondary tiles ≈ 200×46, full-width touch targets.

@@ -14,14 +14,14 @@
 <meta name="apple-mobile-web-app-title" content="PlaneFlow">
 <meta name="theme-color" content="#16131f">
 <style>
-  /* ===== облик «cozy / stylized-flat» (см. CHANGELOG) ===== */
+  /* ===== палитра-токены канваса (база; неон накладывается через THEME) ===== */
   :root{
     --ink:#16131f;
     --tarmac:#242842;
     --tarmac-2:#2c3150;
     --water:#1c3a42;
     --grid:#2a2f4a;
-    --phosphor:#cdb0f7;   /* cozy-акцент (бывш. радарный циан) */
+    --phosphor:#cdb0f7;   /* акцент маршрутов/радара */
     --paper:#f4eede;
     --muted:#9a93b5;
     --amber:#f2a93b;   /* ремонт */
@@ -363,8 +363,8 @@
 
   /* ============================================================
      PlaneFlow Design System — unified menu styles (menus/menu.css,
-     inlined as-is minus its html/body/.stage shell resets). Skins switch
-     via data-skin on <html>; menu tokens are --m-*. See menus/HANDOFF.md.
+     inlined as-is minus its html/body/.stage shell resets).
+     Menu tokens are --m-*. See menus/HANDOFF.md.
      ============================================================ */
 
   /* base DS tokens referenced bare by the menu system (from tokens/effects.css) */
@@ -375,69 +375,65 @@
   }
 
 /* ============================================================
-   PlaneFlow — Unified Menu System
-   One consistent menu language across all screens, skinnable.
+   PlaneFlow — Unified Menu System (единый облик «неон»).
    Built on the design-system tokens (tokens/*.css via styles.css).
-
-   Principle observed from the shipped screens: every menu PANEL
-   stays a dark warm navy-purple surface with cream text in ALL
-   skins. What a skin changes is the BOARD behind, the panel
-   roundness, the signature glow/accent, the primary green, and
-   how chunky the buttons feel.  All menu tokens are `--m-*`.
+   Каждая панель меню — тёмная navy-поверхность с кремовым текстом; борд
+   за меню, скругление, фирменное свечение/акцент и primary-зелёный заданы
+   токенами --m-* ниже. Все токены меню — `--m-*`.
    ============================================================ */
 
-/* -------- BASE / default = "Уютный" (cozy night) ---------- */
+/* -------- облик «Неон» (тёмный ночной радар) -------- */
 :root {
   /* surfaces */
-  --m-panel:        #221d33;
-  --m-panel-2:      #1a1726;          /* sunken well / table */
-  --m-panel-3:      #2a2440;          /* raised inner chip / row */
-  --m-panel-border: rgba(181,140,240,0.20);
-  --m-panel-edge:   rgba(255,255,255,0.05); /* top gloss hairline */
-  --m-panel-shadow: 0 24px 60px rgba(8,5,18,0.62);
-  --m-divider:      rgba(181,140,240,0.14);
+  --m-panel:        #0f1c3c;
+  --m-panel-2:      #0a1228;          /* sunken well / table */
+  --m-panel-3:      #14264e;          /* raised inner chip / row */
+  --m-panel-border: rgba(111,198,221,0.32);
+  --m-panel-edge:   rgba(111,198,221,0.12); /* top gloss hairline */
+  --m-panel-shadow: 0 24px 60px rgba(3,7,20,0.7), 0 0 30px rgba(111,198,221,0.10);
+  --m-divider:      rgba(111,198,221,0.18);
 
   /* radii */
-  --m-r-panel:  20px;
-  --m-r-card:   16px;
-  --m-r-chip:   11px;
-  --m-r-btn:    13px;
+  --m-r-panel:  14px;
+  --m-r-card:   12px;
+  --m-r-chip:   10px;
+  --m-r-btn:    12px;
 
   /* text */
-  --m-text-strong: #f4eede;
-  --m-text-body:   #e8e0cf;
-  --m-text-muted:  #9b9aa8;
-  --m-kicker:      #8f8aa3;
+  --m-text-strong: #dff4ff;
+  --m-text-body:   #b9d2e8;
+  --m-text-muted:  #6f88b5;
+  --m-kicker:      #6f88b5;
 
   /* semantic accents */
-  --m-primary:        #5dca7a;
-  --m-primary-deep:   #3f9e5a;
-  --m-primary-text:   #11331e;
-  --m-primary-glow:   0 0 20px rgba(93,202,122,0.40);
-  --m-danger:         #e0584f;
+  --m-primary:        #6cc88f;
+  --m-primary-deep:   #3f9e6a;
+  --m-primary-text:   #05140d;
+  --m-primary-glow:   0 0 22px rgba(108,200,143,0.40);
+  --m-danger:         #e85f7e;
   --m-danger-soft:    rgba(224,88,79,0.55);
-  --m-gold:           #f4cf5e;
-  --m-life:           #ef5365;
-  --m-plane:          #4ecdc4;
-  --m-coin:           #f2a93b;
-  --m-accent:         #b58cf0;        /* skin signature (active states) */
-  --m-accent-glow:    0 0 22px rgba(181,140,240,0.40);
+  --m-gold:           #e6c562;
+  --m-life:           #e85f7e;
+  --m-plane:          #6fc6dd;
+  --m-coin:           #e6c562;
+  --m-accent:         #6fc6dd;        /* фирменный акцент (active states) */
+  --m-accent-glow:    0 0 22px rgba(111,198,221,0.40);
 
   /* ghost / neutral button */
-  --m-ghost-bg:     #2a2440;
-  --m-ghost-border: rgba(181,140,240,0.40);
-  --m-ghost-text:   #e8e0cf;
+  --m-ghost-bg:     rgba(20,38,78,0.7);
+  --m-ghost-border: rgba(111,198,221,0.32);
+  --m-ghost-text:   #b9d2e8;
 
   /* buttons */
   --m-btn-h:    52px;
   --m-btn-h-lg: 60px;
   --m-btn-h-sm: 42px;
   --m-btn-stroke: 1.5px;
-  --m-btn-lift: 0px;          /* cartoon adds a chunky bottom edge */
+  --m-btn-lift: 0px;
 
   /* board */
-  --m-board: radial-gradient(120% 120% at 50% -10%, #2a2440 0%, #1a1d2e 46%, #14111e 100%);
-  --m-scrim: rgba(12,9,22,0.58);
+  --m-board: radial-gradient(80% 80% at 50% 42%, #122046 0%, #0c1430 55%, #070c1c 100%);
+  --m-scrim: rgba(5,9,22,0.6);
   --m-board-blur: 3px;
 
   /* type roles (from DS) */
@@ -445,94 +441,9 @@
   --m-font-ui: "Nunito", system-ui, sans-serif;
 
   /* motion */
-  --m-ease: cubic-bezier(0.34, 1.2, 0.5, 1);
+  --m-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --m-ease-bounce: cubic-bezier(0.34, 1.56, 0.5, 1);
   --m-dur: 0.24s;
-}
-
-/* -------- "Мультяшный" (Cartoon — bright daytime) --------- */
-[data-skin="cartoon"] {
-  --m-panel:        #262238;
-  --m-panel-2:      #1d1a2b;
-  --m-panel-3:      #322c48;
-  --m-panel-border: rgba(255,255,255,0.10);
-  --m-panel-edge:   rgba(255,255,255,0.09);
-  --m-panel-shadow: 0 22px 46px rgba(20,40,18,0.40), 0 6px 0 rgba(20,16,30,0.30);
-
-  --m-r-panel: 26px;
-  --m-r-card:  20px;
-  --m-r-chip:  13px;
-  --m-r-btn:   18px;
-
-  --m-primary:      #36d36b;
-  --m-primary-deep: #1f9e4c;
-  --m-primary-text: #0d3a1e;
-  --m-primary-glow: 0 0 22px rgba(54,211,107,0.42);
-  --m-danger:       #ff4d5e;
-  --m-gold:         #ffce3a;
-  --m-life:         #ff4d5e;
-  --m-plane:        #1fb6d8;
-  --m-coin:         #ffce3a;
-  --m-accent:       #b58cf0;
-  --m-accent-glow:  0 0 22px rgba(181,140,240,0.42);
-
-  --m-ghost-bg:     #322c48;
-  --m-ghost-border: rgba(255,255,255,0.16);
-
-  --m-btn-h:    56px;
-  --m-btn-h-lg: 64px;
-  --m-btn-stroke: 0px;
-  --m-btn-lift: 4px;
-
-  --m-board: linear-gradient(180deg, #bfe6f7 0%, #a6dcf2 52%, #9fd96f 52%, #6fbf4a 100%);
-  --m-scrim: rgba(18,32,16,0.42);
-  --m-board-blur: 2px;
-  --m-ease: var(--m-ease-bounce);
-}
-
-/* -------- "Неон" (muted night radar) --------------------- */
-[data-skin="neon"] {
-  --m-panel:        #0f1c3c;
-  --m-panel-2:      #0a1228;
-  --m-panel-3:      #14264e;
-  --m-panel-border: rgba(111,198,221,0.32);
-  --m-panel-edge:   rgba(111,198,221,0.12);
-  --m-panel-shadow: 0 24px 60px rgba(3,7,20,0.7), 0 0 30px rgba(111,198,221,0.10);
-  --m-divider:      rgba(111,198,221,0.18);
-
-  --m-r-panel: 14px;
-  --m-r-card:  12px;
-  --m-r-chip:  10px;
-  --m-r-btn:   12px;
-
-  --m-text-strong: #dff4ff;
-  --m-text-body:   #b9d2e8;
-  --m-text-muted:  #6f88b5;
-  --m-kicker:      #6f88b5;
-
-  --m-primary:      #6cc88f;
-  --m-primary-deep: #3f9e6a;
-  --m-primary-text: #05140d;
-  --m-primary-glow: 0 0 22px rgba(108,200,143,0.40);
-  --m-danger:       #e85f7e;
-  --m-gold:         #e6c562;
-  --m-life:         #e85f7e;
-  --m-plane:        #6fc6dd;
-  --m-coin:         #e6c562;
-  --m-accent:       #6fc6dd;
-  --m-accent-glow:  0 0 22px rgba(111,198,221,0.40);
-
-  --m-ghost-bg:     rgba(20,38,78,0.7);
-  --m-ghost-border: rgba(111,198,221,0.32);
-  --m-ghost-text:   #b9d2e8;
-
-  --m-btn-h:    52px;
-  --m-btn-h-lg: 60px;
-
-  --m-board: radial-gradient(80% 80% at 50% 42%, #122046 0%, #0c1430 55%, #070c1c 100%);
-  --m-scrim: rgba(5,9,22,0.6);
-  --m-board-blur: 3px;
-  --m-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ============================================================
@@ -542,22 +453,6 @@
 .board__art { position: absolute; inset: 0; transition: filter var(--m-dur) ease; }
 .scene--dimmed .board__art { filter: blur(var(--m-board-blur)) brightness(0.82); }
 
-/* cartoon sky decorations */
-.cloud {
-  position: absolute; background: rgba(255,255,255,0.9);
-  border-radius: 999px; filter: blur(2px);
-  box-shadow: 0 8px 24px rgba(120,160,190,0.25);
-}
-.sun {
-  position: absolute; width: 92px; height: 92px; border-radius: 999px;
-  background: radial-gradient(circle at 38% 36%, #fff4c2, #ffd34d 60%, #ffc62e);
-  box-shadow: 0 0 60px rgba(255,206,58,0.6);
-}
-/* cozy lamp glow blobs */
-.lamp {
-  position: absolute; width: 180px; height: 180px; border-radius: 999px;
-  background: radial-gradient(circle, rgba(255,184,77,0.30), rgba(255,184,77,0) 70%);
-}
 /* neon radar */
 .radar-ring {
   position: absolute; border-radius: 999px;
@@ -974,24 +869,13 @@
 .lvlmap__dots .dot.on { background: var(--m-accent); border-color: transparent;
   box-shadow: var(--m-accent-glow); width: 22px; }
 
-/* ---- per-skin theming of the level map ---- */
-[data-skin="cartoon"] .lvlmap__stage {
-  background: linear-gradient(180deg, rgba(122,196,108,0.22), rgba(60,120,60,0.34));
-  border-color: rgba(255,255,255,0.14); }
-[data-skin="cartoon"] .lvlmap__line { height: 14px;
-  background: #b98a52; box-shadow: inset 0 2px 0 rgba(255,255,255,0.18), inset 0 -3px 0 rgba(0,0,0,0.2);
-  border-top: 2px dashed rgba(255,255,255,0.4); border-image: none; }
-[data-skin="cartoon"] .lvlnode { box-shadow: 0 5px 0 rgba(20,16,30,0.4); }
-
-[data-skin="neon"] .lvlmap__stage {
+/* ---- оформление карты уровней (неон) ---- */
+.lvlmap__stage {
   background: radial-gradient(120% 100% at 50% 50%, rgba(18,32,70,0.6), rgba(9,17,38,0.72)); }
-[data-skin="neon"] .lvlmap__line { height: 2px; background: var(--m-accent);
+.lvlmap__line { height: 2px; background: var(--m-accent);
   box-shadow: var(--m-accent-glow); opacity: 0.55; }
-[data-skin="neon"] .lvlnode { border-radius: 999px; }
-[data-skin="neon"] .lvlnode.bonus { border-radius: 999px; }
-
-[data-skin="cozy"] .lvlmap__line {
-  background: repeating-linear-gradient(90deg, var(--m-panel-3) 0 18px, transparent 18px 30px); }
+.lvlnode { border-radius: 999px; }
+.lvlnode.bonus { border-radius: 999px; }
 
 /* ============================================================
    BIOME GRID  (Биомы)
@@ -1112,12 +996,8 @@
     border:1.5px solid var(--m-panel-border);box-shadow:var(--shadow-raised);color:var(--m-text-body)}
 
   /* ============================================================
-     MAIN SCREEN — three per-skin finals (PlaneFlow main-screen handoff).
-     ONE DOM; only positioning / signature treatment differs, driven by
-     [data-skin]. Logic & button components stay shared (see CLAUDE.md).
-       neon (base) : brand left·center  · glass CTA panel right·center
-       cartoon     : big outlined wordmark · no-panel chunky CTA right
-       cozy        : brand upper-left    · glass CTA row in the thumb zone
+     MAIN SCREEN (PlaneFlow main-screen handoff) — единый облик neon:
+     бренд слева·по центру · стеклянная панель CTA справа·по центру.
      ============================================================ */
   #startScreen .pf-main{ display:block; }              /* full-bleed canvas, children placed absolutely */
   #startScreen .pf-main > *{ position:absolute; }
@@ -1147,51 +1027,13 @@
     width:min(40%,308px); padding:24px 22px; z-index:2; }
   #startScreen .pf-cta .menu-col{ width:100%; gap:13px; }
 
-  /* ---- neon (base panel = matte glass) ---- */
-  [data-skin="neon"] #startScreen .pf-cta{ background:rgba(14,26,56,.66); backdrop-filter:blur(8px); }
-  [data-skin="neon"] #startScreen .brand__word{ text-shadow:0 0 14px rgba(111,198,221,.55); }
-
-  /* ---- cozy ---- */
-  [data-skin="cozy"] #startScreen .pf-scrim{ background:
-      linear-gradient(115deg, rgba(8,5,18,.55) 0%, transparent 46%),
-      linear-gradient(0deg, rgba(8,5,18,.5), transparent 44%); }
-  [data-skin="cozy"] #startScreen .pf-brand{ top:21%; transform:none; max-width:min(52%,440px); }
-  [data-skin="cozy"] #startScreen .brand__mark{ font-size:clamp(38px,7vw,60px); }
-  [data-skin="cozy"] #startScreen .brand__word{ text-shadow:0 0 26px rgba(255,184,77,.4); }
-  [data-skin="cozy"] #startScreen .pf-cta{ left:7%; right:auto; top:auto; bottom:8%; margin-block:0;
-    height:auto; width:auto; max-width:none; background:none; border:none; box-shadow:none; padding:0; backdrop-filter:none; }
-  [data-skin="cozy"] #startScreen .pf-cta .menu-col{ flex-direction:row; width:auto; gap:14px; align-items:center; }
-  [data-skin="cozy"] #startScreen .pf-cta .m-btn{ width:auto; }
-  [data-skin="cozy"] #startScreen .pf-cta .m-btn--ghost{ background:rgba(255,255,255,.12);
-    border:1px solid rgba(255,255,255,.28); color:#fff; backdrop-filter:blur(12px); box-shadow:0 6px 18px rgba(0,0,0,.3); }
-
-  /* ---- cartoon ---- */
-  [data-skin="cartoon"] #startScreen .pf-scrim{ background:linear-gradient(90deg, rgba(20,15,25,.16), transparent 46%); }
-  [data-skin="cartoon"] #startScreen .pf-chips{ left:18px; right:auto; }
-  [data-skin="cartoon"] #startScreen .pf-brand{ max-width:min(48%,480px); }
-  [data-skin="cartoon"] #startScreen .brand__plane{ display:none; }
-  [data-skin="cartoon"] #startScreen .brand__word{ display:block; }
-  [data-skin="cartoon"] #startScreen .brand__w1,[data-skin="cartoon"] #startScreen .brand__w2{ display:block; }
-  [data-skin="cartoon"] #startScreen .brand__mark{ font-size:clamp(50px,9vw,80px); line-height:.9; color:#fffaf0;
-    text-shadow:5px 6px 0 #3a2a17, -2px 0 0 #3a2a17, 0 -2px 0 #3a2a17, 0 2px 0 #3a2a17, 2px 0 0 #3a2a17; }
-  [data-skin="cartoon"] #startScreen .brand__kicker{ color:#fffaf0; text-shadow:1.5px 1.5px 0 #3a2a17; }
-  [data-skin="cartoon"] #startScreen .brand__tag{ display:inline-flex; align-items:center; gap:10px;
-    padding:8px 14px; border-radius:999px; background:#fffaf0; border:2.5px solid #3a2a17;
-    box-shadow:0 3px 0 rgba(58,42,23,.3); color:#3a2a17; font-weight:800; white-space:nowrap; text-shadow:none; }
-  [data-skin="cartoon"] #startScreen .brand__tag-ic{ display:inline-flex; color:#ffce3a; filter:drop-shadow(1px 1px 0 #3a2a17); }
-  [data-skin="cartoon"] #startScreen .brand__tag svg{ width:18px; height:18px; }
-  [data-skin="cartoon"] #startScreen .brand__ver{ color:#fffaf0; text-shadow:1px 1px 0 rgba(58,42,23,.6); }
-  [data-skin="cartoon"] #startScreen .pf-cta{ right:8%; width:min(40%,286px); background:none; border:none;
-    box-shadow:none; padding:0; backdrop-filter:none; }
-  [data-skin="cartoon"] #startScreen .pf-cta .menu-col{ gap:14px; }
-  [data-skin="cartoon"] #startScreen .pf-cta .m-btn--primary{ border:3px solid #1f7d3e; box-shadow:0 5px 0 #1f7d3e; }
-  [data-skin="cartoon"] #startScreen .pf-cta .m-btn--ghost{ background:#fffaf0; color:#3a2a17;
-    border:3px solid #3a2a17; box-shadow:0 5px 0 rgba(58,42,23,.45); }
+  /* ---- неон-акценты старт-экрана ---- */
+  #startScreen .pf-cta{ background:rgba(14,26,56,.66); backdrop-filter:blur(8px); }
+  #startScreen .brand__word{ text-shadow:0 0 14px rgba(111,198,221,.55); }
 
   /* small landscape: keep the two side clusters from colliding */
   @media (max-width:560px){
     #startScreen .brand__mark{ font-size:40px; }
-    [data-skin="cartoon"] #startScreen .brand__mark{ font-size:clamp(40px,12vw,58px); }
     #startScreen .pf-cta{ width:min(46%,260px); }
   }
 </style>
@@ -1199,7 +1041,7 @@
 <div id="stage">
   <canvas id="c"></canvas>
 
-  <!-- ===== menu screens — PlaneFlow Design System (menu.css, data-skin) ===== -->
+  <!-- ===== menu screens — PlaneFlow Design System (menu.css) ===== -->
   <div class="overlay" id="startScreen">
     <div class="screen pf-main">
       <!-- legibility scrim over the live canvas scene (per-skin strength) -->
@@ -1216,7 +1058,7 @@
         <div class="brand__ver"><span data-i18n="start.version"></span> <span id="ver"></span></div>
         <h1 class="wm-fallback" data-i18n="app.name" hidden></h1>
       </div>
-      <!-- primary CTA group (panel for neon; floats/row for cartoon/cozy via [data-skin]) -->
+      <!-- primary CTA group (стеклянная панель neon) -->
       <div class="pf-cta panel">
         <div class="menu-col">
           <button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="startBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="start.play"></span></button>
@@ -1292,11 +1134,7 @@
     <div class="screen screen--center">
       <div class="panel panel--wide2" style="position:relative">
         <div class="m-head"><h1 class="m-title m-title--md" data-i18n="settings.title"></h1></div>
-        <div class="set-row" style="border-top:none;margin-top:8px">
-          <div class="set-row__label" data-i18n="settings.skin"></div>
-          <div class="segmented" id="skinBtns"></div>
-        </div>
-        <div class="h-split" style="margin-top:0">
+        <div class="h-split" style="margin-top:8px">
           <div>
             <div class="set-row">
               <div class="set-row__label" data-i18n="settings.sound"></div>
@@ -1419,28 +1257,10 @@
   const cv = document.getElementById('c');
   const ctx = cv.getContext('2d');
 
-  // ---- visual skin (A/B-able): 'cozy' (default) | 'neon' | 'cartoon' ----
-  // Switch with ?skin=neon|cartoon in the URL (persists to localStorage) or
-  // skin=cozy to reset. The neon skin turns the cozy sprite atlas off (everything
-  // renders procedurally) and swaps the palette for neon tokens + extra glow. The
-  // cartoon skin is a bright daytime recolour: it keeps the cozy atlas but injects
-  // the saturated `--cartoon-*` palette via CARTOON_TOKENS, and auto-upgrades to
-  // bespoke cartoon PNGs the moment assets/sprites/cartoon/ ships them.
-  // порядок и состав скинов для UI/валидации; КОНТЕНТ каждого (палитра, масштаб,
-  // атлас, рендереры, звуки) объявляется в SKIN_DEFS ниже — добавляя скин, правь
-  // оба места. SKINS остаётся здесь, т.к. парсинг ?skin= идёт раньше токенов.
-  const SKINS = ['cozy', 'neon', 'cartoon'];
-  let SKIN = 'neon';   // скин по умолчанию (для нового игрока без сохранённого pf_skin)
-  try {
-    const _q = new URLSearchParams(location.search).get('skin');
-    const _s = _q || localStorage.getItem('pf_skin');
-    if (SKINS.includes(_s)) SKIN = _s;
-    if (SKINS.includes(_q)) localStorage.setItem('pf_skin', _q);
-  } catch (e) { /* no URL/localStorage in test harness */ }
-  let NEON = SKIN === 'neon';   // bootstrap; authoritative источник — skinDef().glow (SKIN_DEFS ниже)
-  // меню-стили (menu.css) переключаются атрибутом data-skin на корне — выставляем
-  // его сразу на бутстрапе и далее в applySkin (логика рендера канваса не зависит).
-  try { if (typeof document !== 'undefined' && document.documentElement) document.documentElement.setAttribute('data-skin', SKIN); } catch (e) {}
+  // ---- облик: единый «neon» (тёмный ночной радар со свечением) ----
+  // Облик один и зашит: неоновая палитра
+  // (NEON_TOKENS ниже) поверх PALETTE + свечение в процедурной отрисовке, своя сцена
+  // поля — drawNeonField. Спрайт-атлас (ниже) общий; neon-арт — в assets/sprites/neon/.
 
   // ---- палитра спрайтов: единый источник правды для перекраски ----
   // Спрайт-листы (assets/sprites/planeflow-*.svg) хранят цвета как
@@ -1451,7 +1271,7 @@
   // отдельный спрайт под любую палитру; ключ кэша учитывает тему, поэтому разные
   // перекраски сосуществуют без коллизий.
   const PALETTE = {
-    // базовые токены повторяют :root (cozy / stylized-flat)
+    // базовые токены повторяют :root
     ink:'#16131f', tarmac:'#242842', water:'#1c3a42',
     paper:'#f4eede', amber:'#f2a93b', teal:'#4ecdc4', ice:'#7fd6ff',
     rose:'#ef798a', gold:'#f4cf5e', life:'#ef5365', phosphor:'#cdb0f7',
@@ -1467,7 +1287,7 @@
     wood:'#4a3f33', shadow:'#0a0614', 'sky-low':'#3a2f3e', 'sky-mid':'#241d33',
   };
   // Неоновая палитра: тёмная база + яркие насыщенные акценты со свечением.
-  // Применяется как переопределение токенов при SKIN==='neon' — перекрашивает и
+  // Применяется как переопределение токенов поверх PALETTE — перекрашивает и
   // процедурную отрисовку (COL уважает THEME.tokens), и подписи/иконки.
   const NEON_TOKENS = {
     ink:'#070c1c', tarmac:'#0c1430', 'tarmac-2':'#0f1a3c', water:'#081024',
@@ -1478,95 +1298,24 @@
     // тёмно-синий «сердечник» апрона — см. docs/design/skins/neon/handoff/
     green:'#5de08a', 'green-bright':'#7df0a4', purple:'#b98cff', core:'#16245e',
   };
-  // Мультяшная палитра: яркий дневной recolor (зелёное поле, голубая вода, кремовые
-  // глянцевые боксы, сочные акценты). Зеркалит tokens/cartoon.css (`--cartoon-*`):
-  // ключи здесь — это имена токенов спрайт-атласа/COL, значения — из cartoon.css.
-  // Применяется как переопределение PALETTE при SKIN==='cartoon' и перекрашивает
-  // и cozy-спрайты, и процедурную отрисовку. Bright — без неонового свечения.
-  const CARTOON_TOKENS = {
-    // линия/тень — единый тёплый тёмный контур
-    ink:'#3a2a17', shadow:'#3a2a17', 'cream-outline':'#5a4326',
-    // поле/окружение — луговая зелень, дневное небо
-    tarmac:'#6fbf4a', 'tarmac-2':'#5aa83c', grass:'#6fbf4a', 'grass-dim':'#5aa83c',
-    'grass-tuft':'#8fd96a', 'sky-low':'#bfe6f7', 'sky-mid':'#a6dcf2',
-    // вода + берег
-    water:'#5fc7e8', 'water-wave':'#8fe0f5', 'water-wave2':'#bff0fb', sand:'#e8d39a',
-    // кремовые глянцевые боксы/панели
-    paper:'#fff3d8', 'cream-100':'#fff3d8', 'cream-200':'#ffe9bc', 'bay-dim':'#ffe9bc',
-    // сервисные акценты (сочные, дружелюбные)
-    amber:'#ff8a1f', 'amber-glow':'#ffb05a', 'amber-core':'#ffd089',
-    teal:'#1fb6d8', ice:'#5ec2e8', rose:'#ff5ca0',
-    // монеты/звёзды/жизни
-    gold:'#ffce3a', coin:'#ffce3a', 'gold-dim':'#f2a400', 'gold-ink':'#5e4a16', life:'#ff4d5e',
-    // маршруты/валидность — яркая зелень
-    phosphor:'#36d36b', green:'#36d36b', 'green-bright':'#6bef9a', red:'#ff4d5e', blue:'#2f6fb0',
-    // глубокие/служебные поверхности → зелёные/коричневые тона вместо cozy-фиолета
-    chip:'#4a3a28', 'navy-900':'#3a6b3a', 'purple-700':'#4d9433', 'purple-600':'#5aa83c',
-    'gray-500':'#9a855f', 'gray-600':'#6b5333', muted:'#9a855f', white:'#ffffff',
-  };
-  // ──────────────────────────────────────────────────────────────────────────
-  // РЕЕСТР СКИНОВ — единственное место, где скин «объявляет» свой контент.
-  // ──────────────────────────────────────────────────────────────────────────
-  // ПРАВИЛО «ЛОГИКА — РОДИТЕЛЬ НАД СКИНАМИ» (действует на скины, биомы и карты):
-  //   Всё, что НЕ внешний вид и НЕ звуковой контент — общая логика, механика,
-  //   расчёты, траектория, заезд в бокс, терпение, деньги, звёзды, события —
-  //   живёт ВЫШЕ скинов и работает ОДИНАКОВО для всех скинов/биомов/карт. Скин
-  //   меняет ТОЛЬКО содержание: палитру, масштаб отрисовки, какой атлас его
-  //   подложка, опц. собственные рендереры сцены/HUD и набор звуков.
-  //   Добавить скин/биом/карту = добавить запись СЮДА (+ строку в SKINS и i18n-
-  //   ключ метки). НИКОГДА не форкать логику/механику/расчёты под имя скина —
-  //   иначе придётся править траекторию и заезд в бокс на каждом скине и карте.
-  //
-  // Поля записи (всё — только облик/звук, без логики):
-  //   tokens — переопределения PALETTE/COL (ТОЛЬКО цвета);
-  //   scale  — визуальный масштаб техники (см. SZ). Геометрия (касание ВПП,
-  //            столкновения) выводится из него ОДНОЙ общей формулой для всех
-  //            скинов — меняется лишь число, а не расчёт;
-  //   atlas  — 'cozy': подложка = перекрашенный cozy-атлас; 'procedural': рисуем
-  //            процедурно, пока не доедет собственный арт (assets/sprites/<skin>/);
-  //   glow   — неоновое свечение в процедурной отрисовке (флаг NEON);
-  //   field/hud — опц. собственные рендереры сцены/HUD (ТОЛЬКО облик, без логики);
-  //   sounds — опц. таблица переопределений ЗВУКОВОГО КОНТЕНТА по имени события
-  //            (КОГДА звук играет — общая логика в местах вызова SND.*; ЧЕМ он
-  //            звучит — контент скина). null = общий набор звуков;
-  //   label  — i18n-ключ названия скина для переключателя в настройках.
-  const SKIN_DEFS = {
-    cozy:    { tokens: {},             scale: 1, atlas: 'cozy',       glow: false, field: null,             hud: null,           sounds: null, label: 'settings.skinCozy' },
-    neon:    { tokens: NEON_TOKENS,    scale: 1, atlas: 'procedural', glow: true,  field: drawNeonField,    hud: null,           sounds: null, label: 'settings.skinNeon' },
-    cartoon: { tokens: CARTOON_TOKENS, scale: 2, atlas: 'cozy',       glow: false, field: drawCartoonField, hud: drawCartoonHUD, sounds: null, label: 'settings.skinCartoon' },
-  };
-  // дескриптор активного скина (фолбэк на cozy для неизвестных кодов)
-  const skinDef = () => SKIN_DEFS[SKIN] || SKIN_DEFS.cozy;
-  // имя скина → объект-переопределение PALETTE (пустой = дефолтный cozy-вид)
-  function skinTokens(skin){ return Object.assign({}, (SKIN_DEFS[skin] || SKIN_DEFS.cozy).tokens); }
-  // Активная тема: набор переопределений PALETTE. Пустая = дефолтный вид.
-  // Меняй ключи (или подменяй объект целиком), чтобы перекрасить весь арт.
-  const THEME = { tokens: skinTokens(SKIN) };
+  // Активная тема: неоновые переопределения PALETTE. SPRITES/COL читают THEME.tokens,
+  // поэтому перекраска одинаково ложится и на спрайты, и на процедурную отрисовку.
+  const THEME = { tokens: NEON_TOKENS };
 
-  // ---- cozy sprite atlas (canvas) ----
-  // Sprite sheets (assets/sprites/planeflow-*.svg) are fetched once into a hidden
-  // holder; each <symbol> is rasterised into an <img> at device-pixel size, cached,
-  // and blitted per frame. Until a sprite is ready (or if COZY is off) the call
-  // returns false and the caller falls back to its procedural draw — so the game
-  // never renders blank and the look can be toggled instantly.
+  // ---- спрайт-атлас (canvas) ----
+  // Базовые листы (assets/sprites/planeflow-*.svg) и neon-арт (assets/sprites/neon/)
+  // грузятся один раз в скрытый holder; каждый <symbol> растеризуется в <img> под
+  // device-pixel размер, кэшируется и блитится по кадру. Пока спрайт не готов (или
+  // ATLAS=false) вызов возвращает false и call-site падает на процедурную отрисовку —
+  // игра никогда не рисует пусто.
   //
   // Перекраска: SVG используют `var(--token, #hex)`. Чтобы перекрасить, передай
   // в blitC/blit объект-переопределение токенов (напр. {gold:'#fff', amber:'#0f0'})
   // — он впрыснется в спрайт как <style>:root{--token:value}. Строка в `color`
   // по-прежнему задаёт `currentColor` (используется только для route-arrow).
-  // cozy-спрайты включены только в cozy-скине; неон рендерится процедурно
-  // (процедурный путь подхватывает неоновую палитру через THEME.tokens).
-  let COZY = !NEON;
-  // переключение скина «на лету» (из настроек) — без перезагрузки: меняет режим
-  // рендера и палитру, следующий кадр перерисуется (кэш спрайтов/паттернов
-  // ключуется по подписи темы, поэтому подхватывается автоматически).
-  function applySkin(code){
-    SKIN = SKINS.includes(code) ? code : 'cozy';
-    NEON = skinDef().glow;   // свечение объявляет скин (SKIN_DEFS), не имя
-    THEME.tokens = skinTokens(SKIN);
-    try { document.documentElement.setAttribute('data-skin', SKIN); } catch (e) {}  // меню (menu.css) реагирует на data-skin
-    refreshSpriteMode();
-  }
+  // ATLAS=true, когда neon-арт загружен; иначе процедурный фолбэк (неоновая палитра
+  // подхватывается через THEME.tokens).
+  let ATLAS = false;
   const SPRITES = (() => {
     const cache = new Map();
     const stripF = s => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)
@@ -1592,30 +1341,30 @@
     const pngCache = new Map();   // 'skin/id' -> Image
     const pngIds = new Map();     // skin -> Set<id>
     function pngImg(id){
-      const set = pngIds.get(SKIN);
+      const set = pngIds.get('neon');
       if(!set || !set.has(id)) return null;
-      const key = SKIN + '/' + id;
+      const key = 'neon/' + id;
       let im = pngCache.get(key);
       if(!im){
         im = new Image(); im.decoding = 'async';
-        im.src = 'assets/sprites/' + SKIN + '/' + id + '.png';
+        im.src = 'assets/sprites/neon/' + id + '.png';
         pngCache.set(key, im);
       }
       return im;   // может ещё грузиться — ok() ниже это учитывает (фолбэк до загрузки)
     }
     function img(id, w, h, color){
-      // PNG-арт активного скина — высший приоритет (рисуется как есть, без темы)
-      if(SKIN !== 'cozy'){ const pim = pngImg(id); if(pim) return pim; }
+      // PNG-арт neon — высший приоритет (рисуется как есть, без темы)
+      const pim = pngImg(id); if(pim) return pim;
       const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
       // color может быть строкой (legacy currentColor) или объектом-переопределением токенов
       const tokens = (color && typeof color === 'object') ? color : null;
       const cstr = (typeof color === 'string') ? color : '';
       const sig = tokens ? tokSig(tokens) : '';
-      // пер-скиновый override (SVG): при активном не-cozy скине символ `<skin>-<id>`
-      // (если он загружен из assets/sprites/<skin>/) имеет приоритет над базовым.
-      // Так нарисованный неон-арт «встаёт» поверх движка без правок call-site'ов.
+      // override (SVG): символ `neon-<id>` (если загружен из assets/sprites/neon/)
+      // имеет приоритет над базовым — нарисованный neon-арт «встаёт» поверх движка
+      // без правок call-site'ов.
       let symId = id;
-      if(SKIN !== 'cozy' && document.getElementById(SKIN + '-' + id)) symId = SKIN + '-' + id;
+      if(document.getElementById('neon-' + id)) symId = 'neon-' + id;
       const key = symId + '@' + pw + 'x' + ph + cstr + (sig ? '#' + sig : '');
       let im = cache.get(key);
       if(!im){
@@ -1692,7 +1441,7 @@
     // Когда хотя бы один символ доехал — A.skinReady=true и режим спрайтов
     // пересчитывается (см. refreshSpriteMode), так что нарисованный арт включается сам.
     A.loadSkin = function(skin){
-      if (!skin || skin === 'cozy' || loadedSkins.has(skin)) return;
+      if (!skin || loadedSkins.has(skin)) return;
       loadedSkins.add(skin);
       try {
         if (typeof fetch === 'undefined' || typeof Image === 'undefined') return;
@@ -1728,7 +1477,7 @@
         Promise.all(sheets.map(u => fetch(u).then(r => r.ok ? r.text() : '').catch(() => '')))
           .then(parts => {
             holder.innerHTML = parts.join('\n'); A.ready = true;
-            if (SKIN !== 'cozy') A.loadSkin(SKIN);   // подтянуть арт активного скина
+            A.loadSkin('neon');   // подтянуть neon-арт
             if (typeof refreshSpriteMode === 'function') refreshSpriteMode();
           })
           .catch(() => {});
@@ -1737,19 +1486,12 @@
     return A;
   })();
 
-  // Решает, рисовать ли через спрайт-атлас (COZY=true) или процедурно (false)
-  // для активного скина. cozy → всегда атлас. Не-cozy (напр. neon) → атлас только
-  // когда его пер-скиновые листы загружены (A.skinReady); иначе процедурный
-  // фолбэк (текущий неон), и параллельно подтягиваем арт скина.
+  // Решает, рисовать ли через спрайт-атлас (ATLAS=true) или процедурно (false):
+  // атлас включается, когда neon-арт (assets/sprites/neon/) загружен (A.skinReady);
+  // до этого — процедурный неоновый фолбэк, и параллельно подтягиваем арт.
   function refreshSpriteMode(){
-    // подтянуть собственный арт активного не-cozy скина (PNG/SVG), если ещё не везли
-    if (SKIN !== 'cozy' && !SPRITES.skinReady) SPRITES.loadSkin(SKIN);
-    // режим подложки объявляет скин (SKIN_DEFS.atlas):
-    //   'cozy'       → всегда (перекрашенный) cozy-атлас (так живёт и cartoon, пока
-    //                  не доедет его собственный арт — img() сам отдаст PNG приоритетно);
-    //   'procedural' → атлас только когда доехал собственный арт скина (neon),
-    //                  иначе процедурный фолбэк.
-    COZY = skinDef().atlas === 'cozy' ? true : !!SPRITES.skinReady;
+    if (!SPRITES.skinReady) SPRITES.loadSkin('neon');
+    ATLAS = !!SPRITES.skinReady;
   }
   refreshSpriteMode();
 
@@ -1850,7 +1592,6 @@
       'goals.kicker':'Shift goals', 'goals.ok':'Got it',
       'goals.star2':'No ground penalties', 'goals.star3':'No crashes',
       'settings.title':'Settings', 'settings.back':'Back', 'settings.language':'Language',
-      'settings.skin':'Skin', 'settings.skinCozy':'Cozy', 'settings.skinNeon':'Neon', 'settings.skinCartoon':'Cartoon',
       'settings.sound':'Sound', 'settings.vibro':'Vibration (phone)',
       'settings.debug':'Debug',
       'settings.optLives':'Infinite lives', 'settings.optMoney':'Unlimited money', 'settings.optUnlockAll':'Unlock all levels',
@@ -2034,7 +1775,6 @@
       'goals.kicker':'Цели смены', 'goals.ok':'Понятно',
       'goals.star2':'Без наземных штрафов', 'goals.star3':'Без крушений',
       'settings.title':'Настройки', 'settings.back':'Назад', 'settings.language':'Язык',
-      'settings.skin':'Стиль', 'settings.skinCozy':'Уютный', 'settings.skinNeon':'Неон', 'settings.skinCartoon':'Мультяшный',
       'settings.sound':'Звук', 'settings.vibro':'Вибрация (телефон)',
       'settings.debug':'Отладка',
       'settings.optLives':'Бесконечные жизни', 'settings.optMoney':'Безлимит денег', 'settings.optUnlockAll':'Открыть все уровни',
@@ -2197,7 +1937,6 @@
     });
     renderLangBtns();
     renderLangFlag();
-    renderSkinBtns();
     if(!document.getElementById('pauseScreen').classList.contains('hidden')) buildPauseInfo();
   }
   function renderLangBtns(){
@@ -2759,23 +2498,7 @@
     });
     return p;
   }
-  // скины: каждый код из SKINS объявлен в реестре SKIN_DEFS (контент — там, а не
-  // форком логики), реестр не несёт лишних скинов, и у каждого есть валидная метка
-  // i18n и режим атласа. Страховка под правило «логика — родитель над скинами».
-  function validateSkins(){
-    const p = [], defKeys = Object.keys(SKIN_DEFS);
-    SKINS.forEach(code=>{
-      const d = SKIN_DEFS[code];
-      if(!d){ p.push('skin "'+code+'" есть в SKINS, но нет записи в SKIN_DEFS'); return; }
-      if(!(d.scale>0)) p.push('skin "'+code+'": scale должен быть > 0');
-      if(d.atlas!=='cozy' && d.atlas!=='procedural') p.push('skin "'+code+'": atlas должен быть "cozy" или "procedural"');
-      if(!d.label) p.push('skin "'+code+'": нет i18n-ключа label');
-      else Object.keys(I18N).forEach(c=>{ if(I18N[c][d.label]==null) p.push('skin "'+code+'": нет перевода метки "'+d.label+'" в языке "'+c+'"'); });
-    });
-    defKeys.forEach(code=>{ if(!SKINS.includes(code)) p.push('skin "'+code+'" есть в SKIN_DEFS, но не указан в SKINS'); });
-    return p;
-  }
-  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()).concat(validateSkins()).concat(validateLeaderboard()); }
+  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()).concat(validateLeaderboard()); }
   let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
@@ -2797,7 +2520,7 @@
   let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
-  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.25';
+  const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.26';
 
   // ---- canvas sizing ----
   let W=0, H=0, dpr=1, ui=1;
@@ -2855,8 +2578,8 @@
   let bays=[], runways=[], field={}, pauseBtn={};
   // Единый масштаб «крупности» техники: размеры борта, ВПП и бокса выводятся из него
   // ОДНОЙ общей формулой (общая для всех скинов — меняется лишь число). Само число —
-  // визуальный контент скина (SKIN_DEFS.scale): cartoon ×2 под референс, cozy/neon ×1.
-  const SZ = () => skinDef().scale;
+  // визуальный масштаб техники (×1; геометрия выводится из него одной формулой).
+  const SZ = () => 1;
   // длина корпуса борта (наземная), px — геометрия касания/отрыва на ВПП. Совпадает
   // с размером отрисовки drawPlaneBodyAt (62 · ui·0.5·SZ()) при наземном масштабе.
   const PLANE_LEN = () => 31 * SZ() * ui;
@@ -3035,7 +2758,7 @@
       src.connect(f); f.connect(g); g.connect(master); src.start(t0);
     }
     const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1)); // случайный индекс ноты гаммы
-    // Базовые рецепты звуков (cozy). Оставлены только три: тап по меню, щелчок
+    // Базовые рецепты звуков. Оставлены только три: тап по меню, щелчок
     // фиксации маршрута (вспышка в конце траектории) и визг колёс при посадке.
     // Остальные игровые звуки — пустышки (намеренно выключены), чтобы не трогать
     // десятки мест вызова.
@@ -3044,13 +2767,9 @@
       lock(){ tone(1318.5,0.035,'square',0.13); tone(1760,0.05,'square',0.10,0.025); }, // щелчок: маршрут зафиксирован
       screech(){ squeal(); },                                                    // визг резины — касание ВПП
     };
-    // Проигрыватель именованного события. ПРАВИЛО «логика — родитель над скинами»:
-    // КОГДА звук играет — общая логика (места вызова SND.* в update/вводе, без
-    // ветвления по скину); ЧЕМ он звучит — контент скина: SKIN_DEFS[скин].sounds
-    // может переопределить рецепт по имени. null → общий базовый набор.
+    // Проигрыватель именованного события: один общий набор рецептов (RECIPES).
     function play(name){
-      const over = skinDef().sounds;
-      const fn = (over && over[name]) || RECIPES[name];
+      const fn = RECIPES[name];
       if(fn) fn();
     }
     return {
@@ -3067,8 +2786,7 @@
     near(){ this.v([10,30,10]); },
   };
   // ---- Analytics: единая шина событий для soft-launch-метрик ----
-  // ЭТО ЛОГИКА, НЕ КОНТЕНТ → одна для всех скинов/биомов/карт (см. CLAUDE.md). Скин —
-  // это просто поле `skin` в каждом событии, никаких if(SKIN==='…'). Сейчас sink =
+  // Шина одна на всю игру. Сейчас sink =
   // console + кольцевой буфер в localStorage; реальный провайдер (Firebase/GA4 или
   // свой бэкенд) подключается ОДНОЙ заменой Analytics.sink — ни одна точка track() не
   // меняется. Метрики (retention/session length/churn/conversion/ARPDAU/tutorial
@@ -3105,7 +2823,6 @@
       return {
         userId, sessionId, seq:++seq, ts:now(),
         appVersion: (typeof VERSION!=='undefined' ? VERSION : null),
-        skin: (typeof SKIN!=='undefined' ? SKIN : null),
         lang: (typeof lang!=='undefined' ? lang : null),
         platform: plat,
         screenW: (typeof innerWidth!=='undefined' ? innerWidth : 0),
@@ -3180,8 +2897,7 @@
   try{ window.PFAnalytics = Analytics; }catch(e){}
 
   // ---- Лидерборды: глобальный рейтинг игроков (all-time / month / week) ----
-  // ЛОГИКА, НЕ КОНТЕНТ → одна для всех скинов/биомов/карт (см. CLAUDE.md): скин — лишь
-  // поле в записи, никаких if(SKIN==='…'). Каркас: счёт за заход (метрика survival —
+  // Каркас: счёт за заход (метрика survival —
   // число обслуженных бортов) уходит через СВОПАЕМЫЙ `Leaderboard.provider`. Сейчас
   // provider = локальный mock-стор в localStorage (+синтетические боты, чтобы таблица не
   // пустовала); реальный бэкенд (свой API / Firebase / Supabase) подключается ОДНОЙ
@@ -3277,7 +2993,7 @@
         return Promise.resolve(Account.signedIn()?Account.current():Account.signIn()).then(acct=>{
           const entry={ accountId:acct.id, name:acct.name||defaultName(acct.id), mode:opts.mode||'survival',
             score:Math.max(0, Math.round(+opts.score||0)), ts:lbNow(),
-            skin:(typeof SKIN!=='undefined'?SKIN:null), v:(typeof VERSION!=='undefined'?VERSION:null) };
+            v:(typeof VERSION!=='undefined'?VERSION:null) };
           return Promise.resolve(provider.submit(entry)).then(()=>{
             try{ Analytics.track('leaderboard_submit', {mode:entry.mode, score:entry.score}); }catch(e){}
             const tops=PERIODS.map(p=>Promise.resolve(provider.top(p, entry.mode)).then(list=>{
@@ -3297,7 +3013,7 @@
   })();
   try{ window.PFLeaderboard = Leaderboard; }catch(e){}
 
-  // конфиг-чек каркаса рейтингов (в духе validateSkins/validateLevels) — зовётся из validateGame()
+  // конфиг-чек каркаса рейтингов (в духе validateLevels) — зовётся из validateGame()
   function validateLeaderboard(){
     const p=[];
     if(!Array.isArray(PERIODS)||!PERIODS.length){ p.push('PERIODS пуст'); return p; }
@@ -4231,7 +3947,7 @@
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   }
   function heart(x,y,r,fill){ // жизни в HUD
-    if(COZY && SPRITES.blitC(fill?'heart':'heart-empty', x, y, r*2.6, r*2.6)) return;
+    if(ATLAS && SPRITES.blitC(fill?'heart':'heart-empty', x, y, r*2.6, r*2.6)) return;
     ctx.save(); ctx.translate(x,y); ctx.beginPath(); ctx.moveTo(0,r*0.7);
     ctx.bezierCurveTo(-r*1.3,-r*0.4,-r*0.5,-r*1.1,0,-r*0.35);
     ctx.bezierCurveTo(r*0.5,-r*1.1,r*1.3,-r*0.4,0,r*0.7); ctx.closePath();
@@ -4304,7 +4020,7 @@
   }
   function drawPlaneBodyAt(x,y,ang,s,vip,emergency,medical){
     if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)
-    if(COZY){
+    if(ATLAS){
       // sprite is authored nose-up; game heading has nose along +x → rotate ang+90°
       const _id = medical ? 'plane-medevac' : emergency ? 'plane-emergency' : vip ? 'plane-vip' : 'plane';
       if(SPRITES.blitC(_id, x, y, 62*s, 62*s, ang + Math.PI/2)) return;
@@ -4312,7 +4028,7 @@
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     ctx.save(); ctx.translate(5,7); ctx.globalAlpha=.28; planeShape('#000'); ctx.restore();
     if(vip){ ctx.shadowColor=hexa(COL.gold,.6); ctx.shadowBlur=16; }
-    else if(NEON){ ctx.shadowColor=hexa(COL.phosphor,.7); ctx.shadowBlur=10; }
+    else { ctx.shadowColor=hexa(COL.phosphor,.7); ctx.shadowBlur=10; }
     planeShape(vip?COL.gold:(emergency?'#e7d8cf':COL.paper));
     ctx.shadowBlur=0;
     ctx.fillStyle=hexa(COL.phosphor,.55); ctx.fillRect(-2,-1.2,18,2.4);
@@ -4400,197 +4116,31 @@
     if(LV.bonus) drawBonusDecor(tm, ax, ay, field.rwR, ab);
   }
 
-  function drawField(tm){
-    const sd = skinDef();
-    if(sd.field){ sd.field(tm); return; }   // собственный рендерер сцены скина (только облик)
-    // ночное небо + звёзды
-    ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
-    starfield(tm);
-
-    const ax=field.x0, ay=field.y0, aR=field.rwR, ab=field.y1;
-
-    // вода справа за полосами: бесшовный тайл (фолбэк — градиент) + медленные волны
-    // (в бонус-мире вода/берег уступают лугу — см. drawBonusDecor ниже)
-    const wpat = (COZY && !LV.bonus) ? SPRITES.pattern('tile-water', 56*ui) : null;
-    if(!LV.bonus){
-      if(wpat){ ctx.fillStyle=wpat; ctx.fillRect(aR,0,W-aR,H); }
-      else {
-        const wg=ctx.createLinearGradient(aR,0,W,0);
-        wg.addColorStop(0,COL.water); wg.addColorStop(1,'#142e34');
-        ctx.fillStyle=wg; ctx.fillRect(aR,0,W-aR,H);
-      }
-      for(let i=0;i<6;i++){
-        const yy=H*(i+1)/7 + Math.sin(tm*0.0015+i)*3;
-        ctx.fillStyle=hexa(wpat?'#9adbe8':COL.phosphor,.06); ctx.fillRect(aR,yy,W-aR,2);
-      }
-    }
-    // травяная кромка с песчаным берегом между полем и водой (cozy: трава → берег → вода)
-    if(COZY && LV.biome!=='forest' && !LV.bonus){
-      const gw=24*ui;
-      ctx.fillStyle=SPRITES.pattern('tile-grass', 56*ui)||'#38482f';
-      ctx.fillRect(aR,0,gw,H);
-      ctx.fillStyle='#6b5c44'; ctx.fillRect(aR+gw,0,3*ui,H);   // песчаная полоска
-      ctx.strokeStyle='rgba(232,224,207,.45)'; ctx.lineWidth=1.5; ctx.setLineDash([3,6]);
-      ctx.beginPath(); ctx.moveTo(aR+gw+6*ui,0); ctx.lineTo(aR+gw+6*ui,H); ctx.stroke(); ctx.setLineDash([]); // пена прибоя
-    }
-
-    // металлическая рама апрона с заклёпками
-    const fx=ax-8*ui, fy=ay-8*ui, fw=(aR-ax)+16*ui, fh=(ab-ay)+16*ui;
-    const mg=ctx.createLinearGradient(0,fy,0,fy+fh); mg.addColorStop(0,'#3a3354'); mg.addColorStop(1,'#211d33');
-    rr(fx,fy,fw,fh,14*ui); ctx.fillStyle=mg; ctx.fill();
-    ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(fx,fy,fw,fh,14*ui); ctx.stroke();
-    ctx.fillStyle=hexa(COL.muted,.5);
-    [[fx+6*ui,fy+6*ui],[fx+fw-6*ui,fy+6*ui],[fx+6*ui,fy+fh-6*ui],[fx+fw-6*ui,fy+fh-6*ui]]
-      .forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],2.5*ui,0,7); ctx.fill(); });
-
-    // тармак: бесшовный тайл со швами плит (фолбэк — градиент + штриховка) + осевая
-    const tpat = COZY ? SPRITES.pattern('tile-tarmac', 56*ui) : null;
-    if(tpat){ rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.fillStyle=tpat; ctx.fill(); }
-    else {
-      const tg=ctx.createLinearGradient(0,ay,0,ab); tg.addColorStop(0,COL['tarmac-2']); tg.addColorStop(1,COL.tarmac);
-      rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.fillStyle=tg; ctx.fill();
-    }
-    ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
-    if(!tpat){
-      ctx.strokeStyle=hexa(COL.ink,.5); ctx.lineWidth=1;
-      for(let xx=ax-(ab-ay); xx<aR; xx+=30*ui){ ctx.beginPath(); ctx.moveTo(xx,ay); ctx.lineTo(xx+(ab-ay),ab); ctx.stroke(); }
-    }
-    ctx.strokeStyle=hexa(COL.gold,.2); ctx.lineWidth=2.5; ctx.setLineDash([12,10]);
-    ctx.beginPath(); ctx.moveTo((ax+field.x1)/2, ay+24*ui); ctx.lineTo((ax+field.x1)/2, ab-24*ui); ctx.stroke(); ctx.setLineDash([]);
-    ctx.restore();
-
-    // терминал — cozy-спрайт (фолбэк: процедурное здание с окнами)
-    const ix=ax+(field.x1-ax)*0.28, iy=ay+(ab-ay)*0.34;
-    const iw=(field.x1-ax)*0.42, ih=(ab-ay)*0.32;
-    if(!(COZY && SPRITES.blit('terminal', ix, iy, iw, ih))){
-      rr(ix,iy,iw,ih,8*ui); ctx.fillStyle='#3a3354'; ctx.fill();
-      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.15); rr(ix,iy,iw,ih,8*ui); ctx.stroke();
-      const wcols=7, wrows=2, wx0=ix+iw*0.09, wy0=iy+ih*0.14, wxs=(iw*0.86)/wcols, wys=ih*0.30;
-      for(let r2=0;r2<wrows;r2++) for(let c2=0;c2<wcols;c2++){
-        const lit=0.25+0.6*Math.abs(Math.sin(tm*0.001+r2*2+c2));
-        ctx.fillStyle=hexa(COL.phosphor,0.10+0.18*lit);
-        ctx.fillRect(wx0+c2*wxs, wy0+r2*wys, wxs*0.62, wys*0.5);
-      }
-    }
-    ctx.fillStyle=hexa(COL.muted,.6); ctx.font=`${9*ui}px ${MONO}`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(t(LV.bonus?'canvas.garden':'canvas.terminal'), ix+iw/2, iy+ih-9*ui);
-
-    if(LV.biome==='forest') drawForestDecor(tm, ax, ay, aR, ab);
-    if(LV.bonus) drawBonusDecor(tm, ax, ay, aR, ab);
-  }
-
-  // Мультяшное дневное поле (скин cartoon): сплошная луговая зелень + непрерывная
-  // вода справа — без тёмного тармака, металлической рамы и плиточных «квадратиков».
-  // Палитра берётся из CARTOON_TOKENS через COL. Ср. drawNeonField / drawField.
-  function drawCartoonField(tm){
-    const ax=field.x0, ay=field.y0, aR=field.rwR, ab=field.y1;
-    // палитра cartoon: COL отдаёт лишь часть токенов, поэтому грунт/воду берём прямо
-    // из THEME.tokens (CARTOON_TOKENS) с дефолтами на случай иного скина
-    const T=THEME.tokens||{}; const tk=(n,fb)=>T[n]||fb;
-    const cGrass=tk('grass','#6fbf4a'), cGrassDim=tk('grass-dim','#5aa83c');
-    const cWater=tk('water','#5fc7e8'), cWaterWave=tk('water-wave','#8fe0f5'), cSand=tk('sand','#e8d39a');
-    // 1) трава на всё поле + мягкий дневной градиент (солнце сверху)
-    ctx.fillStyle=cGrass; ctx.fillRect(0,0,W,H);
-    const gg=ctx.createLinearGradient(0,0,0,H);
-    gg.addColorStop(0,hexa('#ffffff',.12)); gg.addColorStop(.45,hexa('#ffffff',0));
-    gg.addColorStop(1,hexa(cGrassDim,.30));
-    ctx.fillStyle=gg; ctx.fillRect(0,0,W,H);
-    // редкие травяные кустики — детерминированно (без random, стабильно по кадрам)
-    ctx.fillStyle=hexa(cGrassDim,.35);
-    for(let gx=ax+20*ui; gx<aR; gx+=72*ui){
-      for(let gy=ay+26*ui; gy<ab; gy+=66*ui){
-        const j=(((gx|0)*13+(gy|0)*7)%37)/37;
-        ctx.beginPath(); ctx.ellipse(gx+j*18*ui, gy+j*12*ui, 3.4*ui, 1.7*ui, 0,0,7); ctx.fill();
-      }
-    }
-    // 2) вода справа за полосами — непрерывный градиент + песчаный берег + волны
-    const shore=14*ui;
-    ctx.fillStyle=cSand; ctx.fillRect(aR,0,shore,H);
-    const wg=ctx.createLinearGradient(aR+shore,0,W,0);
-    wg.addColorStop(0,cWater); wg.addColorStop(1,cWaterWave);
-    ctx.fillStyle=wg; ctx.fillRect(aR+shore,0,W-(aR+shore),H);
-    for(let i=0;i<6;i++){
-      const yy=H*(i+1)/7+Math.sin(tm*0.0015+i)*3;
-      ctx.fillStyle=hexa('#ffffff',.14); ctx.fillRect(aR+shore,yy,W-(aR+shore),2*ui);
-    }
-    // 3) терминал — мультяшный спрайт в левом верхнем углу поля (как на референсе)
-    const iw=(field.x1-ax)*0.30, ih=(ab-ay)*0.28;
-    const ix=ax+2*ui, iy=ay+2*ui;
-    SPRITES.blit('terminal', ix, iy, iw, ih);
-    // 4) дневной декор: зелень в травяных карманах у ВПП + облака/птица над водой
-    drawCartoonDecor(tm, ax, ay, aR, ab);
-  }
-
-  // Дневной декор классических cartoon-уровней (вариант «Зелёная бухта»): деревья и
-  // кусты в травяных «карманах» колонны ВПП (берём геометрию runways, чтобы не лезть
-  // на сами полосы) + мягко плывущие облака с птицей над водой. Рисуется ФОНОМ — до
-  // полос/боксов/бортов, поэтому ничего из игрового слоя не перекрывает. Всё выводится
-  // детерминированно по геометрии поля и времени кадра: стабильно и resize-safe.
-  // Масштаб привязан к размеру бокса bw (см. layout): дерево ≈1.3×bw, куст ≈0.5×bw.
-  function drawCartoonDecor(tm, ax, ay, aR, ab){
-    if(LV.biome || LV.bonus) return;
-    const bw = Math.min(56*ui*SZ(), (field.x1-field.x0)/2.4);   // размер бокса (как в layout)
-    // — наземная зелень: дерево (w/h 0.681) + куст (1.123), якорим по основанию —
-    const treeH=bw*1.3, treeW=treeH*0.681, bushH=bw*0.52, bushW=bushH*1.123;
-    const tree=(bx,by)=>SPRITES.blit('tree', bx-treeW/2, by-treeH, treeW, treeH);
-    const bush=(bx,by)=>SPRITES.blit('bush', bx-bushW/2, by-bushH, bushW, bushH);
-    if(runways.length){
-      // травяные карманы: над колонной ВПП, под ней и в пропущенной средней полосе.
-      // «Прибрежную» группу ставим у правого края поля (ближе к берегу), как на ref-01.
-      const colT=runways[0].y, last=runways[runways.length-1], colB=last.y+last.h;
-      const xCoast=aR-treeW*0.55, pockets=[];
-      if(colT-ay > treeH*0.75) pockets.push(colT-6*ui);             // верхний карман
-      if(ab-colB > treeH*0.7)  pockets.push(ab-6*ui);               // нижний карман
-      for(let i=1;i<runways.length;i++){                            // средние разрывы
-        const gT=runways[i-1].y+runways[i-1].h, gB=runways[i].y;
-        if(gB-gT > treeH*0.7) pockets.push(gB-6*ui);
-      }
-      pockets.forEach((by,k)=>{
-        tree(xCoast, by);
-        bush(xCoast-treeW*0.72-(k%2)*6*ui, by-2*ui);
-      });
-    }
-    // — облака + птица над водой (мягкий горизонтальный дрейф, фон) —
-    const water0=aR+14*ui, span=W-water0;
-    if(span>16*ui){
-      [['cloud',1.6,1.298],['cloud-2',2.0,1.308]].forEach((c,i)=>{
-        const cw=bw*c[1], ch=cw/c[2], period=span+cw;
-        const drift=((tm*0.006)+i*period*0.5)%period;
-        const cx=water0-cw+drift, cy=ay+(14+i*46)*ui;
-        ctx.save(); ctx.globalAlpha=0.9; SPRITES.blit(c[0], cx, cy, cw, ch); ctx.restore();
-      });
-      const birdW=bw*0.7, birdH=birdW/1.399;     // птица (w/h 1.399)
-      const bx=water0+span*0.55+(Math.sin(tm*0.00045)*0.5+0.5)*span*0.3-birdW/2;
-      const byb=ay+(ab-ay)*0.32+Math.sin(tm*0.0016)*6*ui;
-      ctx.save(); ctx.globalAlpha=0.85; SPRITES.blit('bird', bx, byb, birdW, birdH); ctx.restore();
-    }
-  }
+  function drawField(tm){ drawNeonField(tm); }   // единственная сцена поля — неоновая
 
   function drawRunways(tm){
-    const CART = SKIN==='cartoon';
     runways.forEach((r,i)=>{
       const NTONE=[COL.phosphor,COL.rose,COL.green]; const nt=NTONE[i%NTONE.length];   // тон ВПП по индексу (27/18/09)
-      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':(NEON?'#0a1226':(CART?'#c7cfd6':'#1a1d2e')); ctx.fill();  // бонус: садовая дорожка; cartoon: светлый асфальт
-      if(NEON && !r.closed){
+      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':'#0a1226'; ctx.fill();  // бонус: садовая дорожка
+      if(!r.closed){
         ctx.save(); ctx.shadowColor=hexa(nt,.5); ctx.shadowBlur=9;
         ctx.lineWidth=1.8; ctx.strokeStyle=hexa(nt,.7); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke(); ctx.restore();
       } else {
-        ctx.lineWidth=CART?2:1.5; ctx.strokeStyle=CART?hexa('#5a6470',.55):hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
       }
-      // осевая пунктирная (cartoon — белая, поверх светлого асфальта)
-      ctx.strokeStyle=CART?hexa('#ffffff',r.occupied?0.6:0.92):(NEON?hexa(nt,r.occupied?0.5:0.8):hexa(COL.paper, r.occupied?0.35:0.5));
+      // осевая пунктирная
+      ctx.strokeStyle=hexa(nt,r.occupied?0.5:0.8);
       ctx.lineWidth=2.5; ctx.setLineDash([18,15]);
       ctx.beginPath(); ctx.moveTo(r.x+12*ui,r.cy); ctx.lineTo(r.x+r.w-12*ui,r.cy); ctx.stroke(); ctx.setLineDash([]);
-      // пороговые отметки с обоих торцов (cartoon — красные пороги как на референсе)
-      ctx.fillStyle=CART?hexa(COL.life,.85):hexa(COL.paper,.4);
+      // пороговые отметки с обоих торцов
+      ctx.fillStyle=hexa(COL.paper,.4);
       for(let k=0;k<3;k++){
         ctx.fillRect(r.x+7*ui, r.cy-14*ui+k*11*ui, 5*ui, 4*ui);
         ctx.fillRect(r.x+r.w-12*ui, r.cy-14*ui+k*11*ui, 5*ui, 4*ui);
       }
-      // огни кромок: золотые / янтарные (занята) / красные (закрыта), мерцают
+      // огни кромок: тон ВПП / красные (закрыта), мерцают
       const blink=0.4+0.6*Math.abs(Math.sin(tm*0.004+i));
-      const lc = r.closed?COL.life:(NEON?nt:(r.occupied?COL.amber:'#ffb84d')); // neon: тон ВПП; cozy: amber-glow
+      const lc = r.closed?COL.life:nt;
       for(let k=0;k<=8;k++){
         const lx=r.x+9*ui+k*(r.w-18*ui)/8;
         ctx.fillStyle=hexa(lc,blink);
@@ -4607,9 +4157,9 @@
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText(t('canvas.closed'), cx, r.y+r.h-12*ui);
       } else {
-        ctx.fillStyle=CART?hexa(COL.ink,.6):(NEON?nt:hexa(COL.muted,.7)); ctx.font=`${(CART?15:NEON?13:9)*ui}px ${MONO}`;
+        ctx.fillStyle=nt; ctx.font=`${13*ui}px ${MONO}`;
         ctx.textAlign='left'; ctx.textBaseline='middle';
-        ctx.fillText(t('canvas.rwy',{n:'0'+(i+1)}), r.x+(CART?16:12)*ui, r.y+(CART?15:12)*ui);
+        ctx.fillText(t('canvas.rwy',{n:'0'+(i+1)}), r.x+12*ui, r.y+12*ui);
       }
     });
   }
@@ -4880,22 +4430,22 @@
   }
 
   function drawBay(b){
-    if(NEON && !b.deice && !LV.bonus){ drawNeonBay(b); return; }
+    if(!b.deice && !LV.bonus){ drawNeonBay(b); return; }
     const col=LV.bonus ? BSP[bSpec(b.type)].petal : SVC[b.type].color;   // бонус: цвет цветка по виду
     const busy=!!b.occupied;
     ctx.save();
     // нарисованная цельная панель бокса (пер-скиновый арт, напр. neon): bay-<type>
     // для открытого, bay-locked для закрытого — заменяет процедурную «стойло»-форму.
     // По контракту спрайт НЕ запекает иконку/ценник/прогресс — движок рисует их поверх.
-    const panelDrawn = COZY && SPRITES.blitC(b.open ? ('bay-'+b.type) : 'bay-locked', b.x+b.w/2, b.y+b.h/2, b.w, b.h);
+    const panelDrawn = ATLAS && SPRITES.blitC(b.open ? ('bay-'+b.type) : 'bay-locked', b.x+b.w/2, b.y+b.h/2, b.w, b.h);
     if(!b.open){
       const enough = money>=K.BAY_OPEN_COST;
       if(!panelDrawn){
-        rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=NEON?'#0a1230':'#1f1b2c'; ctx.fill();
+        rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle='#0a1230'; ctx.fill();
         ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.muted,.25); rr(b.x,b.y,b.w,b.h,9*ui); ctx.stroke();
         // приглушённая иконка типа + замок
         ctx.globalAlpha=.35;
-        if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.28, 33*ui, 33*ui)))
+        if(!(ATLAS && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.28, 33*ui, 33*ui)))
           drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.28, 12*ui, COL.muted, '#1f1b2c');
         ctx.globalAlpha=1;
         const lx=b.x+b.w/2, ly=b.y+b.h*0.52;
@@ -4917,11 +4467,11 @@
     // рамка цвета услуги (ярче и со свечением, когда занят) — борт внутри виден
     const out=dirOut(b);
     if(!panelDrawn){
-      rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=LV.bonus?'#2e3a26':(NEON?'#0b1336':'#2a2440'); ctx.fill();   // бонус: грядка
+      rr(b.x,b.y,b.w,b.h,9*ui); ctx.fillStyle=LV.bonus?'#2e3a26':'#0b1336'; ctx.fill();   // бонус: грядка
       ctx.lineWidth=2;
       if(busy){ ctx.shadowColor=hexa(col,.6); ctx.shadowBlur=12; }
-      else if(NEON){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=8; }
-      ctx.strokeStyle=hexa(col, busy?0.9:(NEON?0.75:0.45)); bayWalls(b,out,9*ui); ctx.stroke(); ctx.shadowBlur=0;
+      else { ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=8; }
+      ctx.strokeStyle=hexa(col, busy?0.9:0.75); bayWalls(b,out,9*ui); ctx.stroke(); ctx.shadowBlur=0;
       // проём ворот: пунктирный порог + габаритные огни по углам
       let gx0,gy0,gx1,gy1;
       if(out.dy===1){ gx0=b.x; gy0=b.y+b.h; gx1=b.x+b.w; gy1=gy0; }
@@ -4940,10 +4490,10 @@
       // центр отдан припаркованному борту (рисуется поверх) —
       // тип услуги мелкой пиктограммой у дальней от ворот стены
       const iy = out.dy===-1 ? b.y+b.h-13*ui : b.y+13*ui;
-      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+13*ui, iy, 24*ui, 24*ui)))
+      if(!(ATLAS && SPRITES.blitC('svc-'+b.type, b.x+13*ui, iy, 24*ui, 24*ui)))
         drawIcon(b.type, b.x+13*ui, iy, 9*ui, col, '#2a2440');
       // живая анимация обслуживания над бортом (искры/капли/посадка людей)
-      if(COZY){
+      if(ATLAS){
         const fxid={repair:'fx-weld',fuel:'fx-fuel',board:'fx-boarding',deice:'fx-droplet'}[b.type];
         const pp=0.62+0.38*Math.abs(Math.sin(nowT*0.006));
         ctx.save(); ctx.globalAlpha=pp;
@@ -4951,7 +4501,7 @@
         ctx.restore();
       }
     } else {
-      if(!(COZY && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.40, 45*ui, 45*ui)))
+      if(!(ATLAS && SPRITES.blitC('svc-'+b.type, b.x+b.w/2, b.y+b.h*0.40, 45*ui, 45*ui)))
         drawIcon(b.type, b.x+b.w/2, b.y+b.h*0.36, 18*ui, col, '#2a2440');
       // подпись услуги
       ctx.fillStyle=hexa(col,.85); ctx.font=`${8*ui}px ${MONO}`;
@@ -4989,13 +4539,13 @@
     const ncol=SVC[need].color;
     const vs=planeScale(pl);   // визуальная «перспектива»: кольца/пузырёк тянутся за бортом
 
-    // маршрут — cozy-зелёная (radar-фосфор при COZY=off): сплошная тонкая линия
+    // маршрут — фосфорная линия со свечением: сплошная тонкая линия
     if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
-      const _rc = NEON ? COL.phosphor : '#5dca7a';
+      const _rc = COL.phosphor;
       ctx.save();
       ctx.strokeStyle=hexa(_rc, pl.selected?0.95:0.6);
-      ctx.lineWidth=NEON?2.4:1.25; ctx.lineCap='round'; ctx.lineJoin='round'; // сплошная, на 50% тоньше, без мерцания
-      if(NEON){ ctx.shadowColor=_rc; ctx.shadowBlur=pl.selected?12:7; }
+      ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; // сплошная линия
+      ctx.shadowColor=_rc; ctx.shadowBlur=pl.selected?12:7;
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
       for(const w of pl.path) ctx.lineTo(w.x,w.y);
       ctx.stroke(); ctx.shadowBlur=0;
@@ -5005,7 +4555,7 @@
         const pp=pl.path.length>1?pl.path[pl.path.length-2]:{x:pl.x,y:pl.y};
         const aAng=Math.atan2(tp.y-pp.y, tp.x-pp.x);
         ctx.setLineDash([]);
-        if(!(COZY && SPRITES.blitC('route-arrow', tp.x, tp.y, 15*ui, 15*ui, aAng, _rc))){
+        if(!(ATLAS && SPRITES.blitC('route-arrow', tp.x, tp.y, 15*ui, 15*ui, aAng, _rc))){
           ctx.save(); ctx.translate(tp.x,tp.y); ctx.rotate(aAng);
           ctx.fillStyle=hexa(_rc, pl.selected?0.9:0.55);
           ctx.beginPath(); ctx.moveTo(7*ui,0); ctx.lineTo(-4*ui,-5*ui); ctx.lineTo(-4*ui,5*ui); ctx.closePath(); ctx.fill();
@@ -5041,8 +4591,8 @@
       ctx.beginPath(); ctx.arc(pl.x,pl.y,(20*ui+p*3*ui)*vs,0,7);
       ctx.lineWidth=2; ctx.strokeStyle=hexa(pc,.4+.4*p); ctx.stroke();
     }
-    // выделение — cozy-кольцо (спрайт) с фолбэком на пунктир (масштаб ⟂ SZ())
-    if(pl.selected && !(COZY && SPRITES.blitC('ring-selected', pl.x, pl.y, K.GRAB*SZ(), K.GRAB*SZ()))){
+    // выделение — кольцо-спрайт с фолбэком на пунктир (масштаб ⟂ SZ())
+    if(pl.selected && !(ATLAS && SPRITES.blitC('ring-selected', pl.x, pl.y, K.GRAB*SZ(), K.GRAB*SZ()))){
       ctx.save(); ctx.beginPath(); ctx.arc(pl.x,pl.y,K.GRAB*0.5*SZ(),0,7);
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([4,5]); ctx.stroke(); ctx.restore();
     }
@@ -5063,8 +4613,8 @@
       if(LV.bonus){
         // бонус: над гусеницей — цветок нужного цвета (её цель). Куколка/бабочка — без пузырька.
         if(pl.bug==='cat') drawFlower(pl.x, _ny, 9*ui, BSP[pl.species||0].petal);
-      } else if(!(COZY && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui))) {
-        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // cozy-чип svc-* (фолбэк: процедурная иконка)
+      } else if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui))) {
+        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // чип svc-* (фолбэк: процедурная иконка)
       }
     }
   }
@@ -5119,75 +4669,24 @@
         const sp=selected.species||0;
         if(ty==='depart') drawButterfly(bx+bw2/2, bcy, 0, ui*0.42, sp);   // финал — бабочка
         else drawFlower(bx+bw2/2, bcy, 9*ui, c);                          // шаг — цветок своего цвета
-      } else if(!(COZY && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 28*ui, 28*ui)))
+      } else if(!(ATLAS && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 28*ui, 28*ui)))
         drawIcon(ty, bx+bw2/2, bcy, 12*ui, c, '#211d33');
       ctx.globalAlpha=1;
     }
   }
 
-  // Мультяшный HUD: отдельные кремовые пилюли (жизни · таймер · монеты · борта)
-  // вдоль верха + кнопка паузы справа — крупные иконки-спрайты, как на референсе.
-  function drawCartoonHUD(){
-    const hud=HUD_H();
-    const cy=Math.round(hud*0.52);
-    const PH=Math.round(Math.min(hud-8*ui, 30*ui));
-    const py=Math.round(cy-PH/2);
-    const ic=Math.round(PH*0.76);            // размер иконки
-    ctx.textBaseline='middle';
-    function pill(x, sprite, glyph, gcol, text, tcol){
-      ctx.font=`800 ${15*ui}px ${MONO}`;
-      const tw = text ? ctx.measureText(text).width : 0;
-      const padL=11*ui, gapIT=7*ui, padR=14*ui;
-      const w=Math.round(padL + ic + (text? gapIT+tw : 0) + padR);
-      rr(x,py,w,PH,PH/2); ctx.fillStyle='rgba(255,247,228,.96)'; ctx.fill();
-      ctx.lineWidth=2.5; ctx.strokeStyle='rgba(58,42,23,.55)'; rr(x,py,w,PH,PH/2); ctx.stroke();
-      const icx=x+padL+ic/2;
-      if(!(COZY && sprite && SPRITES.blitC(sprite, icx, cy, ic, ic))){
-        ctx.fillStyle=gcol||'#3a2a17'; ctx.textAlign='center'; ctx.font=`${ic}px sans-serif`; ctx.fillText(glyph||'', icx, cy);
-      }
-      if(text){ ctx.fillStyle=tcol||'#3a2a17'; ctx.textAlign='left'; ctx.font=`800 ${15*ui}px ${MONO}`; ctx.fillText(text, x+padL+ic+gapIT, cy); }
-      return x+w;
-    }
-    let x=12*ui; const g=8*ui;
-    x = pill(x, 'heart', '❤', '#ff4d5e', String(Math.max(0,lives)), '#c43a48') + g;
-    x = pill(x, 'coin', '🪙', '#caa53a', fmtMoney(money), money<0?'#e0392f':'#5e4a16') + g;
-    const endless = survival || LV.objective.race;
-    const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
-    const ptxt = endless ? fmtNum(served) : (fmtNum(mv)+'/'+fmtNum(LV.objective.target));
-    x = pill(x, 'plane', '✈', '#2f6fb0', ptxt, '#23415e') + g;
-    // таймер раунда — в правый верхний угол, перед кнопкой паузы
-    const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
-    const urgent = LV.objective.time && tShown<=10;
-    const ttxt = fmtTime(tShown);
-    ctx.font=`800 ${15*ui}px ${MONO}`;
-    const tpw = Math.round(11*ui + ic + 7*ui + ctx.measureText(ttxt).width + 14*ui);
-    pill(Math.round(pauseBtn.x - g - tpw), 'clock', '⏱', '#3a2a17', ttxt, urgent?'#e0392f':'#3a2a17');
-    // пауза — справа
-    const pp=pauseBtn, pcx=pp.x+pp.w/2, pcy=pp.y+pp.h/2, ps=Math.max(pp.w,pp.h,PH);
-    if(!(COZY && !paused && SPRITES.blitC('pause-btn', pcx, pcy, ps, ps))){
-      rr(pp.x,pp.y,pp.w,pp.h,8*ui); ctx.fillStyle='rgba(255,247,228,.96)'; ctx.fill();
-      ctx.lineWidth=2; ctx.strokeStyle='rgba(58,42,23,.55)'; rr(pp.x,pp.y,pp.w,pp.h,8*ui); ctx.stroke();
-      ctx.fillStyle='#3a2a17';
-      if(!paused){ ctx.fillRect(pcx-6*ui,pcy-6*ui,4*ui,12*ui); ctx.fillRect(pcx+2*ui,pcy-6*ui,4*ui,12*ui); }
-      else { ctx.beginPath(); ctx.moveTo(pcx-5*ui,pcy-6*ui); ctx.lineTo(pcx+7*ui,pcy); ctx.lineTo(pcx-5*ui,pcy+6*ui); ctx.closePath(); ctx.fill(); }
-    }
-    drawPlaneCard();   // левый верхний угол: очередь потребностей + терпение
-  }
-
   function drawHUD(){
-    const sd = skinDef();
-    if(sd.hud){ sd.hud(); return; }   // собственный рендерер HUD скина (только облик)
     const hud=HUD_H();
     // плавающая панель
     rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui);
-    ctx.fillStyle=NEON?'rgba(7,13,30,.82)':'rgba(33,29,51,.85)'; ctx.fill();
-    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,NEON?.3:.12); rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui); ctx.stroke();
+    ctx.fillStyle='rgba(7,13,30,.82)'; ctx.fill();
+    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.3); rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui); ctx.stroke();
     const cy=hud/2;
     ctx.textBaseline='middle';
     // ── левый кластер: жизни · деньги · комбо (мокап 01) ──
     for(let i=0;i<K.START_LIVES;i++) heart(26*ui+i*19*ui, cy, 6.3*ui, i<lives?COL.life:null);
     let lx = 26*ui + K.START_LIVES*19*ui + 8*ui;
-    if(COZY) SPRITES.blitC('coin', lx+6*ui, cy, 15*ui, 15*ui);
+    if(ATLAS) SPRITES.blitC('coin', lx+6*ui, cy, 15*ui, 15*ui);
     else { ctx.textAlign='left'; ctx.fillStyle=COL.coin; ctx.font=`${12*ui}px ${MONO}`; ctx.fillText('$', lx, cy); }
     ctx.textAlign='left'; ctx.font=`700 ${15*ui}px ${MONO}`;
     ctx.fillStyle = money<0?COL.life:COL.coin;
@@ -5219,14 +4718,14 @@
       const target=LV.objective.target||1, frac=Math.max(0,Math.min(1,mv/target));
       const bw3=170*ui, bx3=cxC-bw3/2, by3=cy+5*ui, bh3=6*ui;
       rr(bx3,by3,bw3,bh3,bh3/2); ctx.fillStyle='rgba(127,155,176,.20)'; ctx.fill();
-      if(frac>0){ rr(bx3,by3,Math.max(bh3,bw3*frac),bh3,bh3/2); ctx.fillStyle=NEON?COL.teal:'#5dca7a'; ctx.fill(); }
+      if(frac>0){ rr(bx3,by3,Math.max(bh3,bw3*frac),bh3,bh3/2); ctx.fillStyle=COL.teal; ctx.fill(); }
     }
 
-    // кнопка паузы — cozy-чип (на паузе поверх рисуем «play»)
+    // кнопка паузы — спрайт-чип (на паузе поверх рисуем «play»)
     const pcx=pauseBtn.x+pauseBtn.w/2, pcy=pauseBtn.y+pauseBtn.h/2;
-    const cozyPause = COZY && !paused &&
+    const pauseSprite = ATLAS && !paused &&
       SPRITES.blitC('pause-btn', pcx, pcy, Math.max(pauseBtn.w,pauseBtn.h), Math.max(pauseBtn.w,pauseBtn.h));
-    if(!cozyPause){
+    if(!pauseSprite){
       rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui);
       ctx.fillStyle='rgba(154,111,212,.10)'; ctx.fill();
       ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.4);
@@ -5255,7 +4754,7 @@
     rr(x,y,w,h,12*ui); ctx.fillStyle='rgba(26,22,40,.92)'; ctx.fill();
     ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.7);
     ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=10; rr(x,y,w,h,12*ui); ctx.stroke(); ctx.shadowBlur=0;
-    if(!(COZY && SPRITES.blitC(toast.good?'check':'heart-crack', x+14*ui, y+h/2, 15*ui, 15*ui))){
+    if(!(ATLAS && SPRITES.blitC(toast.good?'check':'heart-crack', x+14*ui, y+h/2, 15*ui, 15*ui))){
       ctx.beginPath(); ctx.arc(x+13*ui,y+h/2,3.5*ui,0,7); ctx.fillStyle=col; ctx.fill();
     }
     ctx.fillStyle=COL.paper; ctx.textAlign='left'; ctx.textBaseline='middle';
@@ -5265,7 +4764,7 @@
   function boom(x,y){ effects.push({x,y,t:0,life:0.55,kind:'crash'}); }
   function nearMiss(x,y){ effects.push({x,y,t:0,life:0.5,kind:'near'}); }
   function pulseFx(x,y,kind,life){ effects.push({x,y,t:0,life:life||0.55,kind}); }
-  // kind → cozy-спрайт и цвет процедурного фолбэка
+  // kind → спрайт и цвет процедурного фолбэка
   const FX_SPRITE={near:'fx-ripple',crash:'fx-crash',touchdown:'fx-touchdown',takeoff:'fx-takeoff',success:'fx-success',error:'fx-error'};
   function drawEffects(dt){
     for(let i=effects.length-1;i>=0;i--){
@@ -5275,13 +4774,13 @@
       const a=1-k;
       ctx.save(); ctx.translate(e.x,e.y);
       if(e.kind==='lock'){
-        // фиксация маршрута на боксе: короткая яркая белая вспышка (без cozy-спрайта)
+        // фиксация маршрута на боксе: короткая яркая белая вспышка (без спрайта)
         ctx.beginPath(); ctx.arc(0,0,(9+k*15)*ui,0,7);
         ctx.lineWidth=2.5*a+0.5; ctx.strokeStyle=hexa('#ffffff',.9*a); ctx.stroke();
         ctx.beginPath(); ctx.arc(0,0,5*(1-k)*ui+1,0,7); ctx.fillStyle=hexa('#ffffff',.85*a); ctx.fill();
         ctx.restore(); continue;
       }
-      if(COZY){
+      if(ATLAS){
         const sz=(e.kind==='crash'?(44+k*64):(20+k*56))*ui;
         ctx.globalAlpha=a;
         if(SPRITES.blitC(FX_SPRITE[e.kind]||'fx-ripple',0,0,sz,sz)){ ctx.globalAlpha=1; ctx.restore(); continue; }
@@ -5471,11 +4970,6 @@
     for(const bx of b.boxes){const act=pa>=1?0:Math.exp(-Math.pow((f-bx.sf)/0.02,2));_qbox(MX(bx.x),MY(bx.y),bx.kind,(1+0.2*act)*S);}
   }
 function drawMenuScene(tm){
-    if(COZY && !NEON){   // neon: процедурный радар + анимация посадки (drawMenuLanding ниже)
-      // cozy menu background (cover-fit); falls back to the radar scene if not ready
-      const ar=1280/720; let dw=W, dh=W/ar; if(dh<H){ dh=H; dw=H*ar; }
-      if(SPRITES.blit('menu-bg', (W-dw)/2, (H-dh)/2, dw, dh)) return;
-    }
     ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
     starfield(tm);
     const rx=W*0.74, ry=H*0.52, R=Math.min(W,H)*0.42;
@@ -5496,16 +4990,11 @@ function drawMenuScene(tm){
       ctx.fillStyle=hexa(COL.phosphor,f); ctx.beginPath(); ctx.arc(x,y,2.5,0,7); ctx.fill();
     });
     ctx.restore();
-    // дрейфующий борт по небу (cozy/cartoon); neon рисует посадку ниже, поверх зарева
-    if(!NEON){
-      const px=((tm*0.025)%(W+240))-120, py=H*0.24+Math.sin(tm*0.0008)*14;
-      drawPlaneBodyAt(px,py,Math.sin(tm*0.0008)*0.06,ui*0.6,false,false);
-    }
     // бирюзовое свечение горизонта
     const hg=ctx.createLinearGradient(0,H-120*ui,0,H);
     hg.addColorStop(0,'rgba(16,48,58,0)'); hg.addColorStop(1,hexa(COL.teal,.10));
     ctx.fillStyle=hg; ctx.fillRect(0,H-120*ui,W,120*ui);
-    if(NEON) drawMenuLanding(tm);
+    drawMenuLanding(tm);
     vignette();
   }
 
@@ -6037,23 +5526,8 @@ function drawMenuScene(tm){
     const v=document.getElementById('optVibro2'); if(v) v.onclick=()=>setVibro(!(save.vibro!==false));
   })();
 
-  // переключатель визуального скина (сегмент-контрол, как у языка); применяется
-  // сразу, без перезагрузки, и запоминается в localStorage (ключ pf_skin)
-  function renderSkinBtns(){
-    const box=document.getElementById('skinBtns'); if(!box) return;
-    box.innerHTML='';
-    for(const code of SKINS){   // состав — из SKINS, метка — из реестра (SKIN_DEFS[code].label)
-      const b=document.createElement('button');
-      b.className=(code===SKIN?'active':'');
-      b.textContent=t((SKIN_DEFS[code]||SKIN_DEFS.cozy).label);
-      b.onclick=()=>setSkin(code);
-      box.appendChild(b);
-    }
-  }
-  function setSkin(code){ applySkin(code); try{ localStorage.setItem('pf_skin', code); }catch(e){} renderSkinBtns(); Analytics.track('setting_changed', {key:'skin', value:code}); }
-
-  // настройки из стартового меню (звук / язык / скин / сброс прогресса)
-  function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns(); renderSkinBtns(); hideAllScreens();
+  // настройки из стартового меню (звук / язык / сброс прогресса)
+  function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns(); hideAllScreens();
     document.getElementById('settingsScreen').classList.remove('hidden'); }
   document.getElementById('settingsMenuBtn').onclick=openSettings;
   document.getElementById('settingsBackBtn').onclick=()=>{ showStart(); };

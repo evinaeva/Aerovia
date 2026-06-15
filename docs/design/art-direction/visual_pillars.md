@@ -4,7 +4,7 @@
 > breaks another, **Readability First wins**. Parent doc: [`art_direction_v1.md`](art_direction_v1.md).
 
 The shipped style-guide condenses these into a checklist (panel 13, "Visual Notes"):
-*highly readable · clear silhouettes · warm and cozy · soft shadows · satisfying
+*highly readable · clear silhouettes · warm and inviting · soft shadows · satisfying
 animations · simple shapes · calm, not stressful · cute and alive world · small stories
 everywhere · gameplay clarity first.*
 
@@ -25,7 +25,7 @@ Never sacrifice gameplay clarity for visual realism. This is the tie-breaker pil
 
 ---
 
-## 2. Cozy Atmosphere
+## 2. Warm Atmosphere
 
 The airport should feel alive and emotionally pleasant.
 

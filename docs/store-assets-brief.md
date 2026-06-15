@@ -39,7 +39,7 @@
 | `icon-adaptive-fg.png` | 432×432 | Android adaptive — **эмблема**, прозрачный фон |
 | `icon-maskable-512.png` | 512×512 | PWA maskable, full-bleed |
 | `icon-maskable-192.png` | 192×192 | PWA maskable, full-bleed |
-| `assets/sprites/<skin>/app-icon.png` | исходник | пер-скиновый мастер-исходник |
+| `assets/sprites/neon/app-icon.png` | исходник | мастер-исходник иконки |
 
 **Safe-zone (критично — иначе маски обрежут эмблему):**
 - **Android adaptive:** холст 432×432 (=108dp), но гарантированно видно только
