@@ -1,3 +1,4 @@
+// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   const _qss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
   const _qlerp=(a,b,t)=>a+(b-a)*t;
   const _qcub=(a,b,c,d,t)=>{const m=1-t;return m*m*m*a+3*m*m*t*b+3*m*t*t*c+t*t*t*d;};

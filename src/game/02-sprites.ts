@@ -1,3 +1,4 @@
+// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   const SPRITES = (() => {
     const cache = new Map();
     const stripF = s => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)

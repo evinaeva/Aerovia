@@ -1,3 +1,4 @@
+// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   function reset(){
     econ = levelEconomy(LV); lvFx = econ.effects;   // оплата/касса и активные денежные эффекты — из уровня
     planes=[]; money=debug.richStart?BIG_MONEY:econ.startMoney; lives=K.START_LIVES; served=0; gameTime=0;

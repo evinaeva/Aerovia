@@ -1,3 +1,4 @@
+// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
@@ -16,7 +17,21 @@
   // единый источник истины о текущем режиме (логика, не контент): survival/biome/bonus/campaign.
   // Раньше режим вычислялся инлайн-тернарником в нескольких местах — теперь одна функция (см. CLAUDE.md).
   function currentMode(){ return survival ? 'survival' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')); }
-  let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
+  // Persisted player data — the save shape. Typed even while the rest of this
+  // module is still @ts-nocheck, so other modules get checked against it (e.g.
+  // a renamed/typo'd `save.unlocked` becomes a compile error).
+  interface Save {
+    unlocked: number;
+    best: Record<string, number>;
+    stars: Record<string, number>;
+    lang: string | null;
+    ach: string[];
+    stats: Record<string, number>;
+    sound: boolean;
+    vibro: boolean;
+    tutorialDone: boolean;
+  }
+  let save: Save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
   const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.26';

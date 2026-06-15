@@ -1,3 +1,4 @@
+// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   const K = {
     TURN: 3.2,            // rad/sec поворот в полёте
     SPEED_AIR: 60,        // скорость захода на посадку
