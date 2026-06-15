@@ -33,7 +33,7 @@ references/planeflow_style_guide_v1.png
 | 10 | Color Palette | Base, Accent, Neutral, and Light swatches — see [`../color_palette.md`](../color_palette.md). |
 | 11 | Icon Style | plane, list, staff, gear, cart, star, calendar. |
 | 12 | Lighting & Time of Day | Day · Sunset · Evening · Night strip. |
-| 13 | Visual Notes | Highly readable · Clear silhouettes · Warm and cozy · Soft shadows · Satisfying animations · Simple shapes · Calm, not stressful · Cute and alive world · Small stories everywhere · Gameplay clarity first. |
+| 13 | Visual Notes | Highly readable · Clear silhouettes · Warm and inviting · Soft shadows · Satisfying animations · Simple shapes · Calm, not stressful · Cute and alive world · Small stories everywhere · Gameplay clarity first. |
 
 ### How to use it
 

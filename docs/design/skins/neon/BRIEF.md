@@ -1,7 +1,7 @@
-# Neon skin — design brief
+# Neon look — design brief
 
 > **For the design agent.** This folder is the single source for producing the
-> **neon** visual skin of PlaneFlow: the style description, reference images
+> **neon** look of PlaneFlow: the style description, reference images
 > (`references/`), and the **asset checklist**. The engine seam is already built
 > (see *Integration*) — drawn assets drop in with **no code changes**.
 >
@@ -10,7 +10,7 @@
 > game-icons CC-BY, exported as colored PNGs); only the ~5 glossy bay panels truly
 > need generation.
 
-**Status:** the neon skin ships today as a **procedural placeholder** + a flat
+**Status:** the look ships today as a **procedural placeholder** + a flat
 code-drawn vector pass — **neither matches the target**. Compare
 `references/current-procedural-placeholder.png` and the flat vector sheet vs the goal,
 `references/ref-01-target-neon.png`. The goal is to **match `ref-01` closely** (its
@@ -93,7 +93,7 @@ out. Generate at **≥ the §6 size** (bigger then downscale = crisper).
 
 ## 1. The locked gameplay layout (must NOT change)
 
-Same spec as every skin (the skin changes looks, never positions):
+The look changes appearance, never positions:
 
 - **Strict top-down**, no isometry. **Landscape ~16:9.**
 - **Center = a large field** (the drawing canvas). HUD never overlaps it.
@@ -108,7 +108,7 @@ Same spec as every skin (the skin changes looks, never positions):
 `references/ref-02-layout-mockup.png` = the layout; `ref-01-target-neon.png` = the
 target art (what we're matching).
 
-## 2. The neon style — glossy night air-traffic-control (match `ref-01`)
+## 2. The neon look — glossy night air-traffic-control (match `ref-01`)
 
 A polished dark control-room look — **rendered, glossy, glowing**, like the reference:
 
@@ -131,7 +131,7 @@ from dulling the art.
 
 ## 3. Color palette (the neon tokens already in the engine)
 
-The skin recolors these atlas tokens (engine `NEON_TOKENS`); match/extend them:
+The look recolors these atlas tokens (engine `NEON_TOKENS`); match/extend them:
 
 ```
 bg/ink #070c1c · tarmac #0c1430 · tarmac-2 #0f1a3c · water #081024
@@ -150,8 +150,7 @@ Plus per-bay border accents seen in `ref-01` (orange/pink/green/cyan/purple).
 
 We use **raster PNG** sprites (not SVG) so the painterly glow/gloss/shadow is
 **baked into the image** — reliable on Android (Chromium WebView) and iOS
-(WKWebView), with no SVG-filter quirks to debug. The engine has a skin switch
-(`SKIN = 'cozy' | 'neon'`, Settings → Skin / `?skin=neon`) and auto-loads PNG art.
+(WKWebView), with no SVG-filter quirks to debug. The engine auto-loads the PNG art.
 
 **Deliverable — one transparent PNG per asset + a manifest:**
 ```
@@ -161,7 +160,7 @@ assets/sprites/neon/manifest.json     # ["plane","bay-repair","svc-fuel", …]
 
 **Rules (the engine relies on these):**
 1. **File name = the base id + `.png`** (no prefix): `plane.png`, `bay-repair.png`,
-   `svc-fuel.png`, `coin.png`, … The `neon/` folder already namespaces the skin.
+   `svc-fuel.png`, `coin.png`, … The `neon/` folder already namespaces the art.
 2. **`manifest.json` lists every id you ship** (JSON array of strings). The engine
    loads it and draws `neon/<id>.png` for each listed id instead of the procedural
    placeholder — **no code changes, no reload** (repaints when ready).
@@ -189,8 +188,8 @@ assets/sprites/neon/manifest.json     # ["plane","bay-repair","svc-fuel", …]
    `pause-btn`, …) and they're picked up — otherwise they recolor procedurally.
 
 *(SVG `<symbol>` sheets with a `neon-` id prefix under `assets/sprites/neon/` are
-still accepted as a fallback — resolution order is **PNG → skin-SVG → base →
-procedural** — but **PNG is the target format**.)*
+still accepted as a fallback — resolution order is **PNG → SVG → procedural** — but
+**PNG is the target format**.)*
 
 ## 5. Animations (keep them slow & soft — see §0)
 
@@ -251,7 +250,7 @@ File names use the **base id** (no prefix); list every shipped id in `manifest.j
 ### Buttons & controls (DOM — define neon states)
 - [ ] Button styles: **primary**, **secondary/ghost**, **danger** — idle / hover /
       pressed / disabled
-- [ ] **Toggle switch** (on/off), **segmented control** (language, skin), **chips**
+- [ ] **Toggle switch** (on/off), **segmented control** (language), **chips**
       (cost / star count), **progress bar** (goal), **combo badge**
 
 ### Menu icons (small, consistent set)
@@ -268,5 +267,5 @@ File names use the **base id** (no prefix); list every shipped id in `manifest.j
   target sizes above. Planes nose-up & centered; bay panels carry **no** baked
   icon/label/cost/progress.
 - Big & readable: silhouettes read in < 0.5 s; on-screen chips ≥ 44 px.
-- Verify by dropping the PNGs + `manifest.json` into `assets/sprites/neon/` and
-  switching Settings → Skin → Neon (or `?skin=neon`): art appears, no code changes.
+- Verify by dropping the PNGs + `manifest.json` into `assets/sprites/neon/`: art
+  appears, no code changes.

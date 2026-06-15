@@ -51,7 +51,7 @@ High-contrast, used sparingly, never for large fills.
 
 ## 4. Lights / glows
 
-Warm and cozy emissive tones for night lamps, taxiway glow, and window light.
+Warm emissive tones for night lamps, taxiway glow, and window light.
 
 | Token | Approx. hex | Use |
 | --- | --- | --- |

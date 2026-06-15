@@ -1,4 +1,4 @@
-# Neon skin — asset sourcing (free-first, all PNG)
+# Neon look — asset sourcing (free-first, all PNG)
 
 Companion to [`BRIEF.md`](BRIEF.md). Where to get each asset **cheaply** without local
 GPU generation. **Everything ships as PNG** (one format — matches the engine's
@@ -13,8 +13,8 @@ GPU generation. **Everything ships as PNG** (one format — matches the engine's
 - **Color is baked at export time** (PNG can't be token-recolored at runtime). For
   icons from game-icons.net, pick the per-service neon color in the site's export
   panel (amber / teal / rose / ice / gold …) and download a **transparent PNG**.
-- The engine still resolves **PNG → skin-SVG (`neon-<id>`) → base cozy → procedural**,
-  so SVG icons remain a valid fallback if we ever want runtime recolor.
+- The engine still resolves **PNG → SVG (`neon-<id>`) → procedural**, so SVG icons
+  remain a valid fallback if we ever want runtime recolor.
 
 ## Sources & licenses
 
@@ -64,5 +64,5 @@ are optional. Everything else (~40 icons/particles) is **free**.
 2. Generate the 5 bay panels (and optionally planes) per BRIEF §0.5 (Cowork + an
    image-gen connector / OpenRouter image MCP, or any hosted generator).
 3. Write `assets/sprites/neon/manifest.json` listing every shipped id.
-4. Open the game with `?skin=neon` — the PNG pipeline picks it all up, no code changes.
+4. Open the game — the PNG pipeline picks it all up, no code changes.
 5. Add a **Credits** attribution line for game-icons (CC-BY).

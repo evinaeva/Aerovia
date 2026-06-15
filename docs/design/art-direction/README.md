@@ -5,7 +5,7 @@ The visual bible for PlaneFlow. Start here, then dive into the specific files.
 | File | What it covers |
 | --- | --- |
 | [`art_direction_v1.md`](art_direction_v1.md) | **Start here.** Top-level art bible: style decision, camera, world, aircraft, routes, lighting, palette, UI, performance, target feeling. |
-| [`visual_pillars.md`](visual_pillars.md) | The four pillars (readability, cozy, flow, stylized) + per-asset self-check. |
+| [`visual_pillars.md`](visual_pillars.md) | The four pillars (readability, warmth, flow, stylized) + per-asset self-check. |
 | [`color_palette.md`](color_palette.md) | Color tokens (base / accent / neutral / light) and the canonical route color system. |
 | [`ui_rules.md`](ui_rules.md) | HUD, panels, buttons, icons, motion & feedback rules. |
 | [`wireframes.md`](wireframes.md) | **Layout layer:** wireframes/mockups of every screen + the screen-flow map (button placement, sizing, composition). |
