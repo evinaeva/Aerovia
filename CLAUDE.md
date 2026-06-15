@@ -38,19 +38,24 @@ first. CI (`.github/workflows/deploy.yml`) type-checks, builds and unit-tests on
 every push to `main` and publishes to GitHub Pages, so nobody has to remember to
 rebuild and `index.html` is never committed.
 
-## TypeScript (gradual migration)
+## TypeScript
 
-Modules may be authored in TypeScript (`.ts`). The migration is gradual: `.js`
-and `.ts` modules coexist, `scripts/build.mjs` strips types from `.ts` and uses
-`.js` verbatim. Run **`npm run typecheck`** (`tsc --noEmit`) — CI runs it too,
-and `npm test` runs it first.
+The game is TypeScript: `src/game/02..12` are all `.ts` and pass `tsc --noEmit`
+under `strict`. Only **01-bootstrap-theme.js** and **13-init.js** stay `.js` —
+they open/close the shared game IIFE and don't parse standalone.
+`scripts/build.mjs` strips types from `.ts` (and uses `.js` verbatim). Run
+**`npm run typecheck`** — CI runs it too, and `npm test` runs it first.
 
 Because the game is **one IIFE scope** (not ES modules), each `.ts` module is a
-*script*: no `import`/`export`, and its top-level declarations are globals shared
-with the other modules. Names a `.ts` module borrows from a still-`.js` module go
-in **`src/game/_contracts.d.ts`**; as each owning module becomes `.ts`, move its
-real declaration there and shrink the contracts file. `tsconfig.json` includes
-only `.ts` (the `.js` fragments 01/13 open/close the IIFE and don't parse alone).
+*script*: no `import`/`export`; its top-level declarations are globals shared
+with the other modules. The names the `.ts` modules borrow from the still-`.js`
+bootstrap (`ctx`, `cv`, `THEME`, `PALETTE`, `ATLAS`, …) plus the optional
+`refreshOverLeaderboard` hook are declared in **`src/game/_contracts.d.ts`**;
+`tsconfig.json` includes only `.ts`. A new module should be `.ts` from the start
+(plain JS still works — the build strips either). Pragmatic typing choices that
+can be tightened later: plane objects and the transient forest `hazard`/`run`
+state are `any` (large mutable shapes), and the audio/Web-Audio nodes are `any`.
+If you add a `// @ts-nocheck` while mid-edit, the build strips it from the bundle.
 
 ## Tracking development time
 
