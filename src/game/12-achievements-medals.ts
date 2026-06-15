@@ -126,7 +126,7 @@
       onLevelStart(){ flushToasts(); newRun(); },   // рестарт посреди раунда: недопоказанное — сразу, хвостов нет
       onPlaneTouched(pl: any){ if(pl) pl.everTouched=true; },
       onPause(){ give('pause'); },
-      onLand(){
+      onLand(_pl?: any){
         S.stats.landed++; run.landed++; S.stats.noCrashStreak++;
         run.landTimes.push(gameTime);
         give('land1');
@@ -138,7 +138,7 @@
         const cut=gameTime-60; while(run.landTimes.length && run.landTimes[0]<cut) run.landTimes.shift();
         if(run.landTimes.length>=20) give('speed20');
       },
-      onService(){ S.stats.services++; run.services++; give('svc1'); if(S.stats.services>=100) give('svc100'); },
+      onService(_pl?: any){ S.stats.services++; run.services++; give('svc1'); if(S.stats.services>=100) give('svc100'); },
       onDepart(pl: any, pay: number){
         S.stats.departed++; run.departed++; S.stats.earned+=Math.max(0,pay);
         run.types.add(pl.emergency?'emg':(pl.vip?'vip':'std'));
@@ -152,9 +152,9 @@
         if(run.types.has('std')&&run.types.has('vip')&&run.types.has('emg')) give('zoo');
         persist();
       },
-      onBayOpen(){ run.opens++; give('bayopen1'); },
+      onBayOpen(_b?: any){ run.opens++; give('bayopen1'); },
       onBayUpgrade(b: any){ run.upgrades++; give('upg1'); if(b.lvl>=K.BAY_MAX_LVL) give('baymax'); },
-      onGroundTimeout(){ give('groundto'); },
+      onGroundTimeout(_pl?: any){ give('groundto'); },
       onCrash(pl: any, reason: string){
         S.stats.noCrashStreak=0; persist();
         if(gameTime<10) give('crash10s');
