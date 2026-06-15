@@ -1,3 +1,16 @@
+  // ===== config shapes (types only; erased at build) =====
+  interface SideCfg { type: string; slots: number; open: number; }
+  interface Events { vip?: boolean; emergency?: boolean; medical?: boolean; rush?: boolean; fog?: boolean; wind?: boolean; [k: string]: boolean | undefined; }
+  interface Objective { metric: 'served' | 'upgrades'; stars: number[]; target?: number; time?: number; race?: boolean; upg?: number[]; }
+  interface Level {
+    pace?: number; objective: Objective; runways: number;
+    sides: { top?: SideCfg; left?: SideCfg; bottom?: SideCfg };
+    events?: Events; startMoney?: number;
+    biome?: string; bonus?: string; weather?: boolean; deice?: boolean;
+    calm?: number; survRamp?: number; combo?: boolean; express?: boolean;
+  }
+  interface Biome { id: string; emoji: string; ready: boolean; level?: Level; }
+  interface Bonus { id: number; after: number; emoji: string; level: Level; }
   const K = {
     TURN: 3.2,            // rad/sec поворот в полёте
     SPEED_AIR: 60,        // скорость захода на посадку
@@ -140,7 +153,7 @@
   // спокойного блока L1–L4 (см. CALM_LEVELS в validateLevels): vip→L5, emergency→L6,
   // rush→L8, medical→L9; каждый спецборт дебютирует один раз, дальше комбинируется.
   // Имя/вызов/подсказка — в словаре: level.t.<n> / level.d.<n> / level.h.<n>.
-  const LEVELS = [
+  const LEVELS: Level[] = [
     // ── СПОКОЙНЫЙ БЛОК (L1–L4): чистые механики, без спецсобытий, низкий темп ──
     // L1 — посадка и обслуживание: маленькая цель, самый низкий темп (бережём первые 5 минут).
     { pace:0.00, objective:{ metric:'served', stars:[6,7,8] },
@@ -189,7 +202,7 @@
   // Каждый биом — это конфиг уровня (как в LEVELS) + флаг biome для темы/помех.
   // ready:false — биом в работе, на экране показан как «скоро». Сервисное здание
   // (откуда выезжают спец-бригады) рисуется сверху поля у всех биом-карт.
-  const BIOMES = [
+  const BIOMES: Biome[] = [
     { id:'forest', emoji:'🌲', ready:true,
       level:{ biome:'forest', weather:true, deice:true, objective:{ metric:'served', stars:[10,12,14] },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
@@ -208,7 +221,7 @@
   // удачный вылет → бабочка (🐛 → 🌸 → 🦋). Правила-сюрпризы: спокойный мир без
   // событий/спецбортов и с увеличенным терпением (level.calm), а каждый вылет —
   // метаморфоза в бабочку с бонус-нектаром (см. depart()).
-  const BONUS = [
+  const BONUS: Bonus[] = [
     { id:0, after:5,  emoji:'🦋',
       level:{ bonus:'butterfly', calm:1.5, objective:{ metric:'served', stars:[6,7,8] },
         sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
@@ -220,7 +233,7 @@
   ];
   // Звёзды-градация: единая модель для кампании, биомов и бонусов. Из stars[] выводим
   // target (потолок уровня = 3★) — на него опираются HUD, спавн-кап и пути завершения.
-  function normObjective(o){ if(o && Array.isArray(o.stars) && o.target==null) o.target = o.stars[o.stars.length-1]; return o; }
+  function normObjective(o: Objective): Objective { if(o && Array.isArray(o.stars) && o.target==null) o.target = o.stars[o.stars.length-1]; return o; }
   LEVELS.forEach(lv=>normObjective(lv.objective));
   BIOMES.forEach(b=>{ if(b.level) normObjective(b.level.objective); });
   BONUS.forEach(b=>{ if(b.level) normObjective(b.level.objective); });
@@ -257,20 +270,20 @@
 
   // комбо/экспресс по умолчанию ВКЛЮЧЕНЫ; уровень может их отключить (combo:false /
   // express:false) — постепенный ввод денежных эффектов. Экономика читает эти же флаги.
-  function levelEffects(lv){
+  function levelEffects(lv: Level){
     return { combo: !(lv && lv.combo === false), express: !(lv && lv.express === false) };
   }
   // темп уровня (интенсивность) 0..1 — ГЛАВНАЯ ось сложности; задаёт частоту прилёта и
   // одновременность (см. K.PACE_*). Воздушное терпение от него НЕ зависит.
-  function levelPace(lv){ const p = lv && lv.pace; return Math.max(0, Math.min(1, p==null ? 0 : p)); }
+  function levelPace(lv: Level){ const p = lv && lv.pace; return Math.max(0, Math.min(1, p==null ? 0 : p)); }
   // интервал спавна (сек) от темпа: pace 0 → SLOW, pace 1 → FAST; по ходу смены чуть
   // ускоряется (served), но не ниже пола. В час пик база ×0.5 (без пола — короткая волна).
-  function paceInterval(pace, served, rush){
+  function paceInterval(pace: number, served?: number, rush?: boolean){
     const base = K.PACE_IVL_SLOW + (K.PACE_IVL_FAST - K.PACE_IVL_SLOW) * pace;
     return rush ? base * 0.5 : Math.max(K.SPAWN_MIN, base - (served||0) * K.SPAWN_DECAY);
   }
   // лимит одновременных бортов в небе от темпа: pace 0 → CAP_LOW, pace 1 → CAP_HIGH.
-  function paceCap(pace){ return Math.round(K.PACE_CAP_LOW + (K.PACE_CAP_HIGH - K.PACE_CAP_LOW) * pace); }
+  function paceCap(pace: number){ return Math.round(K.PACE_CAP_LOW + (K.PACE_CAP_HIGH - K.PACE_CAP_LOW) * pace); }
   // SURVIVAL: темп нарастает со временем заезда от стартового (level.pace, иначе спокойный
   // дефолт) до 1.0 за SURV_RAMP_SECS (или level.survRamp). Чем дольше держишься — тем плотнее
   // поток и больше бортов в небе разом: это и есть растущая «сложность выживания» карты.
@@ -282,33 +295,33 @@
   }
   // воздушное терпение борта (сек): ФИКС. окно K.AIR_BASE, спецборты урезают множителем;
   // от уровня/темпа НЕ зависит (только спец-тип и calm-бонус спокойного мира).
-  function airPatience(flags, calm){
-    const f = flags || {};
+  function airPatience(flags?: Events, calm?: number){
+    const f: Events = flags || {};
     const m = f.emergency ? 0.4 : (f.vip ? 0.5 : (f.medical ? K.MEDICAL_AIR : 1));
     return K.AIR_BASE * m * (calm || 1);
   }
   // вес каждого спецсобытия в сложности (mед/час-пик давят сильнее вип-джета)
-  const EVENT_DIFF = { vip:0.5, rush:1.0, medical:1.0, emergency:0.8, fog:0.8, wind:0.8 };
-  function levelFlow(o){
+  const EVENT_DIFF: Record<string, number> = { vip:0.5, rush:1.0, medical:1.0, emergency:0.8, fog:0.8, wind:0.8 };
+  function levelFlow(o: Objective){
     const target = o && o.target!=null ? o.target : (o && Array.isArray(o.stars) ? o.stars[o.stars.length-1] : 1);
     return (o && o.metric==='served' && !o.race) ? Math.max(1, target)
                                                  : Math.max(1, Math.round(((o&&o.time)||180) / K.ECON_FLOW_SECS));
   }
   // множитель сложности уровня 0..~ECON_DIFF_CAP (чистая функция конфига)
-  function levelDifficulty(lv){
-    const o = (lv && lv.objective) || {}, ev = (lv && lv.events) || {};
+  function levelDifficulty(lv: Level){
+    const o: Objective = (lv && lv.objective) || ({} as Objective), ev: Events = (lv && lv.events) || {};
     let eventScore = 0; for(const k in EVENT_DIFF) if(ev[k]) eventScore += EVENT_DIFF[k];
     const dens = levelPace(lv);                                   // интенсивность (темп) — главная ось
     const timeScore = o.race ? 1 : (o.time ? 0.5 : 0);            // давление времени
     const envScore = ((lv&&lv.weather)?1:0) + ((lv&&lv.deice)?1:0); // погода/де-айс
     let d = (K.ECON_W_EVENT*eventScore + K.ECON_W_TIME*timeScore
            + K.ECON_W_DENS*dens + K.ECON_W_ENV*envScore) / K.ECON_DIFF_NORM;
-    if(lv && lv.calm > 0) d /= lv.calm;                          // спокойный мир (бонус) — легче
+    if(lv && lv.calm && lv.calm > 0) d /= lv.calm;                          // спокойный мир (бонус) — легче
     return Math.max(0, Math.min(K.ECON_DIFF_CAP, d));
   }
-  function levelEconomy(lv){
-    const o = (lv && lv.objective) || {};
-    const sides = (lv && lv.sides) || {};
+  function levelEconomy(lv: Level){
+    const o: Objective = (lv && lv.objective) || ({} as Objective);
+    const sides: Record<string, SideCfg | undefined> = (lv && lv.sides) || {};
     let open0 = 0, openable = 0;
     for(const s of ['top','left','bottom']){
       const c = sides[s]; if(!c) continue;
@@ -337,21 +350,21 @@
     return { startMoney, svcReward, flow, kitCost, openable, difficulty, generosity, skillMult, effects:fx };
   }
 
-  let LV = LEVELS[0], curBiome = null, curBonus = null;
+  let LV: Level = LEVELS[0], curBiome: Biome | null = null, curBonus: Bonus | null = null;
   let econ = levelEconomy(LV);          // {startMoney, svcReward, …} — пересчитывается в reset()
   let lvFx = levelEffects(LV);          // какие денежные эффекты включены на текущей карте
   // бонус после прохождения уровня №levelNum (1-based); открыт, если тот пройден на ≥1★
   // (или включён отладочный тумблер «Открыть все уровни» — как у кампании, см. renderLevels)
-  function bonusAfter(levelNum){ return BONUS.find(b=>b.after===levelNum) || null; }
-  function bonusUnlocked(b){ return debug.unlockAll || (save.stars[b.after-1]||0) >= 1; }
-  function bonusName(b){
+  function bonusAfter(levelNum: number){ return BONUS.find(b=>b.after===levelNum) || null; }
+  function bonusUnlocked(b: Bonus){ return debug.unlockAll || (save.stars[b.after-1]||0) >= 1; }
+  function bonusName(b: Bonus){
     const key = 'bonus.t.'+b.id;
     const has = (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null);
     return has ? t(key) : t('bonus.name', {n:b.after});
   }
   function objectiveDesc(){
     const o = LV.objective;
-    const params = {n:o.target, time:o.time ? fmtTime(o.time) : ''};
+    const params = {n: o.target ?? 0, time: o.time ? fmtTime(o.time) : ''};
     if(LV.bonus) return t('bonus.obj', params);   // «выпусти N гусениц бабочками»
     if(o.race) return t('obj.race', params);      // «прими сколько успеешь за {time}»
     if(o.metric==='upgrades') return t('obj.upgrades', params);
@@ -365,7 +378,7 @@
                     : (LV.events || {});
   }
   // имя уровня кампании: t('level.t.<n>') если задано, иначе общий «Уровень N»
-  function levelName(idx){
+  function levelName(idx?: number){
     const i = (idx==null ? levelIdx : idx), key = 'level.t.'+(i+1);
     const has = (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null);
     return has ? t(key) : t('level.name', {n:i+1});
@@ -381,14 +394,14 @@
   const WEATHER_KINDS = ['clear','rain','snow'];
   // «часы» суток: фаза 0..1 (0 — полдень) и «ночность» 0..1 (1 — глубокая ночь).
   // Чистая функция времени: визуал берёт night, на саму игру это не влияет.
-  function dayCycle(time){
+  function dayCycle(time: number){
     const P = K.DAYNIGHT_PERIOD;
     const phase = ((time % P) + P) % P / P;             // 0..1, устойчиво к time<0
     const night = (1 - Math.cos(phase * 2 * Math.PI)) / 2;  // плавно 0→1→0
     return { phase, night };
   }
   // множитель скорости руления по погоде: ясно=1, дождь/снег — медленнее (снег хуже)
-  function weatherTaxiMult(w){
+  function weatherTaxiMult(w: string){
     return w==='snow' ? K.WEATHER_SNOW_TAXI : w==='rain' ? K.WEATHER_RAIN_TAXI : 1;
   }
   // L1–L4 — спокойный блок (чистые механики, низкий темп). Спецсобытия вводятся только с L5.

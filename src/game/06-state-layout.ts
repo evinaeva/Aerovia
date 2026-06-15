@@ -1,4 +1,4 @@
-  let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
+  let levelIdx = 0, levelKey: number | string = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
   function currentLevelName(){
@@ -16,7 +16,21 @@
   // единый источник истины о текущем режиме (логика, не контент): survival/biome/bonus/campaign.
   // Раньше режим вычислялся инлайн-тернарником в нескольких местах — теперь одна функция (см. CLAUDE.md).
   function currentMode(){ return survival ? 'survival' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')); }
-  let save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
+  // Persisted player data — the save shape. Typed even while the rest of this
+  // module is still @ts-nocheck, so other modules get checked against it (e.g.
+  // a renamed/typo'd `save.unlocked` becomes a compile error).
+  interface Save {
+    unlocked: number;
+    best: Record<string, number>;
+    stars: Record<string, number>;
+    lang: string | null;
+    ach: string[];
+    stats: Record<string, number>;
+    sound: boolean;
+    vibro: boolean;
+    tutorialDone: boolean;
+  }
+  let save: Save = {unlocked:1, best:{}, stars:{}, lang:null, ach:[], stats:{}, sound:true, vibro:true, tutorialDone:false};
   // LEGACY_SAVE_KEY: до переименования в PlaneFlow сейв жил под старым ключом —
   // читаем его как фолбэк, чтобы прогресс игроков не сгорел (см. loadGame)
   const SAVE_KEY = 'planeflow_save_v1', LEGACY_SAVE_KEY = 'tower_save_v1', VERSION = '0.26';
@@ -26,7 +40,7 @@
   // отступы безопасной зоны (вырез/скругления телефона). Читаем реальные px с
   // невидимого пробника, у которого padding = env(safe-area-inset-*) — так HUD и
   // кнопка паузы не залезают под бортик экрана (viewport-fit=cover включён).
-  let safe={t:0,r:0,b:0,l:0}, safeProbe=null;
+  let safe={t:0,r:0,b:0,l:0}, safeProbe: HTMLDivElement | null = null;
   function readSafe(){
     if(!safeProbe){
       safeProbe=document.createElement('div');
@@ -58,7 +72,7 @@
   function fitOverlays(){
     const vw = window.innerWidth, vh = window.innerHeight, margin = 10;
     document.querySelectorAll('.overlay').forEach(ov=>{
-      const panel = ov.querySelector('.panel');
+      const panel = ov.querySelector('.panel') as HTMLElement | null;
       if(!panel) return;
       panel.style.transform=''; // сброс перед замером натуральных размеров
       if(ov.classList.contains('hidden')) return;
@@ -74,7 +88,11 @@
   }
 
   // ---- layout: bays, runways, hover slots ----
-  let bays=[], runways=[], field={}, pauseBtn={};
+  interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; }
+  interface Runway { occupied: any; closed: boolean; hazard?: any; x: number; y: number; w: number; h: number; cy: number; stopX: number; exitX: number; }
+  interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; rwL?: number; rwR?: number; service?: any; }
+  interface Rect { x: number; y: number; w: number; h: number; }
+  let bays: Bay[] = [], runways: Runway[] = [], field: Field = {x0:0,y0:0,x1:0,y1:0}, pauseBtn: Rect = {} as Rect;
   // Единый масштаб «крупности» техники: размеры борта, ВПП и бокса выводятся из него
   // ОДНОЙ общей формулой (общая для всех скинов — меняется лишь число). Само число —
   // визуальный масштаб техники (×1; геометрия выводится из него одной формулой).
@@ -100,9 +118,9 @@
     // ОБЩАЯ раскладка (одинакова для всех скинов).
     if(!bays.length){
       bays = [];
-      const all = [];
+      const all: { type: string; open: boolean }[] = [];
       for(const side of ['top','left','bottom']){
-        const cfg = LV.sides[side];
+        const cfg = (LV.sides as Record<string, SideCfg>)[side];
         for(let i=0;i<cfg.slots;i++) all.push({type:cfg.type, open:i<cfg.open});
       }
       all.forEach((b,i)=>{
@@ -115,9 +133,9 @@
                               open:true, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh});
     }
     // position bays — две сплошные ангары: стойла встык по всей ширине апрона
-    const bySide = s => bays.filter(b=>b.side===s);
+    const bySide = (s: string) => bays.filter(b=>b.side===s);
     const hangH = Math.max(bh, Math.round((fy1-fy0)*0.13));   // ангара чуть выше под стойло-проезд
-    function packRow(arr, yTop){
+    function packRow(arr: Bay[], yTop: number){
       const n=arr.length; if(!n) return;
       const cellW=(fx1-fx0)/n;
       arr.forEach((b,i)=>{ b.w=cellW; b.h=hangH; b.x=fx0+i*cellW; b.y=yTop; });
@@ -139,7 +157,7 @@
     // больше не пропускается) — см. docs/design/skins/neon/handoff/
     const slots = []; for(let i=0;i<n;i++) slots.push(i);
     if(!runways.length || runways.length!==slots.length){
-      runways = slots.map(()=>({occupied:null, closed:false}));
+      runways = slots.map(()=>({occupied:null, closed:false, x:0, y:0, w:0, h:0, cy:0, stopX:0, exitX:0}));
     }
     slots.forEach((slotIdx,k)=>{
       const r=runways[k];
@@ -165,31 +183,31 @@
   }
 
   // ---- game state ----
-  let planes=[], money=0, lives=0, served=0, gameTime=0;
+  let planes: any[] = [], money=0, lives=0, served=0, gameTime=0;
   let running=false, paused=false, lastTs=0, spawnTimer=0, spawnedTotal=0;
   // статистика смены для экрана итога: пик одновременной нагрузки + временной ряд
   // (нагрузка/принято) для графика; lastShift — снимок последней смены для шеринга
-  let statPeak=0, statSamples=[], statStep=1.5, statNextAt=0, lastShift=null;
+  let statPeak=0, statSamples: any[]=[], statStep=1.5, statNextAt=0, lastShift: any=null;
   let inMenu=true;         // пока открыты меню/уровни/медали — на канвасе сцена-радар, не поле
   let nowT=0;              // время кадра (мс) для анимаций отрисовки
-  let effects=[];          // анимации крушений
-  let lossLog=[], toast=null;
+  let effects: any[]=[];          // анимации крушений
+  let lossLog: any[]=[], toast: any=null;
   const debug={infiniteLives:false, richStart:false, unlockAll:false};
   const BIG_MONEY=999999;
   // отладочные читы сохраняются отдельным ключом и восстанавливаются при перезаходе
   const DEBUG_KEY='pf_debug';
-  function loadDebug(){ try{ const d=JSON.parse(localStorage.getItem(DEBUG_KEY)); if(d&&typeof d==='object'){ debug.infiniteLives=!!d.infiniteLives; debug.richStart=!!d.richStart; debug.unlockAll=!!d.unlockAll; } }catch(e){} }
+  function loadDebug(){ try{ const d=JSON.parse(localStorage.getItem(DEBUG_KEY) || 'null'); if(d&&typeof d==='object'){ debug.infiniteLives=!!d.infiniteLives; debug.richStart=!!d.richStart; debug.unlockAll=!!d.unlockAll; } }catch(e){} }
   function saveDebug(){ try{ localStorage.setItem(DEBUG_KEY, JSON.stringify({infiniteLives:debug.infiniteLives, richStart:debug.richStart, unlockAll:debug.unlockAll})); }catch(e){} }
-  function syncDebugUI(){ const a=document.getElementById('optLives'), b=document.getElementById('optMoney'), c=document.getElementById('optUnlockAll'); if(a)a.checked=debug.infiniteLives; if(b)b.checked=debug.richStart; if(c)c.checked=debug.unlockAll; }
-  let floaters=[];         // плавающие награды «+N ₿» / «×N комбо» / «уфф!» над полем
+  function syncDebugUI(){ const a=document.getElementById('optLives') as HTMLInputElement|null, b=document.getElementById('optMoney') as HTMLInputElement|null, c=document.getElementById('optUnlockAll') as HTMLInputElement|null; if(a)a.checked=debug.infiniteLives; if(b)b.checked=debug.richStart; if(c)c.checked=debug.unlockAll; }
+  let floaters: any[]=[];         // плавающие награды «+N ₿» / «×N комбо» / «уфф!» над полем
   let alarmAt=0;           // антидребезг тревожного бипа терпения
   let slowmo=0;            // секунды лёгкого замедления времени (near-miss)
-  let nearMissPairs={};    // key «idA-idB» → время, до которого пара «остыла»
+  let nearMissPairs: Record<string, any>={};    // key «idA-idB» → время, до которого пара «остыла»
   let planeSeq=0;          // id бортов для антидребезга near-miss
-  let tut=null;            // состояние тихого туториала: {step:'land'|'service'|'takeoff', plane}
+  let tut: any=null;            // состояние тихого туториала: {step:'land'|'service'|'takeoff', plane}
   // лесной биом: активные помехи на полосах + выехавшие бригады + таймер спавна
-  let hazards=[], crews=[], hazardSeq=0, nextHazard=0;
-  function addFloat(x,y,text,col){ floaters.push({x,y,text,col,t:0,life:1.15}); }
+  let hazards: any[]=[], crews: any[]=[], hazardSeq=0, nextHazard=0;
+  function addFloat(x: number, y: number, text: string, col: string){ floaters.push({x,y,text,col,t:0,life:1.15}); }
 
   // ---- звук и вибрация (идеи из копилки: раздел 1) ----
   // Весь звук — синтез Web Audio, без файлов: события игры рождают мягкие ноты

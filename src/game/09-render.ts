@@ -1,4 +1,4 @@
-  function rr(x,y,w,h,r){
+  function rr(x: number,y: number,w: number,h: number,r: number){
     r=Math.min(r,w/2,h/2);
     ctx.beginPath();
     ctx.moveTo(x+r,y);
@@ -10,11 +10,11 @@
   }
   // ---- облик «ночной радар»: помощники ----
   const MONO='ui-monospace,"SF Mono",Menlo,Consolas,monospace';
-  function hexa(c,a){ if(!c || c[0]!=='#') return c;
+  function hexa(c: string,a: number){ if(!c || c[0]!=='#') return c;
     const n=parseInt(c.slice(1),16);
     return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
 
-  function starfield(tm){ // мерцающие звёзды в верхней части неба
+  function starfield(tm: number){ // мерцающие звёзды в верхней части неба
     for(let i=0;i<55;i++){
       const x=(i*97.13)%W, y=(i*53.7)%(H*0.6);
       const tw=0.3+0.7*Math.abs(Math.sin(tm*0.0008+i));
@@ -27,7 +27,7 @@
     g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.42)');
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   }
-  function heart(x,y,r,fill){ // жизни в HUD
+  function heart(x: number,y: number,r: number,fill?: string|null){ // жизни в HUD
     if(ATLAS && SPRITES.blitC(fill?'heart':'heart-empty', x, y, r*2.6, r*2.6)) return;
     ctx.save(); ctx.translate(x,y); ctx.beginPath(); ctx.moveTo(0,r*0.7);
     ctx.bezierCurveTo(-r*1.3,-r*0.4,-r*0.5,-r*1.1,0,-r*0.35);
@@ -38,24 +38,24 @@
   }
 
   // иконки услуг (центр в (cx,cy), размер r)
-  function iconGear(cx,cy,r,col,hole){ ctx.save(); ctx.translate(cx,cy); ctx.fillStyle=col;
+  function iconGear(cx: number,cy: number,r: number,col: string,hole?: string){ ctx.save(); ctx.translate(cx,cy); ctx.fillStyle=col;
     const teeth=8, ro=r, ri=r*0.74, tw=0.2; ctx.beginPath();
     for(let i=0;i<teeth;i++){ const a=i/teeth*Math.PI*2, a0=a-tw,a1=a+tw,a2=a+Math.PI/teeth-tw,a3=a+Math.PI/teeth+tw;
       ctx.lineTo(Math.cos(a0)*ro,Math.sin(a0)*ro); ctx.lineTo(Math.cos(a1)*ro,Math.sin(a1)*ro);
       ctx.lineTo(Math.cos(a2)*ri,Math.sin(a2)*ri); ctx.lineTo(Math.cos(a3)*ri,Math.sin(a3)*ri); }
     ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.arc(0,0,r*0.34,0,7); ctx.fillStyle=hole||COL.tarmac; ctx.fill(); ctx.restore(); }
-  function iconDrop(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy-r*0.1); ctx.fillStyle=col;
+  function iconDrop(cx: number,cy: number,r: number,col: string){ ctx.save(); ctx.translate(cx,cy-r*0.1); ctx.fillStyle=col;
     ctx.beginPath(); ctx.moveTo(0,-r); ctx.bezierCurveTo(r*0.9,-r*0.1,r*0.85,r*0.9,0,r);
     ctx.bezierCurveTo(-r*0.85,r*0.9,-r*0.9,-r*0.1,0,-r); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.arc(-r*0.22,r*0.28,r*0.22,0,7); ctx.fillStyle=hexa('#ffffff',.4); ctx.fill(); ctx.restore(); }
-  function iconPerson(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy); ctx.fillStyle=col;
+  function iconPerson(cx: number,cy: number,r: number,col: string){ ctx.save(); ctx.translate(cx,cy); ctx.fillStyle=col;
     ctx.beginPath(); ctx.arc(0,-r*0.5,r*0.34,0,7); ctx.fill();
     ctx.beginPath(); ctx.moveTo(-r*0.62,r*0.9); ctx.quadraticCurveTo(-r*0.6,-r*0.05,0,-r*0.05);
     ctx.quadraticCurveTo(r*0.6,-r*0.05,r*0.62,r*0.9); ctx.closePath(); ctx.fill(); ctx.restore(); }
-  function iconDepart(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/4);
+  function iconDepart(cx: number,cy: number,r: number,col: string){ ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/4);
     ctx.scale(r/26,r/26); planeShape(col); ctx.restore(); }
-  function iconSnow(cx,cy,r,col){ ctx.save(); ctx.translate(cx,cy);   // снежинка: 6 лучей
+  function iconSnow(cx: number,cy: number,r: number,col: string){ ctx.save(); ctx.translate(cx,cy);   // снежинка: 6 лучей
     ctx.strokeStyle=col; ctx.lineWidth=Math.max(1,r*0.16); ctx.lineCap='round';
     for(let k=0;k<6;k++){ ctx.rotate(Math.PI/3);
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-r); ctx.stroke();
@@ -63,7 +63,7 @@
       ctx.beginPath(); ctx.moveTo(0,-r*0.62); ctx.lineTo(-r*0.26,-r*0.84); ctx.stroke();
     }
     ctx.restore(); }
-  function drawIcon(type,cx,cy,r,col,hole){
+  function drawIcon(type: string,cx: number,cy: number,r: number,col: string,hole?: string){
     if(type==='repair') iconGear(cx,cy,r,col,hole);
     else if(type==='fuel') iconDrop(cx,cy,r,col);
     else if(type==='board') iconPerson(cx,cy,r,col);
@@ -72,7 +72,7 @@
   }
 
   // силуэт авиалайнера (нос по курсу, +x; габарит ~48 единиц)
-  function planeShape(col){ ctx.fillStyle=col;
+  function planeShape(col: string){ ctx.fillStyle=col;
     ctx.beginPath(); ctx.moveTo(26,0); ctx.quadraticCurveTo(14,-5,-6,-5); ctx.lineTo(-22,-3.5);
     ctx.lineTo(-22,3.5); ctx.lineTo(-6,5); ctx.quadraticCurveTo(14,5,26,0); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(3,-3); ctx.lineTo(-15,-22); ctx.lineTo(-20,-21); ctx.lineTo(-6,-3); ctx.closePath(); ctx.fill();
@@ -86,7 +86,7 @@
   // у небесного края (exitX) — небесный. Одна формула покрывает оба направления:
   // садящийся борт едет stopX←exitX (ужимается), взлетающий exitX→stopX… наоборот
   // (раздувается) — обоим достаточно интерполяции по x.
-  function planeScale(pl){
+  function planeScale(pl: any){
     const A=K.PLANE_SKY_SCALE, G=K.PLANE_GND_SCALE;
     if(pl.zone==='air') return A;
     if(pl.zone==='runway' && pl.runway && (pl.landing || pl.takeoff)){
@@ -99,7 +99,7 @@
     }
     return G;   // field / bay / борт стоит на полосе
   }
-  function drawPlaneBodyAt(x,y,ang,s,vip,emergency,medical){
+  function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any){
     if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)
     if(ATLAS){
       // sprite is authored nose-up; game heading has nose along +x → rotate ang+90°
@@ -123,7 +123,7 @@
 
   // неоновое поле: тёмный фон + радарная сетка/кольца/развёртка вместо
   // металлического апрона, терминала, травы и воды (боксы рисуются поверх)
-  function drawNeonField(tm){
+  function drawNeonField(tm: number){
     // НЕОН-ГЕЙМПЛЕЙ (handoff, docs/design/skins/neon/handoff/): спокойный ночной УВД.
     // Апрон — ОГРАНИЧЕННАЯ зона руления слева с неон-рамкой (верх/лево/низ сплошные,
     // право открыто на ВПП). БЕЗ вращающейся радар-развёртки/антенны. Справа, ВНЕ
@@ -193,13 +193,13 @@
       ctx.beginPath(); ctx.arc(lx,fy,1.7*ui,0,7); ctx.fill();
       ctx.beginPath(); ctx.arc(lx,fy+fh,1.7*ui,0,7); ctx.fill(); }
 
-    if(LV.biome==='forest') drawForestDecor(tm, ax, ay, field.rwR, ab);
-    if(LV.bonus) drawBonusDecor(tm, ax, ay, field.rwR, ab);
+    if(LV.biome==='forest') drawForestDecor(tm, ax, ay, field.rwR!, ab);
+    if(LV.bonus) drawBonusDecor(tm, ax, ay, field.rwR!, ab);
   }
 
-  function drawField(tm){ drawNeonField(tm); }   // единственная сцена поля — неоновая
+  function drawField(tm: number){ drawNeonField(tm); }   // единственная сцена поля — неоновая
 
-  function drawRunways(tm){
+  function drawRunways(tm: number){
     runways.forEach((r,i)=>{
       const NTONE=[COL.phosphor,COL.rose,COL.green]; const nt=NTONE[i%NTONE.length];   // тон ВПП по индексу (27/18/09)
       rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':'#0a1226'; ctx.fill();  // бонус: садовая дорожка
@@ -247,7 +247,7 @@
 
   // ---- лесной биом: отрисовка ----
   const FCOL = {edge:'#1d3a28', tree:'#2f7d4f', tree2:'#3fa15f', trunk:'#6b4f2a'};
-  function pineTree(x,y,h,col){            // силуэт ёлки (вершина в y, основание ниже)
+  function pineTree(x: number,y: number,h: number,col: string){            // силуэт ёлки (вершина в y, основание ниже)
     const w=h*0.62;
     ctx.fillStyle=col;
     for(let k=0;k<3;k++){
@@ -256,7 +256,7 @@
     }
     ctx.fillStyle=FCOL.trunk; ctx.fillRect(x-h*0.05, y+h*0.78, h*0.1, h*0.18);
   }
-  function emoji(g,x,y,size,glow){          // эмодзи-глиф по центру (x,y)
+  function emoji(g: string,x: number,y: number,size: number,glow?: string){          // эмодзи-глиф по центру (x,y)
     ctx.save();
     ctx.font=`${size}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle=COL.paper;                // фолбэк-цвет, если у системы нет цветных эмодзи
@@ -273,9 +273,9 @@
     { body:'#ffd76a', body2:'#f0b53b', petal:'#ffc24d', wing:'#ffd169', spot:'#fff3cf' }, // золотой
     { body:'#c4a3ff', body2:'#a87cf0', petal:'#b07cff', wing:'#c79bff', spot:'#ece0ff' }, // сиреневый
   ];
-  const bSpec = type => { const i = BTYPE.indexOf(type); return i<0 ? 0 : i; };  // тип бокса → вид
+  const bSpec = (type: string) => { const i = BTYPE.indexOf(type); return i<0 ? 0 : i; };  // тип бокса → вид
   // гусеница вдоль курса: нос (голова) по +x, сегменты тянутся к хвосту (−x)
-  function drawCaterpillar(x,y,ang,s,sp){
+  function drawCaterpillar(x: number,y: number,ang: number,s: number,sp?: number){
     const C = BSP[sp||0];
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     // тень под тельцем
@@ -297,7 +297,7 @@
     ctx.restore();
   }
   // куколка (хризалида): висящая капля в цвете вида, с лёгким бликом
-  function drawCocoon(x,y,s,sp){
+  function drawCocoon(x: number,y: number,s: number,sp?: number){
     const C = BSP[sp||0];
     ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
     ctx.save(); ctx.translate(2,4); ctx.globalAlpha=.2; ctx.fillStyle='#000';
@@ -314,7 +314,7 @@
     ctx.restore();
   }
   // бабочка вдоль курса: тельце по оси, 4 крыла в цвете вида + пятна
-  function drawButterfly(x,y,ang,s,sp){
+  function drawButterfly(x: number,y: number,ang: number,s: number,sp?: number){
     const C = BSP[sp||0], flap = 0.7+0.3*Math.abs(Math.sin(nowT*0.012));
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     ctx.save(); ctx.scale(1, flap);                 // взмах: крылья «дышат» по вертикали
@@ -333,14 +333,14 @@
     ctx.restore();
   }
   // выбрать стадию по pl.bug: гусеница → куколка (в цветке) → бабочка (вылет)
-  function drawBug(pl){
+  function drawBug(pl: any){
     const sp = pl.species||0, s = ui*0.5;
     if(pl.bug==='cocoon') drawCocoon(pl.x, pl.y, s, sp);
     else if(pl.bug==='fly') drawButterfly(pl.x, pl.y, pl.ang, s*1.1, sp);
     else drawCaterpillar(pl.x, pl.y, pl.ang, s, sp);
   }
   // простой цветок: лепестки по кругу + золотая серединка
-  function drawFlower(cx,cy,r,col){
+  function drawFlower(cx: number,cy: number,r: number,col: string){
     ctx.save();
     ctx.fillStyle=col;
     for(let i=0;i<6;i++){ const a=i/6*Math.PI*2;
@@ -348,12 +348,12 @@
     ctx.fillStyle='#f4cf5e'; ctx.beginPath(); ctx.arc(cx,cy,r*0.42,0,7); ctx.fill();
     ctx.restore();
   }
-  function roundCloud(x,y,r){
+  function roundCloud(x: number,y: number,r: number){
     ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.arc(x+r*0.9,y+r*0.25,r*0.78,0,7); ctx.arc(x-r*0.9,y+r*0.25,r*0.68,0,7); ctx.fill();
   }
   // луговой антураж поверх апрона: небо-градиент с облаками за «полосами» +
   // зелёный налёт на поле с россыпью цветочков (вместо воды/тармака ночного порта)
-  function drawBonusDecor(tm, ax, ay, aR, ab){
+  function drawBonusDecor(tm: number, ax: number, ay: number, aR: number, ab: number){
     const sg=ctx.createLinearGradient(aR,0,aR,H); sg.addColorStop(0,BCOL.sky); sg.addColorStop(1,BCOL.meadow);
     ctx.fillStyle=sg; ctx.fillRect(aR,0,W-aR,H);
     ctx.fillStyle='rgba(255,255,255,.55)';
@@ -374,7 +374,7 @@
     ctx.restore();
   }
   // зелёный лесной антураж поверх фона апрона (вода справа → лесная кромка)
-  function drawForestDecor(tm, ax, ay, aR, ab){
+  function drawForestDecor(tm: number, ax: number, ay: number, aR: number, ab: number){
     // лесная кромка вместо воды за полосами
     ctx.fillStyle=FCOL.edge; ctx.fillRect(aR,0,W-aR,H);
     const cols=Math.max(2,Math.round((W-aR)/(34*ui)));
@@ -388,7 +388,7 @@
     ctx.fillStyle=hexa(FCOL.tree,.06); ctx.fillRect(ax,ay,aR-ax,ab-ay); ctx.restore();
   }
   // сервисное здание + помехи на полосах + спец-бригады
-  function drawForest(tm){
+  function drawForest(tm: number){
     const sv=field.service;
     if(sv){
       // здание: корпус + крыша + гаражные ворота + эмблема
@@ -427,13 +427,13 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'}[neededCrew(h)];
+        const ic = ({truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'} as Record<string, string>)[neededCrew(h)];
         emoji(ic, h.x, h.y-32*ui, 14*ui, hexa(COL.teal,.5));
       }
     }
     // спец-авто в пути / за работой
     for(const c of crews){
-      const ic = {truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'}[c.kind];
+      const ic = ({truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'} as Record<string, string>)[c.kind];
       emoji(ic, c.x, c.y, 16*ui, hexa(COL.amber,.4));
       if(c.phase==='work'){               // искорки работы
         const pulse=Math.abs(Math.sin(tm*0.02));
@@ -444,7 +444,7 @@
   }
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
-  function bayWalls(b,out,r){
+  function bayWalls(b: any,out: any,r: number){
     const x0=b.x, y0=b.y, x1=b.x+b.w, y1=b.y+b.h;
     ctx.beginPath();
     if(out.dy===1){ ctx.moveTo(x0,y1); ctx.arcTo(x0,y0,x1,y0,r); ctx.arcTo(x1,y0,x1,y1,r); ctx.lineTo(x1,y1); }
@@ -457,9 +457,9 @@
   // задней стены, точки апгрейда (зелёная=куплено / полая=доступно) в плашке по центру
   // стены, чип ↑ в противоположном углу (исчезает при макс-прокачке), замок+цена на
   // непрозрачной подложке у закрытого. Стойла встык → читаются как сплошная ангара.
-  function drawNeonBay(b){
+  function drawNeonBay(b: any){
     const TONE={fuel:'teal',repair:'amber',board:'rose',deice:'ice'};
-    const tone=TONE[b.type]||'phosphor', col=COL[tone];
+    const tone=(TONE as Record<string, string>)[b.type]||'phosphor', col=COL[tone];
     const x=b.x, y=b.y, w=b.w, h=b.h, top=(b.side!=='bottom');
     const wt=Math.max(8*ui, Math.min(h*0.22, 18*ui)), r=0, busy=!!b.occupied, pad=5*ui;  // r=0 → стойла встык = сплошная ангара
     ctx.save();
@@ -479,7 +479,7 @@
     }
     rr(x,y,w,h,r); const fg=ctx.createLinearGradient(0,y,0,y+h); fg.addColorStop(0,hexa(col,.10)); fg.addColorStop(1,'#0a1430'); ctx.fillStyle=fg; ctx.fill();
     ctx.fillStyle=hexa(col,.22); ctx.fillRect(x+w*0.5-12*ui, top?y+h*0.62:y+h*0.36-2*ui, 24*ui, 2*ui);
-    const wallG=(yy,hh)=>{const g=ctx.createLinearGradient(0,yy,0,yy+hh); g.addColorStop(0,'#243a66'); g.addColorStop(1,'#0d1b3c'); return g;};
+    const wallG=(yy: number,hh: number)=>{const g=ctx.createLinearGradient(0,yy,0,yy+hh); g.addColorStop(0,'#243a66'); g.addColorStop(1,'#0d1b3c'); return g;};
     const backY=top?y:y+h-wt;
     ctx.fillStyle=wallG(backY,wt); ctx.fillRect(x,backY,w,wt);
     ctx.fillStyle=wallG(y,h); ctx.fillRect(x,y,wt,h); ctx.fillRect(x+w-wt,y,wt,h);
@@ -510,9 +510,9 @@
     ctx.restore();
   }
 
-  function drawBay(b){
+  function drawBay(b: any){
     if(!b.deice && !LV.bonus){ drawNeonBay(b); return; }
-    const col=LV.bonus ? BSP[bSpec(b.type)].petal : SVC[b.type].color;   // бонус: цвет цветка по виду
+    const col=LV.bonus ? BSP[bSpec(b.type)].petal : (SVC as Record<string, {color: string}>)[b.type].color;   // бонус: цвет цветка по виду
     const busy=!!b.occupied;
     ctx.save();
     // нарисованная цельная панель бокса (пер-скиновый арт, напр. neon): bay-<type>
@@ -575,7 +575,7 @@
         drawIcon(b.type, b.x+13*ui, iy, 9*ui, col, '#2a2440');
       // живая анимация обслуживания над бортом (искры/капли/посадка людей)
       if(ATLAS){
-        const fxid={repair:'fx-weld',fuel:'fx-fuel',board:'fx-boarding',deice:'fx-droplet'}[b.type];
+        const fxid=({repair:'fx-weld',fuel:'fx-fuel',board:'fx-boarding',deice:'fx-droplet'} as Record<string, string>)[b.type];
         const pp=0.62+0.38*Math.abs(Math.sin(nowT*0.006));
         ctx.save(); ctx.globalAlpha=pp;
         if(fxid) SPRITES.blitC(fxid, b.x+b.w/2, b.y+b.h*0.34, 26*ui*pp, 26*ui*pp);
@@ -615,9 +615,9 @@
     ctx.restore();
   }
 
-  function drawPlane(pl){
+  function drawPlane(pl: any){
     const need=curNeed(pl);
-    const ncol=SVC[need].color;
+    const ncol=(SVC as Record<string, {color: string}>)[need].color;
     const vs=planeScale(pl);   // визуальная «перспектива»: кольца/пузырёк тянутся за бортом
 
     // маршрут — фосфорная линия со свечением: сплошная тонкая линия
@@ -734,7 +734,7 @@
       // бонус: цвет/иконки шага — по виду гусеницы (цветок → бабочка), а не услуга
       const c = (LV.bonus && ty!=='depart') ? BSP[selected.species||0].petal
               : (LV.bonus && ty==='depart') ? BSP[selected.species||0].wing
-              : SVC[ty].color;
+              : (SVC as Record<string, {color: string}>)[ty].color;
       const bx=x0+8*ui+i*(bw2+gap2), bcy=y0+26*ui;
       if(i>0){
         ctx.strokeStyle=hexa(COL.muted,.4); ctx.lineWidth=2; ctx.setLineDash([3,4]);
@@ -792,7 +792,7 @@
     const endless = survival || LV.objective.race;   // race (L5): «без лимита», без потолка
     const cxC = W*0.5;
     ctx.textAlign='center';
-    const cnt = endless ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+'  /  '+fmtNum(LV.objective.target));
+    const cnt = endless ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+'  /  '+fmtNum(LV.objective.target ?? 0));
     ctx.fillStyle=hexa(COL.paper,.92); ctx.font=`${10*ui}px ${MONO}`;
     ctx.fillText(currentLevelName()+'   ·   '+cnt, cxC, cy-6*ui);
     if(!endless){
@@ -824,7 +824,7 @@
     drawPlaneCard();
   }
 
-  function fmtTime(s){ const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(Math.floor(s%60)).padStart(2,'0'); return m+':'+ss; }
+  function fmtTime(s: number){ const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(Math.floor(s%60)).padStart(2,'0'); return m+':'+ss; }
   function drawToast(){
     const a = toast.t<2.0 ? 1 : (2.4-toast.t)/0.4;
     const col = toast.good?COL.coin:COL.life;
@@ -842,12 +842,12 @@
     ctx.fillText(toast.text, x+26*ui, y+h/2);
     ctx.restore();
   }
-  function boom(x,y){ effects.push({x,y,t:0,life:0.55,kind:'crash'}); }
-  function nearMiss(x,y){ effects.push({x,y,t:0,life:0.5,kind:'near'}); }
-  function pulseFx(x,y,kind,life){ effects.push({x,y,t:0,life:life||0.55,kind}); }
+  function boom(x: number,y: number){ effects.push({x,y,t:0,life:0.55,kind:'crash'}); }
+  function nearMiss(x: number,y: number){ effects.push({x,y,t:0,life:0.5,kind:'near'}); }
+  function pulseFx(x: number,y: number,kind: string,life?: number){ effects.push({x,y,t:0,life:life||0.55,kind}); }
   // kind → спрайт и цвет процедурного фолбэка
   const FX_SPRITE={near:'fx-ripple',crash:'fx-crash',touchdown:'fx-touchdown',takeoff:'fx-takeoff',success:'fx-success',error:'fx-error'};
-  function drawEffects(dt){
+  function drawEffects(dt: number){
     for(let i=effects.length-1;i>=0;i--){
       const e=effects[i]; e.t+=dt;
       const k=e.t/e.life;
@@ -864,7 +864,7 @@
       if(ATLAS){
         const sz=(e.kind==='crash'?(44+k*64):(20+k*56))*ui;
         ctx.globalAlpha=a;
-        if(SPRITES.blitC(FX_SPRITE[e.kind]||'fx-ripple',0,0,sz,sz)){ ctx.globalAlpha=1; ctx.restore(); continue; }
+        if(SPRITES.blitC((FX_SPRITE as Record<string, string>)[e.kind]||'fx-ripple',0,0,sz,sz)){ ctx.globalAlpha=1; ctx.restore(); continue; }
         ctx.globalAlpha=1;
       }
       if(e.kind==='near'){
@@ -878,7 +878,7 @@
       }
       if(e.kind!=='crash'){
         // мягкое одиночное кольцо (фолбэк для touchdown/takeoff/success/error)
-        const fc={touchdown:COL.muted,takeoff:COL.paper,success:'#5dca7a',error:COL.life}[e.kind]||COL.paper;
+        const fc=({touchdown:COL.muted,takeoff:COL.paper,success:'#5dca7a',error:COL.life} as Record<string, string>)[e.kind]||COL.paper;
         ctx.beginPath(); ctx.arc(0,0,(8+k*26)*ui,0,7);
         ctx.lineWidth=2*a+0.5; ctx.strokeStyle=hexa(fc,.6*a); ctx.stroke();
         ctx.restore(); continue;
@@ -899,7 +899,7 @@
     ctx.globalAlpha=1;
   }
   // плавающие награды: «+N ₿» при вылете, «−50%» при штрафе, «−N ₿» при краше
-  function drawFloaters(dt){
+  function drawFloaters(dt: number){
     for(let i=floaters.length-1;i>=0;i--){
       const f=floaters[i]; f.t+=dt;
       const k=f.t/f.life;
