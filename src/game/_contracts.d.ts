@@ -14,3 +14,7 @@ declare const PALETTE: Record<string, string>;
 declare const NEON_TOKENS: Record<string, string>;
 declare const THEME: { tokens: Record<string, string> };
 declare let ATLAS: boolean;
+
+// Optional hook: refreshes the game-over leaderboard panel if that module wired it
+// up (called behind a typeof === 'function' guard). Owned by 11-menu-ui.
+declare const refreshOverLeaderboard: ((res: any) => void) | undefined;

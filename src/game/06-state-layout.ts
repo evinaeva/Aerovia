@@ -187,11 +187,11 @@
   let running=false, paused=false, lastTs=0, spawnTimer=0, spawnedTotal=0;
   // статистика смены для экрана итога: пик одновременной нагрузки + временной ряд
   // (нагрузка/принято) для графика; lastShift — снимок последней смены для шеринга
-  let statPeak=0, statSamples=[], statStep=1.5, statNextAt=0, lastShift=null;
+  let statPeak=0, statSamples: any[]=[], statStep=1.5, statNextAt=0, lastShift: any=null;
   let inMenu=true;         // пока открыты меню/уровни/медали — на канвасе сцена-радар, не поле
   let nowT=0;              // время кадра (мс) для анимаций отрисовки
-  let effects=[];          // анимации крушений
-  let lossLog=[], toast=null;
+  let effects: any[]=[];          // анимации крушений
+  let lossLog: any[]=[], toast: any=null;
   const debug={infiniteLives:false, richStart:false, unlockAll:false};
   const BIG_MONEY=999999;
   // отладочные читы сохраняются отдельным ключом и восстанавливаются при перезаходе
@@ -199,14 +199,14 @@
   function loadDebug(){ try{ const d=JSON.parse(localStorage.getItem(DEBUG_KEY) || 'null'); if(d&&typeof d==='object'){ debug.infiniteLives=!!d.infiniteLives; debug.richStart=!!d.richStart; debug.unlockAll=!!d.unlockAll; } }catch(e){} }
   function saveDebug(){ try{ localStorage.setItem(DEBUG_KEY, JSON.stringify({infiniteLives:debug.infiniteLives, richStart:debug.richStart, unlockAll:debug.unlockAll})); }catch(e){} }
   function syncDebugUI(){ const a=document.getElementById('optLives') as HTMLInputElement|null, b=document.getElementById('optMoney') as HTMLInputElement|null, c=document.getElementById('optUnlockAll') as HTMLInputElement|null; if(a)a.checked=debug.infiniteLives; if(b)b.checked=debug.richStart; if(c)c.checked=debug.unlockAll; }
-  let floaters=[];         // плавающие награды «+N ₿» / «×N комбо» / «уфф!» над полем
+  let floaters: any[]=[];         // плавающие награды «+N ₿» / «×N комбо» / «уфф!» над полем
   let alarmAt=0;           // антидребезг тревожного бипа терпения
   let slowmo=0;            // секунды лёгкого замедления времени (near-miss)
-  let nearMissPairs={};    // key «idA-idB» → время, до которого пара «остыла»
+  let nearMissPairs: Record<string, number>={};    // key «idA-idB» → время, до которого пара «остыла»
   let planeSeq=0;          // id бортов для антидребезга near-miss
-  let tut=null;            // состояние тихого туториала: {step:'land'|'service'|'takeoff', plane}
+  let tut: any=null;            // состояние тихого туториала: {step:'land'|'service'|'takeoff', plane}
   // лесной биом: активные помехи на полосах + выехавшие бригады + таймер спавна
-  let hazards=[], crews=[], hazardSeq=0, nextHazard=0;
+  let hazards: any[]=[], crews: any[]=[], hazardSeq=0, nextHazard=0;
   function addFloat(x: number, y: number, text: string, col: string){ floaters.push({x,y,text,col,t:0,life:1.15}); }
 
   // ---- звук и вибрация (идеи из копилки: раздел 1) ----

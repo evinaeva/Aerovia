@@ -1,13 +1,12 @@
-// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
-  const _qss=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
-  const _qlerp=(a,b,t)=>a+(b-a)*t;
-  const _qcub=(a,b,c,d,t)=>{const m=1-t;return m*m*m*a+3*m*m*t*b+3*m*t*t*c+t*t*t*d;};
-  function _qbez(P,n){const o=[];for(let i=0;i<n;i++){const t=i/n;o.push([_qcub(P[0][0],P[1][0],P[2][0],P[3][0],t),_qcub(P[0][1],P[1][1],P[2][1],P[3][1],t)]);}return o;}
-  function _qdep(ty,x1,y){if(ty==='leftClimb')return[[x1,y],[x1-150,y-10],[10,y-150],[-120,y-215]];if(ty==='down')return[[x1,y],[x1-130,y+8],[70,y+90],[150,520]];return[[x1,y],[x1-160,y],[-10,y-26],[-120,y-36]];}
+  const _qss=(a: number,b: number,x: number)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+  const _qlerp=(a: number,b: number,t: number)=>a+(b-a)*t;
+  const _qcub=(a: number,b: number,c: number,d: number,t: number)=>{const m=1-t;return m*m*m*a+3*m*m*t*b+3*m*t*t*c+t*t*t*d;};
+  function _qbez(P: number[][],n: number){const o=[];for(let i=0;i<n;i++){const t=i/n;o.push([_qcub(P[0][0],P[1][0],P[2][0],P[3][0],t),_qcub(P[0][1],P[1][1],P[2][1],P[3][1],t)]);}return o;}
+  function _qdep(ty: string,x1: number,y: number){if(ty==='leftClimb')return[[x1,y],[x1-150,y-10],[10,y-150],[-120,y-215]];if(ty==='down')return[[x1,y],[x1-130,y+8],[70,y+90],[150,520]];return[[x1,y],[x1-160,y],[-10,y-26],[-120,y-36]];}
   const _QAN=200,_QRN=170,_QDN=250;
   const _QCFG={rw:{y:368,x0:486,x1:128},boxes:[{x:360,kind:'fuel'},{x:232,kind:'gate'}],exit:'leftClimb',period:9500,cruiseV:1,groundV:0.5};
-  let _qpath=null;
-  function _qbuild(cfg){
+  let _qpath: any=null;
+  function _qbuild(cfg: any){
     const y=cfg.rw.y,x0=cfg.rw.x0,x1=cfg.rw.x1;
     const approach=_qbez([[1030,356],[770,356],[x0+130,y],[x0,y]],_QAN);
     const runway=[];for(let i=0;i<=_QRN;i++)runway.push([_qlerp(x0,x1,i/_QRN),y]);
@@ -18,17 +17,17 @@
     const fOfS=cum.map(cc=>cc/L);
     const iRwStart=_QAN-1,iRwEnd=_QAN-1+_QRN;
     const rwStartF=fOfS[iRwStart],rwEndF=fOfS[iRwEnd];
-    const boxes=cfg.boxes.map(bx=>{const i=iRwStart+Math.round((x0-bx.x)/(x0-x1)*_QRN);return{x:samples[i][0],y:y,kind:bx.kind,sf:fOfS[Math.max(iRwStart,Math.min(i,iRwEnd))]};});
-    const stSf=boxes.map(bb=>bb.sf);const sh=0.03;
+    const boxes=cfg.boxes.map((bx: any)=>{const i=iRwStart+Math.round((x0-bx.x)/(x0-x1)*_QRN);return{x:samples[i][0],y:y,kind:bx.kind,sf:fOfS[Math.max(iRwStart,Math.min(i,iRwEnd))]};});
+    const stSf=boxes.map((bb: any)=>bb.sf);const sh=0.03;
     const vf=samples.map((p,i)=>{const f=fOfS[i];const ground=_qss(rwStartF-sh,rwStartF+sh,f)*(1-_qss(rwEndF-sh,rwEndF+sh,f));let v=_qlerp(cfg.cruiseV||1,cfg.groundV||0.5,ground);for(const sf of stSf)v*=1-0.82*Math.exp(-Math.pow((f-sf)/0.011,2));return Math.max(v,0.06);});
     const tcum=[0];let T=0;for(let i=1;i<N;i++){T+=(cum[i]-cum[i-1])/vf[i];tcum.push(T);}
     const M=1024,fOf=new Array(M+1);let si=0;
     for(let j=0;j<=M;j++){const tt=(j/M)*T;while(si<N-1&&tcum[si+1]<tt)si++;const t0=tcum[si],t1=(tcum[si+1]!=null?tcum[si+1]:t0),a=t1>t0?(tt-t0)/(t1-t0):0;fOf[j]=_qlerp(fOfS[si],fOfS[Math.min(si+1,N-1)],a);}
-    const fb=boxes.find(bb=>bb.kind==='fuel')||boxes[0];const gb=boxes.find(bb=>bb.kind==='gate')||boxes[boxes.length-1];
+    const fb=boxes.find((bb: any)=>bb.kind==='fuel')||boxes[0];const gb=boxes.find((bb: any)=>bb.kind==='gate')||boxes[boxes.length-1];
     return{samples:samples,fOfS:fOfS,fOf:fOf,M:M,x0:x0,x1:x1,y:y,boxes:boxes,fuelSf:fb.sf,gateSf:gb.sf};
   }
-  function _qsample(b,f){const fa=b.fOfS,s=b.samples,N=s.length;let lo=0,hi=N-1;while(lo<hi){const mid=(lo+hi+1)>>1;if(fa[mid]<=f)lo=mid;else hi=mid-1;}const i=Math.min(lo,N-2),f0=fa[i],f1=fa[i+1],a=f1>f0?(f-f0)/(f1-f0):0;const A=s[i],B=s[i+1];return{x:A[0]+(B[0]-A[0])*a,y:A[1]+(B[1]-A[1])*a,ang:Math.atan2(B[1]-A[1],B[0]-A[0])};}
-  function _qbox(cx,cy,kind,scale){
+  function _qsample(b: any,f: number){const fa=b.fOfS,s=b.samples,N=s.length;let lo=0,hi=N-1;while(lo<hi){const mid=(lo+hi+1)>>1;if(fa[mid]<=f)lo=mid;else hi=mid-1;}const i=Math.min(lo,N-2),f0=fa[i],f1=fa[i+1],a=f1>f0?(f-f0)/(f1-f0):0;const A=s[i],B=s[i+1];return{x:A[0]+(B[0]-A[0])*a,y:A[1]+(B[1]-A[1])*a,ang:Math.atan2(B[1]-A[1],B[0]-A[0])};}
+  function _qbox(cx: number,cy: number,kind: string,scale: number){
     const fuel=kind==='fuel',color=fuel?'#ffc14d':'#22e3c6';
     const sz=32*scale,r=9*scale;
     ctx.save();ctx.translate(cx,cy);
@@ -40,11 +39,11 @@
     else{ctx.lineWidth=2.1*scale;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.arc(0,-4*scale,3.1*scale,0,7);ctx.stroke();ctx.beginPath();ctx.arc(0,9.5*scale,6.4*scale,Math.PI*1.18,Math.PI*1.82);ctx.stroke();}
     ctx.restore();
   }
-  function drawMenuLanding(tm){
+  function drawMenuLanding(tm: number){
     if(!_qpath)_qpath=_qbuild(_QCFG);
     const b=_qpath;
     const S=W/960,offY=H-444*S;
-    const MX=function(lx){return lx*S;},MY=function(ly){return offY+ly*S;};
+    const MX=function(lx: number){return lx*S;},MY=function(ly: number){return offY+ly*S;};
     const HOLD=0.9,period=_QCFG.period,tail=0.0040,QTRAIL=32;
     const pr=(tm%period)/period,pa=pr/HOLD;
     let f;if(pa>=1)f=1;else{const fi=pa*b.M,j=Math.floor(fi);f=_qlerp(b.fOf[j],b.fOf[Math.min(j+1,b.M)],fi-j);}
@@ -59,11 +58,11 @@
     ctx.save();ctx.fillStyle='#3ad2ff';ctx.shadowColor='#3ad2ff';
     for(let k=0;k<QTRAIL;k++){const ff=f-(k+1)*tail;if(ff<0||pa>=1)continue;const sp=_qsample(b,ff),q=1-k/QTRAIL;ctx.globalAlpha=Math.pow(q,1.6)*0.85;ctx.shadowBlur=7*S;ctx.beginPath();ctx.arc(MX(sp.x),MY(sp.y),(1.6+2.4*q)*S,0,7);ctx.fill();}
     ctx.restore();
-    const occl=Math.max(0,...b.boxes.map(bx=>Math.exp(-Math.pow((f-bx.sf)/0.009,2))));
-    if(!offscr){ctx.save();ctx.globalAlpha=Math.max(0,1-0.92*occl);drawPlaneBodyAt(MX(s0.x),MY(s0.y),s0.ang,S,false,false);ctx.restore();}
+    const occl=Math.max(0,...b.boxes.map((bx: any)=>Math.exp(-Math.pow((f-bx.sf)/0.009,2))));
+    if(!offscr){ctx.save();ctx.globalAlpha=Math.max(0,1-0.92*occl);(drawPlaneBodyAt as any)(MX(s0.x),MY(s0.y),s0.ang,S,false,false);ctx.restore();}
     for(const bx of b.boxes){const act=pa>=1?0:Math.exp(-Math.pow((f-bx.sf)/0.02,2));_qbox(MX(bx.x),MY(bx.y),bx.kind,(1+0.2*act)*S);}
   }
-function drawMenuScene(tm){
+function drawMenuScene(tm: number){
     ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
     starfield(tm);
     const rx=W*0.74, ry=H*0.52, R=Math.min(W,H)*0.42;
@@ -92,7 +91,7 @@ function drawMenuScene(tm){
     vignette();
   }
 
-  function frame(ts){
+  function frame(ts: number){
     if(!lastTs)lastTs=ts;
     let dt=(ts-lastTs)/1000; lastTs=ts;
     if(dt>0.05)dt=0.05;
@@ -121,7 +120,7 @@ function drawMenuScene(tm){
     requestAnimationFrame(frame);
   }
 
-  function endLevel(reasonKey){          // reasonKey — ключ i18n (end.*)
+  function endLevel(reasonKey: string){          // reasonKey — ключ i18n (end.*)
     running=false; const prevBest = save.best[levelKey]||0; recordResult();
     const stars=computeStars(), v=metricValue(), passed=stars>=1;
     Analytics.track(passed ? 'level_complete' : 'level_fail', {
@@ -143,13 +142,13 @@ function drawMenuScene(tm){
         if(typeof refreshOverLeaderboard==='function') refreshOverLeaderboard(res);
       }).catch(()=>{});
     }
-    document.getElementById('overKicker').textContent = survival ? t('over.survival') : t(passed?'over.passed':'over.failed');
-    document.getElementById('finalStars').innerHTML = survival
+    document.getElementById('overKicker')!.textContent = survival ? t('over.survival') : t(passed?'over.passed':'over.failed');
+    document.getElementById('finalStars')!.innerHTML = survival
       ? '<span class="pop" style="display:inline-flex;color:var(--m-gold)">'+SVGIC('trophy')+'</span>'
       : [0,1,2].map(i=>
       '<span class="'+(i<stars?'pop':'off')+'" style="display:inline-flex'+(i<stars?';animation-delay:'+(i*0.13)+'s':'')+'">'+SVGIC('star')+'</span>').join('');
     const unit = t(LV.objective.metric==='upgrades'?'unit.upgrades':'unit.planes', {n:v});
-    document.getElementById('overMsg').textContent = survival
+    document.getElementById('overMsg')!.textContent = survival
       ? t(served>prevBest ? 'over.survRecord' : 'over.survResult', {n:fmtNum(served), best:fmtNum(Math.max(served,prevBest)), money:fmtMoney(money)})
       : t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
     // снимок смены — для карточки статистики, графика и шеринга
@@ -160,8 +159,8 @@ function drawMenuScene(tm){
       samples: statSamples.slice(),
     };
     // карточка статистики смены
-    const statsBox=document.getElementById('overStats'); statsBox.innerHTML='';
-    [[LV.objective.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), survival?fmtNum(v):(fmtNum(v)+' / '+fmtNum(LV.objective.target)), 'v-phos'],
+    const statsBox=document.getElementById('overStats')!; statsBox.innerHTML='';
+    [[LV.objective.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), survival?fmtNum(v):(fmtNum(v)+' / '+fmtNum(LV.objective.target ?? 0)), 'v-phos'],
      [t('stats.money'), fmtMoney(money), 'v-gold'],
      [t('stats.peak'), '✈ '+fmtNum(statPeak), 'v-teal'],
      [t('stats.lives'), '♥ '+fmtNum(Math.max(0,lives))+' / '+fmtNum(K.START_LIVES), 'v-life'],
@@ -172,15 +171,15 @@ function drawMenuScene(tm){
       statsBox.appendChild(d);
     });
     const hasNext = !LV.biome && !LV.bonus && levelIdx+1<LEVELS.length && (debug.unlockAll||(levelIdx+1)<save.unlocked);
-    document.getElementById('nextBtn').classList.toggle('hidden', !hasNext);
-    document.getElementById('overScreen').classList.remove('hidden');
+    document.getElementById('nextBtn')!.classList.toggle('hidden', !hasNext);
+    document.getElementById('overScreen')!.classList.remove('hidden');
     // график рисуем после показа экрана — нужен реальный размер канваса
   }
 
   // ---- статистика смены: график во времени + карточка для шеринга ----
   // Рисуем в произвольный 2D-контекст (экранный канвас или офскрин для картинки):
   // область «нагрузка» (бирюза) + линия «принято» (золото) на общей оси времени.
-  function drawTimeline(g, x, y, w, h, shift){
+  function drawTimeline(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, shift: any){
     const pad=10, gx=x+pad+18, gy=y+pad, gw=w-pad*2-18, gh=h-pad*2-14;
     g.fillStyle=hexa(COL.phosphor,.04); g.fillRect(x,y,w,h);
     // сетка
@@ -192,19 +191,19 @@ function drawMenuScene(tm){
       g.fillText('—', x+w/2, y+h/2); return;
     }
     const tMax=Math.max(shift.time, s[s.length-1].t, 1);
-    const loadMax=Math.max(2, ...s.map(p=>p.load));
-    const servMax=Math.max(1, ...s.map(p=>p.served));
-    const X=t=>gx + gw*Math.min(1,t/tMax);
-    const Yl=v=>gy+gh - gh*(v/loadMax);
-    const Ys=v=>gy+gh - gh*(v/servMax);
+    const loadMax=Math.max(2, ...s.map((p: any)=>p.load));
+    const servMax=Math.max(1, ...s.map((p: any)=>p.served));
+    const X=(t: number)=>gx + gw*Math.min(1,t/tMax);
+    const Yl=(v: number)=>gy+gh - gh*(v/loadMax);
+    const Ys=(v: number)=>gy+gh - gh*(v/servMax);
     // нагрузка — заливка + линия
     g.beginPath(); g.moveTo(X(s[0].t), gy+gh);
-    s.forEach(p=>g.lineTo(X(p.t), Yl(p.load))); g.lineTo(X(s[s.length-1].t), gy+gh); g.closePath();
+    s.forEach((p: any)=>g.lineTo(X(p.t), Yl(p.load))); g.lineTo(X(s[s.length-1].t), gy+gh); g.closePath();
     g.fillStyle=hexa(COL.teal,.16); g.fill();
-    g.beginPath(); s.forEach((p,i)=>{ const fx=X(p.t),fy=Yl(p.load); i?g.lineTo(fx,fy):g.moveTo(fx,fy); });
+    g.beginPath(); s.forEach((p: any,i: number)=>{ const fx=X(p.t),fy=Yl(p.load); i?g.lineTo(fx,fy):g.moveTo(fx,fy); });
     g.strokeStyle=COL.teal; g.lineWidth=2; g.lineJoin='round'; g.stroke();
     // принято — золотая линия (накопительно)
-    g.beginPath(); s.forEach((p,i)=>{ const fx=X(p.t),fy=Ys(p.served); i?g.lineTo(fx,fy):g.moveTo(fx,fy); });
+    g.beginPath(); s.forEach((p: any,i: number)=>{ const fx=X(p.t),fy=Ys(p.served); i?g.lineTo(fx,fy):g.moveTo(fx,fy); });
     g.strokeStyle=COL.gold; g.lineWidth=2; g.stroke();
     // подписи осей: пик нагрузки слева сверху, время справа снизу
     g.textBaseline='middle'; g.fillStyle=hexa(COL.teal,.9); g.font=`9px ${MONO}`; g.textAlign='right';
@@ -218,12 +217,12 @@ function drawMenuScene(tm){
     g.fillStyle=COL.gold; g.fillRect(lx,gy+5,8,3); g.fillStyle=hexa(COL.muted,.9); g.fillText(t('graph.served'), lx+12, gy+6);
   }
   // локальный скруглённый прямоугольник для офскрин-контекста (rr() завязан на ctx)
-  function rrp(g,x,y,w,h,r){ r=Math.min(r,w/2,h/2);
+  function rrp(g: CanvasRenderingContext2D,x: number,y: number,w: number,h: number,r: number){ r=Math.min(r,w/2,h/2);
     g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
     g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
   // квадратная карточка для «поделиться картинкой»
-  function drawShareCard(canvas, shift){
-    const S=1080, g=canvas.getContext('2d');
+  function drawShareCard(canvas: HTMLCanvasElement, shift: any){
+    const S=1080, g=canvas.getContext('2d')!;
     const grad=g.createLinearGradient(0,0,0,S);
     grad.addColorStop(0,'#0e2230'); grad.addColorStop(1,COL.ink);
     g.fillStyle=grad; g.fillRect(0,0,S,S);
