@@ -1,16 +1,15 @@
-// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   const SPRITES = (() => {
-    const cache = new Map();
-    const stripF = s => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)
+    const cache = new Map<string, HTMLImageElement>();
+    const stripF = (s: string) => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)
     // детерминированная подпись набора токенов для ключа кэша (sorted)
-    function tokSig(t){
+    function tokSig(t: Record<string, string>){
       const keys = Object.keys(t).sort();
       let s = '';
       for(const k of keys) s += k + ':' + t[k] + ';';
       return s;
     }
     // <style> с CSS-переменными темы; пусто, когда переопределений нет (дефолт)
-    function styleBlock(t){
+    function styleBlock(t: Record<string, string>){
       const keys = Object.keys(t);
       if(!keys.length) return '';
       let css = '';
@@ -21,9 +20,9 @@
     // фильтров и токенов; кросс-платформенно надёжно). Какие id доступны как PNG —
     // задаёт манифест assets/sprites/<skin>/manifest.json (массив id); сам файл —
     // assets/sprites/<skin>/<id>.png. PNG имеет наивысший приоритет в img().
-    const pngCache = new Map();   // 'skin/id' -> Image
+    const pngCache = new Map<string, HTMLImageElement>();   // 'skin/id' -> Image
     const pngIds = new Map();     // skin -> Set<id>
-    function pngImg(id){
+    function pngImg(id: string): HTMLImageElement | null {
       const set = pngIds.get('neon');
       if(!set || !set.has(id)) return null;
       const key = 'neon/' + id;
@@ -35,7 +34,7 @@
       }
       return im;   // может ещё грузиться — ok() ниже это учитывает (фолбэк до загрузки)
     }
-    function img(id, w, h, color){
+    function img(id: string, w: number, h: number, color?: any): HTMLImageElement | null {
       // PNG-арт neon — высший приоритет (рисуется как есть, без темы)
       const pim = pngImg(id); if(pim) return pim;
       const pw = Math.max(1, Math.round(w * dpr)), ph = Math.max(1, Math.round(h * dpr));
@@ -64,11 +63,11 @@
       }
       return im;
     }
-    const ok = im => im && im.complete && im.naturalWidth > 0;
+    const ok = (im: HTMLImageElement | null): im is HTMLImageElement => !!(im && im.complete && im.naturalWidth > 0);
     // объединяет активную тему (THEME.tokens) с per-call переопределением.
     // Строку (currentColor) пропускаем как есть. Без темы и без override —
     // возвращаем сам color, чтобы дефолтный путь не плодил пустые объекты в кэше.
-    function withTheme(color){
+    function withTheme(color?: any){
       const base = THEME.tokens;
       const hasBase = base && Object.keys(base).length;
       if(color && typeof color === 'object'){
@@ -80,7 +79,18 @@
       if(typeof color === 'string') return color;
       return hasBase ? base : undefined;
     }
-    const A = {
+    interface SpriteApi {
+      ready: boolean;
+      skinReady: boolean;
+      readonly palette: Record<string, string>;
+      setTheme(tokens: any): void;
+      has(id: string): boolean;
+      blitC(id: string, cx: number, cy: number, dw: number, dh: number, rot?: number, color?: any): boolean;
+      blit(id: string, dx: number, dy: number, dw: number, dh: number, color?: any): boolean;
+      pattern(id: string, tile: number): CanvasPattern | null;
+      loadSkin?: (skin: string) => void;
+    }
+    const A: SpriteApi = {
       ready: false,
       skinReady: false,   // true когда загружены пер-скиновые листы активного скина
       get palette(){ return PALETTE; },
@@ -123,7 +133,7 @@
     // чтобы не конфликтовать с базовыми и резолвиться через img() при активном скине.
     // Когда хотя бы один символ доехал — A.skinReady=true и режим спрайтов
     // пересчитывается (см. refreshSpriteMode), так что нарисованный арт включается сам.
-    A.loadSkin = function(skin){
+    A.loadSkin = function(skin: string){
       if (!skin || loadedSkins.has(skin)) return;
       loadedSkins.add(skin);
       try {
@@ -160,7 +170,7 @@
         Promise.all(sheets.map(u => fetch(u).then(r => r.ok ? r.text() : '').catch(() => '')))
           .then(parts => {
             holder.innerHTML = parts.join('\n'); A.ready = true;
-            A.loadSkin('neon');   // подтянуть neon-арт
+            A.loadSkin!('neon');   // подтянуть neon-арт
             if (typeof refreshSpriteMode === 'function') refreshSpriteMode();
           })
           .catch(() => {});
@@ -173,7 +183,7 @@
   // атлас включается, когда neon-арт (assets/sprites/neon/) загружен (A.skinReady);
   // до этого — процедурный неоновый фолбэк, и параллельно подтягиваем арт.
   function refreshSpriteMode(){
-    if (!SPRITES.skinReady) SPRITES.loadSkin('neon');
+    if (!SPRITES.skinReady) SPRITES.loadSkin!('neon');
     ATLAS = !!SPRITES.skinReady;
   }
   refreshSpriteMode();
@@ -183,13 +193,13 @@
   // вид), но переопределение темы (THEME.tokens) имеет приоритет, чтобы перекраска
   // одинаково ложилась и на спрайты, и на процедурную отрисовку. Дефолт (тема
   // пустая) → берётся :root → вид 1-в-1 как раньше. `coin` — алиас `gold`.
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const COL = {};
+  const css = (n: string) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const COL: Record<string, string> = {};
   {
-    const base = {};
+    const base: Record<string, string> = {};
     ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin']
       .forEach(n => base[n] = css('--'+n));
-    const tokenOf = { paper:'cream-100', coin:'gold' }; // имя COL → имя токена темы
+    const tokenOf: Record<string, string> = { paper:'cream-100', coin:'gold' }; // имя COL → имя токена темы
     ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin']
       .forEach(n => Object.defineProperty(COL, n, {
         enumerable: true,
