@@ -183,7 +183,7 @@
   }
 
   // ---- game state ----
-  let planes=[], money=0, lives=0, served=0, gameTime=0;
+  let planes: any[] = [], money=0, lives=0, served=0, gameTime=0;
   let running=false, paused=false, lastTs=0, spawnTimer=0, spawnedTotal=0;
   // статистика смены для экрана итога: пик одновременной нагрузки + временной ряд
   // (нагрузка/принято) для графика; lastShift — снимок последней смены для шеринга
