@@ -61,8 +61,8 @@ shipped, others are design targets for the "small stories everywhere" pillar.
 
 ## Weather × time of day
 
-Weather skins layer onto the time-of-day spectrum (Day · Sunset · Evening · Night) and
-the environment variations (Summer Night, Rainy Night, Snowy Night, Foggy Morning).
+Weather variations layer onto the time-of-day spectrum (Day · Sunset · Evening · Night)
+and the environment variations (Summer Night, Rainy Night, Snowy Night, Foggy Morning).
 Weather always stays readable — atmosphere never beats clarity.
 
 ---

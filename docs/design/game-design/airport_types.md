@@ -67,4 +67,4 @@ build/upgrade economy.
 The mix of varieties + facility constraints is what creates the puzzle: limited boxes,
 varying patience, and payout incentives push the player to sequence routes cleverly while
 staying in calm flow. Adding a new variety should change *sequencing decisions*, not just
-add a skin.
+add a cosmetic variant.
