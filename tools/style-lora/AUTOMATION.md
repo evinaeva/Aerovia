@@ -11,7 +11,7 @@ drivable** by Claude's terminal tools.
   LoRA file `aerovia_cartoon_sdxl_v1.safetensors` to this machine (~200 MB, it's
   not in git); give ideas / approve looks.
 - **Claude (everything else):** setup, prompts, generation, QA, review (reads the
-  PNGs from disk), finalize, commit, push to prod.
+  PNGs from disk), finalize, commit, open a PR (the owner merges).
 
 ## 0. One-time setup
 ```
@@ -39,7 +39,7 @@ Run the python scripts below with ComfyUI's bundled python:
 # when a set is clean: crop + resize + drop into a skin folder + manifest
 <py> tools\style-lora\scripts\finalize_assets.py --src tools\style-lora\output\gen --skin cartoon-ai
 ```
-Then commit + push. To go live: either register `cartoon-ai` in the `SKINS`
+Then commit on a branch and open a PR (the owner merges). To go live: either register `cartoon-ai` in the `SKINS`
 array in `index.html` (additive, safe), or `--skin cartoon` to overwrite the
 existing cartoon skin (destructive — only for approved assets).
 
