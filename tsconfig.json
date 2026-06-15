@@ -1,0 +1,23 @@
+{
+  // Type-checking only — the build (scripts/build.mjs) strips types and
+  // concatenates; tsc never emits. See CLAUDE.md "Source layout".
+  //
+  // The game is ONE IIFE split across src/game/01..13 (shared closure scope,
+  // NOT ES modules). Each .ts module is therefore a *script* (no import/export)
+  // whose top-level declarations are globals visible to the others. Names a
+  // module borrows from a still-JavaScript module are declared in
+  // src/game/_contracts.d.ts. We only include .ts files here: the .js fragments
+  // 01/13 open/close the IIFE and don't parse standalone.
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": []
+  },
+  "include": ["src/game/**/*.ts"]
+}
