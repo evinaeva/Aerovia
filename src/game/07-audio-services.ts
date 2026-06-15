@@ -76,7 +76,7 @@
     return {
       setEnabled(v: boolean){ enabled=v; },
       btn(){ play('btn'); }, lock(){ play('lock'); }, screech(){ play('screech'); },
-      pick(){}, land(){}, dock(){}, served(){}, depart(){}, build(){},
+      pick(){}, land(){}, dock(){}, served(){}, depart(_e?: any){}, build(){},
       penalty(){}, crash(){}, medal(){}, alarm(){}, nearmiss(){},
     };
   })();

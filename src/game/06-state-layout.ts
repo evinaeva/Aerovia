@@ -89,7 +89,7 @@
 
   // ---- layout: bays, runways, hover slots ----
   interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; }
-  interface Runway { occupied: any; closed: boolean; x?: number; y?: number; w?: number; h?: number; cy?: number; stopX?: number; exitX?: number; }
+  interface Runway { occupied: any; closed: boolean; hazard?: any; x: number; y: number; w: number; h: number; cy: number; stopX: number; exitX: number; }
   interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; rwL?: number; rwR?: number; service?: any; }
   interface Rect { x: number; y: number; w: number; h: number; }
   let bays: Bay[] = [], runways: Runway[] = [], field: Field = {x0:0,y0:0,x1:0,y1:0}, pauseBtn: Rect = {} as Rect;
@@ -157,7 +157,7 @@
     // больше не пропускается) — см. docs/design/skins/neon/handoff/
     const slots = []; for(let i=0;i<n;i++) slots.push(i);
     if(!runways.length || runways.length!==slots.length){
-      runways = slots.map(()=>({occupied:null, closed:false}));
+      runways = slots.map(()=>({occupied:null, closed:false, x:0, y:0, w:0, h:0, cy:0, stopX:0, exitX:0}));
     }
     slots.forEach((slotIdx,k)=>{
       const r=runways[k];
@@ -202,7 +202,7 @@
   let floaters: any[]=[];         // плавающие награды «+N ₿» / «×N комбо» / «уфф!» над полем
   let alarmAt=0;           // антидребезг тревожного бипа терпения
   let slowmo=0;            // секунды лёгкого замедления времени (near-miss)
-  let nearMissPairs: Record<string, number>={};    // key «idA-idB» → время, до которого пара «остыла»
+  let nearMissPairs: Record<string, any>={};    // key «idA-idB» → время, до которого пара «остыла»
   let planeSeq=0;          // id бортов для антидребезга near-miss
   let tut: any=null;            // состояние тихого туториала: {step:'land'|'service'|'takeoff', plane}
   // лесной биом: активные помехи на полосах + выехавшие бригады + таймер спавна
