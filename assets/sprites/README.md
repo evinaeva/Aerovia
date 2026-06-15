@@ -1,6 +1,6 @@
 # PlaneFlow — Sprite assets
 
-Cozy / stylized-flat, top-down vector art. Every piece is an inline
+Stylized-flat, top-down vector art. Every piece is an inline
 `<symbol>` in a spritesheet `.svg`. **Readability First** — silhouettes read in
 < 0.5 s; interactive chips are ≥ 44 px.
 
@@ -194,7 +194,7 @@ scale 0.4→1.3 and fade over ~0.3–0.6 s. Animate on canvas, not in the SVG.
 | `wordmark` | ~300 w | PLANEFLOW in `--font-display` (Fredoka), `cream-100` #f4eede |
 | `wordmark-lockup` | ~340 w | mark + wordmark |
 | `menu-bg` | 1280×720 | sky gradient navy→purple, `amber-glow` horizon, `purple-soft` moon, terminal/tower with amber windows |
-| `icon-512.png` | 512×512 | full-bleed store icon (raster) — cozy night + gold plane + flow swoosh |
+| `icon-512.png` | 512×512 | full-bleed store icon (raster) — warm night + gold plane + flow swoosh |
 | `icon-adaptive-bg.png` | 512×512 | Android adaptive **background** (gradient + stars + moon; safe under any mask) |
 | `icon-adaptive-fg.png` | 512×512 | Android adaptive **foreground** (transparent; emblem inside the 62% safe zone) |
 

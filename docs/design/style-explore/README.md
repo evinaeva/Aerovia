@@ -23,7 +23,7 @@ pick an art direction. Regenerate with `python3 build.py` (needs `cairosvg` + `p
 | 1 | Extreme flat minimalism | 3 flat colors, no gradients/glow, diagrammatic |
 | 2 | Clean modern mobile | soft gradients, rounded, glossy, premium casual |
 | 3 | Neon air-traffic control | dark field, glowing routes, futuristic HUD |
-| 4 | Bright playful cartoon | saturated, chunky outlines, toy-like |
+| 4 | Bright playful toon | saturated, chunky outlines, toy-like |
 | 5 | Tilt-shift miniature diorama | soft light, tactile materials, strictly top-down |
 | 6 | Blueprint schematic | thin linework, grid, monospace HUD |
 | 7 | Ornate art-deco | gold filigree, emerald & navy, geometric frames |
@@ -32,18 +32,13 @@ pick an art direction. Regenerate with `python3 build.py` (needs `cairosvg` + `p
 `styles-overview.png` is a 2×4 contact sheet of all eight; `style-N.png/.svg` are the
 individual mockups.
 
-## Live neon skin (wired into the game)
+## The shipped look (neon — wired into the game)
 
-Style **#3 (neon)** is implemented as a real, A/B-able skin in `index.html` — not a
-static mockup. It renders on the actual canvas:
+Style **#3 (neon)** is the game's single look, implemented on the actual canvas in
+`index.html` — not a static mockup. It applies a neon palette (`NEON_TOKENS`) + extra
+glow: dark radar field (rings + sweep), glowing bay borders, neon runway frames, a
+bloomed finger-route, and a dark neon HUD.
 
-- Switch with **`?skin=neon`** in the URL (persists to `localStorage`); `?skin=cozy`
-  resets to the default look.
-- The neon skin turns the cozy sprite atlas off and renders procedurally with a neon
-  palette (`NEON_TOKENS`) + extra glow: dark radar field (rings + sweep), glowing bay
-  borders, neon runway frames, a bloomed finger-route, and a dark neon HUD. All neon
-  code paths are gated behind the `NEON` flag, so the cozy look is untouched.
-
-`neon-ingame.png` / `cozy-ingame.png` are real in-game screenshots (Zen mode).
-`shot.mjs` is the Playwright capture helper used to grab them
-(`PW_CHROME=/path/to/chrome node shot.mjs "http://localhost:8123/index.html?skin=neon" out.png`).
+`neon-ingame.png` is a real in-game screenshot (Zen mode). `shot.mjs` is the Playwright
+capture helper used to grab it
+(`PW_CHROME=/path/to/chrome node shot.mjs "http://localhost:8123/index.html" out.png`).

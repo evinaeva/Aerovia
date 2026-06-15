@@ -82,7 +82,7 @@ Reference: style-guide panel 02. The visual centerpiece — see full color spec 
 
 ## Environment variations
 
-Reference: style-guide panel 06. Same airport, different mood/time/weather skins —
+Reference: style-guide panel 06. Same airport, different mood/time/weather variations —
 readable first, atmospheric second.
 
 - Summer Night

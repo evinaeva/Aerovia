@@ -1,7 +1,7 @@
 # PlaneFlow — Neon Gameplay · Handoff for an AI front-end developer
 
 This package is a **hi-fi design reference** for the in-game HUD/field of PlaneFlow's
-**neon** skin (glossy night air-traffic-control). It is built with React 18 + inline
+**neon** look (glossy night air-traffic-control). It is built with React 18 + inline
 JSX/Babel and renders a single fixed 1600×900 "game frame" scaled to fit the viewport.
 Your job is to re-implement this as production code (engine UI / web / game canvas),
 matching the visuals and the documented behaviour exactly.
@@ -21,7 +21,7 @@ variant) and the bottom tabs (Boxes / Borts / Tokens) are **reference tooling on
 are NOT part of the shipped game UI. Ship the **Sawtooth** hangar + **Bar** info by default
 unless told otherwise.
 
-## Design tokens (drop into the engine's SKIN_DEFS / neon)
+## Design tokens (the engine's neon palette)
 Palette (`N` in neon-field.jsx):
 - ink `#070c1c` · tarmac `#0c1430` · water `#081024` · core `#16245e`
 - paper `#dff4ff` · body `#bcd6f0` · muted `#5f7bb0`
@@ -29,7 +29,7 @@ Palette (`N` in neon-field.jsx):
 - rose `#ff4f9d` · ice `#5fd2ff` · gold `#ffd23b` · purple `#b98cff`
 - green `#5de08a` (primary/upgrade-bought) · life `#ff3b6b` (lives) · locked `#5f7bb0`
 
-Skin params: glow = strong (baked bloom, see `rgba(key,a)` helper) · author scale ×3 ·
+Look params: glow = strong (baked bloom, see `rgba(key,a)` helper) · author scale ×3 ·
 PNG sprite-atlas · neon single-weight line icons · fonts Fredoka (numerals/titles) +
 Nunito (labels). Panel radius ~12–16, board = the dark navy apron. These deliberately rhyme
 with the menu design-system (`--m-*`): same board, rounding, cyan glow, primary green.

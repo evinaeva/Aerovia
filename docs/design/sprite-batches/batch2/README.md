@@ -1,7 +1,7 @@
 # PlaneFlow — design assets · Batch 2 (field)
 
 Field & infrastructure assets from the Claude Design "planeflow-design" skill.
-Cozy / stylized-flat, inline-SVG `<symbol>` sprite sheet (crisp at any DPI).
+Stylized-flat, inline-SVG `<symbol>` sprite sheet (crisp at any DPI).
 
 ## Files
 - `planeflow-field.svg` — the sprite sheet (game-ready). Hidden `<svg>` of
