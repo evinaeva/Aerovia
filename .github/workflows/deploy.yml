@@ -1,0 +1,65 @@
+# Сборка игры из src/ и публикация на GitHub Pages.
+#
+# index.html — СБОРОЧНЫЙ артефакт (в git его нет). На каждый push в main этот
+# робот собирает свежий index.html из src/ (node scripts/build.mjs), прогоняет
+# юнит-тесты как страховку и публикует результат на Pages. Никому не нужно
+# помнить про пересборку — она всегда происходит здесь.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Права, нужные публикации на Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Один деплой за раз; новый push отменяет предыдущий незавершённый.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Сборка index.html из src/
+        run: node scripts/build.mjs
+
+      - name: Юнит-тесты (страховка перед публикацией)
+        run: node --test tests/*.test.mjs
+
+      # Папка сайта = корень репо (index.html + assets + sw.js + manifest +
+      # CNAME + .well-known + ...), но без истории git и dev-зависимостей.
+      # Публикуем тот же набор файлов, что и раньше отдавал Pages из ветки.
+      - name: Сборка папки сайта
+        run: |
+          mkdir _site
+          rsync -a --exclude='.git' --exclude='_site' --exclude='node_modules' ./ _site/
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
