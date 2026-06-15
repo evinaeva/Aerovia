@@ -1,5 +1,12 @@
 # Android TWA — упаковка PlaneFlow для Google Play
 
+> ⚠️ **Решение продукт-овнера 2026-06-15: упаковка переводится с TWA на Capacitor + Capgo.**
+> Причина — нативный **Google Play Games** (вход, ачивки, рейтинги игроков), которого в
+> чистом TWA нет (нет моста JS↔native). Частые обновления без ревью стора возвращает
+> **Capgo (OTA)**. План миграции — в [`backlog.md`](backlog.md) (раздел «Переход на
+> Capacitor + Capgo»). Этот раннбук остаётся как **история TWA-пути**; при Capacitor часть
+> шагов ниже отпадает (Bubblewrap, `assetlinks.json`, Digital Asset Links, сабдомен под TWA).
+
 Заворачиваем PWA в **TWA** (Trusted Web Activity): нативный `.aab` для Google Play,
 который полноэкранно показывает наш хостящийся сайт. Логика/ассеты не дублируются —
 обновления выезжают с веба, без ревью стора (кроме смены самой обёртки).
@@ -27,7 +34,7 @@
 
 - ✅ Шаг 1–2 — хостинг на `planeflow.jevgenia.com` (SSL, assetlinks отдаётся).
 - ✅ Шаг 3 — `.aab` собран.
-- ⏳ Шаг 4 — регистрация Developer-аккаунта / верификация.
+- ✅ Шаг 4 — Developer-аккаунт зарегистрирован и **верифицирован (2026-06-15)**. Осталось: закрытый трек (≥12 тестеров, 14 дней).
 - ⬜ Шаг 5 — вписать SHA-256 в assetlinks после первой загрузки.
 
 ---
@@ -141,7 +148,7 @@ npx @bubblewrap/cli build
 - [x] Домен на Pages, HTTPS, `CNAME` в репо.
 - [x] `manifest.json` и `assetlinks.json` отдаются 200 с корня домена.
 - [x] `.aab` собран; `android.keystore` + пароли забэкаплены.
-- [ ] Developer-аккаунт зарегистрирован и верифицирован.
+- [x] Developer-аккаунт зарегистрирован и верифицирован (2026-06-15).
 - [ ] Privacy policy URL ([`privacy.html`](../privacy.html)) + Data Safety ([`play-data-safety.md`](play-data-safety.md)).
 - [ ] `.aab` загружен, Play App Signing включён.
 - [ ] SHA-256 вставлен в `assetlinks.json`, Pages передеплоен, адресная строка пропала.
