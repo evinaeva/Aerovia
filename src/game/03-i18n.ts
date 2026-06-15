@@ -1,7 +1,20 @@
-  const I18N = {
-    en: {
+  // ===== i18n types (erased at build) =====
+  // Every language must carry the same phrase keys — a missing or mistyped key
+  // is a compile error (see `ru` below). The lookup helpers are checked too.
+  type PluralFn = (n: number) => number;
+  type Phrase = string | string[];
+  type Params = Record<string, string | number>;
+  type LangCode = 'en' | 'ru';
+  interface LangMeta { _name: string; _locale: string; _plural: PluralFn; }
+  type LangDict = LangMeta & { [phrase: string]: Phrase | PluralFn };
+
+  // `en` is the source of truth for the phrase-key set; `ru` is constrained to
+  // it. Built in an IIFE so `en`/`ru` stay local and never leak into the shared
+  // game scope — only `I18N` is exposed, exactly as before.
+  const I18N = (() => {
+    const en = {
       _name:'English', _locale:'en-US',
-      _plural: n => (n===1 ? 0 : 1),
+      _plural: (n: number) => (n===1 ? 0 : 1),
       'app.name':'PlaneFlow',
       'app.title':'PlaneFlow — air traffic control',
       'pwa.updateTitle':'A new version is ready', 'pwa.updateBtn':'Update',
@@ -178,10 +191,11 @@
       'ach.moneyneg.t':'In the Red', 'ach.moneyneg.d':'Go negative on money.',
       'ach.longshift.t':'Overstayed', 'ach.longshift.d':'Play a single shift longer than 30 minutes.',
       'ach.zoo.t':'Sky Zoo', 'ach.zoo.d':'Send off a normal, a VIP and an emergency plane in one shift.',
-    },
-    ru: {
+    };
+    type PhraseKey = Exclude<keyof typeof en, keyof LangMeta>;
+    const ru: LangMeta & Record<PhraseKey, Phrase> = {
       _name:'Русский', _locale:'ru-RU',
-      _plural: n => { const m10=n%10, m100=n%100;
+      _plural: (n: number) => { const m10=n%10, m100=n%100;
         if(m10===1 && m100!==11) return 0;
         if(m10>=2 && m10<=4 && (m100<12 || m100>14)) return 1;
         return 2; },
@@ -361,63 +375,64 @@
       'ach.moneyneg.t':'Минус на табло', 'ach.moneyneg.d':'Уйди в минус по деньгам.',
       'ach.longshift.t':'Засиделся', 'ach.longshift.d':'Сыграй одну смену дольше 30 минут.',
       'ach.zoo.t':'Зоопарк в небе', 'ach.zoo.d':'Обслужи обычный, вип и аварийный борт за одну смену.',
-    },
-  };
-  const DEFAULT_LANG = 'en';
-  let lang = DEFAULT_LANG;
+    };
+    return { en, ru } as unknown as Record<LangCode, LangDict>;
+  })();
+  const DEFAULT_LANG: LangCode = 'en';
+  let lang: LangCode = DEFAULT_LANG;
 
-  function detectLang(){
+  function detectLang(): LangCode {
     const cands = (navigator.languages && navigator.languages.length) ? navigator.languages
                  : [navigator.language || DEFAULT_LANG];
     for(const c of cands){
       const base = String(c).toLowerCase().split('-')[0];
-      if(I18N[base]) return base;
+      if(base in I18N) return base as LangCode;
     }
     return DEFAULT_LANG;
   }
-  function t(key, params){
-    let v = I18N[lang] && I18N[lang][key];
+  function t(key: string, params?: Params): string {
+    let v: Phrase | PluralFn | undefined = I18N[lang][key];
     if(v==null) v = I18N[DEFAULT_LANG][key];
     if(v==null) return key;
     if(Array.isArray(v)){
       const pf = I18N[lang]._plural || I18N[DEFAULT_LANG]._plural;
-      const n = params && params.n!=null ? Math.abs(params.n) : 0;
+      const n = params && params.n!=null ? Math.abs(params.n as number) : 0;
       v = v[Math.min(pf(n), v.length-1)];
     }
-    return String(v).replace(/\{(\w+)\}/g, (m,k)=> (params && k in params) ? params[k] : m);
+    return String(v).replace(/\{(\w+)\}/g, (m,k)=> (params && k in params) ? (params[k] as string) : m);
   }
-  function fmtNum(n, frac){
+  function fmtNum(n: number, frac?: number): string {
     const loc = (I18N[lang] && I18N[lang]._locale) || 'en-US';
     try{ return n.toLocaleString(loc, frac!=null ? {minimumFractionDigits:frac, maximumFractionDigits:frac} : undefined); }
     catch(e){ return String(n); }
   }
-  function fmtMoney(n){ return t('fmt.money', {n: fmtNum(n)}); }
-  function setLang(code){
-    if(!I18N[code]) return;
-    lang = code; save.lang = code; saveGame();
+  function fmtMoney(n: number): string { return t('fmt.money', {n: fmtNum(n)}); }
+  function setLang(code: string): void {
+    if(!(code in I18N)) return;
+    lang = code as LangCode; save.lang = code; saveGame();
     applyI18n();
     Analytics.track('setting_changed', {key:'lang', value:code});
   }
-  function applyI18n(){
+  function applyI18n(): void {
     document.documentElement.lang = lang;
     document.title = t('app.title');
-    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t((el as HTMLElement).dataset.i18n!); });
     // иконочные кнопки без текста: озвучка/подсказка берётся из словаря
     document.querySelectorAll('[data-i18n-aria]').forEach(el => {
-      const s = t(el.dataset.i18nAria); el.setAttribute('aria-label', s); el.setAttribute('title', s);
+      const s = t((el as HTMLElement).dataset.i18nAria!); el.setAttribute('aria-label', s); el.setAttribute('title', s);
     });
     renderLangBtns();
     renderLangFlag();
-    if(!document.getElementById('pauseScreen').classList.contains('hidden')) buildPauseInfo();
+    if(!document.getElementById('pauseScreen')!.classList.contains('hidden')) buildPauseInfo();
   }
-  function renderLangBtns(){
+  function renderLangBtns(): void {
     // и в паузе, и в настройках стартового меню — оба контейнера .langbtns
     document.querySelectorAll('.langbtns').forEach(box => {
       box.innerHTML='';
       for(const code of Object.keys(I18N)){
         const b = document.createElement('button');
         b.className = 'langbtn' + (code===lang ? ' on' : '');
-        b.textContent = I18N[code]._name || code;
+        b.textContent = I18N[code as LangCode]._name || code;
         b.onclick = () => setLang(code);
         box.appendChild(b);
       }
@@ -425,12 +440,12 @@
   }
   // флаги для углового переключателя языка (inline SVG — рисуются одинаково на всех
   // платформах, в отличие от эмодзи-флагов, которые Windows показывает буквами)
-  const FLAGS = {
+  const FLAGS: Record<LangCode, string> = {
     en: '<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="40" fill="#012169"/><path d="M0,0 60,40 M60,0 0,40" stroke="#fff" stroke-width="8"/><path d="M0,0 60,40 M60,0 0,40" stroke="#C8102E" stroke-width="4"/><rect x="25" width="10" height="40" fill="#fff"/><rect y="15" width="60" height="10" fill="#fff"/><rect x="27" width="6" height="40" fill="#C8102E"/><rect y="17" width="60" height="6" fill="#C8102E"/></svg>',
     ru: '<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="40" fill="#fff"/><rect y="13.33" width="60" height="13.34" fill="#0039A6"/><rect y="26.67" width="60" height="13.33" fill="#D52B1E"/></svg>'
   };
   // флаг показывает ТЕКУЩИЙ язык; тап — переключение на следующий (всего два языка)
-  function renderLangFlag(){
+  function renderLangFlag(): void {
     const b = document.getElementById('langFlagBtn');
     if(!b) return;
     b.innerHTML = FLAGS[lang] || FLAGS[DEFAULT_LANG];
