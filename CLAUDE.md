@@ -50,7 +50,12 @@ its first commit. This is the preferred method — it needs no per-machine log s
 
 ## Workflow preferences
 
-- **Always merge PRs immediately.** After pushing a branch and opening its PR, merge it
-  right away (undraft if needed, then merge into `main`) without asking for confirmation —
-  as long as it's mergeable (`mergeable_state: clean`) and any CI is green. Don't wait for
-  a "мержи" / "merge" reply.
+- **Work in your own feature branch — never commit straight to `main`.** Branch off the
+  latest `origin/main`, do the work there, push the branch and open a PR.
+- **Do NOT merge into `main` yourself — leave the PR ready and let the owner merge it.**
+  The owner often runs **several Claude conversations in parallel** against this repo, and
+  auto-merging to `main` disrupts the other conversations' in-flight work. Don't merge even
+  when it's mergeable and CI is green, and don't wait around for a "мержи" / "merge" reply —
+  just leave the branch/PR ready and move on.
+- Before starting and before pushing: `git fetch`; base your branch on `origin/main`; never
+  `--force`, and never rewrite someone else's commits.
