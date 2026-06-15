@@ -1,17 +1,17 @@
-  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)) || JSON.parse(localStorage.getItem(LEGACY_SAVE_KEY)); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; save.tutorialDone=!!s.tutorialDone; } }catch(e){} }
+  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') || JSON.parse(localStorage.getItem(LEGACY_SAVE_KEY) || 'null'); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang as LangCode])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; save.tutorialDone=!!s.tutorialDone; } }catch(e){} }
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} }
   // язык, медали (ach/stats) и звук/вибро — не прогресс уровней, сохраняем при сбросе
   // сброс прогресса заодно возвращает туториал — новый игрок снова увидит обучение
   function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false,tutorialDone:false}; saveGame(); renderLevels(); }
-  function buildLevel(idx){ curBiome=null; curBonus=null; levelIdx=idx; levelKey=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
-  function buildBiome(b){ curBiome=b; curBonus=null; levelIdx=-1; levelKey='b_'+b.id; LV=b.level; bays=[]; runways=[]; layout(); }
+  function buildLevel(idx: number){ curBiome=null; curBonus=null; levelIdx=idx; levelKey=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
+  function buildBiome(b: Biome){ curBiome=b; curBonus=null; levelIdx=-1; levelKey='b_'+b.id; LV=b.level!; bays=[]; runways=[]; layout(); }
   // бонус-уровень: своя тема и строковый ключ сохранения (как биом — кампанию не двигает)
-  function buildBonus(b){ curBiome=null; curBonus=b; levelIdx=-1; levelKey='bonus_'+b.id; LV=b.level; bays=[]; runways=[]; layout(); }
+  function buildBonus(b: Bonus){ curBiome=null; curBonus=b; levelIdx=-1; levelKey='bonus_'+b.id; LV=b.level!; bays=[]; runways=[]; layout(); }
   // ---- menu icons (Lucide-style, inlined from the design system's ui.jsx) ----
   // Иконки меню — подстановка в стиле Lucide (см. HANDOFF.md). SVGIC(name) → строка;
   // статичные кнопки несут <span class="mic" data-mic="name">, заполняется на старте
   // applyMenuIcons(); рендереры зовут SVGIC() напрямую. Цвет наследуется (currentColor).
-  const _ICO_STROKE = {
+  const _ICO_STROKE: Record<string, string> = {
     moon:'<path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8Z"/>',
     tree:'<path d="M12 3 5 13h4l-3 5h12l-3-5h4L12 3Z"/><path d="M12 18v3"/>',
     gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
@@ -33,7 +33,7 @@
     inf:'<path d="M6.5 9a3 3 0 1 0 0 6c1.7 0 2.8-1.5 5.5-3s3.8-3 5.5-3a3 3 0 1 1 0 6c-1.7 0-2.8-1.5-5.5-3"/>',
     expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   };
-  const _ICO_FILL = {
+  const _ICO_FILL: Record<string, string> = {
     play:'<path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z"/>',
     next:'<path d="M5 5.5v13a1 1 0 0 0 1.5.87L14 15v3.5a1 1 0 0 0 1.5.87l8-6.5a1 1 0 0 0 0-1.74l-8-6.5A1 1 0 0 0 14 5.5V9L6.5 4.63A1 1 0 0 0 5 5.5Z"/>',
     plane:'<path d="M21 15.5 13.5 13V6.5a1.5 1.5 0 0 0-3 0V13L3 15.5V18l7.5-2v3l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-3l8 2v-2.5Z"/>',
@@ -42,17 +42,17 @@
     coin:'<circle cx="12" cy="12" r="9"/>',
     pause:'<rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/>',
   };
-  function SVGIC(name){
+  function SVGIC(name: string){
     if(_ICO_FILL[name]) return '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">'+_ICO_FILL[name]+'</svg>';
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(_ICO_STROKE[name]||'')+'</svg>';
   }
   // заполнить статические плейсхолдеры иконок (<span class="mic" data-mic="...">)
-  function applyMenuIcons(root){ try{ (root||document).querySelectorAll('[data-mic]').forEach(el=>{ el.innerHTML=SVGIC(el.dataset.mic); }); }catch(e){} }
+  function applyMenuIcons(root?: Document | HTMLElement){ try{ (root||document).querySelectorAll('[data-mic]').forEach((el: Element)=>{ (el as HTMLElement).innerHTML=SVGIC((el as HTMLElement).dataset.mic!); }); }catch(e){} }
 
   // ---- экран рейтинга (каркас): срезы all-time/month/week из Leaderboard (mock-провайдер) ----
   let lbPeriod = 'alltime';
-  function lbEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-  function showLeaderboard(){ hideAllScreens(); document.getElementById('leaderboardScreen').classList.remove('hidden'); renderLeaderboard(); }
+  function lbEsc(s: any){ const _m: Record<string,string>={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}; return String(s==null?'':s).replace(/[&<>"]/g, (c: string)=>_m[c]); }
+  function showLeaderboard(){ hideAllScreens(); document.getElementById('leaderboardScreen')!.classList.remove('hidden'); renderLeaderboard(); }
   function renderLeaderboard(){
     const acct = Leaderboard.account.current();
     const tabs = document.getElementById('lbTabs');
@@ -92,7 +92,7 @@
     }
   }
 
-  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen'].forEach(s=>document.getElementById(s).classList.add('hidden')); }
+  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen'].forEach(s=>document.getElementById(s)!.classList.add('hidden')); }
   // главный экран: чип звёзд = сумма заработанных / максимум по основным уровням
   function updateStartChips(){
     let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;
@@ -100,18 +100,18 @@
     if(v) v.textContent=fmtNum(got);
     if(mx) mx.textContent='/'+fmtNum(LEVELS.length*3);
   }
-  function showStart(){ hideAllScreens(); updateStartChips(); document.getElementById('startScreen').classList.remove('hidden'); }
-  function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen').classList.remove('hidden'); }
-  function startLevel(idx){ survival=false; buildLevel(idx); hideAllScreens(); reset(); }
-  function startBonus(b){ if(!bonusUnlocked(b)) return; survival=false; buildBonus(b); hideAllScreens(); reset(); }
+  function showStart(){ hideAllScreens(); updateStartChips(); document.getElementById('startScreen')!.classList.remove('hidden'); }
+  function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen')!.classList.remove('hidden'); }
+  function startLevel(idx: number){ survival=false; buildLevel(idx); hideAllScreens(); reset(); }
+  function startBonus(b: Bonus){ if(!bonusUnlocked(b)) return; survival=false; buildBonus(b); hideAllScreens(); reset(); }
   // карты-биомы = режим SURVIVAL: отдельный экран выбора (из главного меню). Survival живёт
   // ИМЕННО на картах — бесконечный заход с жизнями, счёт = обслуженные борта; на конце (потеря
   // всех жизней) счёт уходит в глобальный рейтинг (см. endLevel → Leaderboard). Интенсивность
   // нарастает со временем (survivalPace); карты различаются своим pace/survRamp и помехами.
-  function showBiomes(){ inMenu=true; renderBiomes(); hideAllScreens(); document.getElementById('biomeScreen').classList.remove('hidden'); }
-  function startBiome(b){ if(!b.ready) return; survival=true; buildBiome(b); hideAllScreens(); reset(); }
+  function showBiomes(){ inMenu=true; renderBiomes(); hideAllScreens(); document.getElementById('biomeScreen')!.classList.remove('hidden'); }
+  function startBiome(b: Biome){ if(!b.ready) return; survival=true; buildBiome(b); hideAllScreens(); reset(); }
   function renderBiomes(){
-    const list=document.getElementById('biomeList'); list.innerHTML='';
+    const list=document.getElementById('biomeList')!; list.innerHTML='';
     BIOMES.forEach(b=>{
       const best=save.best['b_'+b.id]||0;
       const card=document.createElement('div');
@@ -130,7 +130,7 @@
   }
   // звезда из HUD-листа дизайна (инлайн, чтобы карточки не зависели от загрузки листов)
   const STAR_PATH='M11.5 2.3a.53.53 0 0 1 1 0l2.3 4.68a2.1 2.1 0 0 0 1.6 1.16l5.16.75a.53.53 0 0 1 .3.91l-3.74 3.64a2.1 2.1 0 0 0-.6 1.87l.88 5.14a.53.53 0 0 1-.77.56l-4.62-2.43a2.1 2.1 0 0 0-1.97 0L6.4 21a.53.53 0 0 1-.77-.56l.88-5.14a2.1 2.1 0 0 0-.6-1.87L2.16 9.8a.53.53 0 0 1 .3-.91l5.16-.75a2.1 2.1 0 0 0 1.6-1.16z';
-  function starSvg(on){
+  function starSvg(on: boolean){
     return '<svg viewBox="0 0 24 24" aria-hidden="true">'+(on
       ? `<path d="${STAR_PATH}" fill="#f4cf5e"/>`
       : `<path d="${STAR_PATH}" fill="none" stroke="#6b6d7a" stroke-width="1.6"/>`)+'</svg>';
@@ -141,16 +141,16 @@
   // открытия уровня она спрятана «туманом»). Данные-управляемо: новый блок в
   // LEVELS автоматически даёт новый узел, ничего не хардкодим (см. validateLevels).
   function levelFeatures(){
-    const seen=new Set(), out={};
+    const seen=new Set<string>(), out: Record<number, string[]>={};
     LEVELS.forEach((lv,i)=>{
-      const ev=lv.events||{}, fresh=[];
+      const ev=lv.events||{}, fresh: string[]=[];
       EVENT_KEYS.forEach(k=>{ if(ev[k] && !seen.has(k)){ fresh.push(k); seen.add(k); } });
       if(fresh.length) out[i]=fresh;
     });
     return out;
   }
   // иконка + цветовой класс бейджа для каждой механики (классы — в CSS .case-feat.*)
-  const FEATURE_META = {
+  const FEATURE_META: Record<string, {icon: string; cls: string}> = {
     vip:      {icon:'👑', cls:'fvip'},      rush: {icon:'⏱', cls:'frush'},
     medical:  {icon:'✚',  cls:'fmedical'},  emergency:{icon:'⛽', cls:'femergency'},
     fog:      {icon:'🌫', cls:''},          wind: {icon:'🌬', cls:''},
@@ -174,7 +174,7 @@
   let levelPage = 0, levelPageInit = false;
   const LV_PER = 5;
   function renderLevels(){
-    const host=document.getElementById('levelList'); host.innerHTML='';
+    const host=document.getElementById('levelList')!; host.innerHTML='';
     let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;
     const max=LEVELS.length*3, sc=document.getElementById('starCount');
     if(sc) sc.innerHTML=SVGIC('star')+` <b>${got}</b> <span class="muted">/ ${max}</span> <span class="unit">${t('levels.stars')}</span>`;
@@ -204,7 +204,7 @@
       node.style.cursor=unl?'pointer':'default';
       node.innerHTML=`<div class="bonus-tag">${pageBonus.emoji||'★'}</div>`+SVGIC('gift');
       node.title = unl ? (bonusName(pageBonus)+(pageBonus.emoji?' '+pageBonus.emoji:'')) : t('bonus.req',{n:pageBonus.after});
-      if(unl) node.onclick=()=>startBonus(pageBonus);
+      if(unl) node.onclick=()=>startBonus(pageBonus!);
       const branch=document.createElement('div'); branch.className='branch';
       wrap.appendChild(node); wrap.appendChild(branch); stage.appendChild(wrap);
     }
@@ -238,7 +238,7 @@
   }
   // сцепка между вагонами; если bn задан — на ней «выпавший чемодан» = бонус-уровень N½
   // (открыт — кликабелен и показывает 🦋, закрыт — «?» с подсказкой про нужный уровень)
-  function couplingEl(bn){
+  function couplingEl(bn: Bonus | null){
     const cp=document.createElement('div'); cp.className='coupling';
     if(bn){
       const unl=bonusUnlocked(bn), done=(save.stars['bonus_'+bn.id]||0)>0;
@@ -257,73 +257,73 @@
   function lockLandscape(){
     try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
   }
-  function inFullscreen(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function inFullscreen(){ return !!(document.fullscreenElement || (document as any).webkitFullscreenElement); }
   function toggleFullscreen(){
     const el = document.documentElement;
     if(!inFullscreen()){
-      const req = el.requestFullscreen || el.webkitRequestFullscreen;   // iOS Safari не поддерживает fullscreen для div — там помогает «Добавить на экран»
+      const req = el.requestFullscreen || (el as any).webkitRequestFullscreen;   // iOS Safari не поддерживает fullscreen для div — там помогает «Добавить на экран»
       if(req){ try{ const r = req.call(el); if(r && r.then) r.then(lockLandscape).catch(()=>{}); else lockLandscape(); }catch(e){} }
     } else {
-      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      const exit = document.exitFullscreen || (document as any).webkitExitFullscreen;
       if(exit){ try{ exit.call(document); }catch(e){} }
     }
   }
   { const b=document.getElementById('fsBtn'); if(b) b.onclick=toggleFullscreen; }
   ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev, ()=>{ if(inFullscreen()) lockLandscape(); resize(); }));
 
-  document.getElementById('startBtn').onclick=showLevels;
+  document.getElementById('startBtn')!.onclick=showLevels;
   // «Выживание» ведёт прямо на экран карт (карты-биомы = режим Survival)
   { const b=document.getElementById('survivalBtn'); if(b) b.onclick=showBiomes; }
-  document.getElementById('backBtn').onclick=()=>{ showStart(); };
-  document.getElementById('againBtn').onclick=()=>{ document.getElementById('overScreen').classList.add('hidden'); reset(); };
+  document.getElementById('backBtn')!.onclick=()=>{ showStart(); };
+  document.getElementById('againBtn')!.onclick=()=>{ document.getElementById('overScreen')!.classList.add('hidden'); reset(); };
   function backToSelect(){ if(curBiome) showBiomes(); else showLevels(); }
-  document.getElementById('toLevelsBtn').onclick=backToSelect;
-  document.getElementById('biomesBackBtn').onclick=()=>{ showStart(); };
-  document.getElementById('nextBtn').onclick=()=>{ if(levelIdx+1<LEVELS.length) startLevel(levelIdx+1); };
-  document.getElementById('shareBtn').onclick=shareShift;
+  document.getElementById('toLevelsBtn')!.onclick=backToSelect;
+  document.getElementById('biomesBackBtn')!.onclick=()=>{ showStart(); };
+  document.getElementById('nextBtn')!.onclick=()=>{ if(levelIdx+1<LEVELS.length) startLevel(levelIdx+1); };
+  document.getElementById('shareBtn')!.onclick=shareShift;
 
-  function setPaused(p){
+  function setPaused(p: boolean){
     paused=p;
     if(p) ACH.onPause();
-    document.getElementById('pauseScreen').classList.toggle('hidden', !p);
+    document.getElementById('pauseScreen')!.classList.toggle('hidden', !p);
     if(p) buildPauseInfo();
   }
   // содержимое окна паузы: название смены, живой снимок забега (время · деньги ·
   // прогресс цели) и пороги звёзд. Зовётся при открытии и при смене языка.
   function buildPauseInfo(){
-    document.getElementById('pauseTitle').textContent = currentLevelName();
-    document.getElementById('pauseObjLabel').classList.toggle('hidden', false);
-    document.getElementById('pauseGoals').innerHTML = goalRowsHTML();
+    document.getElementById('pauseTitle')!.textContent = currentLevelName();
+    document.getElementById('pauseObjLabel')!.classList.toggle('hidden', false);
+    document.getElementById('pauseGoals')!.innerHTML = goalRowsHTML();
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
     const mv = LV.objective.metric==='upgrades' ? upgradesDone : served;
-    const prog = (survival||LV.objective.race) ? fmtNum(served) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target));
+    const prog = (survival||LV.objective.race) ? fmtNum(served) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target ?? 0));
     const stats=[
       [SVGIC('clock'), fmtTime(tShown), ''],
       [SVGIC('coin'), fmtNum(money), money<0?'var(--m-life)':'var(--m-gold)'],
       [SVGIC('plane'), prog, 'var(--m-plane)'],
     ];
-    document.getElementById('pauseStats').innerHTML = stats.map(s=>
+    document.getElementById('pauseStats')!.innerHTML = stats.map(s=>
       `<span class="rs"${s[2]?` style="color:${s[2]}"`:''}>${s[0]}<span>${s[1]}</span></span>`).join('');
   }
-  document.getElementById('resumeBtn').onclick=()=>setPaused(false);
-  document.getElementById('restartBtn').onclick=()=>reset();
-  document.getElementById('menuBtn').onclick=()=>{
+  document.getElementById('resumeBtn')!.onclick=()=>setPaused(false);
+  document.getElementById('restartBtn')!.onclick=()=>reset();
+  document.getElementById('menuBtn')!.onclick=()=>{
     recordResult(); running=false; paused=false; ACH.flushToasts(); backToSelect();
   };
-  document.getElementById('optLives').onchange=e=>{ debug.infiniteLives=e.target.checked; saveDebug(); };
-  document.getElementById('optMoney').onchange=e=>{ debug.richStart=e.target.checked; if(debug.richStart) money=BIG_MONEY; saveDebug(); };
-  document.getElementById('optUnlockAll').onchange=e=>{ debug.unlockAll=e.target.checked; saveDebug(); renderLevels(); };
+  document.getElementById('optLives')!.onchange=e=>{ debug.infiniteLives=(e.target as HTMLInputElement).checked; saveDebug(); };
+  document.getElementById('optMoney')!.onchange=e=>{ debug.richStart=(e.target as HTMLInputElement).checked; if(debug.richStart) money=BIG_MONEY; saveDebug(); };
+  document.getElementById('optUnlockAll')!.onchange=e=>{ debug.unlockAll=(e.target as HTMLInputElement).checked; saveDebug(); renderLevels(); };
   // попап отладки в левом нижнем углу главного экрана
   (function(){
     const wrap=document.querySelector('.corner-debug');
     const btn=document.getElementById('debugToggleBtn');
     const pop=document.getElementById('debugPop');
     if(!btn||!pop||!wrap) return;
-    function setOpen(open){ pop.classList.toggle('hidden', !open); btn.setAttribute('aria-expanded', open?'true':'false'); if(open) syncDebugUI(); }
+    function setOpen(open: boolean){ pop!.classList.toggle('hidden', !open); btn!.setAttribute('aria-expanded', open?'true':'false'); if(open) syncDebugUI(); }
     btn.onclick=(e)=>{ e.stopPropagation(); setOpen(pop.classList.contains('hidden')); };
-    document.addEventListener('click',(e)=>{ if(!pop.classList.contains('hidden') && !wrap.contains(e.target)) setOpen(false); });
+    document.addEventListener('click',(e)=>{ if(!pop.classList.contains('hidden') && !wrap.contains(e.target as Node)) setOpen(false); });
   })();
-  document.getElementById('langFlagBtn').onclick=()=>{
+  document.getElementById('langFlagBtn')!.onclick=()=>{
     const codes=Object.keys(I18N); const i=codes.indexOf(lang);
     setLang(codes[(i+1)%codes.length]);
   };
@@ -332,8 +332,8 @@
     const s=document.getElementById('optSound2'); if(s){ s.classList.toggle('on', save.sound!==false); s.setAttribute('aria-checked', String(save.sound!==false)); }
     const v=document.getElementById('optVibro2'); if(v){ v.classList.toggle('on', save.vibro!==false); v.setAttribute('aria-checked', String(save.vibro!==false)); }
   }
-  function setSound(on){ save.sound=on; saveGame(); SND.setEnabled(on); syncSettingsUI(); Analytics.track('setting_changed', {key:'sound', value:!!on}); }
-  function setVibro(on){ save.vibro=on; saveGame(); HAP.on=on; syncSettingsUI(); Analytics.track('setting_changed', {key:'vibro', value:!!on}); }
+  function setSound(on: boolean){ save.sound=on; saveGame(); SND.setEnabled(on); syncSettingsUI(); Analytics.track('setting_changed', {key:'sound', value:!!on}); }
+  function setVibro(on: boolean){ save.vibro=on; saveGame(); HAP.on=on; syncSettingsUI(); Analytics.track('setting_changed', {key:'vibro', value:!!on}); }
   (function(){
     const s=document.getElementById('optSound2'); if(s) s.onclick=()=>setSound(!(save.sound!==false));
     const v=document.getElementById('optVibro2'); if(v) v.onclick=()=>setVibro(!(save.vibro!==false));
@@ -341,21 +341,21 @@
 
   // настройки из стартового меню (звук / язык / сброс прогресса)
   function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns(); hideAllScreens();
-    document.getElementById('settingsScreen').classList.remove('hidden'); }
-  document.getElementById('settingsMenuBtn').onclick=openSettings;
-  document.getElementById('settingsBackBtn').onclick=()=>{ showStart(); };
+    document.getElementById('settingsScreen')!.classList.remove('hidden'); }
+  document.getElementById('settingsMenuBtn')!.onclick=openSettings;
+  document.getElementById('settingsBackBtn')!.onclick=()=>{ showStart(); };
 
   // «Проверить обновления»: дёргаем service worker по запросу (помимо
   // авто-проверки раз в 30 мин). Подтягивает новую версию приложения и
   // освежает закэшированные PNG скинов; статус показываем под кнопкой.
   (function(){
-    const btn=document.getElementById('checkUpdatesBtn'); const out=document.getElementById('updStatus');
+    const btn=document.getElementById('checkUpdatesBtn') as HTMLButtonElement|null; const out=document.getElementById('updStatus');
     if(!btn) return;
     btn.onclick=async()=>{
       if(btn.disabled) return;
       btn.disabled=true; if(out) out.textContent=t('settings.updChecking');
       let status='offline';
-      try{ status = (window.pwaCheckForUpdates ? await window.pwaCheckForUpdates() : 'offline'); }
+      try{ status = ((window as any).pwaCheckForUpdates ? await (window as any).pwaCheckForUpdates() : 'offline'); }
       catch(e){ status='offline'; }
       // при 'updating'/'refreshed' страница перезагрузится сама; текст — на случай, если нет
       const key = status==='updating' ? 'settings.updUpdating'
@@ -365,10 +365,10 @@
       btn.disabled=false;
     };
   })();
-  function askReset(){ document.getElementById('confirmScreen').classList.remove('hidden'); }
-  document.getElementById('resetProgBtn2').onclick=askReset;
-  document.getElementById('resetCancelBtn').onclick=()=>document.getElementById('confirmScreen').classList.add('hidden');
-  document.getElementById('resetConfirmBtn').onclick=()=>{ document.getElementById('confirmScreen').classList.add('hidden'); resetProgress(); };
+  function askReset(){ document.getElementById('confirmScreen')!.classList.remove('hidden'); }
+  document.getElementById('resetProgBtn2')!.onclick=askReset;
+  document.getElementById('resetCancelBtn')!.onclick=()=>document.getElementById('confirmScreen')!.classList.add('hidden');
+  document.getElementById('resetConfirmBtn')!.onclick=()=>{ document.getElementById('confirmScreen')!.classList.add('hidden'); resetProgress(); };
 
   // ---- окно постановки целей смены ----
   // Показывается в начале каждого раунда (на паузе), а также по кнопке «Цели» в
@@ -387,7 +387,7 @@
     caterpillar: '<svg class="gicon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="15.5" r="3" fill="currentColor"/><circle cx="9.4" cy="14.6" r="3.3" fill="currentColor"/><circle cx="14" cy="13.7" r="3.5" fill="currentColor"/><circle cx="18.4" cy="12.6" r="3.8" fill="currentColor"/><path d="M17.4 9.1l-.7-2.2M19.7 9l.9-2.1" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   };
   const INF = '∞';
-  function hasI18n(key){ return (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null); }
+  function hasI18n(key: string){ return (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null); }
   // окно/блок целей: вызов + обучающая строка + цели и звёзды-градация иконками.
   // Та же разметка для окна постановки целей и для встроенного блока в паузе.
   function goalRowsHTML(){
@@ -413,7 +413,7 @@
     }
     // сводка целей: ⏱ время/∞  +  основная метрика (потолок или ∞ для race)
     const timeStr = o.time ? fmtTime(o.time) : INF;
-    const headTarget = o.race ? INF : fmtNum(o.target);
+    const headTarget = o.race ? INF : fmtNum(o.target ?? 0);
     let line = `<div class="goal-line"><span class="g g--inf">${GICON.clock}${timeStr}</span>`+
                `<span class="g g--target">${primary}${headTarget}</span>`;
     if(o.upg) line += `<span class="g g--target">${GICON.wrench}${fmtNum(o.upg[o.upg.length-1])}</span>`;
@@ -429,25 +429,25 @@
     return `${head}${line}<div class="thresholds">${rows}</div>`;
   }
   function buildGoalsContent(){
-    document.getElementById('goalsKicker').textContent = t('goals.kicker');
-    document.getElementById('goalsTitle').textContent = currentLevelName();
-    document.getElementById('goalsBody').innerHTML = goalRowsHTML();
+    document.getElementById('goalsKicker')!.textContent = t('goals.kicker');
+    document.getElementById('goalsTitle')!.textContent = currentLevelName();
+    document.getElementById('goalsBody')!.innerHTML = goalRowsHTML();
   }
-  function showGoals(fromPause){
+  function showGoals(fromPause?: boolean){
     goalsFromPause=!!fromPause;
     paused=true;                       // заморозить симуляцию, пока окно открыто
     buildGoalsContent();
-    if(fromPause) document.getElementById('pauseScreen').classList.add('hidden');
-    document.getElementById('goalsScreen').classList.remove('hidden');
+    if(fromPause) document.getElementById('pauseScreen')!.classList.add('hidden');
+    document.getElementById('goalsScreen')!.classList.remove('hidden');
   }
   function closeGoals(){
-    document.getElementById('goalsScreen').classList.add('hidden');
-    if(goalsFromPause) document.getElementById('pauseScreen').classList.remove('hidden'); // вернуться в паузу
+    document.getElementById('goalsScreen')!.classList.add('hidden');
+    if(goalsFromPause) document.getElementById('pauseScreen')!.classList.remove('hidden'); // вернуться в паузу
     else paused=false;                 // продолжить игру
     goalsFromPause=false;
   }
-  document.getElementById('goalsOk').onclick=closeGoals;
-  document.getElementById('goalsScreen').addEventListener('pointerdown', e=>{ if(e.target.id==='goalsScreen') closeGoals(); }); // тап мимо карточки
+  document.getElementById('goalsOk')!.onclick=closeGoals;
+  document.getElementById('goalsScreen')!.addEventListener('pointerdown', e=>{ if((e.target as HTMLElement).id==='goalsScreen') closeGoals(); }); // тап мимо карточки
 
   // ================= ДОСТИЖЕНИЯ / МЕДАЛИ =================
   // Самодостаточный модуль: ловит игровые события через ACH.onX(...), копит

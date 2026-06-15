@@ -4,12 +4,12 @@
     // раунд начинается с пустого неба: первый борт прилетает через 1–3 секунды
     spawnTimer=1 + Math.random()*2; running=true; paused=false; inMenu=false;
     lossLog=[]; toast=null;
-    document.getElementById('pauseScreen').classList.add('hidden');
+    document.getElementById('pauseScreen')!.classList.add('hidden');
     bays.forEach(b=>{ b.occupied=null;
       if(b.deice){ b.open=true; b.lvl=0; return; }   // де-айс — инфраструктура, всегда открыт
       // НЕОН-КОМПОЗИЦИЯ: исходное «открыт» хранится на боксе (open0) при сборке —
       // side-агностично (стороны теперь только top/bottom, см. layout)
-      b.open = (b.open0!=null) ? !!b.open0 : (LV.sides[b.side] ? b.slot < LV.sides[b.side].open : false); b.lvl=0; });
+      b.open = (b.open0!=null) ? !!b.open0 : ((LV.sides as Record<string, SideCfg>)[b.side] ? b.slot < (LV.sides as Record<string, SideCfg>)[b.side].open : false); b.lvl=0; });
     runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0; spawnedTotal=0;
@@ -50,7 +50,7 @@
     showGoals(false);          // крупное окно постановки целей в начале раунда (заодно ставит на паузу)
   }
 
-  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+  function shuffle(a: any[]){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 
   function spawnPlane(){
     // бонус-мир «луг бабочек»: гусеница ВПОЛЗАЕТ справа по земле (не прилетает),
@@ -139,14 +139,14 @@
   }
   // какая бригада нужна на помеху: пила на падающее дерево (срубить, пока не легло),
   // техслужба на лежащее дерево/оленя, орёл — разогнать птиц.
-  function neededCrew(h){
+  function neededCrew(h: any){
     if(h.kind==='tree') return h.fallen ? 'truck' : 'chainsaw';
     if(h.kind==='deer') return 'truck';
     if(h.kind==='snow') return 'plow';
     return 'eagle';
   }
   // помеха под пальцем (для тапа): берём ближайшую ещё не обслуживаемую
-  function hazardAt(p){
+  function hazardAt(p: any){
     let best=null, bd=46*ui;
     for(const h of hazards){ if(h.dispatched) continue; const d=dist(h.x,h.y,p.x,p.y); if(d<bd){bd=d;best=h;} }
     return best;
@@ -160,7 +160,7 @@
     // снежный занос — только в снегопад (зимний геймплей поверх лесных помех)
     const pool = weather==='snow' ? ['tree','deer','birds','snow'] : ['tree','deer','birds'];
     const kind = pool[Math.floor(Math.random()*pool.length)];
-    const h = { id:++hazardSeq, kind, runway:r, t:0, dispatched:false, done:false };
+    const h: any = { id:++hazardSeq, kind, runway:r, t:0, dispatched:false, done:false };
     if(kind==='snow'){
       h.x = r.x + r.w*0.5; h.y = r.cy;
       r.closed = true;                                  // занос на полосе — закрыта, пока не расчистит плуг
@@ -185,7 +185,7 @@
     SND.penalty();
   }
   // выслать бригаду из сервисного здания к помехе (по тапу игрока)
-  function dispatchCrew(h){
+  function dispatchCrew(h: any){
     if(h.dispatched || h.done) return;
     h.dispatched = true;
     const home = serviceHome();
@@ -196,7 +196,7 @@
     SND.build(); HAP.tap();
   }
   // помеха устранена: открыть полосу, убрать помеху, премия (если убрала бригада)
-  function resolveHazard(h, rewarded){
+  function resolveHazard(h: any, rewarded?: boolean){
     if(!h || h.done) return;
     h.done = true;
     if(h.runway.hazard===h.id) h.runway.hazard=null;
@@ -209,7 +209,7 @@
       toast = {text:t('forest.cleared'), t:0, good:true};
     }
   }
-  function updateForest(dt){
+  function updateForest(dt: number){
     if(gameTime>=nextHazard){ spawnHazard(); nextHazard = gameTime + FOR.SPAWN_MIN + Math.random()*(FOR.SPAWN_MAX-FOR.SPAWN_MIN); }
     // помехи
     for(const h of hazards){
@@ -244,17 +244,17 @@
   }
 
   // ---- geometry ----
-  const rectHit = (px,py,r) => px>r.x && px<r.x+r.w && py>r.y && py<r.y+r.h;
-  const dist = (ax,ay,bx,by) => Math.hypot(ax-bx, ay-by);
+  const rectHit = (px: number,py: number,r: any) => px>r.x && px<r.x+r.w && py>r.y && py<r.y+r.h;
+  const dist = (ax: number,ay: number,bx: number,by: number) => Math.hypot(ax-bx, ay-by);
 
   // ---- input ----
-  let selected=null, drag=null;
-  function pt(e){
+  let selected: any=null, drag: any=null;
+  function pt(e: any){
     const r=cv.getBoundingClientRect();
     const s=e.touches?e.touches[0]:e;
     return {x:s.clientX-r.left, y:s.clientY-r.top};
   }
-  function pickPlane(p){
+  function pickPlane(p: any){
     let best=null, bd=K.GRAB;
     for(const pl of planes){
       if(pl.zone==='bay') continue;
@@ -263,18 +263,18 @@
     }
     return best;
   }
-  function pickBay(p){
+  function pickBay(p: any){
     for(const b of bays) if(rectHit(p.x,p.y,b)) return b;
     return null;
   }
   // открытый бокс под точкой (для фиксации конца маршрута)
-  function openBayAt(p){
+  function openBayAt(p: any){
     for(const b of bays) if(b.open && rectHit(p.x,p.y,b)) return b;
     return null;
   }
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
   // (подход снаружи → центр), так что въезд получается строго по центру и носом вперёд
-  function lockRouteToBay(pl, b){
+  function lockRouteToBay(pl: any, b: any){
     const o=dirOut(b);
     const cx=b.x+b.w/2, cy=b.y+b.h/2;
     const vert=Math.abs(o.dy)>Math.abs(o.dx);
@@ -289,13 +289,13 @@
     SND.lock(); HAP.tap();
   }
   // открытая ВПП под точкой (для фиксации конца маршрута при взлёте/посадке)
-  function openRunwayAt(p){
+  function openRunwayAt(p: any){
     for(const r of runways){ if(!r.closed && rectHit(p.x,p.y,r)) return r; }
     return null;
   }
   // конец маршрута доведён на ВПП → притягиваем к оси полосы и фиксируем, как у бокса
   // (посадка — створ у небесного торца; взлёт — створ у полевого торца), вспышка + щелчок
-  function lockRouteToRunway(pl, r){
+  function lockRouteToRunway(pl: any, r: any){
     while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, r)) pl.path.pop();
     const tx = (pl.zone==='air') ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
     const ty = r.cy;
@@ -304,9 +304,9 @@
     pulseFx(tx, ty, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
-  function bayUpCost(b){ if(b.deice) return null; return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
+  function bayUpCost(b: any){ if(b.deice) return null; return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
 
-  function down(e){
+  function down(e: any){
     if(!running) return;
     e.preventDefault();
     const p=pt(e);
@@ -342,7 +342,7 @@
       selected=null; planes.forEach(x=>x.selected=false);
     }
   }
-  function move(e){
+  function move(e: any){
     if(!drag||paused) return;
     e.preventDefault();
     if(drag.locked) return;          // маршрут уже зафиксирован на боксе — дальше не тянем
@@ -370,7 +370,7 @@
   }
   // конец воздушной траектории, заведённой на открытую ВПП, притягиваем в центр полосы
   // на полкорпуса от её правого (небесного) торца — посадка всегда по оси и в одну точку
-  function snapAirPathToRunway(pl){
+  function snapAirPathToRunway(pl: any){
     if(pl.zone!=='air' || !pl.path.length) return;
     const last = pl.path[pl.path.length-1];
     for(const r of runways){
@@ -407,12 +407,12 @@
   }
 
   // ---- crashes ----
-  function freeRes(pl){
+  function freeRes(pl: any){
     if(pl.runway){ if(pl.runway.occupied===pl) pl.runway.occupied=null; pl.runway=null; }
     if(pl.bay){ if(pl.bay.occupied===pl) pl.bay.occupied=null; pl.bay=null; }
   }
   // reason — ключ i18n (loss.*): в lossLog хранится ключ, перевод — при показе
-  function logLoss(pl, reason, moneyPenalty){
+  function logLoss(pl: any, reason: string, moneyPenalty?: boolean){
     if(pl.dead) return;
     pl.dead=true; boom(pl.x,pl.y); freeRes(pl);
     SND.crash(); HAP.crash();
@@ -425,22 +425,22 @@
     toast={text:(debug.infiniteLives?'✈ ':'−1 ✈ ')+t(reason), t:0, good:false};
     console.log('[PlaneFlow] '+(debug.infiniteLives?'(∞) ':'-1 ✈ ')+t(reason)+' | t='+fmtTime(gameTime)+' | lives='+lives);
   }
-  function killAir(pl){ logLoss(pl, 'loss.airTimeout', false); }
-  function killCrash(pl, reason){ logLoss(pl, reason||'loss.collision', true); }
+  function killAir(pl: any){ logLoss(pl, 'loss.airTimeout', false); }
+  function killCrash(pl: any, reason?: string){ logLoss(pl, reason||'loss.collision', true); }
 
-  function curNeed(pl){ return pl.requests[pl.reqIndex]; }
+  function curNeed(pl: any){ return pl.requests[pl.reqIndex]; }
 
-  function land(pl, r){            // начать посадку на полосу r
+  function land(pl: any, r: any){            // начать посадку на полосу r
     pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
     pl.landing=true; pl.moving=true; pl.path=[]; pl.touched=false;
   }
   // момент касания (за корпус до полевого торца): толчок + визг резины.
   // FX касания живут здесь, а не в startGround, — это и есть «приземление».
-  function touchdown(pl){
+  function touchdown(pl: any){
     pl.touched=true; pl.y=pl.runway.cy; pl.bounceAt=nowT;
     SND.screech(); HAP.tap();                        // визг резины
   }
-  function startGround(pl){
+  function startGround(pl: any){
     pl.landing=false; pl.moving=false; pl.zone='runway'; // стоит на полосе, ждёт руления
     const rem = pl.nSvc; // число услуг (без вылета)
     pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult * (LV.calm || 1);
@@ -450,15 +450,15 @@
     ACH.onLand(pl);
   }
   // наземный таймаут: −50% оплаты (звук/вибро/всплывающий «−50%» — в одном месте)
-  function groundPenalty(pl){
+  function groundPenalty(pl: any){
     pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl);
     SND.penalty(); HAP.penalty();
     addFloat(pl.x, pl.y-20*ui, '−50%', COL.amber);
   }
-  function serveTimeFor(b){ return K.SERVE_BASE / (1 + b.lvl*K.UP_SPEED); }
+  function serveTimeFor(b: any){ return K.SERVE_BASE / (1 + b.lvl*K.UP_SPEED); }
   function comboMult(){ return 1 + Math.min(combo, K.COMBO_MAX)*K.COMBO_STEP; }
 
-  function depart(pl){             // успешный вылет
+  function depart(pl: any){             // успешный вылет
     served++;
     let pay = pl.reward, express=false;
     if(pl.halfPay){                // наземный штраф рвёт серию и режет оплату вдвое
@@ -499,7 +499,7 @@
   // upg (если задан) — доп. порог по апгрейдам для соответствующей звезды: чтобы
   // взять 2★/3★, нужно дотянуть И метрику, И апгрейды (✈+🔧 на L3).
   function computeStars(){
-    const o = LV.objective, v = metricValue(), th = o.stars || [o.target, o.target, o.target];
+    const o = LV.objective, v = metricValue(), th = o.stars || [o.target ?? 0, o.target ?? 0, o.target ?? 0];
     let s = 0;
     for(let i=0; i<th.length; i++){
       if(v >= th[i] && (!o.upg || upgradesDone >= o.upg[i])) s = i+1; else break;
@@ -521,7 +521,7 @@
   }
 
   // ---- update ----
-  function steer(pl, tx, ty, spd, dt){
+  function steer(pl: any, tx: number, ty: number, spd: number, dt: number){
     const desired=Math.atan2(ty-pl.y, tx-pl.x);
     let diff=desired-pl.ang;
     while(diff>Math.PI)diff-=2*Math.PI;
@@ -532,11 +532,11 @@
     pl.y += Math.sin(pl.ang)*spd*dt;
   }
   // плавный доворот курса к target (без смещения) — для парковки в боксе
-  function turnTo(pl, target, dt){
+  function turnTo(pl: any, target: number, dt: number){
     let d=target-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
     const m=K.TURN*dt; pl.ang += Math.max(-m, Math.min(m, d));
   }
-  function followPath(pl, spd, dt){
+  function followPath(pl: any, spd: number, dt: number){
     if(!pl.path.length){ return false; }
     const wp=pl.path[0];
     steer(pl, wp.x, wp.y, spd, dt);
@@ -555,7 +555,7 @@
     return true;
   }
 
-  function update(dt){
+  function update(dt: number){
     // динамические события (на чистых картах отключены: next* = Infinity)
     if(gameTime>=nextRush){ rushUntil=gameTime+K.RUSH_DUR; nextRush=gameTime+K.RUSH_PERIOD; toast={text:t('toast.rush'), t:0, good:false}; }
     if(gameTime>=nextWind){
@@ -588,7 +588,7 @@
     // в туториале держим в небе только один борт — спокойно ведём его за руку
     const cap = tut ? 1 : ((campaign || survival) ? paceCap(pace) : K.MAX_PLANES);
     // кампания «посадить N»: всего прилетает ровно N бортов. Survival/race — поток бесконечный.
-    const spawnCap = (!survival && LV.objective.metric==='served' && !LV.objective.race) ? LV.objective.target : Infinity;
+    const spawnCap = (!survival && LV.objective.metric==='served' && !LV.objective.race) ? (LV.objective.target ?? Infinity) : Infinity;
     if(spawnTimer<=0 && planes.length<cap && spawnedTotal<spawnCap){ spawnPlane(); spawnTimer=interval; }
 
     updateTutorial();
@@ -604,8 +604,8 @@
         if(pl.entering){
           if(pl.moving && pl.path.length){ pl.entering=false; }
           else {
-            steer(pl, field.hoverX, pl.y, K.SPEED_AIR, dt);
-            if(pl.x<=field.hoverX){ pl.x=field.hoverX; pl.ang=Math.PI; pl.entering=false; }
+            steer(pl, field.hoverX!, pl.y, K.SPEED_AIR, dt);
+            if(pl.x<=field.hoverX!){ pl.x=field.hoverX!; pl.ang=Math.PI; pl.entering=false; }
             else continue;
           }
         }
@@ -618,11 +618,11 @@
         // маршрут ведёт мимо полос — рубеж ВПП работает как стена: дальше борт не
         // пускаем, он скользит вдоль неё, пока не выйдет на створ свободной полосы.
         // (садимся даже на занятую полосу — крушение только при физическом контакте)
-        if(pl.x <= field.rwR){
+        if(pl.x <= field.rwR!){
           let best=null;
           for(const r of runways){ if(r.closed) continue; if(pl.y>=r.y && pl.y<=r.y+r.h){ best=r; break; } }
           if(best) land(pl, best);
-          else pl.x = field.rwR;   // мимо полосы — упёрся в рубеж ВПП
+          else pl.x = field.rwR!;   // мимо полосы — упёрся в рубеж ВПП
         }
         continue;
       }
@@ -751,7 +751,7 @@
         else     pl.y += (cy-pl.y)*Math.min(1, dt*6);
         const along = vert ? (pl.y-cy)*o.dy : (pl.x-cx)*o.dx;  // вдоль оси, наружу +
         const step = taxiSpeed*dt*0.85;
-        const setAlong = a => { if(vert) pl.y=cy+a*o.dy; else pl.x=cx+a*o.dx; };
+        const setAlong = (a: number) => { if(vert) pl.y=cy+a*o.dy; else pl.x=cx+a*o.dx; };
         const angIn=Math.atan2(-o.dy,-o.dx), angOut=Math.atan2(o.dy,o.dx);
         // обслуживание идёт, пока борт заезжает и стоит носом к стене (не во время выезда)
         if(pl.bayPhase!=='out'){
@@ -813,7 +813,7 @@
     // карта пар пересобирается каждый кадр (сама чистит ушедшие/севшие борта).
     if(!LV.bonus){           // спокойный луг — гусеницы/бабочки не пугают друг друга
       const air = planes.filter(p=>!p.dead && p.zone!=='bay' && !p.entering);
-      const next={};
+      const next: Record<string, any>={};
       for(let i=0;i<air.length;i++)
         for(let j=i+1;j<air.length;j++){
           const a=air[i], b=air[j], d=dist(a.x,a.y,b.x,b.y);
@@ -858,9 +858,9 @@
 
     if(lives<=0){ endLevel('end.lives'); return; }
     // survival/race — без потолка по принятым: survival кончается по жизням, race по времени
-    if(!survival && !LV.objective.race && metricValue() >= LV.objective.target){ endLevel('end.goal'); return; }
+    if(!survival && !LV.objective.race && metricValue() >= (LV.objective.target ?? Infinity)){ endLevel('end.goal'); return; }
     // все борты прилетели и поле пусто, а цель не набрана — смена окончена (без софтлока)
-    if(!survival && LV.objective.metric==='served' && !LV.objective.race && spawnedTotal>=LV.objective.target && planes.length===0 && served<LV.objective.target){ endLevel('end.done'); return; }
+    if(!survival && LV.objective.metric==='served' && !LV.objective.race && spawnedTotal>=(LV.objective.target ?? Infinity) && planes.length===0 && served<(LV.objective.target ?? Infinity)){ endLevel('end.done'); return; }
     // статистика смены: пик одновременной нагрузки + редкие отсчёты для графика
     if(planes.length>statPeak) statPeak=planes.length;
     if(gameTime>=statNextAt){
@@ -872,13 +872,13 @@
     gameTime+=dt;
     if(!survival && LV.objective.time && gameTime>=LV.objective.time){ endLevel('end.time'); return; }
   }
-  function dirOut(b){ // направление "наружу из бокса" в поле
+  function dirOut(b: any){ // направление "наружу из бокса" в поле
     if(b.side==='top') return {dx:0,dy:1};
     if(b.side==='bottom') return {dx:0,dy:-1};
     if(b.side==='deice') return {dx:-1,dy:0}; // у правого края поля, ворота влево
     return {dx:1,dy:0}; // left
   }
-  const clampX = x => Math.max(field.x0+10, Math.min(field.x1-10, x));
-  const clampY = y => Math.max(field.y0+10, Math.min(field.y1-10, y));
+  const clampX = (x: number) => Math.max(field.x0+10, Math.min(field.x1-10, x));
+  const clampY = (y: number) => Math.max(field.y0+10, Math.min(field.y1-10, y));
 
   // ---- render ----

@@ -30,8 +30,11 @@ const stripTypes = (code, file) => ts.transpileModule(code, {
 }).outputText;
 const gameModule = (name) => {
   if (existsSync(join(ROOT, `src/game/${name}.ts`))) {
-    // transpiler appends a trailing newline; drop it so join('\n') makes the seam
-    return stripTypes(read(`src/game/${name}.ts`), `${name}.ts`).replace(/\n+$/, '');
+    // Drop a leading `// @ts-nocheck` migration directive so it never lands in
+    // the shipped bundle. The transpiler also appends a trailing newline; drop
+    // that too so join('\n') re-creates the seam.
+    const src = read(`src/game/${name}.ts`).replace(/^\/\/ @ts-nocheck.*\r?\n/, '');
+    return stripTypes(src, `${name}.ts`).replace(/\n+$/, '');
   }
   return bodyOf(`src/game/${name}.js`);
 };
