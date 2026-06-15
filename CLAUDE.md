@@ -21,20 +21,36 @@ to fork against now.
 
 The game source lives in `src/`:
 - `src/styles.css` — all CSS (the former `<style>` block).
-- `src/game/01..13-*.js` — the game IIFE split into ordered modules. The build
-  concatenates them, in the order listed in `scripts/build.mjs`, into one
+- `src/game/01..13-*.{js,ts}` — the game IIFE split into ordered modules. The
+  build concatenates them, in the order listed in `scripts/build.mjs`, into one
   `<script>`. **Module 01 opens the IIFE and module 13 closes it**, so the files
   are fragments of one shared closure scope — *not* ES modules. Do not add
-  `import`/`export`; just edit the relevant module.
+  `import`/`export`; just edit the relevant module. A module may be `.js` or
+  `.ts` (see "TypeScript" below); the build picks whichever file exists.
 - `src/boot-sw.js` — the PWA/service-worker registration (final `<script>`).
 - `index.template.html` — the HTML shell with `/*__BUILD_*__*/` placeholders the
   build fills in.
 
-The build only concatenates + inlines (no minify, no transpile), so the output is
-plain readable HTML — identical in behavior to hand-writing one file. `npm test`,
-`npm run test:e2e` and `npm run serve` build first. CI
-(`.github/workflows/deploy.yml`) builds on every push to `main` and publishes to
-GitHub Pages, so nobody has to remember to rebuild and `index.html` is never committed.
+The build concatenates + inlines and strips TypeScript types — no minify, no
+bundling — so the output stays plain readable HTML, identical in behavior to
+hand-writing one file. `npm test`, `npm run test:e2e` and `npm run serve` build
+first. CI (`.github/workflows/deploy.yml`) type-checks, builds and unit-tests on
+every push to `main` and publishes to GitHub Pages, so nobody has to remember to
+rebuild and `index.html` is never committed.
+
+## TypeScript (gradual migration)
+
+Modules may be authored in TypeScript (`.ts`). The migration is gradual: `.js`
+and `.ts` modules coexist, `scripts/build.mjs` strips types from `.ts` and uses
+`.js` verbatim. Run **`npm run typecheck`** (`tsc --noEmit`) — CI runs it too,
+and `npm test` runs it first.
+
+Because the game is **one IIFE scope** (not ES modules), each `.ts` module is a
+*script*: no `import`/`export`, and its top-level declarations are globals shared
+with the other modules. Names a `.ts` module borrows from a still-`.js` module go
+in **`src/game/_contracts.d.ts`**; as each owning module becomes `.ts`, move its
+real declaration there and shrink the contracts file. `tsconfig.json` includes
+only `.ts` (the `.js` fragments 01/13 open/close the IIFE and don't parse alone).
 
 ## Tracking development time
 
