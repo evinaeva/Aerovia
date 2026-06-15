@@ -1,4 +1,3 @@
-// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
@@ -41,7 +40,7 @@
   // отступы безопасной зоны (вырез/скругления телефона). Читаем реальные px с
   // невидимого пробника, у которого padding = env(safe-area-inset-*) — так HUD и
   // кнопка паузы не залезают под бортик экрана (viewport-fit=cover включён).
-  let safe={t:0,r:0,b:0,l:0}, safeProbe=null;
+  let safe={t:0,r:0,b:0,l:0}, safeProbe: HTMLDivElement | null = null;
   function readSafe(){
     if(!safeProbe){
       safeProbe=document.createElement('div');
@@ -73,7 +72,7 @@
   function fitOverlays(){
     const vw = window.innerWidth, vh = window.innerHeight, margin = 10;
     document.querySelectorAll('.overlay').forEach(ov=>{
-      const panel = ov.querySelector('.panel');
+      const panel = ov.querySelector('.panel') as HTMLElement | null;
       if(!panel) return;
       panel.style.transform=''; // сброс перед замером натуральных размеров
       if(ov.classList.contains('hidden')) return;
@@ -89,7 +88,11 @@
   }
 
   // ---- layout: bays, runways, hover slots ----
-  let bays=[], runways=[], field={}, pauseBtn={};
+  interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; }
+  interface Runway { occupied: any; closed: boolean; x?: number; y?: number; w?: number; h?: number; cy?: number; stopX?: number; exitX?: number; }
+  interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; rwL?: number; rwR?: number; service?: any; }
+  interface Rect { x: number; y: number; w: number; h: number; }
+  let bays: Bay[] = [], runways: Runway[] = [], field: Field = {x0:0,y0:0,x1:0,y1:0}, pauseBtn: Rect = {} as Rect;
   // Единый масштаб «крупности» техники: размеры борта, ВПП и бокса выводятся из него
   // ОДНОЙ общей формулой (общая для всех скинов — меняется лишь число). Само число —
   // визуальный масштаб техники (×1; геометрия выводится из него одной формулой).
@@ -115,9 +118,9 @@
     // ОБЩАЯ раскладка (одинакова для всех скинов).
     if(!bays.length){
       bays = [];
-      const all = [];
+      const all: { type: string; open: boolean }[] = [];
       for(const side of ['top','left','bottom']){
-        const cfg = LV.sides[side];
+        const cfg = (LV.sides as Record<string, SideCfg>)[side];
         for(let i=0;i<cfg.slots;i++) all.push({type:cfg.type, open:i<cfg.open});
       }
       all.forEach((b,i)=>{
@@ -130,9 +133,9 @@
                               open:true, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh});
     }
     // position bays — две сплошные ангары: стойла встык по всей ширине апрона
-    const bySide = s => bays.filter(b=>b.side===s);
+    const bySide = (s: string) => bays.filter(b=>b.side===s);
     const hangH = Math.max(bh, Math.round((fy1-fy0)*0.13));   // ангара чуть выше под стойло-проезд
-    function packRow(arr, yTop){
+    function packRow(arr: Bay[], yTop: number){
       const n=arr.length; if(!n) return;
       const cellW=(fx1-fx0)/n;
       arr.forEach((b,i)=>{ b.w=cellW; b.h=hangH; b.x=fx0+i*cellW; b.y=yTop; });
@@ -193,9 +196,9 @@
   const BIG_MONEY=999999;
   // отладочные читы сохраняются отдельным ключом и восстанавливаются при перезаходе
   const DEBUG_KEY='pf_debug';
-  function loadDebug(){ try{ const d=JSON.parse(localStorage.getItem(DEBUG_KEY)); if(d&&typeof d==='object'){ debug.infiniteLives=!!d.infiniteLives; debug.richStart=!!d.richStart; debug.unlockAll=!!d.unlockAll; } }catch(e){} }
+  function loadDebug(){ try{ const d=JSON.parse(localStorage.getItem(DEBUG_KEY) || 'null'); if(d&&typeof d==='object'){ debug.infiniteLives=!!d.infiniteLives; debug.richStart=!!d.richStart; debug.unlockAll=!!d.unlockAll; } }catch(e){} }
   function saveDebug(){ try{ localStorage.setItem(DEBUG_KEY, JSON.stringify({infiniteLives:debug.infiniteLives, richStart:debug.richStart, unlockAll:debug.unlockAll})); }catch(e){} }
-  function syncDebugUI(){ const a=document.getElementById('optLives'), b=document.getElementById('optMoney'), c=document.getElementById('optUnlockAll'); if(a)a.checked=debug.infiniteLives; if(b)b.checked=debug.richStart; if(c)c.checked=debug.unlockAll; }
+  function syncDebugUI(){ const a=document.getElementById('optLives') as HTMLInputElement|null, b=document.getElementById('optMoney') as HTMLInputElement|null, c=document.getElementById('optUnlockAll') as HTMLInputElement|null; if(a)a.checked=debug.infiniteLives; if(b)b.checked=debug.richStart; if(c)c.checked=debug.unlockAll; }
   let floaters=[];         // плавающие награды «+N ₿» / «×N комбо» / «уфф!» над полем
   let alarmAt=0;           // антидребезг тревожного бипа терпения
   let slowmo=0;            // секунды лёгкого замедления времени (near-miss)
@@ -204,7 +207,7 @@
   let tut=null;            // состояние тихого туториала: {step:'land'|'service'|'takeoff', plane}
   // лесной биом: активные помехи на полосах + выехавшие бригады + таймер спавна
   let hazards=[], crews=[], hazardSeq=0, nextHazard=0;
-  function addFloat(x,y,text,col){ floaters.push({x,y,text,col,t:0,life:1.15}); }
+  function addFloat(x: number, y: number, text: string, col: string){ floaters.push({x,y,text,col,t:0,life:1.15}); }
 
   // ---- звук и вибрация (идеи из копилки: раздел 1) ----
   // Весь звук — синтез Web Audio, без файлов: события игры рождают мягкие ноты
