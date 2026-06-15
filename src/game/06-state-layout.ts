@@ -1,4 +1,4 @@
-  let levelIdx = 0, levelKey = 0, levelPassed = false, upgradesDone = 0;
+  let levelIdx = 0, levelKey: number | string = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
   function currentLevelName(){
