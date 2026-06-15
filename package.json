@@ -5,13 +5,15 @@
   "description": "PlaneFlow — airport dispatcher game. Source is modular under src/; `npm run build` assembles the single self-contained index.html (a generated artifact, not committed). Tests are a safety net for adding mechanics without breaking old behavior.",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node scripts/build.mjs && node --test tests/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc --noEmit && node scripts/build.mjs && node --test tests/*.test.mjs",
     "test:e2e": "node scripts/build.mjs && playwright test",
     "serve": "node scripts/build.mjs && python3 -m http.server 8123",
     "screenshots": "node scripts/screenshots.mjs",
     "gallery": "node scripts/build-gallery.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0"
+    "@playwright/test": "^1.49.0",
+    "typescript": "^6.0.3"
   }
 }

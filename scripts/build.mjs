@@ -5,9 +5,10 @@
 // Run locally with `npm run build`. CI runs this on every push to main and
 // deploys the result to GitHub Pages, so the published file is always rebuilt
 // fresh from src/ — there is no built artifact to forget to regenerate.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import ts from 'typescript';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -15,22 +16,49 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 // one separator so re-joining with '\n' reproduces the original inner content.
 const bodyOf = (p) => { const s = read(p); return s.endsWith('\n') ? s.slice(0, -1) : s; };
 
+// A game module is authored as plain JS (used verbatim) or TypeScript (types
+// stripped, no other transform). The modules are fragments of one shared IIFE
+// scope, so we only strip types and concatenate — never bundle or wrap.
+const stripTypes = (code, file) => ts.transpileModule(code, {
+  fileName: file,
+  compilerOptions: {
+    target: ts.ScriptTarget.ES2020,
+    module: ts.ModuleKind.ESNext,
+    removeComments: false,
+    newLine: ts.NewLineKind.LineFeed,
+  },
+}).outputText;
+const gameModule = (name) => {
+  if (existsSync(join(ROOT, `src/game/${name}.ts`))) {
+    // transpiler appends a trailing newline; drop it so join('\n') makes the seam
+    return stripTypes(read(`src/game/${name}.ts`), `${name}.ts`).replace(/\n+$/, '');
+  }
+  return bodyOf(`src/game/${name}.js`);
+};
+
 // The game IIFE, in the order its modules must concatenate (01 opens it, 13 closes it).
 const GAME_ORDER = [
   '01-bootstrap-theme', '02-sprites', '03-i18n', '04-config-levels', '05-validate',
   '06-state-layout', '07-audio-services', '08-gameplay', '09-render',
   '10-scene-loop', '11-menu-ui', '12-achievements-medals', '13-init',
 ];
-const game = GAME_ORDER.map((n) => bodyOf(`src/game/${n}.js`)).join('\n');
+const game = GAME_ORDER.map(gameModule).join('\n');
 const css  = bodyOf('src/styles.css');
 const boot = bodyOf('src/boot-sw.js');
 
-// Function replacements so `$` sequences in the code aren't treated as special
-// replacement patterns; each placeholder occurs exactly once.
-const html = read('index.template.html')
-  .replace('/*__BUILD_CSS__*/',  () => css)
-  .replace('/*__BUILD_GAME__*/', () => game)
-  .replace('/*__BUILD_BOOT__*/', () => boot);
+// Fill each placeholder exactly once. Function replacements keep `$` sequences
+// in the code from being read as special replacement patterns; the includes()
+// guard turns a renamed/removed placeholder into a loud build error instead of
+// a silently broken page.
+let html = read('index.template.html');
+for (const [placeholder, value] of [
+  ['/*__BUILD_CSS__*/',  css],
+  ['/*__BUILD_GAME__*/', game],
+  ['/*__BUILD_BOOT__*/', boot],
+]) {
+  if (!html.includes(placeholder)) throw new Error(`build: ${placeholder} missing from index.template.html`);
+  html = html.replace(placeholder, () => value);
+}
 
 writeFileSync(join(ROOT, 'index.html'), html);
 console.log(`built index.html — ${html.length} chars from ${GAME_ORDER.length} game modules + css + boot`);

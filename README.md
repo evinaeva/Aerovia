@@ -23,12 +23,14 @@ HTML5 Canvas + ванильный JS, без рантайм-зависимост
 `index.html` — **генерируемый файл** (в git его нет). Собрать из `src/`:
 
 ```sh
+npm install       # один раз — ставит TypeScript (нужен сборке и проверке типов)
 npm run build     # node scripts/build.mjs → собирает index.html из src/
+npm run typecheck # tsc --noEmit — проверка типов (модули можно писать на TS)
 ```
 
-Сборка только склеивает модули и вставляет CSS/JS в каркас `index.template.html` —
-без минификации и транспиляции, на выходе обычный читаемый HTML. Редактируй **`src/`**,
-не `index.html`.
+Сборка склеивает модули, вставляет CSS/JS в каркас `index.template.html` и снимает
+типы TypeScript — без минификации и бандлинга, на выходе обычный читаемый HTML.
+Редактируй **`src/`** (`.js` или `.ts`), не `index.html`.
 
 ## Запуск
 
@@ -74,8 +76,9 @@ npm run serve     # сборка + python3 -m http.server 8123
 
 ## Структура
 
-- `src/` — **исходник игры** (редактируй здесь): `styles.css`, `game/01..13-*.js`
-  (склеиваются в один скрипт по порядку), `boot-sw.js`; `index.template.html` — каркас.
+- `src/` — **исходник игры** (редактируй здесь): `styles.css`, `game/01..13-*.{js,ts}`
+  (склеиваются в один скрипт по порядку; TS-типы снимаются при сборке), `boot-sw.js`;
+  `index.template.html` — каркас.
 - `scripts/build.mjs` — сборка `index.html` из `src/`. Сам `index.html` —
   **генерируемый артефакт**, в git его нет, руками не редактируется.
 - `manifest.json` — web-app манифест (имя, иконки, ландшафт, standalone) для установки PWA.
@@ -96,7 +99,7 @@ npm run serve     # сборка + python3 -m http.server 8123
 [`docs/DEV.md`](docs/DEV.md), раздел «Тесты».
 
 ```sh
-npm test          # юнит-логика + валидатор конфига (Node, без браузера)
+npm test          # проверка типов + юнит-логика + валидатор конфига (Node, без браузера)
 npm run test:e2e  # e2e-смоук (Playwright; нужен: npx playwright install chromium)
 ```
 

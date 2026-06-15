@@ -1,9 +1,9 @@
 # Сборка игры из src/ и публикация на GitHub Pages.
 #
 # index.html — СБОРОЧНЫЙ артефакт (в git его нет). На каждый push в main этот
-# робот собирает свежий index.html из src/ (node scripts/build.mjs), прогоняет
-# юнит-тесты как страховку и публикует результат на Pages. Никому не нужно
-# помнить про пересборку — она всегда происходит здесь.
+# робот проверяет типы (tsc), собирает свежий index.html из src/ (node
+# scripts/build.mjs), прогоняет юнит-тесты как страховку и публикует на Pages.
+# Никому не нужно помнить про пересборку — она всегда происходит здесь.
 name: Deploy
 
 on:
@@ -31,6 +31,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+
+      - name: Установка зависимостей (TypeScript для сборки и проверки типов)
+        run: npm ci
+
+      - name: Проверка типов (tsc --noEmit)
+        run: npx tsc --noEmit
 
       - name: Сборка index.html из src/
         run: node scripts/build.mjs
