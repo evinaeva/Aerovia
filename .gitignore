@@ -12,6 +12,10 @@ node_modules/
 dist/
 build/
 
+# СБОРОЧНЫЙ артефакт: index.html собирается из src/ (node scripts/build.mjs),
+# его публикует робот при деплое. В git хранится только исходник в src/.
+/index.html
+
 # тесты (Playwright)
 test-results/
 playwright-report/

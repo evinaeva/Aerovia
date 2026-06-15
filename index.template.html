@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>PlaneFlow</title>
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/icon/icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icon/icon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="application-name" content="PlaneFlow">
+<meta name="apple-mobile-web-app-title" content="PlaneFlow">
+<meta name="theme-color" content="#16131f">
+<style>
+/*__BUILD_CSS__*/
+</style>
+
+<div id="stage">
+  <canvas id="c"></canvas>
+
+  <!-- ===== menu screens — PlaneFlow Design System (menu.css) ===== -->
+  <div class="overlay" id="startScreen">
+    <div class="screen pf-main">
+      <!-- legibility scrim over the live canvas scene (per-skin strength) -->
+      <div class="pf-scrim"></div>
+      <!-- score chips -->
+      <div class="pf-chips">
+        <span class="chip chip--star"><span class="chip__ic"><span class="mic" data-mic="star"></span></span><span id="startStars">0</span><span class="muted" id="startStarsMax">/0</span></span>
+      </div>
+      <!-- brand block: kicker · wordmark · tagline · version -->
+      <div class="brand pf-brand">
+        <div class="brand__kicker" data-i18n="start.kicker"></div>
+        <div class="brand__mark"><span class="mic brand__plane" data-mic="plane"></span><span class="brand__word"><span class="brand__w1">PLANE</span><span class="brand__w2">FLOW</span></span></div>
+        <div class="brand__tag"><span class="mic brand__tag-ic" data-mic="plane"></span><span data-i18n="start.tagline"></span></div>
+        <div class="brand__ver"><span data-i18n="start.version"></span> <span id="ver"></span></div>
+        <h1 class="wm-fallback" data-i18n="app.name" hidden></h1>
+      </div>
+      <!-- primary CTA group (стеклянная панель neon) -->
+      <div class="pf-cta panel">
+        <div class="menu-col">
+          <button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="startBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="start.play"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="survivalBtn"><span class="mic" data-mic="inf"></span><span class="m-btn__t" data-i18n="start.survival"></span></button>
+        </div>
+      </div>
+      <!-- corner icon cluster: fullscreen · medals · settings · language -->
+      <div class="pf-corner">
+        <button class="icon-btn" id="fsBtn" aria-label="Fullscreen"><span class="mic" data-mic="expand"></span></button>
+        <button class="icon-btn" id="medalsBtn" data-i18n-aria="medals.btn" style="color:var(--m-gold)"><span class="mic" data-mic="medal"></span></button>
+        <button class="icon-btn" id="leaderboardBtn" data-i18n-aria="menu.leaderboard"><span class="mic" data-mic="trophy"></span></button>
+        <button class="icon-btn" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="mic" data-mic="gear"></span></button>
+        <button class="icon-btn icon-btn--flag" id="langFlagBtn" aria-label="Language"></button>
+      </div>
+      <!-- dev debug (bottom-left, self-positioned) -->
+      <div class="corner-debug">
+        <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-haspopup="true" aria-expanded="false" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
+        <div class="corner-debug-pop hidden" id="debugPop">
+          <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
+          <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
+          <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="overScreen">
+    <div class="screen screen--center">
+      <div class="panel panel--wide" style="--panel-w:560px;text-align:center">
+        <button class="panel__corner" id="shareBtn" data-i18n-aria="over.share"><span class="mic" data-mic="share"></span></button>
+        <div class="triumph-kicker" id="overKicker"></div>
+        <div class="star-row star-row--xl" id="finalStars"></div>
+        <p class="reward-sub" id="overMsg"></p>
+        <div class="result-stats" id="overStats"></div>
+        <div class="m-actions__row" style="margin-top:20px">
+          <button class="m-btn m-btn--ghost" id="toLevelsBtn"><span class="mic" data-mic="list"></span><span class="m-btn__t" data-i18n="over.toLevels"></span></button>
+          <button class="m-btn m-btn--ghost" id="againBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="over.again"></span></button>
+          <button class="m-btn m-btn--primary" id="nextBtn"><span class="mic" data-mic="next"></span><span class="m-btn__t" data-i18n="over.next"></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="levelScreen">
+    <div class="screen" style="padding:22px 24px 18px">
+      <div class="screen__col">
+        <div class="m-head">
+          <h1 class="m-title m-title--lg" data-i18n="levels.title"></h1>
+          <div class="m-counter" id="starCount"></div>
+        </div>
+        <div id="levelList"></div>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="backBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="levels.back"></span></button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="biomeScreen">
+    <div class="screen" style="padding:22px 24px 20px">
+      <div class="screen__col">
+        <div class="m-head">
+          <div class="m-kicker" data-i18n="biomes.kicker"></div>
+          <h1 class="m-title m-title--lg" data-i18n="biomes.title"></h1>
+        </div>
+        <div class="scroller" style="flex:1;min-height:0;margin-top:16px;justify-content:flex-start">
+          <div class="biome-grid" id="biomeList"></div>
+        </div>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="biomesBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="biomes.back"></span></button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="settingsScreen">
+    <div class="screen screen--center">
+      <div class="panel panel--wide2" style="position:relative">
+        <div class="m-head"><h1 class="m-title m-title--md" data-i18n="settings.title"></h1></div>
+        <div class="h-split" style="margin-top:8px">
+          <div>
+            <div class="set-row">
+              <div class="set-row__label" data-i18n="settings.sound"></div>
+              <div class="switch" id="optSound2" role="switch" tabindex="0" aria-label="sound"><span class="knob"></span></div>
+            </div>
+            <div class="set-row">
+              <div class="set-row__label" data-i18n="settings.vibro"></div>
+              <div class="switch" id="optVibro2" role="switch" tabindex="0" aria-label="vibro"><span class="knob"></span></div>
+            </div>
+          </div>
+          <div>
+            <div class="set-row">
+              <div style="min-width:0">
+                <div class="set-row__label" data-i18n="settings.updates"></div>
+                <div class="set-row__hint" id="updStatus" role="status" aria-live="polite"></div>
+              </div>
+              <button class="m-btn m-btn--ghost m-btn--sm" id="checkUpdatesBtn"><span class="mic" data-mic="refresh"></span><span class="m-btn__t" data-i18n="settings.checkUpdates"></span></button>
+            </div>
+          </div>
+        </div>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="settingsBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="settings.back"></span></button></div>
+        <button class="m-text-btn" id="resetProgBtn2" style="position:absolute;left:20px;bottom:22px"><span class="mic" data-mic="again"></span> <span data-i18n="levels.reset"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="confirmScreen">
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:400px;text-align:center">
+        <div class="m-head"><h1 class="m-title m-title--lg" data-i18n="reset.title"></h1><p class="m-subtitle" data-i18n="reset.msg"></p></div>
+        <div class="m-actions"><div class="m-actions__row">
+          <button class="m-btn m-btn--ghost" id="resetCancelBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="reset.no"></span></button>
+          <button class="m-btn m-btn--danger" id="resetConfirmBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="reset.yes"></span></button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="pauseScreen">
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:560px;text-align:center">
+        <div class="m-kicker" style="justify-content:center"><span class="mic" data-mic="pause"></span><span data-i18n="pause.kicker"></span></div>
+        <div class="lvl-head" style="margin-top:8px"><h1 class="m-title m-title--md" id="pauseTitle"></h1></div>
+        <div class="stat-row" id="pauseStats"></div>
+        <div class="obj-block">
+          <div class="obj-block__head"><span class="lbl" id="pauseObjLabel" data-i18n="pause.objective"></span></div>
+          <div id="pauseGoals"></div>
+        </div>
+        <div class="m-actions"><div class="m-actions__row">
+          <button class="m-btn m-btn--primary" id="resumeBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="pause.resume"></span></button>
+          <button class="m-btn m-btn--ghost" id="restartBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="pause.restart"></span></button>
+          <button class="m-btn m-btn--danger" id="menuBtn"><span class="mic" data-mic="home"></span><span class="m-btn__t" data-i18n="pause.menu"></span></button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="goalsScreen">
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:480px;text-align:center">
+        <div class="m-kicker" id="goalsKicker" style="justify-content:center"></div>
+        <div class="lvl-head"><h1 class="m-title m-title--md" id="goalsTitle"></h1></div>
+        <div id="goalsBody"></div>
+        <div class="m-actions"><button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="goalsOk"><span class="mic" data-mic="check"></span><span class="m-btn__t" data-i18n="goals.ok"></span></button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="medalScreen">
+    <div class="screen" style="padding:22px 24px 20px">
+      <div class="screen__col">
+        <div class="m-head">
+          <div class="m-kicker" data-i18n="medals.kicker"></div>
+          <h1 class="m-title m-title--md" data-i18n="medals.title"></h1>
+          <div class="m-counter" id="medalCount"></div>
+        </div>
+        <div class="scroller" style="flex:1;min-height:0;margin-top:14px;justify-content:flex-start">
+          <div class="medal-grid2" id="medalGrid"></div>
+        </div>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="medalsBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="medals.back"></span></button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Экран глобального рейтинга (каркас): срезы all-time/month/week, метрика survival = борта.
+       Данные сейчас от mock-провайдера (Leaderboard.provider); реальный бэкенд — без правок UI. -->
+  <div class="overlay hidden" id="leaderboardScreen">
+    <div class="screen" style="padding:22px 24px 20px">
+      <div class="screen__col">
+        <div class="m-head">
+          <div class="m-kicker" data-i18n="lb.kicker"></div>
+          <h1 class="m-title m-title--md" data-i18n="lb.title"></h1>
+          <div class="m-counter" id="lbMode">✈ Survival</div>
+        </div>
+        <div id="lbTabs" style="display:flex;gap:8px;margin-top:14px"></div>
+        <div class="scroller" style="flex:1;min-height:0;margin-top:12px;justify-content:flex-start">
+          <div id="lbList"></div>
+        </div>
+        <div id="lbFoot"></div>
+        <p class="muted" data-i18n="lb.mock" style="font-size:11px;margin-top:8px;text-align:center;opacity:.6"></p>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="leaderboardBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="lb.back"></span></button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="achToast">
+    <div class="ic" id="achIc">🏅</div>
+    <div><div class="lbl" data-i18n="ach.toastLabel"></div><div class="ttl" id="achTtl"></div><div class="dsc" id="achDsc"></div></div>
+  </div>
+
+  <div id="pwaUpdate" role="status">
+    <div class="ttl" data-i18n="pwa.updateTitle"></div>
+    <button class="btn-upd" id="pwaUpdateBtn" data-i18n="pwa.updateBtn"></button>
+  </div>
+</div>
+
+<script>
+/*__BUILD_GAME__*/
+</script>
+
+<script>
+/*__BUILD_BOOT__*/
+</script>
