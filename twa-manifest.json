@@ -1,7 +1,7 @@
 {
   "packageId": "com.planeflow.game",
   "host": "planeflow.jevgenia.com",
-  "name": "PlaneFlow — air traffic control",
+  "name": "PlaneFlow: Air Traffic Control",
   "launcherName": "PlaneFlow",
   "display": "fullscreen",
   "orientation": "landscape",
