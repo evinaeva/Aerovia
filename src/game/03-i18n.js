@@ -1,0 +1,440 @@
+  const I18N = {
+    en: {
+      _name:'English', _locale:'en-US',
+      _plural: n => (n===1 ? 0 : 1),
+      'app.name':'PlaneFlow',
+      'app.title':'PlaneFlow — air traffic control',
+      'pwa.updateTitle':'A new version is ready', 'pwa.updateBtn':'Update',
+      'start.kicker':'Night controller · Airfield',
+      'start.tagline':'Guide the planes with your finger. Calm night flow.',
+      'start.play':'Play', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
+      'over.next':'Next level', 'over.again':'Play again', 'over.toLevels':'Level select',
+      'over.passed':'Level complete', 'over.failed':'Shift over',
+      'over.share':'Share image',
+      'over.result':'{reason} {desc}. Result: {n} {unit}, bank {money}.',
+      'over.survival':'Survival over', 'over.survResult':'You held the line! Landed {n}. Best {best}. Bank {money}.', 'over.survRecord':'New record! Landed {n} — your best run. Bank {money}.',
+      'graph.title':'Shift over time', 'graph.load':'Load', 'graph.served':'Served',
+      'unit.planes':['plane','planes'], 'unit.upgrades':['upgrade','upgrades'],
+      'levels.kicker':'Shift select', 'levels.title':'Levels', 'levels.back':'Back', 'levels.reset':'Reset progress',
+      'reset.title':'Reset progress?', 'reset.msg':'This wipes all unlocked levels, stars and records. Medals are kept.', 'reset.no':'Cancel', 'reset.yes':'Reset',
+      'levels.shift':'Shift', 'levels.locked':'Locked',
+      'levels.stars':'Stars', 'levels.dest':'To the plane',
+      'levels.bonusSoon':'Bonus stage — coming soon',
+      'feat.mystery':'New mechanic ahead',
+      'feat.vip':'VIP flights', 'feat.rush':'Rush hour', 'feat.medical':'Medical priority',
+      'feat.emergency':'Low fuel', 'feat.fog':'Fog', 'feat.wind':'Crosswind',
+      'level.name':'Level {n}',
+      'level.t.1':'Airport Control', 'level.t.2':'Open a Bay', 'level.t.3':'Upgrades',
+      'level.t.4':'Full House', 'level.t.5':'Special Guest', 'level.t.6':'Mayday',
+      'level.t.7':'Priority Board', 'level.t.8':'Rush Hour', 'level.t.9':'Medevac',
+      'level.t.10':'Dispatcher’s Exam',
+      // вызов (краткое описание) + обучающая строка для каждого уровня
+      'level.d.1':'Bring the inbound planes down onto the runway.',
+      'level.h.1':'Drag a plane onto a runway to land it.',
+      'level.d.2':'Traffic is picking up — open a second service bay.',
+      'level.h.2':'Tap a locked bay to open it once you can afford it.',
+      'level.d.3':'Upgrade your bays — each level cuts service time.',
+      'level.h.3':'Tap an open bay to upgrade it when you can afford it.',
+      'level.d.4':'No new tricks — keep a faster flow moving on the apron you build.',
+      'level.h.4':'Open and upgrade early; the pace won’t let up.',
+      'level.d.5':'A VIP flight wants the red-carpet treatment.',
+      'level.h.5':'Gold planes are impatient but pay double — serve them first.',
+      'level.d.6':'A plane is running on empty — land it before anything else.',
+      'level.h.6':'Red-pulsing planes have almost no air time; clear a runway and bring them straight down.',
+      'level.d.7':'VIPs and low-fuel flights together — keep your priorities straight.',
+      'level.h.7':'Land emergencies first, then rush the VIPs through — no new mechanics, just tighter.',
+      'level.d.8':'Peak traffic hits in waves — don’t let the apron jam.',
+      'level.h.8':'During rush hour arrivals spike — keep runways and bays clear.',
+      'level.d.9':'Medevac inbound — priority patient, fast cycle.',
+      'level.h.9':'Medevac planes cut the line, drop the patient and leave — clear them straight through.',
+      'level.d.10':'Everything at once at full tempo: VIPs, emergencies, rush and medevac.',
+      'level.h.10':'No more new tricks — just hold the line. Land urgent flights first, keep the combo alive.',
+      // бонус-мир «луг бабочек» (открывается каждые 5 уровней)
+      'bonus.world':'Bonus world', 'bonus.name':'Bonus {n}½',
+      'bonus.t.0':'Butterfly Meadow', 'bonus.t.1':'Pollen Festival',
+      'bonus.obj':['Send {n} caterpillar off as a butterfly','Send {n} caterpillars off as butterflies'],
+      'bonus.req':'Clear level {n} to unlock',
+      'obj.served':['Land {n} plane and survive','Land {n} planes and survive'],
+      'obj.servedTimed':['Land {n} plane in {time}','Land {n} planes in {time}'],
+      'obj.race':'Land as many planes as you can in {time}',
+      'obj.upgrades':['Make {n} upgrade in {time}','Make {n} upgrades in {time}'],
+      'pause.kicker':'Paused', 'pause.resume':'Resume', 'pause.restart':'Restart',
+      'pause.settings':'Settings', 'pause.menu':'Main menu', 'pause.goals':'Goals', 'pause.objective':'Objective',
+      'goals.kicker':'Shift goals', 'goals.ok':'Got it',
+      'goals.star2':'No ground penalties', 'goals.star3':'No crashes',
+      'settings.title':'Settings', 'settings.back':'Back', 'settings.language':'Language',
+      'settings.sound':'Sound', 'settings.vibro':'Vibration (phone)',
+      'settings.debug':'Debug',
+      'settings.optLives':'Infinite lives', 'settings.optMoney':'Unlimited money', 'settings.optUnlockAll':'Unlock all levels',
+      'settings.updates':'Updates', 'settings.checkUpdates':'Check for updates',
+      'settings.updChecking':'Checking…', 'settings.updUpdating':'New version found — updating…',
+      'settings.updRefreshed':'Up to date — assets refreshed', 'settings.updOffline':'No connection — try again later',
+      'tut.land':'Drag the plane onto a runway',
+      'tut.service':'Now lead it into the {svc} bay',
+      'tut.takeoff':'All set — guide it to a runway to take off',
+      'tut.done':'Nice — you’ve got the hang of it!',
+      'log.empty':'no losses yet',
+      'svc.repair':'Repair', 'svc.fuel':'Fuel', 'svc.board':'Boarding', 'svc.deice':'De-ice', 'svc.depart':'Departure',
+      'toast.goal':'Goal: {desc}',
+      'toast.express':'EXPRESS +{money}',
+      'toast.rush':'Rush hour!',
+      'toast.wind':'Wind shift — runway closed',
+      'toast.fog':'Fog — taxiing slowed',
+      'toast.weather.rain':'Rain — taxiing slowed', 'toast.weather.snow':'Snow — taxiing slowed',
+      'toast.emergency':'Fuel critical — land now!', 'toast.medical':'Medevac — straight through!',
+      'float.combo':'×{x} combo', 'float.express':'on time!', 'float.nearMiss':'phew!',
+      'loss.airTimeout':'Air timeout — didn\'t land in time',
+      'loss.collision':'Collision',
+      'loss.collisionBay':'Collision in a bay',
+      'loss.collisionField':'Collision on the apron',
+      'loss.collisionRunway':'Collision on the runway',
+      'end.lives':'Out of lives.', 'end.goal':'Goal achieved!', 'end.time':'Time is up!', 'end.done':'No more arrivals.',
+      'stats.served':'Served', 'stats.upgrades':'Upgrades', 'stats.money':'Earned', 'stats.lives':'Lives', 'stats.time':'Time', 'stats.peak':'Peak load',
+      'hud.vip':'VIP', 'hud.med':'MED', 'hud.plane':'PLANE', 'hud.sos':'· SOS', 'hud.combo':'streak ×{x}', 'hud.served':'SERVED',
+      'canvas.terminal':'TERMINAL', 'canvas.garden':'GREENHOUSE', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
+      'fmt.money':'{n} ₿',
+      // --- biomes / maps + forest biome ---
+      'biomes.kicker':'Airport maps', 'biomes.title':'Survival', 'biomes.back':'Back', 'biomes.soon':'Coming soon', 'biomes.best':'Best',
+      'biome.forest.name':'Forest Airport', 'biome.forest.tag':'Wind, wildlife and trees falling on the strip.',
+      'biome.forest.hint':'Keep the runways clear — tap a hazard to send the right crew.',
+      'biome.arctic.name':'Arctic Airport', 'biome.arctic.tag':'De-icing, snow and runway ice.',
+      'biome.tropical.name':'Tropical Airport', 'biome.tropical.tag':'Storms, wind and thieving gulls.',
+      'biome.desert.name':'Desert Airport', 'biome.desert.tag':'Sandstorms and overheating engines.',
+      'biome.mountain.name':'Mountain Airport', 'biome.mountain.tag':'Short strip, fog and turbulence.',
+      'biome.megacity.name':'Mega City Airport', 'biome.megacity.tag':'Traffic overload and VIPs.',
+      'forest.tree':'A tree is falling toward the runway!',
+      'forest.deer':'Deer on the runway!',
+      'forest.birds':'Birds over the runway!',
+      'forest.snow':'Snow drift on the runway!',
+      'forest.cleared':'Runway clear',
+      'forest.crew.truck':'Maintenance', 'forest.crew.eagle':'Bird scare', 'forest.crew.chainsaw':'Chainsaw crew',
+      'forest.crew.plow':'Snowplow',
+      'canvas.service':'SERVICE',
+      // --- медали / достижения ---
+      'medals.btn':'Medals', 'medals.kicker':'Achievements', 'medals.title':'Medals', 'medals.back':'Back',
+      'medals.count':'{got} / {total} medals',
+      'medals.tier1':'Light', 'medals.tier2':'Regular', 'medals.tier3':'Hard', 'medals.tier4':'Hardcore', 'medals.tier5':'Secret',
+      'medals.secretTitle':'Secret medal', 'medals.secretDesc':'Unlocks as you play.', 'medals.pendingNote':' (for a future mode)',
+      'ach.toastLabel':'Medal unlocked',
+      'ach.land1.t':'First Contact', 'ach.land1.d':'Land your first plane.',
+      'ach.svc1.t':'Hands On', 'ach.svc1.d':'Complete your first service.',
+      'ach.takeoff1.t':'Bon Voyage', 'ach.takeoff1.d':'Send off your first plane.',
+      'ach.money1.t':'First Coin', 'ach.money1.d':'Earn your first money.',
+      'ach.bayopen1.t':'Grand Opening', 'ach.bayopen1.d':'Open your first bay.',
+      'ach.upg1.t':'Leveling Up', 'ach.upg1.d':'Upgrade a bay for the first time.',
+      'ach.pause.t':'Coffee Break', 'ach.pause.d':'Pause the shift.',
+      'ach.level1.t':'Shift Done', 'ach.level1.d':'Clear your first level.',
+      'ach.vip1.t':'Special Guest', 'ach.vip1.d':'Send off your first VIP plane.',
+      'ach.land10.t':'Tower Trainee', 'ach.land10.d':'Land 10 planes total.',
+      'ach.land100.t':'Air Traffic', 'ach.land100.d':'Land 100 planes total.',
+      'ach.svc100.t':'Hard Worker', 'ach.svc100.d':'Complete 100 services total.',
+      'ach.earn1000.t':'Cha-Ching', 'ach.earn1000.d':'Earn 1,000 total.',
+      'ach.fullchain.t':'Full Service', 'ach.fullchain.d':'Take a plane with two services (the max) from landing to takeoff.',
+      'ach.nopenalty.t':'Smooth Operator', 'ach.nopenalty.d':'Clear a level with no ground penalties.',
+      'ach.nolife.t':'No Casualties', 'ach.nolife.d':'Clear a level without losing a life.',
+      'ach.air5.t':'Rush Hour', 'ach.air5.d':'Keep 5 planes airborne at once.',
+      'ach.star3.t':'First Three', 'ach.star3.d':'Clear any level with 3 stars.',
+      'ach.vip25.t':'Business Class', 'ach.vip25.d':'Serve 25 VIP planes total.',
+      'ach.baymax.t':'Jack of All Trades', 'ach.baymax.d':'Upgrade a bay to its max level.',
+      'ach.nocrash.t':'Clear Skies', 'ach.nocrash.d':'Clear a level with no crashes at all.',
+      'ach.perfect.t':'Perfect Shift', 'ach.perfect.d':'A level with 0 crashes, 0 penalties and all lives intact.',
+      'ach.air8.t':'Juggler', 'ach.air8.d':'Keep 8 planes airborne at once.',
+      'ach.speed20.t':'Fast Lane', 'ach.speed20.d':'Land 20 planes in 60 seconds.',
+      'ach.minimalist.t':'Minimalist', 'ach.minimalist.d':'Clear a level using only the starting bays.',
+      'ach.millionaire.t':'Millionaire', 'ach.millionaire.d':'Earn 1,000,000 total.',
+      'ach.combo10.t':'Combo Master', 'ach.combo10.d':'10 clean departures in a row (the streak boosts your cash multiplier).',
+      'ach.marathon.t':'Marathoner', 'ach.marathon.d':'Last 15 minutes in a single run.',
+      'ach.streak1000.t':'Nerves of Steel', 'ach.streak1000.d':'Land 1,000 planes in a row with no crash.',
+      'ach.land10000.t':'Tower Veteran', 'ach.land10000.d':'Land 10,000 planes total.',
+      'ach.all3star.t':'Three Stars Everywhere', 'ach.all3star.d':'Clear every level with 3 stars.',
+      'ach.ascetic.t':'Asceticism', 'ach.ascetic.d':'3 stars with no upgrades and no new bays.',
+      'ach.perfectionist.t':'Perfectionist', 'ach.perfectionist.d':'10 perfect shifts in a row.',
+      'ach.daily7.t':'Perfect Week', 'ach.daily7.d':'Complete the Daily Challenge 7 days in a row.',
+      'ach.sleepless.t':'Sleepless Tower', 'ach.sleepless.d':'Last 60 minutes in a single run.',
+      'ach.surv500.t':'Survivor', 'ach.surv500.d':'Land 500 planes in one survival run.',
+      // --- Survival + лидерборды + ранг-медали (каркас) ---
+      'mode.survival':'Survival',
+      'start.survival':'Survival',
+      'goals.survival':'Survival — endless run. Serve as many planes as you can before you run out of lives. Your best run is ranked globally.',
+      'toast.survivalStart':'Survival: serve as many planes as you can',
+      'ach.rank_top100.t':'On the board', 'ach.rank_top100.d':'Reach the global top 100 (any period).',
+      'ach.rank_top10.t':'Top ten', 'ach.rank_top10.d':'Reach the global top 10 (any period).',
+      'ach.rank_1.t':'Number one', 'ach.rank_1.d':'Take #1 on a global leaderboard.',
+      'menu.leaderboard':'Leaderboard',
+      'lb.kicker':'Global ranking', 'lb.title':'Leaderboard', 'lb.back':'Back',
+      'lb.tab.alltime':'All-time', 'lb.tab.month':'Month', 'lb.tab.week':'Week',
+      'lb.col.rank':'#', 'lb.col.player':'Player', 'lb.col.score':'Planes',
+      'lb.you':'You', 'lb.empty':'No scores yet — play Survival to get on the board.',
+      'lb.yourbest':'Your best', 'lb.unranked':'Not ranked yet',
+      'lb.signedin':'Signed in as', 'lb.signin':'Sign in to compete', 'lb.setname':'Set nickname',
+      'lb.mock':'Demo data (local) — real global ranking arrives with the backend.',
+      'ach.combo50.t':'Combo God', 'ach.combo50.d':'50 clean departures in a row.',
+      'ach.legend.t':'Control Room Legend', 'ach.legend.d':'Unlock all other available medals.',
+      'ach.crash10s.t':'That\'s Not Flying', 'ach.crash10s.d':'Lose a plane in the first 10 seconds of a level.',
+      'ach.asleep.t':'Controller Asleep', 'ach.asleep.d':'Let a plane crash from air timeout without ever touching it.',
+      'ach.crashbay.t':'Bay Pileup', 'ach.crashbay.d':'Crash two planes in the same bay.',
+      'ach.crashrw.t':'Head-On', 'ach.crashrw.d':'Crash two planes on the same runway.',
+      'ach.groundto.t':'Patience Snapped', 'ach.groundto.d':'Let a plane hit its ground timeout.',
+      'ach.moneyneg.t':'In the Red', 'ach.moneyneg.d':'Go negative on money.',
+      'ach.longshift.t':'Overstayed', 'ach.longshift.d':'Play a single shift longer than 30 minutes.',
+      'ach.zoo.t':'Sky Zoo', 'ach.zoo.d':'Send off a normal, a VIP and an emergency plane in one shift.',
+    },
+    ru: {
+      _name:'Русский', _locale:'ru-RU',
+      _plural: n => { const m10=n%10, m100=n%100;
+        if(m10===1 && m100!==11) return 0;
+        if(m10>=2 && m10<=4 && (m100<12 || m100>14)) return 1;
+        return 2; },
+      'app.name':'PlaneFlow',
+      'app.title':'PlaneFlow — диспетчер',
+      'pwa.updateTitle':'Доступна новая версия', 'pwa.updateBtn':'Обновить',
+      'start.kicker':'Ночной диспетчер · Аэродром',
+      'start.tagline':'Веди борта пальцем. Спокойный ночной поток.',
+      'start.play':'Играть', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
+      'over.next':'Следующий уровень', 'over.again':'Ещё раз', 'over.toLevels':'К уровням',
+      'over.passed':'Уровень пройден', 'over.failed':'Смена закрыта',
+      'over.share':'Поделиться',
+      'over.result':'{reason} {desc}. Результат: {n} {unit}, касса {money}.',
+      'over.survival':'Выживание окончено', 'over.survResult':'Ты продержался! Посажено {n}. Рекорд {best}. Касса {money}.', 'over.survRecord':'Новый рекорд! Посажено {n} — лучший заезд. Касса {money}.',
+      'graph.title':'Смена во времени', 'graph.load':'Нагрузка', 'graph.served':'Принято',
+      'unit.planes':['борт','борта','бортов'], 'unit.upgrades':['улучшение','улучшения','улучшений'],
+      'levels.kicker':'Выбор смены', 'levels.title':'Уровни', 'levels.back':'Назад', 'levels.reset':'Сбросить прогресс',
+      'reset.title':'Сбросить прогресс?', 'reset.msg':'Сотрёт все открытые уровни, звёзды и рекорды. Медали останутся.', 'reset.no':'Отмена', 'reset.yes':'Сбросить',
+      'levels.shift':'Смена', 'levels.locked':'Закрыто',
+      'levels.stars':'Звёзды', 'levels.dest':'К самолёту',
+      'levels.bonusSoon':'Бонусный уровень — скоро',
+      'feat.mystery':'Впереди новая механика',
+      'feat.vip':'VIP-борта', 'feat.rush':'Час пик', 'feat.medical':'Скорая помощь',
+      'feat.emergency':'Топливо на нуле', 'feat.fog':'Туман', 'feat.wind':'Боковой ветер',
+      'level.name':'Уровень {n}',
+      'level.t.1':'Диспетчерская', 'level.t.2':'Второй бокс', 'level.t.3':'Апгрейды',
+      'level.t.4':'Полный аншлаг', 'level.t.5':'Особый гость', 'level.t.6':'Мэйдэй',
+      'level.t.7':'Приоритет', 'level.t.8':'Час пик', 'level.t.9':'Медэвак',
+      'level.t.10':'Экзамен диспетчера',
+      // вызов (краткое описание) + обучающая строка для каждого уровня
+      'level.d.1':'Сажай прилетающие борты на полосу.',
+      'level.h.1':'Перетащи борт на полосу, чтобы посадить.',
+      'level.d.2':'Трафик растёт — открой второй сервисный бокс.',
+      'level.h.2':'Коснись закрытого бокса, чтобы открыть, когда хватает денег.',
+      'level.d.3':'Улучшай боксы — каждый уровень ускоряет обслуживание.',
+      'level.h.3':'Коснись открытого бокса, чтобы улучшить, когда хватает денег.',
+      'level.d.4':'Ничего нового — держи ускорившийся поток на перроне, который построишь сам.',
+      'level.h.4':'Открывай и улучшай заранее: темп не даст передохнуть.',
+      'level.d.5':'VIP-борт ждёт обслуживания по высшему разряду.',
+      'level.h.5':'Золотые борты нетерпеливы, но платят вдвое — их вперёд.',
+      'level.d.6':'У борта топливо на нуле — сажай его раньше всех.',
+      'level.h.6':'У красно-пульсирующих почти нет времени в воздухе; освободи полосу и сразу сажай.',
+      'level.d.7':'VIP и аварийные вместе — не путай приоритеты.',
+      'level.h.7':'Сначала сажай аварийные, потом гони VIP; новых механик нет — просто плотнее.',
+      'level.d.8':'Пиковый трафик идёт волнами — не дай перрону встать.',
+      'level.h.8':'В час пик прилётов резко больше — держи полосы и боксы свободными.',
+      'level.d.9':'Медицинский на подходе — приоритет, быстрый цикл.',
+      'level.h.9':'Медицинские идут без очереди: высадил пациента — и сразу на вылет.',
+      'level.d.10':'Всё сразу на полном ходу: VIP, аварийные, час пик и медицинские.',
+      'level.h.10':'Новых трюков больше нет — просто держись. Сначала срочные, и не рви комбо.',
+      // бонус-мир «луг бабочек» (открывается каждые 5 уровней)
+      'bonus.world':'Бонус-мир', 'bonus.name':'Бонус {n}½',
+      'bonus.t.0':'Луг бабочек', 'bonus.t.1':'Праздник пыльцы',
+      'bonus.obj':['Выпусти {n} гусеницу бабочкой','Выпусти {n} гусеницы бабочками','Выпусти {n} гусениц бабочками'],
+      'bonus.req':'Пройди уровень {n}, чтобы открыть',
+      'obj.served':['Принять {n} борт и выжить','Принять {n} борта и выжить','Принять {n} бортов и выжить'],
+      'obj.servedTimed':['Принять {n} борт за {time}','Принять {n} борта за {time}','Принять {n} бортов за {time}'],
+      'obj.race':'Прими столько бортов, сколько успеешь за {time}',
+      'obj.upgrades':['Сделать {n} улучшение за {time}','Сделать {n} улучшения за {time}','Сделать {n} улучшений за {time}'],
+      'pause.kicker':'Пауза', 'pause.resume':'Играть', 'pause.restart':'Начать заново',
+      'pause.settings':'Настройки', 'pause.menu':'В главное меню', 'pause.goals':'Цели', 'pause.objective':'Цель',
+      'goals.kicker':'Цели смены', 'goals.ok':'Понятно',
+      'goals.star2':'Без наземных штрафов', 'goals.star3':'Без крушений',
+      'settings.title':'Настройки', 'settings.back':'Назад', 'settings.language':'Язык',
+      'settings.sound':'Звук', 'settings.vibro':'Вибрация (телефон)',
+      'settings.debug':'Отладка',
+      'settings.optLives':'Бесконечные жизни', 'settings.optMoney':'Безлимит денег', 'settings.optUnlockAll':'Открыть все уровни',
+      'settings.updates':'Обновления', 'settings.checkUpdates':'Проверить обновления',
+      'settings.updChecking':'Проверяю…', 'settings.updUpdating':'Найдена новая версия — обновляю…',
+      'settings.updRefreshed':'Уже последняя версия — ресурсы обновлены', 'settings.updOffline':'Нет сети — попробуйте позже',
+      'tut.land':'Веди борт пальцем на полосу',
+      'tut.service':'Теперь отведи его в бокс «{svc}»',
+      'tut.takeoff':'Готово — веди на полосу, на взлёт',
+      'tut.done':'Отлично — дальше сам!',
+      'log.empty':'потерь пока нет',
+      'svc.repair':'Ремонт', 'svc.fuel':'Топливо', 'svc.board':'Посадка', 'svc.deice':'Антилёд', 'svc.depart':'Вылет',
+      'toast.goal':'Цель: {desc}',
+      'toast.express':'ЭКСПРЕСС +{money}',
+      'toast.rush':'Час пик!',
+      'toast.wind':'Смена ветра — полоса закрыта',
+      'toast.fog':'Туман — руление замедлено',
+      'toast.weather.rain':'Дождь — руление замедлено', 'toast.weather.snow':'Снег — руление замедлено',
+      'toast.emergency':'Топливо на нуле — садить срочно!', 'toast.medical':'Медицинский — вне очереди!',
+      'float.combo':'×{x} комбо', 'float.express':'вовремя!', 'float.nearMiss':'уфф!',
+      'loss.airTimeout':'Воздушный таймаут — не успел сесть',
+      'loss.collision':'Столкновение',
+      'loss.collisionBay':'Столкновение в боксе',
+      'loss.collisionField':'Столкновение на поле',
+      'loss.collisionRunway':'Столкновение на ВПП',
+      'end.lives':'Жизни кончились.', 'end.goal':'Цель выполнена!', 'end.time':'Время вышло!', 'end.done':'Борты закончились.',
+      'stats.served':'Принято', 'stats.upgrades':'Улучшения', 'stats.money':'Заработано', 'stats.lives':'Жизни', 'stats.time':'Время', 'stats.peak':'Пик нагрузки',
+      'hud.vip':'ВИП', 'hud.med':'МЕД', 'hud.plane':'БОРТ', 'hud.sos':'· SOS', 'hud.combo':'серия ×{x}', 'hud.served':'ПРИНЯТО',
+      'canvas.terminal':'ТЕРМИНАЛ', 'canvas.garden':'ТЕПЛИЦА', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
+      'fmt.money':'{n} ₿',
+      // --- биомы / карты + лесной биом ---
+      'biomes.kicker':'Карты аэропортов', 'biomes.title':'Выживание', 'biomes.back':'Назад', 'biomes.soon':'Скоро', 'biomes.best':'Рекорд',
+      'biome.forest.name':'Лесной аэропорт', 'biome.forest.tag':'Ветер, звери и падающие на полосу деревья.',
+      'biome.forest.hint':'Держи полосы свободными — тапни по помехе, чтобы выслать нужную бригаду.',
+      'biome.arctic.name':'Арктический аэропорт', 'biome.arctic.tag':'Обледенение, снег и лёд на полосе.',
+      'biome.tropical.name':'Тропический аэропорт', 'biome.tropical.tag':'Штормы, ветер и наглые чайки.',
+      'biome.desert.name':'Пустынный аэропорт', 'biome.desert.tag':'Песчаные бури и перегрев двигателей.',
+      'biome.mountain.name':'Горный аэропорт', 'biome.mountain.tag':'Короткая полоса, туман и турбулентность.',
+      'biome.megacity.name':'Мегаполис', 'biome.megacity.tag':'Перегрузка трафика и ВИП-борта.',
+      'forest.tree':'Дерево падает на полосу!',
+      'forest.deer':'Олень на полосе!',
+      'forest.birds':'Птицы над полосой!',
+      'forest.snow':'Снежный занос на полосе!',
+      'forest.cleared':'Полоса свободна',
+      'forest.crew.truck':'Техслужба', 'forest.crew.eagle':'Орёл-разгон', 'forest.crew.chainsaw':'Бригада с пилой',
+      'forest.crew.plow':'Снегоуборщик',
+      'canvas.service':'СЛУЖБА',
+      // --- медали / достижения ---
+      'medals.btn':'Медали', 'medals.kicker':'Достижения', 'medals.title':'Медали', 'medals.back':'Назад',
+      'medals.count':'{got} / {total} медалей',
+      'medals.tier1':'Лайтовые', 'medals.tier2':'Обычные', 'medals.tier3':'Сложные', 'medals.tier4':'Задротские', 'medals.tier5':'Секретные',
+      'medals.secretTitle':'Секретная медаль', 'medals.secretDesc':'Откроется по ходу игры.', 'medals.pendingNote':' (для будущего режима)',
+      'ach.toastLabel':'Медаль получена',
+      'ach.land1.t':'Первый контакт', 'ach.land1.d':'Посади свой первый борт.',
+      'ach.svc1.t':'Руки на месте', 'ach.svc1.d':'Заверши первое обслуживание.',
+      'ach.takeoff1.t':'Счастливого пути', 'ach.takeoff1.d':'Отправь первый борт на взлёт.',
+      'ach.money1.t':'Первая копейка', 'ach.money1.d':'Заработай первые деньги.',
+      'ach.bayopen1.t':'Новоселье', 'ach.bayopen1.d':'Открой первый бокс.',
+      'ach.upg1.t':'Прокачка пошла', 'ach.upg1.d':'Сделай первый апгрейд бокса.',
+      'ach.pause.t':'Перекур', 'ach.pause.d':'Поставь смену на паузу.',
+      'ach.level1.t':'Смена сдана', 'ach.level1.d':'Пройди первый уровень.',
+      'ach.vip1.t':'Особый гость', 'ach.vip1.d':'Отправь в полёт первый вип-борт.',
+      'ach.land10.t':'Стажёр вышки', 'ach.land10.d':'Посади 10 бортов всего.',
+      'ach.land100.t':'Воздушный поток', 'ach.land100.d':'Посади 100 бортов всего.',
+      'ach.svc100.t':'Работяга', 'ach.svc100.d':'Сделай 100 обслуживаний всего.',
+      'ach.earn1000.t':'Касса звенит', 'ach.earn1000.d':'Заработай 1 000 денег всего.',
+      'ach.fullchain.t':'Полный сервис', 'ach.fullchain.d':'Доведи борт с двумя услугами от посадки до вылета.',
+      'ach.nopenalty.t':'Без нервотрёпки', 'ach.nopenalty.d':'Пройди уровень без единого наземного штрафа.',
+      'ach.nolife.t':'Все живы', 'ach.nolife.d':'Пройди уровень, не потеряв ни одной жизни.',
+      'ach.air5.t':'Час пик', 'ach.air5.d':'Удержи 5 бортов в воздухе одновременно.',
+      'ach.star3.t':'Первая тройка', 'ach.star3.d':'Пройди любой уровень на 3 звезды.',
+      'ach.vip25.t':'Бизнес-класс', 'ach.vip25.d':'Обслужи 25 вип-бортов всего.',
+      'ach.baymax.t':'Мастер на все руки', 'ach.baymax.d':'Прокачай бокс до максимального уровня.',
+      'ach.nocrash.t':'Чистое небо', 'ach.nocrash.d':'Пройди уровень вообще без крушений.',
+      'ach.perfect.t':'Идеальная смена', 'ach.perfect.d':'Уровень: 0 крашей, 0 штрафов, все жизни целы.',
+      'ach.air8.t':'Жонглёр', 'ach.air8.d':'Удержи 8 бортов в воздухе одновременно.',
+      'ach.speed20.t':'Скоростная полоса', 'ach.speed20.d':'Посади 20 бортов за 60 секунд.',
+      'ach.minimalist.t':'Минималист', 'ach.minimalist.d':'Пройди уровень только на стартовых боксах.',
+      'ach.millionaire.t':'Миллионер', 'ach.millionaire.d':'Накопи 1 000 000 денег всего.',
+      'ach.combo10.t':'Комбо-мастер', 'ach.combo10.d':'Сделай 10 чистых вылетов подряд (серия растит множитель денег).',
+      'ach.marathon.t':'Марафонец', 'ach.marathon.d':'Продержись 15 минут за один заход.',
+      'ach.streak1000.t':'Железные нервы', 'ach.streak1000.d':'Посади 1 000 бортов подряд без крушения.',
+      'ach.land10000.t':'Ветеран вышки', 'ach.land10000.d':'Посади 10 000 бортов всего.',
+      'ach.all3star.t':'Три звезды везде', 'ach.all3star.d':'Пройди все уровни на 3 звезды.',
+      'ach.ascetic.t':'Аскеза', 'ach.ascetic.d':'3 звезды без апгрейдов и без новых боксов.',
+      'ach.perfectionist.t':'Перфекционист', 'ach.perfectionist.d':'10 идеальных смен подряд.',
+      'ach.daily7.t':'Идеальная неделя', 'ach.daily7.d':'Пройди Daily Challenge 7 дней подряд.',
+      'ach.sleepless.t':'Бессонная вышка', 'ach.sleepless.d':'Продержись 60 минут за один заход.',
+      'ach.surv500.t':'Выживший', 'ach.surv500.d':'Посади 500 бортов за один заезд выживания.',
+      // --- Survival + лидерборды + ранг-медали (каркас) ---
+      'mode.survival':'Survival',
+      'start.survival':'Survival',
+      'goals.survival':'Survival — бесконечный заход. Обслужи как можно больше бортов, пока не кончились жизни. Лучший заход попадает в глобальный рейтинг.',
+      'toast.survivalStart':'Survival: обслужи как можно больше бортов',
+      'ach.rank_top100.t':'На табло', 'ach.rank_top100.d':'Попади в мировой топ-100 (за любой период).',
+      'ach.rank_top10.t':'Десятка', 'ach.rank_top10.d':'Попади в мировой топ-10 (за любой период).',
+      'ach.rank_1.t':'Номер один', 'ach.rank_1.d':'Стань №1 в глобальном рейтинге.',
+      'menu.leaderboard':'Рейтинг',
+      'lb.kicker':'Глобальный рейтинг', 'lb.title':'Рейтинг', 'lb.back':'Назад',
+      'lb.tab.alltime':'За всё время', 'lb.tab.month':'За месяц', 'lb.tab.week':'За неделю',
+      'lb.col.rank':'#', 'lb.col.player':'Игрок', 'lb.col.score':'Борта',
+      'lb.you':'Вы', 'lb.empty':'Пока пусто — сыграй Survival, чтобы попасть в таблицу.',
+      'lb.yourbest':'Личный рекорд', 'lb.unranked':'Пока вне рейтинга',
+      'lb.signedin':'Вы вошли как', 'lb.signin':'Войти, чтобы соревноваться', 'lb.setname':'Задать ник',
+      'lb.mock':'Демо-данные (локально) — настоящий глобальный рейтинг появится с бэкендом.',
+      'ach.combo50.t':'Комбо-бог', 'ach.combo50.d':'Сделай 50 чистых вылетов подряд.',
+      'ach.legend.t':'Легенда диспетчерской', 'ach.legend.d':'Открой все остальные доступные медали.',
+      'ach.crash10s.t':'Так не летают', 'ach.crash10s.d':'Потеряй борт в первые 10 секунд уровня.',
+      'ach.asleep.t':'Диспетчер уснул', 'ach.asleep.d':'Дай борту разбиться по воздушному таймауту, ни разу его не тронув.',
+      'ach.crashbay.t':'Пробка в боксе', 'ach.crashbay.d':'Устрой крушение двух бортов в одном боксе.',
+      'ach.crashrw.t':'Лобовое', 'ach.crashrw.d':'Устрой крушение двух бортов на одной ВПП.',
+      'ach.groundto.t':'Терпение лопнуло', 'ach.groundto.d':'Доведи борт до наземного таймаута.',
+      'ach.moneyneg.t':'Минус на табло', 'ach.moneyneg.d':'Уйди в минус по деньгам.',
+      'ach.longshift.t':'Засиделся', 'ach.longshift.d':'Сыграй одну смену дольше 30 минут.',
+      'ach.zoo.t':'Зоопарк в небе', 'ach.zoo.d':'Обслужи обычный, вип и аварийный борт за одну смену.',
+    },
+  };
+  const DEFAULT_LANG = 'en';
+  let lang = DEFAULT_LANG;
+
+  function detectLang(){
+    const cands = (navigator.languages && navigator.languages.length) ? navigator.languages
+                 : [navigator.language || DEFAULT_LANG];
+    for(const c of cands){
+      const base = String(c).toLowerCase().split('-')[0];
+      if(I18N[base]) return base;
+    }
+    return DEFAULT_LANG;
+  }
+  function t(key, params){
+    let v = I18N[lang] && I18N[lang][key];
+    if(v==null) v = I18N[DEFAULT_LANG][key];
+    if(v==null) return key;
+    if(Array.isArray(v)){
+      const pf = I18N[lang]._plural || I18N[DEFAULT_LANG]._plural;
+      const n = params && params.n!=null ? Math.abs(params.n) : 0;
+      v = v[Math.min(pf(n), v.length-1)];
+    }
+    return String(v).replace(/\{(\w+)\}/g, (m,k)=> (params && k in params) ? params[k] : m);
+  }
+  function fmtNum(n, frac){
+    const loc = (I18N[lang] && I18N[lang]._locale) || 'en-US';
+    try{ return n.toLocaleString(loc, frac!=null ? {minimumFractionDigits:frac, maximumFractionDigits:frac} : undefined); }
+    catch(e){ return String(n); }
+  }
+  function fmtMoney(n){ return t('fmt.money', {n: fmtNum(n)}); }
+  function setLang(code){
+    if(!I18N[code]) return;
+    lang = code; save.lang = code; saveGame();
+    applyI18n();
+    Analytics.track('setting_changed', {key:'lang', value:code});
+  }
+  function applyI18n(){
+    document.documentElement.lang = lang;
+    document.title = t('app.title');
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    // иконочные кнопки без текста: озвучка/подсказка берётся из словаря
+    document.querySelectorAll('[data-i18n-aria]').forEach(el => {
+      const s = t(el.dataset.i18nAria); el.setAttribute('aria-label', s); el.setAttribute('title', s);
+    });
+    renderLangBtns();
+    renderLangFlag();
+    if(!document.getElementById('pauseScreen').classList.contains('hidden')) buildPauseInfo();
+  }
+  function renderLangBtns(){
+    // и в паузе, и в настройках стартового меню — оба контейнера .langbtns
+    document.querySelectorAll('.langbtns').forEach(box => {
+      box.innerHTML='';
+      for(const code of Object.keys(I18N)){
+        const b = document.createElement('button');
+        b.className = 'langbtn' + (code===lang ? ' on' : '');
+        b.textContent = I18N[code]._name || code;
+        b.onclick = () => setLang(code);
+        box.appendChild(b);
+      }
+    });
+  }
+  // флаги для углового переключателя языка (inline SVG — рисуются одинаково на всех
+  // платформах, в отличие от эмодзи-флагов, которые Windows показывает буквами)
+  const FLAGS = {
+    en: '<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="40" fill="#012169"/><path d="M0,0 60,40 M60,0 0,40" stroke="#fff" stroke-width="8"/><path d="M0,0 60,40 M60,0 0,40" stroke="#C8102E" stroke-width="4"/><rect x="25" width="10" height="40" fill="#fff"/><rect y="15" width="60" height="10" fill="#fff"/><rect x="27" width="6" height="40" fill="#C8102E"/><rect y="17" width="60" height="6" fill="#C8102E"/></svg>',
+    ru: '<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="40" fill="#fff"/><rect y="13.33" width="60" height="13.34" fill="#0039A6"/><rect y="26.67" width="60" height="13.33" fill="#D52B1E"/></svg>'
+  };
+  // флаг показывает ТЕКУЩИЙ язык; тап — переключение на следующий (всего два языка)
+  function renderLangFlag(){
+    const b = document.getElementById('langFlagBtn');
+    if(!b) return;
+    b.innerHTML = FLAGS[lang] || FLAGS[DEFAULT_LANG];
+    b.setAttribute('aria-label', (I18N[lang] && I18N[lang]._name) || lang);
+  }
+
+  // ---- balance knobs (дефолты, потом крутим) ----

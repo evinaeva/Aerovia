@@ -13,6 +13,29 @@ and `ATLAS` is just a flag for "sprite atlas loaded yet?". Keep gameplay logic,
 mechanics and geometry independent of the look (as before) — there's simply nothing
 to fork against now.
 
+## Source layout — edit `src/`, never edit `index.html`
+
+`index.html` is a **generated build artifact** (and is git-ignored). Run
+`node scripts/build.mjs` (or `npm run build`) to assemble it. **Do not edit
+`index.html` by hand** — it is overwritten on every build, and it is not in git.
+
+The game source lives in `src/`:
+- `src/styles.css` — all CSS (the former `<style>` block).
+- `src/game/01..13-*.js` — the game IIFE split into ordered modules. The build
+  concatenates them, in the order listed in `scripts/build.mjs`, into one
+  `<script>`. **Module 01 opens the IIFE and module 13 closes it**, so the files
+  are fragments of one shared closure scope — *not* ES modules. Do not add
+  `import`/`export`; just edit the relevant module.
+- `src/boot-sw.js` — the PWA/service-worker registration (final `<script>`).
+- `index.template.html` — the HTML shell with `/*__BUILD_*__*/` placeholders the
+  build fills in.
+
+The build only concatenates + inlines (no minify, no transpile), so the output is
+plain readable HTML — identical in behavior to hand-writing one file. `npm test`,
+`npm run test:e2e` and `npm run serve` build first. CI
+(`.github/workflows/deploy.yml`) builds on every push to `main` and publishes to
+GitHub Pages, so nobody has to remember to rebuild and `index.html` is never committed.
+
 ## Tracking development time
 
 If the user asks how many hours went into the project (e.g. "посчитай мои часы",
