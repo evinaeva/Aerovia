@@ -1,3 +1,4 @@
+// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   const ACH = (() => {
     // анти-шум: не больше RUN_CAP медалей за раунд (остальные придут в следующих
     // сменах — условия перепроверяются), уведомления не чаще TOAST_GAP_MS

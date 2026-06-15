@@ -1,3 +1,4 @@
+// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   const SND = (() => {
     const SCALE=[220,261.63,293.66,329.63,392,440,523.25,587.33,659.25]; // A3..E5
     let ac=null, master=null, enabled=true;

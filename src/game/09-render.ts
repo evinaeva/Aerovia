@@ -1,3 +1,4 @@
+// @ts-nocheck -- TODO(ts-migration): type this module, then remove this line
   function rr(x,y,w,h,r){
     r=Math.min(r,w/2,h/2);
     ctx.beginPath();
