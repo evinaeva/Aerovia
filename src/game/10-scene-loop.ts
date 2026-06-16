@@ -68,7 +68,21 @@
     for(const bx of b.boxes){const act=pa>=1?0:Math.exp(-Math.pow((f-bx.sf)/0.02,2));_qbox(MX(bx.x),MY(bx.y),bx.kind,(1+0.2*act)*S);}
   }
 function drawMenuScene(tm: number){
-    ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
+    // фон: радиальный градиент COL.core→tarmac→ink (как CSS --m-board) — вместо плоской заливки COL.ink («плоское тёмное»)
+    const bx=W*0.5, by=H*0.46, brad=Math.max(W,H)*0.8;
+    const bgGrad=ctx.createRadialGradient(bx,by,0, bx,by,brad);
+    bgGrad.addColorStop(0,COL.core); bgGrad.addColorStop(0.5,COL.tarmac); bgGrad.addColorStop(1,COL.ink);
+    ctx.fillStyle=bgGrad; ctx.fillRect(0,0,W,H);
+    // «дышащее» ядро-свечение в центре (циан, ~120px, период 6s)
+    const corePulse=0.5+0.5*Math.sin(tm*Math.PI*2/6000);
+    const coreGlow=ctx.createRadialGradient(bx,by,0, bx,by,120);
+    coreGlow.addColorStop(0,hexa(COL.phosphor,0.10+0.10*corePulse)); coreGlow.addColorStop(1,hexa(COL.phosphor,0));
+    ctx.fillStyle=coreGlow; ctx.fillRect(0,0,W,H);
+    // тонкая неон-сетка 54px
+    ctx.strokeStyle=hexa(COL.phosphor,.05); ctx.lineWidth=1; ctx.beginPath();
+    for(let gx=0;gx<=W;gx+=54){ ctx.moveTo(gx,0); ctx.lineTo(gx,H); }
+    for(let gy=0;gy<=H;gy+=54){ ctx.moveTo(0,gy); ctx.lineTo(W,gy); }
+    ctx.stroke();
     starfield(tm);
     const rx=W*0.5, ry=H*0.52, R=Math.min(W,H)*0.42;   // центр кадра (как RadarBg 50%/52%)
     ctx.save(); ctx.translate(rx,ry);
