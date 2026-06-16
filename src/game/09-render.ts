@@ -255,6 +255,21 @@
         ctx.beginPath(); ctx.arc(lx,r.y+5*ui,2*ui,0,7); ctx.fill();
         ctx.beginPath(); ctx.arc(lx,r.y+r.h-5*ui,2*ui,0,7); ctx.fill();
       }
+      // approach-огни: фосфорная «дорожка» от небесного торца открытой полосы вправо
+      // в небо (handoff §03 ADD). Поперечные штанги с «бегущим» к торцу огоньком — как
+      // настоящая ВПП-подсветка на заходе; гаснут с удалением, чтобы не спорить с заревом
+      // города. Процедурно (как огни кромок выше), своего PNG не имеют по спеке (§05).
+      if(!r.closed){
+        const axs=r.x+r.w, nA=6, span=Math.min(W-axs-8*ui, 84*ui), step=span/nA;
+        if(span>10*ui){
+          const seq=Math.floor((tm*0.004)%(nA+1));   // огонёк бежит из неба к торцу полосы
+          for(let k=1;k<=nA;k++){
+            const lx=axs+k*step, run=((nA-k)===seq)?1:0.4, fade=1-k/(nA+1);
+            ctx.fillStyle=hexa(COL.phosphor,(0.2+0.5*run)*fade);
+            ctx.fillRect(lx-1.5*ui, r.cy-4*ui, 3*ui, 8*ui);
+          }
+        }
+      }
       if(r.closed){
         rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=hexa(COL.life,.16); ctx.fill();
         const cx=r.x+r.w/2, s=Math.min(r.w,r.h)*0.16;
