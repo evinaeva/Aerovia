@@ -1,7 +1,7 @@
 # Analytics & soft-launch metrics
 
 Основа под soft launch и метрики. **Это логика, не контент** — единая шина событий
-живёт над оформлением. Реализация — модуль `Analytics` в `index.html`
+живёт над оформлением. Реализация — модуль `Analytics` в `src/game/07-audio-services.ts`
 (рядом с `SND`/`HAP`).
 
 ## Как устроено

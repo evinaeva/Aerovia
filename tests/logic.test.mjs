@@ -47,6 +47,31 @@ test('validateLevels ловит битый конфиг уровня (нет obj
   assert.ok(problems.length >= 4, 'битый уровень должен дать несколько проблем, получено: ' + problems.length);
 });
 
+test('validateAch ловит битую медаль (дубль id, битый тир, пустая иконка, нет текста)', () => {
+  const { game } = boot();
+  game.ACH.defs.push({ id: 'land1', tier: 9, ic: '' });          // дубль id + тир вне [1,5] + пустая иконка
+  game.ACH.defs.push({ id: 'zzz_no_text', tier: 1, ic: '🎈' });  // валиден по форме, но без i18n-текста
+  const problems = game.validateAch();
+  assert.ok(problems.some(p => /дублирующийся id/.test(p)), 'дубль id должен отлавливаться');
+  assert.ok(problems.some(p => /tier/.test(p)), 'тир вне [1,5] должен отлавливаться');
+  assert.ok(problems.some(p => /иконка/.test(p)), 'пустая иконка должна отлавливаться');
+  assert.ok(problems.some(p => /zzz_no_text/.test(p) && /i18n/.test(p)), 'медаль без i18n-текста должна отлавливаться');
+});
+
+test('validateAch: чистый реестр без проблем; ловит не-boolean флаг, prog-не-функцию и отсутствие legend', () => {
+  const { game } = boot();
+  assert.deepEqual([...game.validateAch()], [], 'текущий реестр медалей должен быть валиден');
+
+  game.ACH.defs.push({ id: 'zzz_flags', tier: 2, ic: '🚩', pending: 'yes', prog: 42 });  // флаг-строка, prog-число
+  const p = game.validateAch();
+  assert.ok(p.some(x => /pending/.test(x)), 'не-boolean флаг должен отлавливаться');
+  assert.ok(p.some(x => /prog/.test(x)), 'prog не-функция должна отлавливаться');
+
+  const i = game.ACH.defs.findIndex(d => d.id === 'legend');
+  game.ACH.defs.splice(i, 1);                                   // убрать особую медаль legend
+  assert.ok(game.validateAch().some(x => /legend/.test(x)), 'отсутствие legend (завязан checkLegend) должно отлавливаться');
+});
+
 test('validateI18n ловит ключ, забытый в одном из языков', () => {
   const { game } = boot();
   delete game.I18N.ru['level.t.5'];                // «забыли перевод»

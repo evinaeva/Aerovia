@@ -1,6 +1,6 @@
 # PlaneFlow — Level Economy (derived, not hand-tuned)
 
-> The model for **every** map's money. The live code is `levelEconomy()` in `index.html`
+> The model for **every** map's money. The live code is `levelEconomy()` in `src/game/04-config-levels.ts`
 > plus the `ECON_*` / `SVC_*` knobs in the `K` object; this file explains **why** the
 > formula is shaped the way it is. See also [`level-pattern.md`](level-pattern.md) (the
 > level schema), [`progression.md`](progression.md) (stars), and

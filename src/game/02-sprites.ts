@@ -1,3 +1,8 @@
+// ===== 02-sprites — sprite atlas — load, cache & recolor; resolved palette =====
+// One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
+// Provides: COL, SPRITES, SVC, tokenOf, refreshSpriteMode.
+// Reads: 01 (ctx, PALETTE, NEON_TOKENS, THEME, ATLAS); 03 (t); 06 (save, dpr).
+
   const SPRITES = (() => {
     const cache = new Map<string, HTMLImageElement>();
     const stripF = (s: string) => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)

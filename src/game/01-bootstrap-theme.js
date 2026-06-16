@@ -1,3 +1,8 @@
+// ===== 01-bootstrap-theme — opens the game IIFE; canvas handle + sprite palette/theme bootstrap =====
+// Opens the single game IIFE shared across 01..13 (shared script scope, not ES modules; 13 closes it).
+// Provides (see _contracts.d.ts): cv, ctx, PALETTE, NEON_TOKENS, THEME, ATLAS.
+// Reads: — (first module).
+
 (() => {
   "use strict";
   const cv = document.getElementById('c');

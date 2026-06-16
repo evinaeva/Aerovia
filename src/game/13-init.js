@@ -1,3 +1,8 @@
+// ===== 13-init — closes the game IIFE; boot, wiring & the ?test=1 API =====
+// Closes the single game IIFE opened in 01 (shared script scope, not ES modules).
+// Provides: — (wires the modules together; exposes window.__GAME under ?test=1).
+// Reads: ~all modules — 11 (showStart/showLevels/loadGame/saveGame/applyMenuIcons), 10 (frame), 06 (save/resize/VERSION), 05 (validateGame), 03 (applyI18n/setLang/t), 07 (SND/HAP/Analytics/Leaderboard), 12 (ACH/openMedals), 08 (computeStars…), 04 (config + test-API exports).
+
   document.getElementById('medalsBtn').onclick=()=>openMedals('start');
   { const b=document.getElementById('leaderboardBtn'); if(b) b.onclick=showLeaderboard; }
   { const b=document.getElementById('leaderboardBackBtn'); if(b) b.onclick=()=>{ showStart(); }; }
@@ -36,7 +41,7 @@
       dayCycle, weatherTaxiMult, neededCrew,
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
-      validateGame, validateLevels, validateBonus, validateI18n, validateConfig,
+      validateGame, validateLevels, validateBonus, validateI18n, validateConfig, validateAch,
       saveGame, loadGame, setLang, detectLang, Analytics,
       get save(){ return save; },     set save(v){ save=v; },
       get lang(){ return lang; },

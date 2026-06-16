@@ -1,3 +1,8 @@
+// ===== 03-i18n — translations (en/ru) + locale-aware number/money formatting =====
+// One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
+// Provides: I18N, t, lang, DEFAULT_LANG, setLang, detectLang, applyI18n, fmtNum, fmtMoney, FLAGS.
+// Reads: 06 (save); 07 (Analytics).
+
   // ===== i18n types (erased at build) =====
   // Every language must carry the same phrase keys — a missing or mistyped key
   // is a compile error (see `ru` below). The lookup helpers are checked too.
