@@ -25,7 +25,7 @@
   try{ const _pr = validateGame(); if(_pr.length) console.error('[PlaneFlow] проблемы конфига:\n  '+_pr.join('\n  ')); }catch(e){ console.error(e); }
   SND.setEnabled(save.sound!==false); HAP.on = save.vibro!==false;
   syncSettingsUI();
-  document.getElementById('ver').textContent=VERSION;
+  { const _v=document.getElementById('ver'); if(_v) _v.textContent=VERSION; }  // #ver убран из neon-бренда — guard
   resize();
   requestAnimationFrame(frame);
 

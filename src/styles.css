@@ -370,6 +370,7 @@
 :root {
   /* surfaces */
   --m-panel:        #0f1c3c;
+  --m-panel-glass:  rgba(15,28,60,0.74); /* полупрозрачная панель CTA над живым canvas (радар просвечивает) */
   --m-panel-2:      #0a1228;          /* sunken well / table */
   --m-panel-3:      #14264e;          /* raised inner chip / row */
   --m-panel-border: rgba(111,198,221,0.32);
@@ -641,7 +642,6 @@
 .icon-btn:hover { filter: brightness(1.15); border-color: var(--m-accent); }
 .icon-btn:active { transform: scale(0.94); }
 .icon-btn svg { width: 22px; height: 22px; }
-.icon-btn--flag { padding: 0; overflow: hidden; font-size: 24px; }
 .icon-btn--danger { color: var(--m-danger); }
 
 /* ============================================================
@@ -967,7 +967,6 @@
   .start-wrap{display:flex;align-items:center;justify-content:center;gap:clamp(24px,5vw,60px);flex-wrap:wrap}
   .screen__col{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;width:100%}
   .mic{display:inline-flex;align-items:center;justify-content:center}
-  .icon-btn--flag svg{width:100%;height:100%;display:block}
   /* legacy id-specificity rules must not override the new menu classes */
   #startScreen{background:none;backdrop-filter:none}
   #levelList{display:flex;flex-direction:column;flex:1;min-height:0;background:none;overflow:visible;margin:0;padding:0}
@@ -985,12 +984,13 @@
      ============================================================ */
   #startScreen .pf-main{ display:block; }              /* full-bleed canvas, children placed absolutely */
   #startScreen .pf-main > *{ position:absolute; }
-  #startScreen .pf-scrim{ inset:0; pointer-events:none; z-index:0; }
-  #startScreen .pf-chips{ top:18px; right:18px; display:flex; gap:10px; z-index:7; }
-  #startScreen .pf-corner{ right:18px; bottom:18px; display:flex; gap:10px; z-index:7; }
-  #startScreen .chip--star .chip__ic svg{ color:var(--m-gold); }
+  /* scrim: диагональ — читаемость и слева (бренд), и справа (панель) над живым canvas */
+  #startScreen .pf-scrim{ inset:0; pointer-events:none; z-index:1;
+    background:linear-gradient(105deg, var(--m-scrim) 0%, transparent 50%, var(--m-scrim) 100%); }
+  #startScreen .pf-corner{ right:7%; bottom:18px; display:flex; gap:10px; z-index:3; }
+  #startScreen .corner-debug{ left:18px; bottom:18px; z-index:3; }
 
-  /* brand: kicker · wordmark · tagline · ver */
+  /* brand: wordmark · tagline (kicker/ver убраны) */
   #startScreen .pf-brand{ left:7%; top:50%; transform:translateY(-50%); max-width:min(46%,460px);
     text-align:left; z-index:2; }
   #startScreen .brand__mark{ font-family:var(--m-font-display); font-weight:700; font-size:52px;
@@ -1000,23 +1000,28 @@
   #startScreen .brand__plane{ color:var(--m-accent); filter:drop-shadow(0 0 8px var(--m-accent)); }
   #startScreen .brand__word{ display:inline-flex; }
   #startScreen .brand__w1,#startScreen .brand__w2{ display:inline; }
-  #startScreen .brand__kicker{ margin:0 0 12px; }
-  #startScreen .brand__tag{ display:block; margin-top:16px; }
-  #startScreen .brand__tag-ic{ display:none; }
-  #startScreen .brand__ver{ margin-top:18px; }
+  #startScreen .brand__tag{ display:block; margin-top:16px; font-size:17px; font-weight:700;
+    color:var(--m-text-body); text-shadow:0 1px 8px rgba(0,0,0,.5); }
 
   /* CTA group — vertical centering via margin (NOT transform: the .panel
      entrance keyframe ends at transform:none and would clobber translateY). */
   #startScreen .pf-cta{ right:7%; top:0; bottom:0; height:fit-content; margin-block:auto;
-    width:min(40%,308px); padding:24px 22px; z-index:2; }
+    width:min(40%,308px); padding:24px 22px; z-index:3; }
   #startScreen .pf-cta .menu-col{ width:100%; gap:13px; }
 
-  /* ---- неон-акценты старт-экрана ---- */
-  #startScreen .pf-cta{ background:rgba(14,26,56,.66); backdrop-filter:blur(8px); }
-  #startScreen .brand__word{ text-shadow:0 0 14px rgba(111,198,221,.55); }
+  /* ---- неон-акценты старт-экрана: стеклянная панель (радар просвечивает) ---- */
+  #startScreen .pf-cta{ background:var(--m-panel-glass); backdrop-filter:blur(var(--m-board-blur)); }
+  #startScreen .brand__word{ text-shadow:var(--m-accent-glow); }
 
   /* small landscape: keep the two side clusters from colliding */
   @media (max-width:560px){
     #startScreen .brand__mark{ font-size:40px; }
     #startScreen .pf-cta{ width:min(46%,260px); }
+  }
+  /* короткий landscape на телефоне: компактнее панель и бренд (spec §8) */
+  @media (max-height:480px){
+    #startScreen .pf-cta{ width:min(46%,268px); padding:18px 18px; }
+    #startScreen .pf-cta .menu-col{ gap:10px; }
+    #startScreen .brand__mark{ font-size:40px; }
+    #startScreen .brand__tag{ font-size:15px; }
   }

@@ -1,6 +1,6 @@
 // ===== 03-i18n — translations (en/ru) + locale-aware number/money formatting =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: I18N, t, lang, DEFAULT_LANG, setLang, detectLang, applyI18n, fmtNum, fmtMoney, FLAGS.
+// Provides: I18N, t, lang, DEFAULT_LANG, setLang, detectLang, applyI18n, fmtNum, fmtMoney.
 // Reads: 06 (save); 07 (Analytics).
 
   // ===== i18n types (erased at build) =====
@@ -24,7 +24,7 @@
       'app.title':'PlaneFlow — air traffic control',
       'pwa.updateTitle':'A new version is ready', 'pwa.updateBtn':'Update',
       'start.kicker':'Night controller · Airfield',
-      'start.tagline':'Guide the planes with your finger. Calm night flow.',
+      'start.tagline':'Overthinking: OFF. Plane traffic: ON.',
       'start.play':'Play', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
       'over.next':'Next level', 'over.again':'Play again', 'over.toLevels':'Level select',
       'over.passed':'Level complete', 'over.failed':'Shift over',
@@ -208,7 +208,7 @@
       'app.title':'PlaneFlow — диспетчер',
       'pwa.updateTitle':'Доступна новая версия', 'pwa.updateBtn':'Обновить',
       'start.kicker':'Ночной диспетчер · Аэродром',
-      'start.tagline':'Веди борта пальцем. Спокойный ночной поток.',
+      'start.tagline':'Меньше мыслей — больше рейсов.',
       'start.play':'Играть', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
       'over.next':'Следующий уровень', 'over.again':'Ещё раз', 'over.toLevels':'К уровням',
       'over.passed':'Уровень пройден', 'over.failed':'Смена закрыта',
@@ -427,7 +427,6 @@
       const s = t((el as HTMLElement).dataset.i18nAria!); el.setAttribute('aria-label', s); el.setAttribute('title', s);
     });
     renderLangBtns();
-    renderLangFlag();
     if(!document.getElementById('pauseScreen')!.classList.contains('hidden')) buildPauseInfo();
   }
   function renderLangBtns(): void {
@@ -443,18 +442,7 @@
       }
     });
   }
-  // флаги для углового переключателя языка (inline SVG — рисуются одинаково на всех
-  // платформах, в отличие от эмодзи-флагов, которые Windows показывает буквами)
-  const FLAGS: Record<LangCode, string> = {
-    en: '<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="40" fill="#012169"/><path d="M0,0 60,40 M60,0 0,40" stroke="#fff" stroke-width="8"/><path d="M0,0 60,40 M60,0 0,40" stroke="#C8102E" stroke-width="4"/><rect x="25" width="10" height="40" fill="#fff"/><rect y="15" width="60" height="10" fill="#fff"/><rect x="27" width="6" height="40" fill="#C8102E"/><rect y="17" width="60" height="6" fill="#C8102E"/></svg>',
-    ru: '<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg"><rect width="60" height="40" fill="#fff"/><rect y="13.33" width="60" height="13.34" fill="#0039A6"/><rect y="26.67" width="60" height="13.33" fill="#D52B1E"/></svg>'
-  };
-  // флаг показывает ТЕКУЩИЙ язык; тап — переключение на следующий (всего два языка)
-  function renderLangFlag(): void {
-    const b = document.getElementById('langFlagBtn');
-    if(!b) return;
-    b.innerHTML = FLAGS[lang] || FLAGS[DEFAULT_LANG];
-    b.setAttribute('aria-label', (I18N[lang] && I18N[lang]._name) || lang);
-  }
+  // угловой переключатель языка = нейтральный глобус (data-mic="globe" + aria из settings.language);
+  // флаги текущего языка убраны по neon main-screen spec (язык «переехал с флага на globe»).
 
   // ---- balance knobs (дефолты, потом крутим) ----
