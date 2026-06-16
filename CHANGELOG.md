@@ -6,6 +6,19 @@
 📸 **Скриншоты по версиям** (главный экран · геймплей · пауза) — в
 [галерее `docs/screenshots/`](docs/screenshots/README.md).
 
+## Не выпущено — Privacy / Data Safety под нативный Play Games (блокер релиза)
+
+- **`privacy.html`** — добавлен раздел «Google Play Games (Android, optional)»: опциональный
+  вход, какие данные уходят (player ID, gamer tag/аватар, ачивки и счёт лидербордов), что их
+  обрабатывает Google, и как игрок ими управляет/удаляет (ссылки на политику Google и настройки
+  Play Games). Обновлены разделы «Where the data goes», «Security», «Data retention», дата.
+- **`docs/play-data-safety.md`** — новый блок «Play Games (Android-сборка)»: нативный вход делает
+  ответ формы **Yes** (даже если аналитика на сценарии A); таблица типов данных (Device or other
+  IDs / Personal info → Name / App activity), Shared = No, Optional. Сценарий A переименован в
+  «веб/PWA без Play Games».
+- **`docs/backlog.md`** — пункт 7 («Переход на Capacitor + Capgo») и пункт 4 («Глобальные
+  рейтинги») отмечены: доки готовы, осталось внести ответы в форму Play Console при публикации.
+
 ## Не выпущено — Полировка модульной структуры (split, валидатор медалей, контракт-заголовки)
 
 - **Крупные модули распилены** по швам между функциями (поведение прежнее):
