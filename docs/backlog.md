@@ -71,9 +71,11 @@
    плагин Play Games, собрать APK, проверить на реальном телефоне: (а) Canvas нормально едет в
    WebView, (б) нативный вход/ачивка/лидерборд срабатывают. Developer-аккаунт уже верифицирован
    → настройку Play Games можно делать сразу. **Сложность:** средняя.
-2. **Play Games в Play Console.** Создать app-запись (черновик, без публикации), настроить PGS:
-   ачивки + leaderboard(s) Survival, получить их ID; credentials с SHA-1 (debug + release);
-   **добавить себя в тестеры** (не добавляется автоматически!). **Сложность:** низкая–средняя.
+2. **Play Games в Play Console.** ✅ App-запись + PGS-проект созданы (черновик), OAuth consent
+   настроен, тестеры добавлены; первая партия — **5 ачивок + лидерборд Survival — Forest** залиты
+   (черновик), Application/achievement/leaderboard ID зафиксированы в
+   [`play-games-setup.md`](play-games-setup.md). Осталось: credentials с **debug SHA-1** (после
+   Capacitor-сборки) и публикация (после теста). **Сложность:** низкая–средняя.
 3. **Мост в коде.** Плагин `@openforge/capacitor-game-connect` обернуть в уже готовые точки
    замены: `Account.authProvider` (вход Play Games), `Leaderboard.provider` (submit/показ топов),
    `ACH.unlock` → `unlockAchievement` (карта «медаль → Play Games id»). Каркас рейтингов/медалей и
