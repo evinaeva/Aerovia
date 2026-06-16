@@ -79,9 +79,10 @@
 - **PWA** — `manifest.json` + `sw.js`: установка на главный экран, офлайн-старт, тост
   «Доступна новая версия» (навигация network-first → контент обновляется сразу после пуша).
 - **Свой домен** `planeflow.jevgenia.com` на GitHub Pages (файл `CNAME`).
-- **Android TWA** — каркас под Google Play: `twa-manifest.json`,
-  `.well-known/assetlinks.json`, `.nojekyll`; **`.aab` собран** (Bubblewrap),
-  `android.keystore` есть. Раннбук — [`android-twa.md`](android-twa.md).
+- **Android-обёртка (Capacitor)** — упаковка под Google Play: `capacitor.config.ts`,
+  нативный мост Play Games (`src/game/12b-native-play-games.ts`), сборка `www/`
+  (`npm run build:www`). Раннбук — [`capacitor-android.md`](capacitor-android.md).
+  _Легаси TWA-путь (Bubblewrap/`.aab`) — история в_ [`android-twa.md`](android-twa.md).
 - **Иконки для стора** — 512 + adaptive + maskable (см. «Бренд и визуал»).
 - _Осталось до релиза_ (в [`backlog.md`](backlog.md)): скриншоты / feature graphic,
   Developer-аккаунт, закрытый трек, AdMob.

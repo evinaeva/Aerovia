@@ -5,7 +5,7 @@
 дизайн-системе PlaneFlow (`assets/sprites/README.md` + [`design/`](design/README.md)).
 
 Смежное: арт-статусы — [`assets.md`](assets.md) (раздел «Для публикации»); упаковка и
-чек-лист публикации — [`android-twa.md`](android-twa.md); приватность/Data Safety —
+чек-лист публикации — [`capacitor-android.md`](capacitor-android.md); приватность/Data Safety —
 [`play-data-safety.md`](play-data-safety.md).
 
 > **Иконка обновлена (2026-06-16):** набор ниже отрисован заново («неоновая ночная ВПП» —
