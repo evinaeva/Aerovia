@@ -1,3 +1,8 @@
+// ===== 06-state-layout — all mutable game state, the save shape, canvas/field metrics & bay/runway layout =====
+// One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
+// Provides: save, planes, bays, runways, money, lives, served, gameTime, field, W/H/SZ, VERSION, layout, resize, debug, currentMode, addFloat, … (the shared state).
+// Reads: 01 (cv, ctx); 04 (LV, curBiome, curBonus, levelName, bonusName); 03 (t, lang).
+
   let levelIdx = 0, levelKey: number | string = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
@@ -16,9 +21,9 @@
   // единый источник истины о текущем режиме (логика, не контент): survival/biome/bonus/campaign.
   // Раньше режим вычислялся инлайн-тернарником в нескольких местах — теперь одна функция (см. CLAUDE.md).
   function currentMode(){ return survival ? 'survival' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')); }
-  // Persisted player data — the save shape. Typed even while the rest of this
-  // module is still @ts-nocheck, so other modules get checked against it (e.g.
-  // a renamed/typo'd `save.unlocked` becomes a compile error).
+  // Persisted player data — the save shape. This is the typed contract every
+  // module reads through, so a renamed/typo'd field (e.g. `save.unlocked`)
+  // becomes a compile error anywhere it's used.
   interface Save {
     unlocked: number;
     best: Record<string, number>;

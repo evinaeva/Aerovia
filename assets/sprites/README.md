@@ -14,7 +14,7 @@ fallback. So:
   `#fallbackhex` — the exact color the art was authored with. The static
   `*-preview.html` files and any plain `<use>` render identically to before.
 - **Recolor at runtime** by defining the tokens. The game's sprite atlas
-  (`SPRITES` in `index.html`) rasterizes each `<symbol>` into a standalone
+  (`SPRITES` in `src/game/02-sprites.ts`) rasterizes each `<symbol>` into a standalone
   `<svg>`; to recolor it injects a `<style>:root{--token:value;…}</style>` block
   into that wrapper. Pass a token-override object through `blitC`/`blit`
   (e.g. `SPRITES.blitC('coin', x, y, w, h, 0, {gold:'#fff', 'gold-dim':'#aaa'})`),
@@ -25,7 +25,7 @@ fallback. So:
   string `color` arg (route color) — unchanged.
 
 Token names are listed in the per-symbol tables below (the **colors / tokens**
-column). The full default palette lives in `PALETTE` in `index.html`; the
+column). The full default palette lives in `PALETTE` in `src/game/01-bootstrap-theme.js`; the
 procedural fallback reads the same tokens via `COL` so a theme recolors both the
 sprites and the fallback shapes. Token reference (token → default hex):
 

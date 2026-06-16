@@ -5,9 +5,13 @@
 // Run locally with `npm run build`. CI runs this on every push to main and
 // deploys the result to GitHub Pages, so the published file is always rebuilt
 // fresh from src/ — there is no built artifact to forget to regenerate.
+//
+// GAME_ORDER and build() are exported so tests can introspect the module list
+// without rebuilding; the build runs only when this file is invoked directly.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+import { argv } from 'node:process';
 import ts from 'typescript';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -40,28 +44,37 @@ const gameModule = (name) => {
 };
 
 // The game IIFE, in the order its modules must concatenate (01 opens it, 13 closes it).
-const GAME_ORDER = [
+export const GAME_ORDER = [
   '01-bootstrap-theme', '02-sprites', '03-i18n', '04-config-levels', '05-validate',
-  '06-state-layout', '07-audio-services', '08-gameplay', '09-render',
-  '10-scene-loop', '11-menu-ui', '12-achievements-medals', '13-init',
+  '06-state-layout', '07-audio-services', '08-gameplay', '08b-gameplay-step',
+  '09-render', '09b-render-entities', '10-scene-loop', '11-menu-ui',
+  '12-achievements-medals', '13-init',
 ];
-const game = GAME_ORDER.map(gameModule).join('\n');
-const css  = bodyOf('src/styles.css');
-const boot = bodyOf('src/boot-sw.js');
 
-// Fill each placeholder exactly once. Function replacements keep `$` sequences
-// in the code from being read as special replacement patterns; the includes()
-// guard turns a renamed/removed placeholder into a loud build error instead of
-// a silently broken page.
-let html = read('index.template.html');
-for (const [placeholder, value] of [
-  ['/*__BUILD_CSS__*/',  css],
-  ['/*__BUILD_GAME__*/', game],
-  ['/*__BUILD_BOOT__*/', boot],
-]) {
-  if (!html.includes(placeholder)) throw new Error(`build: ${placeholder} missing from index.template.html`);
-  html = html.replace(placeholder, () => value);
+export function build() {
+  const game = GAME_ORDER.map(gameModule).join('\n');
+  const css  = bodyOf('src/styles.css');
+  const boot = bodyOf('src/boot-sw.js');
+
+  // Fill each placeholder exactly once. Function replacements keep `$` sequences
+  // in the code from being read as special replacement patterns; the includes()
+  // guard turns a renamed/removed placeholder into a loud build error instead of
+  // a silently broken page.
+  let html = read('index.template.html');
+  for (const [placeholder, value] of [
+    ['/*__BUILD_CSS__*/',  css],
+    ['/*__BUILD_GAME__*/', game],
+    ['/*__BUILD_BOOT__*/', boot],
+  ]) {
+    if (!html.includes(placeholder)) throw new Error(`build: ${placeholder} missing from index.template.html`);
+    html = html.replace(placeholder, () => value);
+  }
+
+  writeFileSync(join(ROOT, 'index.html'), html);
+  console.log(`built index.html — ${html.length} chars from ${GAME_ORDER.length} game modules + css + boot`);
+  return html;
 }
 
-writeFileSync(join(ROOT, 'index.html'), html);
-console.log(`built index.html — ${html.length} chars from ${GAME_ORDER.length} game modules + css + boot`);
+// Run the build only when invoked directly (`node scripts/build.mjs`), so that
+// importing this module for GAME_ORDER (e.g. from tests) has no side effects.
+if (argv[1] && import.meta.url === pathToFileURL(argv[1]).href) build();

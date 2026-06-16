@@ -2,7 +2,7 @@
 
 > Game-design reference. The authoritative player-facing rules (in Russian) are in
 > [`../FAQ.md`](../../FAQ.md); balance numbers live in the `K` object and `LEVELS` array in
-> `index.html` (see [`../DEV.md`](../../DEV.md)). This file summarizes the loop for design
+> `src/game/` (see [`../DEV.md`](../../DEV.md)). This file summarizes the loop for design
 > and AI context. Visual treatment of these mechanics is in
 > [`../art-direction/`](../art-direction/art_direction_v1.md).
 

@@ -6,7 +6,7 @@
 > [`meta_progression.md`](meta_progression.md#вне-скоупа-отложено--не-строить-без-нового-решения) —
 > это сознательный отход от «лёгкой меты»).
 >
-> Код: всё живёт в `index.html` (модули `Leaderboard`, `Account`, функция `periodBucket`,
+> Код: всё живёт в `src/game/07-audio-services.ts` (модули `Leaderboard`, `Account`, функция `periodBucket`,
 > `ACH.onRank`, флаг `survival`/`currentMode()`). Тесты: [`tests/leaderboard.test.mjs`](../../../tests/leaderboard.test.mjs).
 
 ---
