@@ -75,6 +75,10 @@
       {id:'zoo',     tier:5, ic:'🦁', hidden:true},
     ];
 
+    // Необязательное зеркало во внешний сервис достижений (нативный Play Games в обёртке).
+    // Ставится из 12b-native-play-games; на вебе остаётся null → no-op.
+    let mirror: ((id: string) => void) | null = null;
+    function mirrorAch(id: string){ if(mirror){ try{ mirror(id); }catch(e){} } }
     function persist(){ save.ach=[...unlocked]; save.stats=S.stats; saveGame(); }
     // Третья и далее медаль за раунд СГОРАЕТ: отложенной выдачи нет, в новом раунде
     // «за прошлое» ничего не приходит. Одноразовые (за 1 действие) можно получить,
@@ -85,7 +89,7 @@
       if(run.given>=RUN_CAP) return;
       const d=defs.find(x=>x.id===id); if(!d) return;
       run.given++;
-      unlocked.add(id); persist(); toastAch(d);
+      unlocked.add(id); persist(); toastAch(d); mirrorAch(id);
       checkLegend();
     }
     function checkLegend(){
@@ -98,7 +102,7 @@
     function giveForce(id: string){
       if(unlocked.has(id)) return;
       const d=defs.find(x=>x.id===id); if(!d) return;
-      unlocked.add(id); persist(); toastAch(d); checkLegend();
+      unlocked.add(id); persist(); toastAch(d); mirrorAch(id); checkLegend();
     }
 
     // всплывашка: очередь, по одной, не чаще раза в минуту; на границе раундов
@@ -212,6 +216,7 @@
         if(best===1)  giveForce('rank_1');
       },
       flushToasts,
+      setMirror(fn: ((id: string) => void) | null){ mirror = (typeof fn === 'function') ? fn : null; },
       list(){
         const out: any[]=[];
         for(const d of defs){
