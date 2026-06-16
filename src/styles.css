@@ -1001,7 +1001,7 @@
   #startScreen .brand__word{ display:inline-flex; }
   #startScreen .brand__w1,#startScreen .brand__w2{ display:inline; }
   #startScreen .brand__tag{ display:block; margin-top:16px; font-size:17px; font-weight:700;
-    color:var(--m-text-body); text-shadow:0 1px 8px rgba(0,0,0,.5); }
+    color:var(--m-text-body); text-shadow:0 1px 8px rgba(0,0,0,.5); text-align:center; }
 
   /* CTA group — vertical centering via margin (NOT transform: the .panel
      entrance keyframe ends at transform:none and would clobber translateY). */
