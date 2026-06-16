@@ -6,6 +6,23 @@
 📸 **Скриншоты по версиям** (главный экран · геймплей · пауза) — в
 [галерее `docs/screenshots/`](docs/screenshots/README.md).
 
+## Не выпущено — Неон-геймплей: проброс COL, approach-огни ВПП, сиреневая цель (handoff)
+
+Доводка экрана геймплея под neon-handoff (`docs/design/skins/neon/handoff/`) — то из спеки,
+что не требует нового арта (корпус ангара Sawtooth отложен — под него нужен PNG):
+
+- **`COL` пробрасывает `green · green-bright · purple · core`** (`src/game/02-sprites.ts`).
+  Эти токены есть в `NEON_TOKENS`, но аксессор `COL` их не отдавал → `COL.green/.purple/.core`
+  были `undefined`, и канвас тихо игнорировал `fill/strokeStyle`, рисуя прошлым цветом. Чинит
+  реальный баг: точки апгрейда / affordable-рамка / чип ↑ боксов и **тон 3-й ВПП** (`green`).
+- **Approach-огни ВПП** (`src/game/09-render.ts`, `drawRunways`): фосфорная «дорожка» поперечных
+  штанг от небесного торца каждой открытой полосы вправо в небо, с «бегущим» к торцу огоньком —
+  как подсветка захода. Процедурно (как огни кромок выше), без нового ассета.
+- **Полоса цели в HUD — сиреневая** (`src/game/09b-render-entities.ts`, `drawHUD`): `COL.purple`
+  вместо `teal` (handoff §03: цель уровня — `purple`).
+
+Тесты: 76 зелёных (typecheck + build + unit).
+
 ## Не выпущено — Privacy / Data Safety под нативный Play Games (блокер релиза)
 
 - **`privacy.html`** — добавлен раздел «Google Play Games (Android, optional)»: опциональный

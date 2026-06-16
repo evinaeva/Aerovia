@@ -202,11 +202,16 @@
   const COL: Record<string, string> = {};
   {
     const base: Record<string, string> = {};
-    ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin']
-      .forEach(n => base[n] = css('--'+n));
+    // Имена COL → токен темы (NEON_TOKENS). green·green-bright·purple·core добавлены
+    // к списку: неон-геймплей опирается на них (точки апгрейда/affordable-рамка/чип ↑
+    // и тон 3-й ВПП — green; цель уровня — purple; подложки — core), но в :root их нет,
+    // поэтому без проброса COL.green/.purple/.core был бы undefined в процедуре (тогда
+    // канвас тихо игнорирует fill/strokeStyle и берёт прошлый цвет). Значения — из
+    // THEME.tokens. Один список на оба прохода (base + геттеры), чтобы не разъехались.
+    const COL_NAMES = ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin','green','green-bright','purple','core'];
+    COL_NAMES.forEach(n => base[n] = css('--'+n));
     const tokenOf: Record<string, string> = { paper:'cream-100', coin:'gold' }; // имя COL → имя токена темы
-    ['ink','tarmac','tarmac-2','water','phosphor','paper','muted','amber','teal','ice','rose','gold','life','coin']
-      .forEach(n => Object.defineProperty(COL, n, {
+    COL_NAMES.forEach(n => Object.defineProperty(COL, n, {
         enumerable: true,
         get(){ const t = THEME.tokens; const tk = tokenOf[n] || n; return (t && t[tk]) || base[n]; }
       }));

@@ -359,7 +359,7 @@
       const target=LV.objective.target||1, frac=Math.max(0,Math.min(1,mv/target));
       const bw3=170*ui, bx3=cxC-bw3/2, by3=cy+5*ui, bh3=6*ui;
       rr(bx3,by3,bw3,bh3,bh3/2); ctx.fillStyle='rgba(127,155,176,.20)'; ctx.fill();
-      if(frac>0){ rr(bx3,by3,Math.max(bh3,bw3*frac),bh3,bh3/2); ctx.fillStyle=COL.teal; ctx.fill(); }
+      if(frac>0){ rr(bx3,by3,Math.max(bh3,bw3*frac),bh3,bh3/2); ctx.fillStyle=COL.purple; ctx.fill(); }   // цель уровня — сиреневый (handoff §03; был teal)
     }
 
     // кнопка паузы — спрайт-чип (на паузе поверх рисуем «play»)
