@@ -370,13 +370,13 @@
 :root {
   /* surfaces */
   --m-panel:        #0f1c3c;
-  --m-panel-glass:  rgba(15,28,60,0.74); /* полупрозрачная панель CTA над живым canvas (радар просвечивает) */
+  --m-panel-glass:  rgba(20,36,72,0.74);  /* стеклянная панель CTA над живым canvas — синхронизирована с макетом SKINS.neon */
   --m-panel-2:      #0a1228;          /* sunken well / table */
   --m-panel-3:      #14264e;          /* raised inner chip / row */
-  --m-panel-border: rgba(111,198,221,0.32);
-  --m-panel-edge:   rgba(111,198,221,0.12); /* top gloss hairline */
-  --m-panel-shadow: 0 24px 60px rgba(3,7,20,0.7), 0 0 30px rgba(111,198,221,0.10);
-  --m-divider:      rgba(111,198,221,0.18);
+  --m-panel-border: rgba(58,210,255,0.34);
+  --m-panel-edge:   rgba(58,210,255,0.12); /* top gloss hairline */
+  --m-panel-shadow: 0 0 24px rgba(58,210,255,0.20), 0 18px 40px rgba(3,7,20,0.6);
+  --m-divider:      rgba(58,210,255,0.18);
 
   /* radii */
   --m-r-panel:  14px;
@@ -386,28 +386,28 @@
 
   /* text */
   --m-text-strong: #dff4ff;
-  --m-text-body:   #b9d2e8;
-  --m-text-muted:  #6f88b5;
-  --m-kicker:      #6f88b5;
+  --m-text-body:   #bcd6f0;
+  --m-text-muted:  #5f7bb0;
+  --m-kicker:      #5f7bb0;
 
   /* semantic accents */
   --m-primary:        #6cc88f;
   --m-primary-deep:   #3f9e6a;
   --m-primary-text:   #05140d;
   --m-primary-glow:   0 0 22px rgba(108,200,143,0.40);
-  --m-danger:         #e85f7e;
-  --m-danger-soft:    rgba(224,88,79,0.55);
-  --m-gold:           #e6c562;
+  --m-danger:         #ff3b6b;
+  --m-danger-soft:    rgba(255,59,107,0.55);
+  --m-gold:           #ffd23b;
   --m-life:           #e85f7e;
-  --m-plane:          #6fc6dd;
-  --m-coin:           #e6c562;
-  --m-accent:         #6fc6dd;        /* фирменный акцент (active states) */
-  --m-accent-glow:    0 0 22px rgba(111,198,221,0.40);
+  --m-plane:          #3ad2ff;
+  --m-coin:           #ffd23b;
+  --m-accent:         #3ad2ff;        /* фирменный акцент (active states) — синхронизирован с макетом SKINS.neon */
+  --m-accent-glow:    0 0 22px rgba(58,210,255,0.45);
 
   /* ghost / neutral button */
-  --m-ghost-bg:     rgba(20,38,78,0.7);
-  --m-ghost-border: rgba(111,198,221,0.32);
-  --m-ghost-text:   #b9d2e8;
+  --m-ghost-bg:     rgba(16,30,66,0.6);
+  --m-ghost-border: rgba(58,210,255,0.32);
+  --m-ghost-text:   #bcd6f0;
 
   /* buttons */
   --m-btn-h:    52px;
@@ -417,7 +417,7 @@
   --m-btn-lift: 0px;
 
   /* board */
-  --m-board: radial-gradient(80% 80% at 50% 42%, #122046 0%, #0c1430 55%, #070c1c 100%);
+  --m-board: radial-gradient(110% 115% at 50% 46%, #16245e 0%, #0c1430 46%, #070c1c 100%);
   --m-scrim: rgba(5,9,22,0.6);
   --m-board-blur: 3px;
 
@@ -1012,6 +1012,15 @@
   /* ---- неон-акценты старт-экрана: стеклянная панель (радар просвечивает) ---- */
   #startScreen .pf-cta{ background:var(--m-panel-glass); backdrop-filter:blur(var(--m-board-blur)); }
   #startScreen .brand__word{ text-shadow:var(--m-accent-glow); }
+
+  /* primary CTA на главном экране = голубое «стекло» из макета SKINS.neon
+     (зелёный --m-primary остаётся на паузе/результатах) */
+  #startScreen .pf-cta .m-btn--primary{
+    background:rgba(58,210,255,0.18); color:#eaffff;
+    border:1.5px solid #3ad2ff; box-shadow:0 0 20px rgba(58,210,255,0.6); }
+  #startScreen .pf-cta .m-btn--primary:hover{ filter:brightness(1.08); }
+  /* corner icon-кнопки — синий неон-чип вместо тёмно-фиолетового */
+  #startScreen .pf-corner .icon-btn{ background:rgba(16,30,66,0.6); }
 
   /* small landscape: keep the two side clusters from colliding */
   @media (max-width:560px){
