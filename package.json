@@ -5,6 +5,7 @@
   "description": "PlaneFlow — airport dispatcher game. Source is modular under src/; `npm run build` assembles the single self-contained index.html (a generated artifact, not committed). Tests are a safety net for adding mechanics without breaking old behavior.",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "build:www": "node scripts/build-www.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsc --noEmit && node scripts/build.mjs && node --test tests/*.test.mjs",
     "test:e2e": "node scripts/build.mjs && playwright test",
@@ -12,7 +13,13 @@
     "screenshots": "node scripts/screenshots.mjs",
     "gallery": "node scripts/build-gallery.mjs"
   },
+  "dependencies": {
+    "@capacitor/android": "^5.7.0",
+    "@capacitor/core": "^5.7.0",
+    "@openforge/capacitor-game-connect": "^5.0.2"
+  },
   "devDependencies": {
+    "@capacitor/cli": "^5.7.0",
     "@playwright/test": "^1.49.0",
     "typescript": "^6.0.3"
   }
