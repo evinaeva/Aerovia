@@ -84,6 +84,27 @@
     ctx.beginPath(); ctx.moveTo(3,3); ctx.lineTo(-15,22); ctx.lineTo(-20,21); ctx.lineTo(-6,3); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(-16,-2.5); ctx.lineTo(-24,-10); ctx.lineTo(-27,-9.5); ctx.lineTo(-20,-2.5); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(-16,2.5); ctx.lineTo(-24,10); ctx.lineTo(-27,9.5); ctx.lineTo(-20,2.5); ctx.closePath(); ctx.fill(); }
+  // тонкий неон-контур-джет для ГЛАВНОГО ЭКРАНА (planeQSvg из макета SKINS.neon): нос по +X —
+  // контур фюзеляжа + 4 стреловидных пера, обводка COL.phosphor (#3ad2ff), без заливки. Координаты
+  // центрированы (planeQSvg 32×32 − [16,16]); рисуется в системе, уже повёрнутой на ang (как
+  // planeShape), поэтому доп. поворота носа НЕ нужно (это была гоча Варианта A с атлас-символом).
+  function planeContour(){
+    ctx.save(); ctx.scale(2.2,2.2);
+    ctx.strokeStyle=COL.phosphor; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.lineWidth=0.7;
+    ctx.shadowColor=hexa(COL.phosphor,.6); ctx.shadowBlur=4;
+    ctx.beginPath();                                            // фюзеляж
+    ctx.moveTo(13,0); ctx.bezierCurveTo(8,-3.6,-7,-3.4,-10.6,-2.6);
+    ctx.lineTo(-10.6,2.6); ctx.bezierCurveTo(-7,3.4,8,3.6,13,0); ctx.closePath(); ctx.stroke();
+    const F=[                                                   // крылья (2) + хвост (2)
+      [[-1,0],[-9,-9.5],[-6.6,-9.5],[3,-1.6]],
+      [[-1,0],[-9,9.5],[-6.6,9.5],[3,1.6]],
+      [[-8.5,0],[-12,-5],[-10.4,-5],[-6.6,-1.2]],
+      [[-8.5,0],[-12,5],[-10.4,5],[-6.6,1.2]],
+    ];
+    for(const f of F){ ctx.beginPath(); ctx.moveTo(f[0][0],f[0][1]);
+      for(let i=1;i<f.length;i++) ctx.lineTo(f[i][0],f[i][1]); ctx.closePath(); ctx.stroke(); }
+    ctx.restore();
+  }
   // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый,
   // медицинский — белый с красным крестом на фюзеляже
   // визуальный масштаб борта (перспектива небо↔земля). На ВПП во время посадки/взлёта
@@ -106,12 +127,13 @@
   }
   function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any){
     if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)
-    if(ATLAS){
+    if(ATLAS && !inMenu){   // главный экран рисует борт контуром процедурно (ниже); геймплей — атлас-спрайт
       // sprite is authored nose-up; game heading has nose along +x → rotate ang+90°
       const _id = medical ? 'plane-medevac' : emergency ? 'plane-emergency' : vip ? 'plane-vip' : 'plane';
       if(SPRITES.blitC(_id, x, y, 62*s, 62*s, ang + Math.PI/2)) return;
     }
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
+    if(inMenu){ planeContour(); ctx.restore(); return; }   // главный экран: тонкий неон-контур-джет (макет SKINS.neon)
     ctx.save(); ctx.translate(5,7); ctx.globalAlpha=.28; planeShape('#000'); ctx.restore();
     if(vip){ ctx.shadowColor=hexa(COL.gold,.6); ctx.shadowBlur=16; }
     else { ctx.shadowColor=hexa(COL.phosphor,.7); ctx.shadowBlur=10; }
