@@ -17,7 +17,7 @@
  *
  * After changing precached assets or wanting to force a refresh, bump VERSION.
  */
-const VERSION = 'v10';
+const VERSION = 'v11';
 const CACHE = 'planeflow-' + VERSION;
 
 // App shell — everything needed to boot offline. Paths are relative so the SW
