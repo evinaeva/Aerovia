@@ -1,4 +1,4 @@
-# Art integration plan (index.html)
+# Art integration plan (`src/game/`)
 
 History of how the drawn art got wired into the live game's canvas renderer +
 palette. Big diff in the renderer + palette; done on a branch, behind a flag, verified
@@ -17,7 +17,7 @@ with `node --test` and a static frame render before merge.
   (`planeflow-batch1.svg` + `planeflow-field.svg`), then `PFSprites.preload(...)`.
 
 ## Coordinate / orientation notes
-- `planeShape` (index.html:1739) draws nose along **+x**; the plane **sprites**
+- `planeShape` (`src/game/09-render.ts`) draws nose along **+x**; the plane **sprites**
   point **up (−y)**. So when drawing a sprite for a plane at angle `pl.ang`:
   `rot = pl.ang + Math.PI/2`.
 - Current body is drawn at `scale(ui*0.5)` over a ~53-unit silhouette

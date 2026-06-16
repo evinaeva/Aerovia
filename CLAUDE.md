@@ -6,7 +6,7 @@ The game has **one look, `neon`** (dark night-radar with glow). There is no skin
 selection anymore — the old multi-skin system (`cozy`/`neon`/`cartoon`, the
 `SKIN_DEFS` registry and the "logic is the parent over skins" rule) has been removed.
 
-In code (`index.html`): the neon palette (`NEON_TOKENS`) is applied on top of the
+In code (`src/game/01-bootstrap-theme.js`): the neon palette (`NEON_TOKENS`) is applied on top of the
 base `PALETTE`; the field is drawn by `drawNeonField`; sprites come from
 `assets/sprites/neon/` with the base `assets/sprites/planeflow-*.svg` as fallback,
 and `ATLAS` is just a flag for "sprite atlas loaded yet?". Keep gameplay logic,
@@ -40,9 +40,11 @@ rebuild and `index.html` is never committed.
 
 ## TypeScript
 
-The game is TypeScript: `src/game/02..12` are all `.ts` and pass `tsc --noEmit`
-under `strict`. Only **01-bootstrap-theme.js** and **13-init.js** stay `.js` —
-they open/close the shared game IIFE and don't parse standalone.
+The game is TypeScript: every `src/game` module except **01-bootstrap-theme.js**
+and **13-init.js** is `.ts` and passes `tsc --noEmit` under `strict` (those two
+stay `.js` — they open/close the shared game IIFE and don't parse standalone).
+Each module opens with a `// ===== … =====` contract header (role · provides ·
+reads) — the quickest map of who depends on whom.
 `scripts/build.mjs` strips types from `.ts` (and uses `.js` verbatim). Run
 **`npm run typecheck`** — CI runs it too, and `npm test` runs it first.
 

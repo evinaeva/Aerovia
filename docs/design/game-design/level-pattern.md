@@ -1,7 +1,7 @@
 # PlaneFlow — Level Pattern (intensity-based ramp)
 
 > The template for **every** campaign map. Level data lives in the `LEVELS` array in
-> `index.html`; this file explains the **schema**. The *shape* of the difficulty curve and
+> `src/game/04-config-levels.ts`; this file explains the **schema**. The *shape* of the difficulty curve and
 > the design rationale live in [`difficulty_curve.md`](difficulty_curve.md). See also
 > [`progression.md`](progression.md) (stars) and [`../../FAQ.md`](../../FAQ.md) (player rules).
 

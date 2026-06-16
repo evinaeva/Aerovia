@@ -1,3 +1,8 @@
+// ===== 04-config-levels — tuning constants, level/biome/bonus definitions & level math =====
+// One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
+// Provides: K, LEVELS, BIOMES, BONUS, LV, levelEconomy, levelEffects, levelEvents, levelPace/paceInterval/paceCap, airPatience, dayCycle, objectiveDesc, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS, curBiome, curBonus.
+// Reads: 03 (I18N, t, lang, DEFAULT_LANG); 06 (state: gameTime, served, runways, save, combo, debug, weather, effects, levelIdx).
+
   // ===== config shapes (types only; erased at build) =====
   interface SideCfg { type: string; slots: number; open: number; }
   interface Events { vip?: boolean; emergency?: boolean; medical?: boolean; rush?: boolean; fog?: boolean; wind?: boolean; [k: string]: boolean | undefined; }

@@ -4,7 +4,7 @@
 > (first-time user experience) — первый опыт нового игрока, его первая сессия.* Правила для
 > игрока — в [`../FAQ.md`](../../FAQ.md). Кривую, по которой едут эти минуты, см. в
 > [`difficulty_curve.md`](difficulty_curve.md); что открывается дальше — в
-> [`meta_progression.md`](meta_progression.md). Код туториала — в `index.html`
+> [`meta_progression.md`](meta_progression.md). Код туториала — в `src/game/09b-render-entities.ts`
 > (состояние `tut`, `updateTutorial()`, `completeTutorial()`).
 
 ---

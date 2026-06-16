@@ -1,3 +1,8 @@
+// ===== 12-achievements-medals — achievements engine (ACH) + the medals screen =====
+// One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
+// Provides: ACH, openMedals, renderMedals, MEDAL_RAR.
+// Reads: 06 (save, planes, money, combo, gameTime, runCrashes, runPenalties, debug); 04 (K, LEVELS); 03 (t); 07 (SND); 11 (SVGIC, hideAllScreens, saveGame).
+
   const ACH = (() => {
     // анти-шум: не больше RUN_CAP медалей за раунд (остальные придут в следующих
     // сменах — условия перепроверяются), уведомления не чаще TOAST_GAP_MS
