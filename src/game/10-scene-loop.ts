@@ -70,13 +70,14 @@
 function drawMenuScene(tm: number){
     ctx.fillStyle=COL.ink; ctx.fillRect(0,0,W,H);
     starfield(tm);
-    const rx=W*0.74, ry=H*0.52, R=Math.min(W,H)*0.42;
+    const rx=W*0.5, ry=H*0.52, R=Math.min(W,H)*0.42;   // центр кадра (как RadarBg 50%/52%)
     ctx.save(); ctx.translate(rx,ry);
     for(let i=1;i<=4;i++){ ctx.beginPath(); ctx.arc(0,0,R*i/4,0,7);
       ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.08+i*0.01); ctx.stroke(); }
-    ctx.strokeStyle=hexa(COL.phosphor,.07); ctx.lineWidth=1;
-    for(let i=0;i<8;i++){ const a=i*Math.PI/4;
-      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*R,Math.sin(a)*R); ctx.stroke(); }
+    // крест через центр кадра (как RadarBg: горизонталь + вертикаль), вместо 8 радиальных спиц
+    ctx.strokeStyle=hexa(COL.phosphor,.10); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(-rx,0); ctx.lineTo(W-rx,0);
+                     ctx.moveTo(0,-ry); ctx.lineTo(0,H-ry); ctx.stroke();
     ctx.save(); ctx.rotate(tm*0.0013);
     const grad=ctx.createLinearGradient(0,0,R,0);
     grad.addColorStop(0,hexa(COL.phosphor,.28)); grad.addColorStop(1,hexa(COL.phosphor,0));
