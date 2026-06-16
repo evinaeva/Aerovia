@@ -9,7 +9,7 @@ For each PNG in --src whose stem is a known asset id (from comfy/prompts.json):
   - save as assets/sprites/<skin>/<id>.png,
   - add the id to assets/sprites/<skin>/manifest.json.
 
-The engine loads assets/sprites/<skin>/<id>.png for SKIN=<skin> (see index.html).
+The engine loads assets/sprites/<skin>/<id>.png for SKIN=<skin> (see src/game/02-sprites.ts).
 Default --skin is 'cartoon-ai' (a NEW, non-destructive folder; register it in the
 SKINS array to view via ?skin=cartoon-ai). Use --skin cartoon to overwrite the
 existing cartoon skin (destructive — only for reviewed, approved assets).
@@ -77,7 +77,7 @@ def main() -> None:
     print(f"\n[done] {len(done)} assets -> {skin_dir}")
     print(f"manifest now lists {len(merged)} ids")
     if args.skin != "cartoon":
-        print(f"NOTE: register '{args.skin}' in the SKINS array in index.html to "
+        print(f"NOTE: register '{args.skin}' in the SKINS array in src/game/ (see CLAUDE.md) to "
               f"view it (?skin={args.skin}).")
 
 

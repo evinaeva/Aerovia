@@ -1,7 +1,7 @@
 # PlaneFlow — Game Design
 
 Design-side reference for PlaneFlow. The authoritative player-facing rules (Russian) are
-in [`../FAQ.md`](../../FAQ.md); balance numbers live in `index.html` (see
+in [`../FAQ.md`](../../FAQ.md); balance numbers live in `src/game/04-config-levels.ts` (see
 [`../DEV.md`](../../DEV.md)). These files summarize and structure the design for context.
 
 | File | What it covers |

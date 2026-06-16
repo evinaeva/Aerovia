@@ -1,7 +1,7 @@
 # PlaneFlow — Progression
 
 > Game-design reference. Player-facing rules: [`../FAQ.md`](../../FAQ.md). Level data lives
-> in the `LEVELS` array in `index.html` (see [`../DEV.md`](../../DEV.md)); achievements are
+> in the `LEVELS` array in `src/game/04-config-levels.ts` (see [`../DEV.md`](../../DEV.md)); achievements are
 > tracked in [`../achievements.md`](../../achievements.md).
 
 ---

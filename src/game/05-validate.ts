@@ -1,3 +1,8 @@
+// ===== 05-validate — runtime config self-checks (fail-fast on broken levels/medals/i18n/economy) =====
+// One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
+// Provides: validateGame, validateLevels, validateBonus, validateI18n, validateConfig, validateAch.
+// Reads: 04 (K, LEVELS, BONUS, Level, levelEconomy, EVENT_KEYS, SVC_TYPES, CALM_LEVELS…); 03 (I18N); 12 (ACH); 07 (validateLeaderboard); 06 (runways, weather).
+
   function validateLevels(){
     const p: string[] = [];
     if(!Array.isArray(LEVELS) || !LEVELS.length){ p.push('LEVELS пуст'); return p; }
@@ -134,4 +139,36 @@
     });
     return p;
   }
-  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()).concat(validateLeaderboard()); }
+  // медали (ACH.defs): уникальные id, валидный тир, непустая иконка, флаги-boolean,
+  // и у КАЖДОЙ медали есть текст (ach.<id>.t / .d). Реестр медалей — единственный
+  // источник правды (как SKIN_DEFS у скинов): тесты ловят битую запись здесь, а не в
+  // рантайме на экране. Прямая страховка от «добавил медаль, забыл i18n / задвоил id /
+  // выбрал несуществующий тир».
+  function validateAch(){
+    const p: string[] = [];
+    const defs = ACH && ACH.defs;
+    if(!Array.isArray(defs) || !defs.length){ p.push('ACH.defs пуст'); return p; }
+    // en — источник правды по тексту (паритет языков отдельно ловит validateI18n)
+    const dict = I18N['en' as LangCode] as unknown as Record<string, unknown>;
+    const TIER_MAX = 5;   // тиры 1..5: renderMedals перебирает [1..5], MEDAL_RAR на 5, есть medals.tier<n>
+    const seen: Record<string, number> = {};
+    const tiers = new Set<number>();
+    defs.forEach((d: any, i: number)=>{
+      const id = (d && d.id!=null) ? String(d.id) : '';
+      const L = 'ACH['+(id||i)+']: ';
+      if(!id){ p.push(L+'нет id'); return; }
+      if(seen[id]) p.push(L+'дублирующийся id "'+id+'"'); else seen[id]=1;
+      if(!(Number.isInteger(d.tier) && d.tier>=1 && d.tier<=TIER_MAX)) p.push(L+'tier должен быть целым в [1,'+TIER_MAX+']');
+      else tiers.add(d.tier);
+      if(typeof d.ic!=='string' || !d.ic) p.push(L+'ic (иконка) должен быть непустой строкой');
+      ['pending','comp','hidden'].forEach(f=>{ if(d[f]!=null && d[f]!==true) p.push(L+f+' должен быть true (или отсутствовать)'); });
+      if(d.prog!=null && typeof d.prog!=='function') p.push(L+'prog должен быть функцией (s)=>[текущее, цель]');
+      ['t','d'].forEach(suf=>{ if(dict['ach.'+id+'.'+suf]==null) p.push(L+'нет i18n-ключа "ach.'+id+'.'+suf+'"'); });
+    });
+    // заголовок каждого использованного тира (renderMedals зовёт medals.tier<n>)
+    tiers.forEach(tr=>{ if(dict['medals.tier'+tr]==null) p.push('ACH: нет i18n-ключа "medals.tier'+tr+'"'); });
+    // «Легенда» (вся коллекция) — особая медаль; на неё завязаны checkLegend/give('legend')
+    if(!seen['legend']) p.push('ACH: отсутствует медаль "legend" (на неё завязан checkLegend)');
+    return p;
+  }
+  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()).concat(validateAch()).concat(validateLeaderboard()); }

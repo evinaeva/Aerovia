@@ -1,3 +1,8 @@
+// ===== 07-audio-services — sound synthesis + side services (haptics, analytics, leaderboard) =====
+// One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
+// Provides: SND, HAP, Analytics, Leaderboard, periodBucket, validateLeaderboard.
+// Reads: 03 (t, I18N, lang); 06 (VERSION, served, debug); 12 (ACH).
+
   const SND = (() => {
     const SCALE=[220,261.63,293.66,329.63,392,440,523.25,587.33,659.25]; // A3..E5
     let ac: any = null, master: any = null, enabled=true;
