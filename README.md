@@ -107,8 +107,8 @@ npm run test:e2e  # e2e-смоук (Playwright; нужен: npx playwright insta
 
 Дизайн-система интегрирована полностью; меню переведено на PlaneFlow Design System и
 главный экран собран в неоновом облике (см. `CHANGELOG.md`). **PWA**
-готова (офлайн-старт + контролируемые обновления через `sw.js`, иконки), **Android-TWA**
-заскаффолжен под Google Play (`docs/android-twa.md`), есть политика приватности и
+готова (офлайн-старт + контролируемые обновления через `sw.js`, иконки), **Android-обёртка**
+переведена на Capacitor под Google Play (`docs/capacitor-android.md`), есть политика приватности и
 Data Safety (`privacy.html`, `docs/play-data-safety.md`), прод живёт на своём домене.
 Дальше: ассеты для стора (скриншоты, feature graphic), **зимний арт** (снег/занос/плуг —
 спрайтов пока нет, механика `weather` выключена в кампании), звук/тактиль; затем

@@ -62,8 +62,8 @@ PFAnalytics.sink = evt => queue.push(evt);   // + периодический POS
 
 ## Для сторов (TODO к soft launch)
 
-- **Упаковка** ещё не выбрана (web/PWA сейчас). Под сторы — Android TWA, iOS
-  Capacitor/WKWebView. Выбор влияет на нативный SDK провайдера и на ATT-промпт.
+- **Упаковка** — Capacitor (Android сейчас; iOS позже тем же Capacitor). Влияет
+  на нативный SDK провайдера и на ATT-промпт.
 - **Consent**: до показа баннера согласия / iOS ATT держать `setConsent(false)`;
   включать `true` только после согласия.
 - **Google Play Data Safety** и **App Store privacy nutrition labels** — заполнить

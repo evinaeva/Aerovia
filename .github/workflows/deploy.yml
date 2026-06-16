@@ -46,7 +46,7 @@ jobs:
         run: node --test tests/*.test.mjs
 
       # Папка сайта = корень репо (index.html + assets + sw.js + manifest +
-      # CNAME + .well-known + ...), но без истории git и dev-зависимостей.
+      # CNAME + ...), но без истории git и dev-зависимостей.
       # Публикуем тот же набор файлов, что и раньше отдавал Pages из ветки.
       - name: Сборка папки сайта
         run: |
@@ -61,8 +61,7 @@ jobs:
         with:
           path: _site
           # v4+ по умолчанию выкидывает скрытые файлы (dotfiles) из артефакта,
-          # а сайту нужны .nojekyll (отключает Jekyll) и .well-known/assetlinks.json
-          # (проверка домена для Android-приложения). Возвращаем прежнее поведение.
+          # а сайту нужен .nojekyll (отключает Jekyll). Возвращаем прежнее поведение.
           include-hidden-files: true
 
   deploy:
