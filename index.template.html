@@ -25,17 +25,10 @@
     <div class="screen pf-main">
       <!-- legibility scrim over the live canvas scene (per-skin strength) -->
       <div class="pf-scrim"></div>
-      <!-- score chips -->
-      <div class="pf-chips">
-        <span class="chip chip--star"><span class="chip__ic"><span class="mic" data-mic="star"></span></span><span id="startStars">0</span><span class="muted" id="startStarsMax">/0</span></span>
-      </div>
-      <!-- brand block: kicker · wordmark · tagline · version -->
-      <div class="brand pf-brand">
-        <div class="brand__kicker" data-i18n="start.kicker"></div>
+      <!-- brand block: wordmark · tagline (kicker & version removed per neon main-screen spec) -->
+      <div class="pf-brand">
         <div class="brand__mark"><span class="mic brand__plane" data-mic="plane"></span><span class="brand__word"><span class="brand__w1">PLANE</span><span class="brand__w2">FLOW</span></span></div>
-        <div class="brand__tag"><span class="mic brand__tag-ic" data-mic="plane"></span><span data-i18n="start.tagline"></span></div>
-        <div class="brand__ver"><span data-i18n="start.version"></span> <span id="ver"></span></div>
-        <h1 class="wm-fallback" data-i18n="app.name" hidden></h1>
+        <div class="brand__tag" data-i18n="start.tagline"></div>
       </div>
       <!-- primary CTA group (стеклянная панель neon) -->
       <div class="pf-cta panel">
@@ -44,13 +37,11 @@
           <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="survivalBtn"><span class="mic" data-mic="inf"></span><span class="m-btn__t" data-i18n="start.survival"></span></button>
         </div>
       </div>
-      <!-- corner icon cluster: fullscreen · medals · settings · language -->
+      <!-- corner icon cluster: settings · medals · language -->
       <div class="pf-corner">
-        <button class="icon-btn" id="fsBtn" aria-label="Fullscreen"><span class="mic" data-mic="expand"></span></button>
-        <button class="icon-btn" id="medalsBtn" data-i18n-aria="medals.btn" style="color:var(--m-gold)"><span class="mic" data-mic="medal"></span></button>
-        <button class="icon-btn" id="leaderboardBtn" data-i18n-aria="menu.leaderboard"><span class="mic" data-mic="trophy"></span></button>
         <button class="icon-btn" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="mic" data-mic="gear"></span></button>
-        <button class="icon-btn icon-btn--flag" id="langFlagBtn" aria-label="Language"></button>
+        <button class="icon-btn" id="medalsBtn" data-i18n-aria="medals.btn" style="color:var(--m-gold)"><span class="mic" data-mic="medal"></span></button>
+        <button class="icon-btn" id="langFlagBtn" data-i18n-aria="settings.language"><span class="mic" data-mic="globe"></span></button>
       </div>
       <!-- dev debug (bottom-left, self-positioned) -->
       <div class="corner-debug">
