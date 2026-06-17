@@ -349,6 +349,30 @@
   // глубина апгрейда на уровне: одна на всех ангаров, в [0, BAY_MAX_LVL] (умолч. потолок).
   // 0 — апгрейдов нет; per-hangar up:false выключает апгрейд только своего ангара.
   function levelMaxUp(lv?: Level){ const L = lv || LV; const m = L && L.maxUp; const v = (m==null) ? K.BAY_MAX_LVL : m; return Math.max(0, Math.min(K.BAY_MAX_LVL, v)); }
+  // перевод старой раскладки sides → формат конструктора (layout). Повторяет геометрию
+  // packRow: плоский список слотов сторон чередуется верх/низ-ряд, ряды раскладываются по
+  // ширине апрона; ВПП — по числу lv.runways, равномерно по вертикали. Нужен редактору,
+  // чтобы открыть существующий уровень кампании. Услуги/maxUp — дефолтные (legacy: все три,
+  // потолок прокачки). Чистая функция (без DOM) — её же удобно тестировать.
+  function sidesToLayout(lv: Level){
+    const sides: Record<string, SideCfg | undefined> = (lv && lv.sides) || {};
+    const flat: { type: string; open: boolean }[] = [];
+    for(const s of ['top','left','bottom']){ const c = sides[s]; if(!c) continue; for(let i=0;i<c.slots;i++) flat.push({type:c.type, open:i<c.open}); }
+    const rows: { type: string; open: boolean }[][] = [[], []];   // 0 — верхний ряд, 1 — нижний (чередуем, как packRow)
+    flat.forEach((b,i)=> rows[i%2].push(b));
+    const hangars: any[] = [];
+    ([[rows[0],0.10],[rows[1],0.90]] as [{type:string;open:boolean}[], number][]).forEach(([arr,y])=>{
+      const n = arr.length; arr.forEach((b,k)=> hangars.push({ type:b.type, x:+(((k+0.5)/n)).toFixed(2), y, open:b.open, up:true }));
+    });
+    const nR = Math.max(1, (lv && lv.runways) || 1);
+    const runways: any[] = []; for(let i=0;i<nR;i++) runways.push({ y:+((nR===1?0.5:0.15+0.7*i/(nR-1))).toFixed(2) });
+    return { services: SVC_TYPES.slice(), maxUp: (lv && lv.maxUp!=null) ? lv.maxUp : K.BAY_MAX_LVL, layout:{ hangars, runways } };
+  }
+  // уровень → объект для конструктора: явный layout отдаём как есть, иначе конвертируем из sides.
+  function levelToEditorObj(lv: Level){
+    if(lv && lv.layout) return { services: ((lv.services as string[]) || SVC_TYPES).slice(), maxUp: (lv.maxUp!=null) ? lv.maxUp : K.BAY_MAX_LVL, layout: lv.layout };
+    return sidesToLayout(lv);
+  }
   function levelEconomy(lv: Level){
     const o: Objective = (lv && lv.objective) || ({} as Objective);
     // «набор» считается из РАССТАНОВКИ: layout (один ангар = одно место) или старые sides

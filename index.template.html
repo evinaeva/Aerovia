@@ -53,6 +53,7 @@
           <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
           <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
           <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
+          <button class="m-btn m-btn--ghost m-btn--sm" id="edOpenBtn" style="width:100%;margin-top:8px">🏗 Конструктор уровня</button>
         </div>
       </div>
     </div>
@@ -209,6 +210,35 @@
         <div id="lbFoot"></div>
         <p class="muted" data-i18n="lb.mock" style="font-size:11px;margin-top:8px;text-align:center;opacity:.6"></p>
         <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="leaderboardBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="lb.back"></span></button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== level constructor (dev tool, opened from debug popup) ===== -->
+  <div class="overlay hidden" id="editorScreen">
+    <div class="ed-wrap">
+      <div class="ed-bar">
+        <span class="ed-title">🏗 Конструктор уровня</span>
+        <span class="ed-status" id="edStatus"></span>
+        <select class="ed-sel" id="edLoadLevel" title="Открыть уровень кампании в редакторе"></select>
+        <span class="ed-bar__sp"></span>
+        <button class="m-btn m-btn--ghost m-btn--sm" id="edTestBtn">▶ Тест</button>
+        <button class="m-btn m-btn--ghost m-btn--sm" id="edExportBtn">Экспорт</button>
+        <button class="m-btn m-btn--ghost m-btn--sm" id="edSaveBtn">Сохранить</button>
+        <button class="m-btn m-btn--ghost m-btn--sm" id="edLoadBtn">Загрузить</button>
+        <button class="m-btn m-btn--danger m-btn--sm" id="edCloseBtn">Закрыть</button>
+      </div>
+      <div class="ed-body">
+        <div class="ed-main">
+          <div class="ed-palette">
+            <button class="m-btn m-btn--ghost m-btn--sm" id="edAddFuel">+ топливо</button>
+            <button class="m-btn m-btn--ghost m-btn--sm" id="edAddBoard">+ борт</button>
+            <button class="m-btn m-btn--ghost m-btn--sm" id="edAddRepair">+ ремонт</button>
+            <button class="m-btn m-btn--ghost m-btn--sm" id="edAddRunway">+ ВПП</button>
+          </div>
+          <div class="ed-canvas-wrap"><canvas id="edCanvas"></canvas></div>
+        </div>
+        <div class="ed-side" id="edSide"></div>
       </div>
     </div>
   </div>
