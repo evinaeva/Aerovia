@@ -37,8 +37,12 @@
       ctx.fillText(fmtMoney(K.BAY_OPEN_COST), px+ph*1.05, py+ph/2);
       ctx.restore(); return;
     }
-    rr(x,y,w,h,r); const fg=ctx.createLinearGradient(0,y,0,y+h); fg.addColorStop(0,hexa(col,.10)); fg.addColorStop(1,'#0a1430'); ctx.fillStyle=fg; ctx.fill();
-    ctx.fillStyle=hexa(col,.22); ctx.fillRect(x+w*0.5-12*ui, top?y+h*0.62:y+h*0.36-2*ui, 24*ui, 2*ui);
+    // ПОЛ = нейтрально-тёмное стекло для ВСЕХ услуг: тёплый подкрас на синем тармаке
+    // «фонит», поэтому убран — идентичность услуги несут крыша-пила/кант/бейдж, не пол.
+    const floor=ctx.createRadialGradient(x+w/2,y+h*0.42,0,x+w/2,y+h*0.42,w*0.55);
+    floor.addColorStop(0,'#101d3e'); floor.addColorStop(.65,COL.tarmac); floor.addColorStop(1,'#0a1228');
+    rr(x,y,w,h,r); ctx.fillStyle=floor; ctx.fill();
+    ctx.fillStyle=hexa(col,.14); ctx.fillRect(x+w*0.5-12*ui, top?y+h*0.62:y+h*0.36-2*ui, 24*ui, 2*ui);   // стоп-бар (тонкий цветной)
     const wallG=(yy: number,hh: number)=>{const g=ctx.createLinearGradient(0,yy,0,yy+hh); g.addColorStop(0,'#22355f'); g.addColorStop(.55,'#16254c'); g.addColorStop(1,'#0d1b3c'); return g;};   // стена темнее (как LongHangar) — цвет живёт в канте/блике, не в заливке
     const backY=top?y:y+h-wt;
     ctx.fillStyle=wallG(backY,wt); ctx.fillRect(x,backY,w,wt);
@@ -53,7 +57,7 @@
     ctx.restore();
     ctx.fillStyle=wallG(y,h); ctx.fillRect(x,y,wt,h); ctx.fillRect(x+w-wt,y,wt,h);
     ctx.save(); ctx.shadowColor=hexa(col,busy?.7:.45); ctx.shadowBlur=busy?12:7; ctx.fillStyle=hexa(col,busy?.95:.6); ctx.fillRect(x, top?y:y+h-2*ui, w, 2*ui); ctx.restore();
-    ctx.fillStyle='rgba(255,255,255,.18)'; ctx.fillRect(x, backY, w, 1.4*ui);
+    ctx.fillStyle='rgba(255,255,255,.3)'; ctx.fillRect(x, backY, w, 1.4*ui);   // верхний глянцевый блик стекла
     { const dir=top?1:-1, oy=top?y+h-3*ui:y+3*ui, sp=5*ui;
       ctx.save(); ctx.strokeStyle=hexa(col,.6); ctx.lineWidth=2.2*ui; ctx.lineCap='round'; ctx.lineJoin='round';
       for(let i=0;i<2;i++){ const yy=oy+dir*i*5*ui; ctx.beginPath(); ctx.moveTo(x+w/2-sp,yy-dir*sp*0.7); ctx.lineTo(x+w/2,yy); ctx.lineTo(x+w/2+sp,yy-dir*sp*0.7); ctx.stroke(); } ctx.restore(); }
