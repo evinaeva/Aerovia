@@ -197,6 +197,8 @@
     ED.sel = null;
   }
   function edLoadDraft(){ try { const o = JSON.parse(localStorage.getItem(ED_DRAFT_KEY) || 'null'); if (o){ edLoadObj(o); edRenderSide(); edDraw(); } } catch (e) {} }
+  // открыть существующий уровень кампании: явный layout берём как есть, старый sides — конвертируем
+  function edOpenLevel(idx: number){ const lv = LEVELS[idx]; if (!lv) return; edLoadObj(levelToEditorObj(lv)); edRenderSide(); edDraw(); }
 
   function edPlayTest(){
     if (!ED.runways.length || !ED.hangars.length) return;
@@ -269,6 +271,8 @@
     if (typeof hideAllScreens === 'function') hideAllScreens();
     const scr = edEl('editorScreen'); if (!scr) return; scr.classList.remove('hidden');
     ED.cv = edEl<HTMLCanvasElement>('edCanvas'); if (ED.cv) ED.g = ED.cv.getContext('2d');
+    const sel = edEl<HTMLSelectElement>('edLoadLevel');
+    if (sel){ sel.innerHTML = '<option value="">Открыть уровень…</option>' + LEVELS.map((_, i) => '<option value="' + i + '">L' + (i + 1) + ' · ' + levelName(i) + '</option>').join(''); sel.value = ''; }
     edRenderSide();
     requestAnimationFrame(() => { edResize(); });   // дождаться раскладки оверлея для размеров канваса
   }
@@ -282,6 +286,8 @@
       ['edAddFuel', () => edAddHangar('fuel')], ['edAddBoard', () => edAddHangar('board')], ['edAddRepair', () => edAddHangar('repair')], ['edAddRunway', edAddRunway],
     ];
     map.forEach(([id, cb]) => { const b = edEl(id); if (b) b.onclick = cb; });
+    const sel = edEl<HTMLSelectElement>('edLoadLevel');
+    if (sel) sel.onchange = () => { const v = sel.value; if (v !== ''){ edOpenLevel(+v); sel.value = ''; } };
     const cv = edEl<HTMLCanvasElement>('edCanvas');
     if (cv){ cv.addEventListener('pointerdown', edDown); cv.addEventListener('pointermove', edMove); window.addEventListener('pointerup', edUp); }
     window.addEventListener('resize', () => { const s = edEl('editorScreen'); if (s && !s.classList.contains('hidden')) edResize(); });

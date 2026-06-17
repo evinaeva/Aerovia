@@ -159,6 +159,7 @@
   .ed-on{border-color:var(--m-accent)!important;color:var(--m-accent)!important;background:rgba(58,210,255,.12)!important}
   .ed-range{flex:1;min-width:80px}
   .ed-out{font-size:13px;font-weight:700;color:var(--paper)}
+  .ed-sel{background:var(--raised);color:var(--paper);border:1px solid var(--pur-line);border-radius:8px;padding:6px 8px;font-size:13px;max-width:190px}
   @media(max-width:680px){ .ed-body{flex-direction:column} .ed-side{width:auto} }
   .pausegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
   .pausegrid .btn{width:100%}

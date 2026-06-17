@@ -37,7 +37,7 @@
     window.__GAME = {
       VERSION, LEVELS, BIOMES, BONUS, K, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
       t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, goalRowsHTML, bayUpCost, bayMaxLvl,
-      levelEconomy, levelEffects, levelDifficulty, levelPace, paceInterval, paceCap, airPatience, levelServices, levelMaxUp,
+      levelEconomy, levelEffects, levelDifficulty, levelPace, paceInterval, paceCap, airPatience, levelServices, levelMaxUp, sidesToLayout, levelToEditorObj,
       dayCycle, weatherTaxiMult, neededCrew,
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
