@@ -87,13 +87,12 @@
 4. **Маппинг медалей.** Завести подмножество из 49 медалей ([`achievements.md`](achievements.md))
    как Play Games achievements (⏳-будущие-режимы пропустить); ранг-медали — от позиции в Play
    Games leaderboard. **Сложность:** низкая.
-5. **Capgo (OTA) — каркас в репозитории (2026-06-17).** Выбрали **облако** Capgo (для теста в
-   одиночку проще self-hosted). В коде уже: плагин `@capgo/capacitor-updater@5`, блок
-   `CapacitorUpdater` в `capacitor.config.ts`, `notifyAppReady()` в `13-init.js`, шаг выгрузки
-   бандла в `deploy.yml` (канал `production`, версия `<pkg>-<run_number>`, no-op без секрета
-   `CAPGO_TOKEN`). Осталось разово: аккаунт Capgo + `app add com.planeflow.game`, секрет
-   `CAPGO_TOKEN` в GitHub, пересборка APK с плагином — см. [`capacitor-android.md`](capacitor-android.md).
-   **Сложность:** средняя.
+5. **Capgo (OTA) — ✅ ГОТОВО (2026-06-17).** Облако Capgo; OTA работает на Pixel 9. В коде: плагин
+   `@capgo/capacitor-updater@5`, `CapacitorUpdater` в `capacitor.config.ts`, `notifyAppReady()` в
+   `13-init.js`, выгрузка бандла в `deploy.yml` (канал `production`, версия `major.minor.<run>`,
+   `--no-code-check`). Настройка облака и грабли (ключ роли org-Админ; канал = download-default;
+   `versionName` из package.json) — в [`capacitor-android.md`](capacitor-android.md). Триал 15 дней;
+   бесплатный путь $0 (свой VPS) — [`capgo-self-host-migration.md`](capgo-self-host-migration.md).
 6. **Веб-фоллбэк.** В браузере Play Games недоступен → детект платформы, fallback на mock,
    соц-кнопки прятать или вести «доступно в приложении». (Если веб-версии не будет вовсе — пункт
    снимается.) **Сложность:** низкая.
