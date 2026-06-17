@@ -3,6 +3,14 @@
 // Provides: — (wires the modules together; exposes window.__GAME under ?test=1).
 // Reads: ~all modules — 11 (showStart/showLevels/loadGame/saveGame/applyMenuIcons), 10 (frame), 06 (save/resize/VERSION), 05 (validateGame), 03 (applyI18n/setLang/t), 07 (SND/HAP/Analytics/Leaderboard), 12 (ACH/openMedals), 08 (computeStars…), 04 (config + test-API exports).
 
+  // Capgo OTA (нативная сборка): помечаем текущий веб-бандл рабочим. Без этого вызова
+  // плагин через ~10с считает обновление сломанным и откатывается на прошлый бандл.
+  { const cap=window.Capacitor;
+    if(cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins && cap.Plugins.CapacitorUpdater){
+      try{ cap.Plugins.CapacitorUpdater.notifyAppReady(); }catch(e){}
+    }
+  }
+
   document.getElementById('medalsBtn').onclick=()=>openMedals('start');
   { const b=document.getElementById('leaderboardBtn'); if(b) b.onclick=showLeaderboard; }
   // Play Games «G» — вход по жесту игрока (нативная сборка). На вебе кнопка скрыта.
