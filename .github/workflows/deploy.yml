@@ -58,11 +58,15 @@ jobs:
           fi
           npm run build:www
           VER="$(node -p "require('./package.json').version")-${{ github.run_number }}"
+          # --no-code-check: вся игра инлайнится в один index.html, поэтому эвристика CLI
+          # не находит notifyAppReady() (он во встроенном <script>, а не в отдельном .js).
+          # Вызов реально есть — в src/game/13-init.js (гейт на натив). См. capacitor.config.ts.
           npx @capgo/cli@latest bundle upload com.planeflow.game \
             --apikey "$CAPGO_TOKEN" \
             --channel production \
             --bundle "$VER" \
-            --path www
+            --path www \
+            --no-code-check
 
       # Папка сайта = корень репо (index.html + assets + sw.js + manifest +
       # CNAME + ...), но без истории git и dev-зависимостей.
