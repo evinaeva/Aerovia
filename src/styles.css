@@ -1060,3 +1060,79 @@
     #startScreen .brand__mark{ font-size:40px; }
     #startScreen .brand__tag{ font-size:15px; }
   }
+
+/* ============================================================
+   АДАПТИВ модальных экранов (Пауза · Цели · Итоги).
+   Панель = flex-колонка с потолком высоты в единицах контейнера
+   (cqh = 1% высоты оверлея = весь экран); крупные блоки ужимаются
+   через clamp(min, Xcqh, max), блок кнопок закреплён снизу.
+   Контейнер и layout-правила намеренно ограничены тремя экранами
+   (#overScreen/#pauseScreen/#goalsScreen + .panel--fit), чтобы НЕ
+   задеть «Настройки»/«Сброс» (они тоже .screen--center).
+   ============================================================ */
+#overScreen, #pauseScreen, #goalsScreen { container-type: size; }
+
+#overScreen .screen--center,
+#pauseScreen .screen--center,
+#goalsScreen .screen--center { padding: clamp(6px, 2.2cqh, 20px); box-sizing: border-box; }
+
+.panel--fit {
+  display: flex; flex-direction: column; margin: 0;
+  max-height: calc(100cqh - clamp(12px, 4.4cqh, 40px));
+  padding: clamp(14px,3cqh,26px) clamp(18px,3cqw,30px) clamp(14px,3cqh,28px);
+  overflow: hidden;
+}
+/* блок кнопок всегда виден (не скроллится) */
+.panel--fit > .m-actions,
+.panel--fit > .m-actions__row { flex: 0 0 auto; margin-top: clamp(10px,2cqh,16px); }
+
+/* единый адаптивный размер заголовка во всех трёх карточках (перебивает .panel h1) */
+.panel--fit .m-title,
+.panel--fit .m-title--md { font-size: clamp(18px, 4.6cqh, 26px); }
+.panel--fit .triumph-kicker { font-size: 12.5px; }   /* кикер «Итогов» — без изменений */
+
+/* Итоги — компактация под низкую высоту */
+.star-row--xl { margin: clamp(4px,1.6cqh,12px) 0 clamp(4px,1.2cqh,8px); gap: clamp(8px,2.4cqw,14px); }
+.star-row--xl svg { width: clamp(28px,8cqh,62px); height: clamp(28px,8cqh,62px); }
+.reward-sub { margin-top: clamp(2px,1cqh,6px); }
+.result-stats { margin: clamp(10px,2.6cqh,18px) 0 2px; }
+#overMsg.reward-sub { max-width: none; text-align: center; }   /* сообщение по центру во всю ширину */
+
+/* Пауза / Цели — таблица порогов с шапкой «Цель/Цели» */
+.obj-block { max-width: none; width: min(100%, 320px); margin: 0 auto; }
+.obj-block .thresholds { margin: 0 auto; width: 200px; }       /* узкая таблица, по центру */
+
+.thresholds .thr-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: clamp(5px,1.4cqh,12px) 20px; border-bottom: 1px solid var(--m-divider);
+}
+.thresholds .thr-lbl { font-size: 12px; font-weight: 800; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--m-accent); }
+.thresholds .thr-time { display: inline-flex; align-items: center; gap: 6px;
+  color: var(--m-text-muted); font-weight: 800; font-size: 15px; }
+.thresholds .thr-time svg { width: 16px; height: 16px; }
+/* шапка — ✈ и цифра чуть крупнее трёх строк ниже */
+.thresholds .thr-plane { display: inline-flex; align-items: center; gap: 6px;
+  color: var(--m-gold); font-weight: 800; font-size: clamp(16px,4cqh,20px); }
+.thresholds .thr-plane svg { width: clamp(17px,4.2cqh,21px); height: clamp(17px,4.2cqh,21px); }
+.thresholds .thr-num { font-variant-numeric: tabular-nums; }
+/* три строки порогов — компактнее на низких экранах */
+.thresholds .row { padding-block: clamp(4px,1.3cqh,11px); }
+.thresholds .stars svg { width: clamp(13px,3.4cqh,17px); height: clamp(13px,3.4cqh,17px); }
+.thresholds .req { gap: 6px; font-size: clamp(14px,3.4cqh,17px); }
+.thresholds .req svg { width: clamp(14px,3.6cqh,18px); height: clamp(14px,3.6cqh,18px); }
+
+/* подсказка цели — отдельной строкой по центру между заголовком и таблицей */
+.goal-hint { white-space: nowrap; max-width: none; text-align: center;
+  margin-block: clamp(10px,2.5cqh,18px) !important; }
+
+/* действия — всегда один ряд */
+.m-actions__row { flex-wrap: nowrap; justify-content: center; }
+.m-actions__row > .m-btn { flex: 1 1 auto; min-width: 0; padding: 0 14px; gap: 8px; }
+/* icon-кнопка: ширина = иконка, без текста */
+.m-btn--icon { flex: 0 0 auto !important; width: clamp(42px,8.5cqh,52px); padding: 0; gap: 0; }
+.m-btn--icon .m-btn__t { display: none; }
+.m-btn--icon.m-btn--primary { box-shadow: 0 0 12px rgba(108,200,143,.35); }  /* свечение не «раздувает» кнопку */
+
+/* Пауза: три иконки-кнопки ровно под таблицей (по её ширине) */
+#pauseScreen .m-actions__row { max-width: 200px; margin-inline: auto; justify-content: space-between; }

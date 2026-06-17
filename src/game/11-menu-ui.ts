@@ -313,18 +313,7 @@
   // прогресс цели) и пороги звёзд. Зовётся при открытии и при смене языка.
   function buildPauseInfo(){
     document.getElementById('pauseTitle')!.textContent = currentLevelName();
-    document.getElementById('pauseObjLabel')!.classList.toggle('hidden', false);
-    document.getElementById('pauseGoals')!.innerHTML = goalRowsHTML();
-    const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
-    const mv = LV.objective.metric==='upgrades' ? upgradesDone : served;
-    const prog = (survival||LV.objective.race) ? fmtNum(served) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target ?? 0));
-    const stats=[
-      [SVGIC('clock'), fmtTime(tShown), ''],
-      [SVGIC('coin'), fmtNum(money), money<0?'var(--m-life)':'var(--m-gold)'],
-      [SVGIC('plane'), prog, 'var(--m-plane)'],
-    ];
-    document.getElementById('pauseStats')!.innerHTML = stats.map(s=>
-      `<span class="rs"${s[2]?` style="color:${s[2]}"`:''}>${s[0]}<span>${s[1]}</span></span>`).join('');
+    document.getElementById('pauseGoals')!.innerHTML = goalRowsHTML(t('pause.objective'));
   }
   document.getElementById('resumeBtn')!.onclick=()=>setPaused(false);
   document.getElementById('restartBtn')!.onclick=()=>reset();
@@ -411,48 +400,45 @@
   function hasI18n(key: string){ return (I18N[lang] && I18N[lang][key]!=null) || (I18N[DEFAULT_LANG] && I18N[DEFAULT_LANG][key]!=null); }
   // окно/блок целей: вызов + обучающая строка + цели и звёзды-градация иконками.
   // Та же разметка для окна постановки целей и для встроенного блока в паузе.
-  function goalRowsHTML(){
-    if(survival){
-      const best = save.best[levelKey]||0;
-      const hint = LV.biome ? `<p class="m-subtitle">${t('biome.'+LV.biome+'.hint')}</p>` : '';
-      return `${hint}<p class="m-subtitle">${t('goals.survival')}</p>`+
-        `<div class="goal-line"><span class="g g--inf">${GICON.clock}${INF}</span>`+
-        `<span class="g g--target">${GICON.plane}${fmtNum(best)}</span></div>`;
-    }
-    const o = LV.objective, stars = o.stars || [o.target, o.target, o.target];
-    // основная метрика: гусеница на лугу бабочек, 🔧 на апгрейд-уровнях, иначе ✈
+  // label — метка шапки таблицы: «Цель» (пауза) / «Цели» (окно целей).
+  function goalRowsHTML(label?: string){
+    const lbl = label || t('pause.objective');
+    // одна подсказка-строка по центру (между заголовком и таблицей)
+    let hint = '';
+    if(survival)      hint = LV.biome ? t('biome.'+LV.biome+'.hint') : t('goals.survival');
+    else if(LV.biome) hint = t('biome.'+LV.biome+'.hint');
+    else if(LV.bonus) hint = objectiveDesc();
+    else { const hk='level.h.'+(levelIdx+1); hint = hasI18n(hk) ? t(hk) : objectiveDesc(); }
+    const hintHtml = hint ? `<p class="m-subtitle goal-hint">${hint}</p>` : '';
+    // основная метрика: гусеница (луг бабочек) · 🔧 (апгрейд-уровни) · ✈ (иначе)
     const primary = LV.bonus==='butterfly' ? GICON.caterpillar
-                  : o.metric==='upgrades' ? GICON.wrench : GICON.plane;
-    // вызов (краткое описание) + обучающая строка
-    let head;
-    if(LV.biome) head = `<p class="m-subtitle">${t('biome.'+LV.biome+'.hint')}</p>`;
-    else if(LV.bonus) head = `<p class="m-subtitle">${objectiveDesc()}</p>`;
-    else {
-      const n = levelIdx+1, dk='level.d.'+n, hk='level.h.'+n;
-      head = `<p class="m-subtitle">${hasI18n(dk) ? t(dk) : objectiveDesc()}</p>`;
-      if(hasI18n(hk)) head += `<p class="m-subtitle" style="color:var(--m-accent)">${t(hk)}</p>`;
+                  : (!survival && LV.objective.metric==='upgrades') ? GICON.wrench : GICON.plane;
+    let timeStr: string, headTarget: string, rows = '';
+    if(survival){
+      timeStr = INF; headTarget = fmtNum(save.best[levelKey]||0);
+    } else {
+      const o = LV.objective, stars = o.stars || [o.target, o.target, o.target];
+      timeStr = o.time ? fmtTime(o.time) : INF;
+      headTarget = o.race ? INF : fmtNum(o.target ?? 0);
+      rows = [2,1,0].map(i=>{
+        const st=i+1;
+        const starsHtml=[0,1,2].map(n=>'<span'+(n<st?'':' class="off"')+' style="display:inline-flex">'+SVGIC('star')+'</span>').join('');
+        let req = `<span class="req">${primary}<span class="thr-num">${fmtNum(stars[i])}</span></span>`;
+        if(o.upg && o.upg[i]>0) req = `<span class="req">${primary}<span class="thr-num">${fmtNum(stars[i])}</span> <span class="req-upg">${GICON.wrench}${fmtNum(o.upg[i])}</span></span>`;
+        return `<div class="row"><span class="stars">${starsHtml}</span>${req}</div>`;
+      }).join('');
     }
-    // сводка целей: ⏱ время/∞  +  основная метрика (потолок или ∞ для race)
-    const timeStr = o.time ? fmtTime(o.time) : INF;
-    const headTarget = o.race ? INF : fmtNum(o.target ?? 0);
-    let line = `<div class="goal-line"><span class="g g--inf">${GICON.clock}${timeStr}</span>`+
-               `<span class="g g--target">${primary}${headTarget}</span>`;
-    if(o.upg) line += `<span class="g g--target">${GICON.wrench}${fmtNum(o.upg[o.upg.length-1])}</span>`;
-    line += `</div>`;
-    // пороги звёзд (3★ сверху): ★-иконки + порог по метрике (+ 🔧 на старших)
-    const rows = [2,1,0].map(i=>{
-      const st=i+1;
-      const starsHtml=[0,1,2].map(n=>'<span'+(n<st?'':' class="off"')+' style="display:inline-flex">'+SVGIC('star')+'</span>').join('');
-      let req = `<span class="req">${primary}${fmtNum(stars[i])}</span>`;
-      if(o.upg && o.upg[i]>0) req = `<span class="req">${primary}${fmtNum(stars[i])} <span class="req-upg">${GICON.wrench}${fmtNum(o.upg[i])}</span></span>`;
-      return `<div class="row"><span class="stars">${starsHtml}</span>${req}</div>`;
-    }).join('');
-    return `${head}${line}<div class="thresholds">${rows}</div>`;
+    // шапка: метка слева · ⏱ время/∞ по центру · ✈ цель справа (крупнее строк)
+    const head = `<div class="thr-head">`+
+      `<span class="thr-lbl">${lbl}</span>`+
+      `<span class="thr-time">${GICON.clock}<span class="thr-num">${timeStr}</span></span>`+
+      `<span class="thr-plane">${primary}<span class="thr-num">${headTarget}</span></span>`+
+      `</div>`;
+    return `${hintHtml}<div class="thresholds">${head}${rows}</div>`;
   }
   function buildGoalsContent(){
-    document.getElementById('goalsKicker')!.textContent = t('goals.kicker');
     document.getElementById('goalsTitle')!.textContent = currentLevelName();
-    document.getElementById('goalsBody')!.innerHTML = goalRowsHTML();
+    document.getElementById('goalsBody')!.innerHTML = goalRowsHTML(t('goals.objective'));
   }
   function showGoals(fromPause?: boolean){
     goalsFromPause=!!fromPause;
@@ -468,6 +454,9 @@
     goalsFromPause=false;
   }
   document.getElementById('goalsOk')!.onclick=closeGoals;
+  // «домой» из окна целей: закрыть окно и выйти в выбор уровней/карт
+  { const b=document.getElementById('goalsHomeBtn');
+    if(b) b.onclick=()=>{ document.getElementById('goalsScreen')!.classList.add('hidden'); goalsFromPause=false; running=false; paused=false; backToSelect(); }; }
   document.getElementById('goalsScreen')!.addEventListener('pointerdown', e=>{ if((e.target as HTMLElement).id==='goalsScreen') closeGoals(); }); // тап мимо карточки
 
   // ================= ДОСТИЖЕНИЯ / МЕДАЛИ =================
