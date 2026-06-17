@@ -7,6 +7,15 @@ const config: CapacitorConfig = {
   appId: 'com.planeflow.game',
   appName: 'PlaneFlow: Air Traffic Control',
   webDir: 'www',
+  plugins: {
+    // Capgo OTA: код игры (HTML/CSS/JS — у нас это вся игра) обновляется «по воздуху»
+    // из канала в обход стора. autoUpdate (дефолт) проверяет канал и применяет бандл в фоне;
+    // в старте обязателен notifyAppReady() (src/game/13-init.js), иначе плагин через ~10с
+    // откатит бандл. Бандлы льёт CI (.github/workflows/deploy.yml) на каждый push в main.
+    CapacitorUpdater: {
+      autoUpdate: true,
+    },
+  },
 };
 
 export default config;

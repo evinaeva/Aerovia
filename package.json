@@ -17,6 +17,7 @@
   "dependencies": {
     "@capacitor/android": "^5.7.0",
     "@capacitor/core": "^5.7.0",
+    "@capgo/capacitor-updater": "^5.45.10",
     "@openforge/capacitor-game-connect": "^5.0.2"
   },
   "devDependencies": {

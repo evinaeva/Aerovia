@@ -45,6 +45,25 @@ jobs:
       - name: Юнит-тесты (страховка перед публикацией)
         run: node --test tests/*.test.mjs
 
+      # Capgo OTA: на каждый push в main льём свежий веб-бандл в канал production —
+      # установленный APK подхватит его сам (см. capacitor.config.ts и docs/capacitor-android.md).
+      # Пока секрет CAPGO_TOKEN не добавлен, шаг — no-op, и Pages-деплой ниже не страдает.
+      - name: Capgo OTA — выгрузка бандла
+        env:
+          CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+        run: |
+          if [ -z "$CAPGO_TOKEN" ]; then
+            echo "CAPGO_TOKEN не задан — пропускаю выгрузку в Capgo (норма до подключения облака)."
+            exit 0
+          fi
+          npm run build:www
+          VER="$(node -p "require('./package.json').version")-${{ github.run_number }}"
+          npx @capgo/cli@latest bundle upload com.planeflow.game \
+            --apikey "$CAPGO_TOKEN" \
+            --channel production \
+            --bundle "$VER" \
+            --path www
+
       # Папка сайта = корень репо (index.html + assets + sw.js + manifest +
       # CNAME + ...), но без истории git и dev-зависимостей.
       # Публикуем тот же набор файлов, что и раньше отдавал Pages из ветки.
