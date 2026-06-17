@@ -19,7 +19,7 @@ silhouettes, clear nose direction.
 | Passenger | standard airliner, neutral white body | the workhorse / default flow |
 | Cargo | bulkier fuselage, distinct livery | heavier / slower handling |
 | Medical | white body + red cross accent | priority, patient transfer event |
-| VIP Jet | sleek, golden/light accent | VIP priority routing (purple route) |
+| VIP Jet | sleek, golden/light accent | VIP priority handling |
 | Military | gray, angular silhouette | special handling |
 | Private Jet | small, sleek business jet | small + fast |
 | Emergency aircraft | strong alert accent | top-priority interrupt |
@@ -38,7 +38,7 @@ Reference: style-guide panel 04. Cute, visually distinct, tiny moving life on th
 | Fuel Truck | refueling |
 | Baggage Cart | baggage handling |
 | Catering Truck | catering |
-| De-icing Truck | sprays aircraft (blue route context) |
+| De-icing Truck | sprays aircraft |
 | Snowplow | clears snow from runway/taxiway |
 | Maintenance | repairs damage |
 | Ambulance | medical flight support |
@@ -72,11 +72,11 @@ service roads, repair area.
 Reference: style-guide panel 02. The visual centerpiece — see full color spec in
 [`color_palette.md`](color_palette.md).
 
-- Thick, glowing, high-contrast lines that always stay visible.
-- Color encodes meaning: green valid · amber taxiing · red conflict · blue de-icing ·
-  purple VIP · dashed gray hold.
-- Secondary channel (dash pattern, directional arrow, cross icon) backs up color so the
-  state reads even without color.
+- A single thick, glowing, high-contrast cyan phosphor (`#3ad2ff`) line that always stays
+  visible, with a directional arrowhead at the head.
+- **All routes look identical — color does not encode state.** Confirmed against
+  `src/game/09b-render-entities.ts`. (An earlier per-state color spec here was aspirational
+  and never built.)
 
 ---
 

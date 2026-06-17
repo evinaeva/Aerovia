@@ -119,16 +119,10 @@ This is the visual centerpiece. Requirements:
 - animated movement
 - the route must always remain visible
 
-Color system (canonical — see [`color_palette.md`](color_palette.md)):
-
-| Meaning | Color |
-| --- | --- |
-| Valid route | Green |
-| Taxiing | Yellow / Amber |
-| Conflict / Blocked | Red |
-| De-icing route | Blue / Cyan |
-| VIP / Priority | Purple |
-| Hold / Waiting | Dashed gray |
+Color (as shipped): **all routes render as one cyan phosphor (`#3ad2ff`) glowing line** with a
+directional arrowhead — route color does **not** encode state. Confirmed against
+`src/game/09b-render-entities.ts`; see the full note in [`color_palette.md`](color_palette.md).
+(An earlier per-state color table here was aspirational and never implemented.)
 
 ---
 
