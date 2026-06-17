@@ -196,17 +196,6 @@ THEMES = [
       radius=10, glow=True, ornate=0, plane_fill="#1de0ff", grad=False,
       title_bg="#0a1322", title_fg="#39ff9d"),
 
-    T("4 · Bright playful cartoon", "saturated · chunky outlines · bouncy · casual",
-      bg="#aee3ff", field="#7fd089", field_edge="#3a7d44",
-      bay="#fff4d6", bay_edge="#3a2a17", bay_sw=4, locked="#e9cf9a",
-      run="#6a6f78", run_dash="#fff4d6", run_round=14,
-      repair="#ff7a1a", fuel="#16b6d8", board="#ff5ca0",
-      route="#ff3b6b", route_glow=None, route_dash="2 16", route_sw=9,
-      ink="#3a2a17", hud_bg="#fff4d6", hud_ink="#3a2a17", accent="#ff3b6b",
-      heart_c="#ff3b5c", coin_c="#ffd23b", coin_e="#3a2a17",
-      radius=20, glow=False, ornate=0, plane_fill="#ffffff", grad=False,
-      title_bg="#3a2a17", title_fg="#fff4d6", outline="#3a2a17", outline_sw=4),
-
     T("5 · Tilt-shift miniature diorama", "soft realistic light · tactile · top-down",
       bg="#cdd3cf", field="#7c8b5e", field_edge="#5f6d46",
       bay="#cfc4ad", bay_edge="#8a7d62", bay_sw=2, locked="#b3a98f",
@@ -302,7 +291,7 @@ def draw_bay(t, x, y, w, h, kind, cost=None):
     fill = "url(#bayG)" if (t.grad and kind != "lock") else (t.locked if kind == "lock" else t.bay)
     flt = "softsh" if getattr(t, "shadow", False) else None
     out.append(rr(x, y, w, h, t.radius, fill, stroke=t.bay_edge, sw=t.bay_sw, flt=flt))
-    if getattr(t, "outline", None):  # cartoon thick outline
+    if getattr(t, "outline", None):  # optional thick outline
         out.append(rr(x, y, w, h, t.radius, "none", stroke=t.outline, sw=t.outline_sw))
     if t.ornate:  # inner ornament frame
         out.append(rr(x+5, y+5, w-10, h-10, max(2, t.radius-4), "none", stroke=t.bay_edge, sw=1, sop=0.7))

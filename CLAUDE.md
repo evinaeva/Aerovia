@@ -3,8 +3,8 @@
 ## Visual look — single `neon` skin
 
 The game has **one look, `neon`** (dark night-radar with glow). There is no skin
-selection anymore — the old multi-skin system (`cozy`/`neon`/`cartoon`, the
-`SKIN_DEFS` registry and the "logic is the parent over skins" rule) has been removed.
+selection anymore — the old multi-skin system (the `SKIN_DEFS` registry and the
+"logic is the parent over skins" rule) has been removed.
 
 In code (`src/game/01-bootstrap-theme.js`): the neon palette (`NEON_TOKENS`) is applied on top of the
 base `PALETTE`; the field is drawn by `drawNeonField`; sprites come from

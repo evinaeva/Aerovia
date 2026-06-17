@@ -1,9 +1,9 @@
-# Style exploration — 8 directions on one reference layout
+# Style exploration — directions on one reference layout
 
-Eight visual styles rendered over a single **reference** gameplay layout, to
+Visual styles rendered over a single **reference** gameplay layout, to
 pick an art direction. Regenerate with `python3 build.py` (needs `cairosvg` + `pillow`).
 
-> The layout below was kept identical across the 8 renders only so the styles compare
+> The layout below was kept identical across the renders only so the styles compare
 > fairly. It is **not** a game requirement: field-element placement (apron, bays,
 > runways) is no longer prescribed — see [neon BRIEF](../skins/neon/BRIEF.md). Only the
 > HUD and the plane-needs info bar are fixed.
@@ -21,21 +21,19 @@ pick an art direction. Regenerate with `python3 build.py` (needs `cairosvg` + `p
 - **Slim HUD on the top edge only**: lives · money · level+goal bar · timer · pause.
 - **Hard rule:** no tiny mobile UI — big, bold, readable icons & numbers.
 
-## The 8 styles
+## The styles
 
 | # | Style | Direction |
 |---|-------|-----------|
 | 1 | Extreme flat minimalism | 3 flat colors, no gradients/glow, diagrammatic |
 | 2 | Clean modern mobile | soft gradients, rounded, glossy, premium casual |
 | 3 | Neon air-traffic control | dark field, glowing routes, futuristic HUD |
-| 4 | Bright playful toon | saturated, chunky outlines, toy-like |
 | 5 | Tilt-shift miniature diorama | soft light, tactile materials, strictly top-down |
 | 6 | Blueprint schematic | thin linework, grid, monospace HUD |
 | 7 | Ornate art-deco | gold filigree, emerald & navy, geometric frames |
 | 8 | Baroque maximalist | gilded ornate frames, jewel tones, lavish |
 
-`styles-overview.png` is a 2×4 contact sheet of all eight; `style-N.png/.svg` are the
-individual mockups.
+`style-N.png/.svg` are the individual mockups.
 
 ## The shipped look (neon — wired into the game)
 

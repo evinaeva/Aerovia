@@ -156,7 +156,7 @@ def device(inner, title, sub):
 def bg_menu():
     s=f'<defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{INK}"/><stop offset="1" stop-color="{NAVY}"/></linearGradient></defs>'
     s+=rr(0,0,W,H,0,"url(#mg)")
-    # cozy dotted runway lights bottom-left ambience
+    # dotted runway lights bottom-left ambience
     for i in range(7):
         s+=circle(40+i*26,H-34,2.4,AMBER,op=0.5)
     return s
@@ -183,7 +183,7 @@ def s_start():
     s+=chip(cx,334,cw,46,RAISED,"⚙  Settings",col=CREAM,size=16,stroke=PUR7)
     s+=txt(cx+cw/2,420,"v0.20",size=12,fill=GRAY,anc="middle")
     # annotations
-    s+=annot(60,40,"◀ brand + cozy art (left half, no buttons)")
+    s+=annot(60,40,"◀ brand + art (left half, no buttons)")
     s+=annot(560,40,"primary CTA biggest · thumb-reachable right rail ▶")
     return device(s,"01 · Start / Main menu","Landscape: brand+art left, one big PLAY, secondary actions stacked at the right thumb-rail.")
 
