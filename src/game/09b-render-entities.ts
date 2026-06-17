@@ -33,7 +33,7 @@
       ctx.fillStyle=oc; ctx.strokeStyle=oc; ctx.lineWidth=Math.max(1.6,ls*0.34);
       rr(lx-ls*0.6,ly-ls*0.2,ls*1.2,ls*0.95,ls*0.22); ctx.fill();
       ctx.beginPath(); ctx.arc(lx,ly-ls*0.2,ls*0.45,Math.PI,0); ctx.stroke();
-      ctx.fillStyle=afford?COL.coin:COL.muted; ctx.font=`700 ${Math.round(ph*0.42)}px ${MONO}`; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillStyle=afford?COL.coin:COL.muted; ctx.font=`700 ${Math.round(ph*0.42)}px ${NUM}`; ctx.textAlign='left'; ctx.textBaseline='middle';
       ctx.fillText(fmtMoney(K.BAY_OPEN_COST), px+ph*1.05, py+ph/2);
       ctx.restore(); return;
     }
@@ -113,7 +113,7 @@
       const chW=Math.min(b.w-10*ui,56*ui);
       rr(b.x+b.w/2-chW/2, b.y+b.h-19*ui, chW, 14*ui, 7*ui);
       ctx.fillStyle=hexa(COL.gold, enough?.16:.07); ctx.fill();
-      ctx.fillStyle=enough?COL.coin:COL.muted; ctx.font=`${9*ui}px ${MONO}`;
+      ctx.fillStyle=enough?COL.coin:COL.muted; ctx.font=`${9*ui}px ${NUM}`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(fmtMoney(K.BAY_OPEN_COST), b.x+b.w/2, b.y+b.h-12*ui);
       ctx.restore(); return;
@@ -183,7 +183,7 @@
     const up=bayUpCost(b);
     if(up!=null){
       const enough = money>=up;
-      ctx.fillStyle = enough?COL.coin:COL.muted; ctx.font=`${9*ui}px ${MONO}`;
+      ctx.fillStyle = enough?COL.coin:COL.muted; ctx.font=`${9*ui}px ${NUM}`;
       ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText('↑ '+fmtMoney(up), b.x+b.w/2, b.y+b.h+4*ui);
     }
@@ -301,7 +301,7 @@
     if(prem!=null && isFinite(prem) && isFinite(pmax) && pmax>0){
       const pf=Math.max(0,Math.min(1,prem/pmax));
       const pcol = selected.emergency ? COL.life : (pf>0.5?COL.teal:pf>0.25?COL.amber:COL.life);
-      ctx.textAlign='right'; ctx.fillStyle=pcol; ctx.font=`700 ${10*ui}px ${MONO}`;
+      ctx.textAlign='right'; ctx.fillStyle=pcol; ctx.font=`700 ${10*ui}px ${NUM}`;
       ctx.fillText(fmtTime(Math.max(0,prem)), x0+pw-8*ui, y0+8*ui);
     }
     for(let i=0;i<n;i++){
@@ -339,43 +339,36 @@
     ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.3); rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui); ctx.stroke();
     const cy=hud/2;
     ctx.textBaseline='middle';
-    // ── левый кластер: жизни · деньги · комбо (мокап 01) ──
+    // тонкий вертикальный разделитель (VSep из макета TopHUD)
+    const vsep=(vx: number)=>{ ctx.fillStyle=hexa(COL.phosphor,.16); ctx.fillRect(vx, cy-13*ui, 1, 26*ui); };
+    // ── левый кластер: жизни · | · деньги · | · цель (мокап TopHUD) ──
     for(let i=0;i<K.START_LIVES;i++) heart(26*ui+i*19*ui, cy, 6.3*ui, i<lives?COL.life:null);
-    let lx = 26*ui + K.START_LIVES*19*ui + 8*ui;
-    if(ATLAS) SPRITES.blitC('coin', lx+6*ui, cy, 15*ui, 15*ui);
-    else { ctx.textAlign='left'; ctx.fillStyle=COL.coin; ctx.font=`${12*ui}px ${MONO}`; ctx.fillText('$', lx, cy); }
-    ctx.textAlign='left'; ctx.font=`700 ${15*ui}px ${MONO}`;
+    let lx = 26*ui + K.START_LIVES*19*ui + 12*ui;
+    vsep(lx); lx += 13*ui;
+    // деньги (золото)
+    if(ATLAS) SPRITES.blitC('coin', lx+7*ui, cy, 16*ui, 16*ui);
+    else { ctx.textAlign='left'; ctx.fillStyle=COL.coin; ctx.font=`${13*ui}px ${NUM}`; ctx.fillText('$', lx, cy); }
+    ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`;
     ctx.fillStyle = money<0?COL.life:COL.coin;
     ctx.shadowColor=hexa(COL.gold,.4); ctx.shadowBlur=9*ui;
-    ctx.fillText(fmtMoney(money), lx+15*ui, cy); ctx.shadowBlur=0;
-    lx += 15*ui + ctx.measureText(fmtMoney(money)).width + 13*ui;
-    if(lvFx.combo && combo>1){
-      const ct='×'+fmtNum(comboMult(),1);
-      ctx.font=`800 ${12*ui}px ${MONO}`;
-      const cbw=ctx.measureText(ct).width + 16*ui;
-      rr(lx,cy-10*ui,cbw,20*ui,10*ui); ctx.fillStyle=hexa(COL.phosphor,.16); ctx.fill();
-      ctx.lineWidth=1.2; ctx.strokeStyle=hexa(COL.phosphor,.6); rr(lx,cy-10*ui,cbw,20*ui,10*ui); ctx.stroke();
-      ctx.fillStyle=COL.phosphor; ctx.textAlign='center'; ctx.fillText(ct, lx+cbw/2, cy);
-    }
-    // ── правый: таймер перед кнопкой паузы ──
+    ctx.fillText(fmtMoney(money), lx+18*ui, cy); ctx.shadowBlur=0;
+    lx += 18*ui + ctx.measureText(fmtMoney(money)).width + 16*ui;
+    // ── цель уровня (сирень): мишень + «N / M». В бесконечном — налёт «✈ N» (фосфор) ──
+    vsep(lx); lx += 16*ui;
+    const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
+    const endless = survival || LV.objective.race;   // race (L5): «без лимита»
+    const goalTone = endless ? COL.phosphor : COL.purple;
+    iconTarget(lx+9*ui, cy, 9*ui, goalTone);
+    ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`; ctx.fillStyle=goalTone;
+    ctx.shadowColor=hexa(goalTone,.4); ctx.shadowBlur=9*ui;
+    const goalTxt = endless ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target ?? 0));
+    ctx.fillText(goalTxt, lx+23*ui, cy); ctx.shadowBlur=0;
+    // ── правый: таймер перед кнопкой паузы (число, как в макете) ──
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
     const urgent = LV.objective.time && tShown<=10;
-    ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`700 ${15*ui}px ${MONO}`;
-    ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy);
-    // ── центр: уровень + счёт + полоса прогресса цели ──
-    const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
-    const endless = survival || LV.objective.race;   // race (L5): «без лимита», без потолка
-    const cxC = W*0.5;
-    ctx.textAlign='center';
-    const cnt = endless ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+'  /  '+fmtNum(LV.objective.target ?? 0));
-    ctx.fillStyle=hexa(COL.paper,.92); ctx.font=`${10*ui}px ${MONO}`;
-    ctx.fillText(currentLevelName()+'   ·   '+cnt, cxC, cy-6*ui);
-    if(!endless){
-      const target=LV.objective.target||1, frac=Math.max(0,Math.min(1,mv/target));
-      const bw3=170*ui, bx3=cxC-bw3/2, by3=cy+5*ui, bh3=6*ui;
-      rr(bx3,by3,bw3,bh3,bh3/2); ctx.fillStyle='rgba(127,155,176,.20)'; ctx.fill();
-      if(frac>0){ rr(bx3,by3,Math.max(bh3,bw3*frac),bh3,bh3/2); ctx.fillStyle=COL.purple; ctx.fill(); }   // цель уровня — сиреневый (handoff §03; был teal)
-    }
+    ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`700 ${18*ui}px ${NUM}`;
+    ctx.shadowColor=hexa(urgent?COL.life:COL.phosphor,.4); ctx.shadowBlur=9*ui;
+    ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy); ctx.shadowBlur=0;
 
     // кнопка паузы — спрайт-чип (на паузе поверх рисуем «play»)
     const pcx=pauseBtn.x+pauseBtn.w/2, pcy=pauseBtn.y+pauseBtn.h/2;
@@ -480,7 +473,7 @@
       const k=f.t/f.life;
       if(k>=1){ floaters.splice(i,1); continue; }
       ctx.globalAlpha=1-k*k;
-      ctx.font=`600 ${13*ui}px ${MONO}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font=`600 ${13*ui}px ${NUM}`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillStyle=f.col; ctx.shadowColor=f.col; ctx.shadowBlur=8;
       ctx.fillText(f.text, f.x, f.y - k*26*ui);
     }

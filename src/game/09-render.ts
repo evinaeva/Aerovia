@@ -1,6 +1,6 @@
 // ===== 09-render — draw primitives, the neon field/runways and biome decor (forest/butterfly/bonus) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: rr, hexa, heart, drawIcon, planeShape, planeScale, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, emoji, drawForest, drawBonusDecor, BSP/BTYPE/bSpec.
+// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, emoji, drawForest, drawBonusDecor, BSP/BTYPE/bSpec.
 // Reads: 01 (ctx); 02 (COL, SPRITES); 06 (field, runways, hazards, crews, W/H, ui, save); 04 (K, LV); 03 (t); 08 (neededCrew).
 
   function rr(x: number,y: number,w: number,h: number,r: number){
@@ -15,6 +15,7 @@
   }
   // ---- облик «ночной радар»: помощники ----
   const MONO='ui-monospace,"SF Mono",Menlo,Consolas,monospace';
+  const NUM="'Fredoka','Nunito',sans-serif";   // игровые ЧИСЛА — крупный игровой шрифт (макет TopHUD)
   function hexa(c: string,a: number){ if(!c || c[0]!=='#') return c;
     const n=parseInt(c.slice(1),16);
     return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
@@ -78,6 +79,13 @@
     else if(type==='deice') iconSnow(cx,cy,r,col);
     else iconDepart(cx,cy,r,col);
   }
+  // мишень-«цель уровня» (мокап NIcon.goal): два кольца + точка в центре
+  function iconTarget(cx: number,cy: number,r: number,col: string){ ctx.save();
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(1.4,r*0.16); ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,r*0.54,0,7); ctx.stroke();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(cx,cy,r*0.16,0,7); ctx.fill();
+    ctx.restore(); }
 
   // силуэт авиалайнера (нос по курсу, +x; габарит ~48 единиц)
   function planeShape(col: string){ ctx.fillStyle=col;
@@ -283,7 +291,7 @@
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText(t('canvas.closed'), cx, r.y+r.h-12*ui);
       } else {
-        ctx.fillStyle=nt; ctx.font=`${13*ui}px ${MONO}`;
+        ctx.fillStyle=nt; ctx.font=`700 ${13*ui}px ${NUM}`;
         ctx.textAlign='left'; ctx.textBaseline='middle';
         ctx.fillText(t('canvas.rwy',{n:'0'+(i+1)}), r.x+12*ui, r.y+12*ui);
       }
