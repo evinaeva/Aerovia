@@ -13,6 +13,7 @@
   `visual_pillars.md`, `ui_rules.md`, `dos_and_donts.md`, `object_library.md`.
 - [`../wireframes/`](../wireframes/) — раскладка экранов.
 
-Эталонный кадр поля (для разметки зафиксированных логикой позиций боксов/ВПП/точек
-влёта) лежит в [`reskin-ref/`](reskin-ref/); снят скриптом
-[`/scripts/capture-reskin-ref.mjs`](../../../scripts/capture-reskin-ref.mjs).
+Эталонный кадр поля лежит в [`reskin-ref/`](reskin-ref/) (`field-cozy.png`, снят скриптом
+[`/scripts/capture-reskin-ref.mjs`](../../../scripts/capture-reskin-ref.mjs)) — справочно.
+Жёстких требований к раскладке поля (апрон/боксы/ВПП) больше нет; фиксированы только HUD и
+инфо-бар нужд борта (см. [`neon/handoff/HANDOFF.md`](neon/handoff/HANDOFF.md)).

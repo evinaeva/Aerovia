@@ -142,9 +142,10 @@ function PlaneCard({ x, y, variant = 1 }) {
 }
 
 /* ===============================================================
-   GAME WINDOW — bounded APRON; the bays are TWO long hangars spanning the
-   apron's left edge to the runway approach. Runways (3, shorter) bridge the
-   apron edge to the SKY. Hangar render style + info block are switchable.
+   GAME WINDOW — assembles the mockup. NOTE: the field-element placement below
+   (apron, hangars, runways and their coordinates) is an ILLUSTRATIVE arrangement,
+   NOT a spec — placement is not a requirement (see HANDOFF.md "Layout"); only the
+   HUD (TopHUD) and the plane-needs info bar (PlaneCard) are fixed.
    plane scale: hangar == apron ground (P); airborne planes bigger (AIR).
    =============================================================== */
 function GameWindow({ hangar = 1, info = 2 }) {
