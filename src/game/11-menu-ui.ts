@@ -98,7 +98,7 @@
     }
   }
 
-  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen'].forEach(s=>document.getElementById(s)!.classList.add('hidden')); }
+  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen','editorScreen'].forEach(s=>{ const el=document.getElementById(s); if(el) el.classList.add('hidden'); }); }
   // главный экран: чип звёзд = сумма заработанных / максимум по основным уровням
   function updateStartChips(){
     let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;

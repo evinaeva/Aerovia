@@ -135,6 +135,31 @@
   .logbox{margin-top:14px;max-height:130px;overflow:auto;border-top:1px solid rgba(127,155,176,.25);padding-top:8px}
   .logrow{font-size:11px;color:var(--paper);padding:2px 0;letter-spacing:.03em}
   .logrow.muted{color:var(--muted)}
+
+  /* ===== level constructor (dev tool) ===== */
+  #editorScreen{background:#0a1020;align-items:stretch;justify-content:stretch}
+  .ed-wrap{position:absolute;inset:0;display:flex;flex-direction:column;padding:10px;gap:8px}
+  .ed-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .ed-title{font-weight:700;color:var(--paper);font-size:15px}
+  .ed-status{font-size:12px;color:var(--muted)}
+  .ed-bar__sp{flex:1}
+  .ed-body{flex:1;min-height:0;display:flex;gap:10px}
+  .ed-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+  .ed-palette{display:flex;gap:6px;flex-wrap:wrap}
+  .ed-canvas-wrap{flex:1;min-height:0;border:1px solid var(--pur-line);border-radius:12px;overflow:hidden;background:#0a1020}
+  .ed-canvas-wrap canvas{display:block;width:100%;height:100%;touch-action:none}
+  .ed-side{width:240px;flex:0 0 auto;overflow:auto;display:flex;flex-direction:column;gap:8px}
+  .ed-card{background:var(--raised);border:1px solid var(--pur-line);border-radius:12px;padding:10px}
+  .ed-card__t{font-weight:700;color:var(--paper);font-size:14px;margin-bottom:8px}
+  .ed-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .ed-row:last-child{margin-bottom:0}
+  .ed-row__l{font-size:12px;color:var(--muted);width:100%}
+  .ed-warn{border-color:rgba(255,210,59,.5)}
+  .ed-warn .ed-card__t{color:#ffd23b}
+  .ed-on{border-color:var(--m-accent)!important;color:var(--m-accent)!important;background:rgba(58,210,255,.12)!important}
+  .ed-range{flex:1;min-width:80px}
+  .ed-out{font-size:13px;font-weight:700;color:var(--paper)}
+  @media(max-width:680px){ .ed-body{flex-direction:column} .ed-side{width:auto} }
   .pausegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}
   .pausegrid .btn{width:100%}
   .pausegrid-3{grid-template-columns:1fr 1fr 1fr;gap:10px}
