@@ -108,9 +108,12 @@
   function layout(){
     const hud = HUD_H();
     const M = 12*ui;
-    // field taxi area (left ~60%); runways on right
-    const fx0 = M, fy0 = hud + M;
-    const fx1 = W*0.58, fy1 = H - M;
+    // полоса под инфо-бар нужды борта (drawPlaneCard) между HUD и апроном — как
+    // зарезервированная лента в макете (PlaneCard на y100); верхняя ангара садится под неё
+    const cardLane = 46*ui;
+    // field taxi area (left ~63%); runways on right
+    const fx0 = M, fy0 = hud + M + cardLane;
+    const fx1 = W*0.63, fy1 = H - M;          // апрон шире (ближе к макетным ~0.655W) → борту больше места
     field = {x0:fx0, y0:fy0, x1:fx1, y1:fy1};
 
     const bw = Math.min(56*ui*SZ(), (fx1-fx0)/2.4);
@@ -152,7 +155,9 @@
     if(de){ de.w=bw; de.h=bh; de.x=fx1-bw; de.y=(fy0+fy1)/2-bh/2; }
 
     // runways on right
-    const rwL = W*0.60, rwR = W*0.85;
+    // полевой торец ВПП заходит на самую кромку апрона → «мост» апрон→небо (полосы не
+    // висят в пустоте); длина ВПП ≈0.21W (макет 318/1600≈0.20W), правый край ≈0.84W
+    const rwL = fx1 - 8*ui, rwR = W*0.84;
     const n = LV.runways;
     const top0 = hud + M, bot0 = H - M;
     const gap = 14*ui*SZ();                 // просвет между полосами (растёт вместе с ВПП)
