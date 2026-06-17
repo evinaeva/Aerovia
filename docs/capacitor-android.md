@@ -15,11 +15,22 @@
 
 `android/` и `www/` — генерируемые, в `.gitignore`.
 
-## Разовая настройка (на машине с Android Studio + JDK 17)
+## Разовая настройка (на машине с Android Studio)
+
+Android Studio несёт встроенный JDK (JBR 21) и Android SDK — отдельный JDK ставить не нужно.
+
     npm install
-    npm run build:www
-    npx cap add android
+    npm run build:www          # www/ с index.html, где ЕСТЬ <head> (без него мост Capacitor не внедряется)
+    npx cap add android        # генерирует android/ (Capacitor-дефолты)
+    npm run setup:android      # применить наши правки к android/ (см. ниже)
     npx cap sync android
+
+`android/` генерируется и в `.gitignore`, а `npx cap add` сбрасывает его в дефолты — поэтому после
+каждого `cap add` прогоняем **`npm run setup:android`** ([`scripts/setup-android.mjs`](../scripts/setup-android.mjs)).
+Скрипт идемпотентно проставляет: AGP 8.7.2 / Gradle 8.9 / compileSdk 36 / minSdk 23 / buildToolsVersion
+(под JDK 21 + SDK 36, иначе дефолтный Capacitor-стек на JDK 21 не запускается), `local.properties` из
+`ANDROID_HOME`, Play Games `APP_ID` + `screenOrientation=sensorLandscape` в манифесте, launcher-иконку
+игры (из `assets/icon/`) и полноэкранный (immersive) `MainActivity`.
 
 ## Debug SHA-1 → Play Console (шаг #3, «Учетные данные»)
 После первой сборки в Android Studio создаётся `~/.android/debug.keystore`:
