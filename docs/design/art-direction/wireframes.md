@@ -164,7 +164,9 @@ hangs off the reserved `HUD_H` top band; that band is left unchanged).
 - ✅ **Start (01)** — two-column layout (brand + art left, action rail right) per mockup 01.
 - ✅ **HUD (03)** — top bar reworked to the «slim bar» proposal: left cluster
   (lives · money · combo badge), centre (level + goal **progress bar**), right
-  (timer + pause). `HUD_H` and all field/box/plane geometry untouched.
+  (timer + pause). `HUD_H` unchanged. (Field/box/plane **placement** is no longer a fixed
+  requirement — see [neon HANDOFF](../skins/neon/handoff/HANDOFF.md); only the HUD and the
+  plane-needs info bar are.)
 - ⛔ **Level select (02)** — keeps the shipped **«luggage-cart» map** by decision; the
   «flight-map» mockup stays as a reference idea only.
 

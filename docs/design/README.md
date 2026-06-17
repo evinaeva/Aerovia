@@ -17,9 +17,9 @@
 | [`game-design/`](game-design/README.md) | **Геймдизайн**: игровой цикл, прогрессия/уровни, события, типы бортов/аэропортов, MVP-план. |
 | [`skins/`](skins/README.md) | **Облик игры (neon) и бриф для художника** + как нарисованный арт встаёт в движок (PNG-пайплайн). |
 | [`wireframes/`](wireframes/README.md) | Отрисованные **макеты всех экранов** + screen-flow (генератор `build.py`). |
-| [`style-explore/`](style-explore/README.md) | Разведка **8 визуальных стилей** на зафиксированной раскладке геймплея. |
+| [`style-explore/`](style-explore/README.md) | Разведка визуальных стилей геймплея (выбран `neon`). |
 | [`references/`](references/) | Мастер-референсы стайл-гайда (картинки). |
-| [`sprite-batches/`](sprite-batches/) | Ранние партии спрайт-продакшна (`batch1`, `batch2`). |
+| [`sprite-batches/`](sprite-batches/) | Ранние партии спрайт-продакшна (`batch2`). |
 | [`integration/`](integration/PLAN.md) | План интеграции дизайн-системы + референс-лоадер спрайтов. |
 
 ## Ходовые файлы (start here)

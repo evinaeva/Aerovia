@@ -62,12 +62,13 @@ const NIcon = {
 };
 
 /* ---------------------------------------------------------------
-   APRON — the bounded play surface. Planes are confined inside its
-   border; the only way out is via the RUNWAYS, which bridge the apron
-   (field) to the open SKY beyond its right edge. Decorative surroundings
-   live OUTSIDE the border. Three exchangeable treatments (variant 1-3).
+   APRON — the bounded play surface. NOTE: the position/size here is an
+   ILLUSTRATIVE mockup value, NOT a spec — field-element placement is not a
+   requirement (see HANDOFF.md "Layout"); only the HUD and the plane-needs
+   info bar are fixed. Planes are confined inside its border; the way out is
+   via the RUNWAYS into the open SKY. Three exchangeable treatments (1-3).
    --------------------------------------------------------------- */
-const APRON = { x: 56, y: 168, w: 992, h: 658 };   // top sits below the HUD band; right edge 1048, bottom 826
+const APRON = { x: 56, y: 168, w: 992, h: 658 };   // illustrative only — not a required position/size
 
 function _Beacon({ left, top, color = "phosphor", d = 0 }) {
   return <span style={{ position: "absolute", left, top, width: 10, height: 10, borderRadius: "50%",

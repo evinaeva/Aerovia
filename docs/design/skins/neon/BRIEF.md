@@ -91,22 +91,22 @@ out. Generate at **≥ the §6 size** (bigger then downscale = crisper).
 
 ---
 
-## 1. The locked gameplay layout (must NOT change)
+## 1. Gameplay layout — only the HUD & the plane-needs info bar are fixed
 
-The look changes appearance, never positions:
+**Field-element placement is not a requirement.** Where the apron, the service bays and
+the runways sit — and which edge faces what — is the implementation's call (responsive,
+level-driven). The look changes appearance, never the few parts that ARE fixed:
 
 - **Strict top-down**, no isometry. **Landscape ~16:9.**
 - **Center = a large field** (the drawing canvas). HUD never overlaps it.
-- **Planes arrive from the RIGHT**; **runways on the RIGHT**, horizontal.
-- **Service bays on the BOTTOM, LEFT, TOP** (open = icon + label + upgrade; locked
-  = padlock + cost chip).
 - **Finger-drawn route** from a plane; selected plane has a ring, waiting planes a
   patience ring.
 - **Slim top HUD:** lives · money · level + goal bar · timer · pause.
+- **Plane-needs info bar:** a tapped plane's service chain + patience, docked under the HUD.
 - **HARD RULE — no tiny UI.** Big, bold, readable icons & numbers, thumb-sized.
 
-`references/ref-02-layout-mockup.png` = the layout; `ref-01-target-neon.png` = the
-target art (what we're matching).
+`references/ref-02-layout-mockup.png` shows **one** arrangement (illustrative, not a
+spec); `ref-01-target-neon.png` = the target art (what we're matching).
 
 ## 2. The neon look — glossy night air-traffic-control (match `ref-01`)
 

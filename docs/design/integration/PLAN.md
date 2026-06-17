@@ -13,8 +13,8 @@ with `node --test` and a static frame render before merge.
   selection ring, runway occupied/closed colours, bay progress ring + level pips,
   route path. These are dynamic and already good; we only swap the *base art* +
   *palette*, not the logic.
-- Embed both `<symbol>` sheets once as a hidden block at the top of `<body>`
-  (`planeflow-batch1.svg` + `planeflow-field.svg`), then `PFSprites.preload(...)`.
+- Embed the `<symbol>` sheet once as a hidden block at the top of `<body>`
+  (`planeflow-field.svg`), then `PFSprites.preload(...)`.
 
 ## Coordinate / orientation notes
 - `planeShape` (`src/game/09-render.ts`) draws nose along **+x**; the plane **sprites**

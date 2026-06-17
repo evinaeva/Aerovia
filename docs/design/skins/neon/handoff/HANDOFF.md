@@ -4,7 +4,8 @@ This package is a **hi-fi design reference** for the in-game HUD/field of PlaneF
 **neon** look (glossy night air-traffic-control). It is built with React 18 + inline
 JSX/Babel and renders a single fixed 1600×900 "game frame" scaled to fit the viewport.
 Your job is to re-implement this as production code (engine UI / web / game canvas),
-matching the visuals and the documented behaviour exactly.
+matching the visuals and the documented behaviour exactly — **except where field
+elements are placed, which is no longer prescribed** (see "Layout" below).
 
 ## Files
 - `Neon Gameplay.html` — entry point. Loads React/Babel, the two JSX modules, defines all
@@ -38,16 +39,27 @@ with the menu design-system (`--m-*`): same board, rounding, cyan glow, primary 
 Only **three** services: `fuel` (teal), `repair` (amber), `board`=passengers (rose).
 Never recolour these arbitrarily; the icon shape is the primary signifier, colour is secondary.
 
-## Layout (the locked field — positions are intentional)
-- **Apron**: a bounded play surface (`APRON = {x:56,y:168,w:992,h:658}`). Planes are confined
-  inside its neon border. Top edge sits **below** the HUD band; the right side opens onto the runways.
-- **Two long hangars** line the top and bottom edges, **flush** with the apron border, each
-  with **5 one-plane stalls** separated by thick walls. Top hangar opens DOWN, bottom opens UP
-  (mirrored): the **open wall always faces the apron interior** and the parked plane noses
-  toward its exit.
-- **3 runways** on the right, **vertically symmetric** (equal top/bottom margins), bridging the
-  apron edge into the **SKY**; a gap is always kept between runway start and the hangar wall.
-- **Camera punch-hole** is a left-edge safe-area (background only — never place UI there).
+## Layout — field-element placement is NOT prescribed
+
+There are **no requirements** for where the field elements sit: the apron / play
+surface, the service hangars / bays, the runways, the taxi area, approach lights and the
+sky / water zones. Their position, size and arrangement are entirely the implementation's
+call — responsive to the viewport and driven by the level config; the layout need not
+match any fixed frame.
+
+The coordinates in the mockup (`neon-field.jsx` / `neon-hud.jsx`, a fixed 1600×900 frame)
+are **one illustrative arrangement, not a target**. For these elements only their
+**appearance and behaviour** matter (see the bay-state and plane-state sections below) —
+never where they sit. The shipped game positions them in its own responsive `layout()`,
+and that is authoritative.
+
+The two layout requirements that **remain** (everything else is free):
+- the **HUD** top bar — see §HUD;
+- the **active-plane info bar** — a tapped plane's service-needs chain + patience
+  countdown, docked under the HUD — see §HUD.
+
+(The device camera safe-area on the left edge stays background-only — keep interactive
+UI out of it. That's a hardware constraint on UI, not a field-layout rule.)
 
 ## Service bay (stall) states — see the "Boxes" tab
 A stall renders top-down. Service badge sits in the **back-wall corner** (top-left for the top
