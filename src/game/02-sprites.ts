@@ -132,6 +132,10 @@
     };
     const patterns = new Map();
     const SHEETS = ['aircraft', 'field', 'hud', 'effects', 'brand'];
+    // Какие из SHEETS реально есть у скина как SVG-лист; остальное у neon приходит из
+    // PNG-атласа (manifest) и базовых листов. Без этого loadSkin дёргал все 5 и ловил
+    // 404 на neon/planeflow-{hud,effects,brand}.svg. Держать в синхроне с precache в sw.js.
+    const SKIN_SHEETS: Record<string, string[]> = { neon: ['aircraft', 'field'] };
     const loadedSkins = new Set();
     // загрузить пер-скиновый набор листов из assets/sprites/<skin>/planeflow-*.svg.
     // Символы в них должны быть с id-префиксом `<skin>-` (напр. `neon-bay-repair`),
@@ -147,7 +151,7 @@
         h.id = 'pf-sprites-' + skin; h.setAttribute('aria-hidden', 'true');
         h.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
         document.body.appendChild(h);
-        const urls = SHEETS.map(n => 'assets/sprites/' + skin + '/planeflow-' + n + '.svg');
+        const urls = (SKIN_SHEETS[skin] || SHEETS).map(n => 'assets/sprites/' + skin + '/planeflow-' + n + '.svg');
         Promise.all(urls.map(u => fetch(u).then(r => r.ok ? r.text() : '').catch(() => '')))
           .then(parts => {
             const html = parts.join('\n');
