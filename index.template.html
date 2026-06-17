@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
@@ -19,6 +20,7 @@
 <style>
 /*__BUILD_CSS__*/
 </style>
+</head>
 
 <div id="stage">
   <canvas id="c"></canvas>
@@ -40,10 +42,12 @@
           <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="survivalBtn"><span class="mic" data-mic="inf"></span><span class="m-btn__t" data-i18n="start.survival"></span></button>
         </div>
       </div>
-      <!-- corner icon cluster: settings · medals · language -->
+      <!-- corner icon cluster: settings · medals · Play Games · language -->
       <div class="pf-corner">
         <button class="icon-btn" id="settingsMenuBtn" data-i18n-aria="pause.settings"><span class="mic" data-mic="gear"></span></button>
         <button class="icon-btn" id="medalsBtn" data-i18n-aria="medals.btn" style="color:var(--m-gold)"><span class="mic" data-mic="medal"></span></button>
+        <!-- Play Games sign-in (native only — revealed by 13-init on Capacitor; hidden on web) -->
+        <button class="icon-btn" id="playGamesBtn" aria-label="Play Games" style="display:none"><span style="font:800 17px/1 system-ui,Roboto,sans-serif">G</span></button>
         <button class="icon-btn" id="langFlagBtn" data-i18n-aria="settings.language"><span class="mic" data-mic="globe"></span></button>
       </div>
       <!-- dev debug (bottom-left, self-positioned) -->

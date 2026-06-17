@@ -90,10 +90,25 @@
     const foot = document.getElementById('lbFoot');
     if(foot){ foot.innerHTML='';
       const best = Leaderboard.bestScore('survival');
-      const who = acct ? (t('lb.signedin')+': '+lbEsc(acct.name||('Player-'+String(acct.id).slice(-4).toUpperCase()))) : t('lb.signin');
       const info=document.createElement('div');
       info.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;font-size:13px';
-      info.innerHTML='<span class="muted">'+who+'</span><span>'+t('lb.yourbest')+': <b>'+(best?fmtNum(best):lbEsc(t('lb.unranked')))+'</b></span>';
+      // Вход — по ЖЕСТУ пользователя: на Android это нативный Play Games (через Account.authProvider),
+      // на вебе/PWA — mock. Намеренно НЕ входим при старте — авто-вход заставляет Play Games
+      // глушить окно согласия ("sign-in timing strategy suppressed").
+      let who: HTMLElement;
+      if(acct){
+        const s=document.createElement('span'); s.className='muted';
+        s.textContent=t('lb.signedin')+': '+(acct.name||('Player-'+String(acct.id).slice(-4).toUpperCase()));
+        who=s;
+      } else {
+        const b=document.createElement('button'); b.className='m-btn m-btn--ghost';
+        b.style.cssText='padding:6px 12px;font-size:13px'; b.textContent=t('lb.signin');
+        b.onclick=()=>{ b.disabled=true; Promise.resolve(Leaderboard.account.signIn()).then(()=>renderLeaderboard()).catch(()=>{ b.disabled=false; }); };
+        who=b;
+      }
+      const bestSpan=document.createElement('span');
+      bestSpan.innerHTML=t('lb.yourbest')+': <b>'+(best?fmtNum(best):lbEsc(t('lb.unranked')))+'</b>';
+      info.appendChild(who); info.appendChild(bestSpan);
       foot.appendChild(info);
     }
   }

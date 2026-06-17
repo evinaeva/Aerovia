@@ -25,8 +25,10 @@
     const PG: any = cap.Plugins && cap.Plugins.CapacitorGameConnect;
     if (!PG) return;
 
-    // Тихий вход на старте, чтобы последующие unlock/submit работали (PGS v2 — системный тост).
-    try { Promise.resolve(PG.signIn()).catch(() => {}); } catch(e){}
+    // НЕ зовём signIn() при старте: авто-вход заставляет Play Games глушить окно согласия
+    // ("sign-in timing strategy suppressed"), и игрок не успевает дать согласие на drive.appdata
+    // (Saved Games). Вход — только по жесту игрока (кнопка на экране рейтинга → Account.signIn()
+    // → authProvider ниже), либо при submitRun() после захода Survival.
 
     // 1) Идентичность: Account.authProvider → нативный вход Play Games.
     Account.authProvider = ((): Promise<any> => Promise.resolve(PG.signIn()).then((r: any) => ({
