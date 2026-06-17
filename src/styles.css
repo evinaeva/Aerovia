@@ -1136,3 +1136,15 @@
 
 /* Пауза: три иконки-кнопки ровно под таблицей (по её ширине) */
 #pauseScreen .m-actions__row { max-width: 200px; margin-inline: auto; justify-content: space-between; }
+
+/* icon-кнопки Паузы/Целей/Итогов: чистый квадрат под иконку.
+   .m-actions__row > .m-btn--icon (0,2,0) перебивает и clamp-ширину из .m-btn--icon,
+   и мёртвый `padding:0 14px` из .m-actions__row > .m-btn — даёт ровный var(--m-btn-h)
+   квадрат без бокового пустого паддинга. Глиф крупнее (24px вместо общих 18px
+   из `.m-btn svg`), чтобы кнопка не выглядела полупустой. */
+.m-actions__row > .m-btn--icon {
+  flex: 0 0 auto !important;
+  width: var(--m-btn-h); height: var(--m-btn-h);
+  padding: 0; gap: 0;
+}
+.m-btn--icon svg { width: 24px; height: 24px; }
