@@ -24,16 +24,17 @@ The dark, calm foundation of the airfield (apron, buildings, ground at night).
 
 ---
 
-## 2. Accent colors (route + alert + special aircraft)
+## 2. Accent colors (alerts + special aircraft + UI)
 
-High-contrast, used sparingly, never for large fills.
+High-contrast, used sparingly, never for large fills. **These accents are NOT used to color
+routes** — every route is one cyan phosphor line (see "Route rendering" below).
 
 | Token | Meaning | Approx. hex |
 | --- | --- | --- |
-| `accent/green` | Valid route / confirmed / OK | `#5dca7a` |
-| `accent/amber` | Taxiing / active / money | `#f2a93b` |
-| `accent/red` | Conflict / blocked / danger | `#e0584f` |
-| `accent/blue` | De-icing route / cold | `#4ab4d6` |
+| `accent/green` | Confirm / OK / affordable | `#5dca7a` |
+| `accent/amber` | Money / repair / active state | `#f2a93b` |
+| `accent/red` | Danger / blocked / emergency | `#e0584f` |
+| `accent/blue` | Cold / de-icing context | `#4ab4d6` |
 | `accent/purple` | VIP / priority | `#9a6fd4` |
 
 ---
@@ -42,7 +43,7 @@ High-contrast, used sparingly, never for large fills.
 
 | Token | Approx. hex | Use |
 | --- | --- | --- |
-| `neutral/gray-500` | `#8a8c99` | Airport gray, inactive UI, hold/waiting routes |
+| `neutral/gray-500` | `#8a8c99` | Airport gray, inactive UI |
 | `neutral/gray-400` | `#a8aab5` | Disabled text, secondary lines |
 | `neutral/cream-200` | `#e8e0cf` | Light surfaces, aircraft bodies |
 | `neutral/cream-100` | `#f4eede` | Brightest highlight / paper |
@@ -62,37 +63,34 @@ Warm emissive tones for night lamps, taxiway glow, and window light.
 
 ---
 
-## Route color system (canonical)
+## Route rendering (as shipped)
 
-This table is authoritative for routing visuals and must match
-[`art_direction_v1.md`](art_direction_v1.md) and [`object_library.md`](object_library.md).
+> ✅ Confirmed against code: `src/game/09b-render-entities.ts` (`drawPlane`, `_rc = COL.phosphor`).
 
-| State | Color token | Line treatment |
-| --- | --- | --- |
-| Valid route | `accent/green` | solid, glowing |
-| Taxiing | `accent/amber` | solid, animated flow |
-| Conflict / Blocked | `accent/red` | solid + warning |
-| De-icing | `accent/blue` | solid |
-| VIP / Priority | `accent/purple` | solid, emphasized |
-| Hold / Waiting | `neutral/gray-500` | dashed |
+**Every route renders identically:** a single cyan phosphor (`#3ad2ff`) glowing solid line
+with a directional arrowhead at the head. **Route color does NOT encode state** — there is no
+green/amber/red/blue/purple/gray-by-state system, and no dashed "drawing" vs. solid
+"confirmed" lifecycle. A valid route, a taxiing plane, a conflict, a de-icing trip, a VIP and
+a holding plane all draw the same cyan line.
 
-### Route *states* (drawing lifecycle)
+State and urgency are shown on the **plane**, not the route:
 
-| State | Visual |
-| --- | --- |
-| Drawing | dashed line with leading dot |
-| Confirmed | solid green |
-| Active (moving) | amber with directional arrow |
-| Conflict | red with directional arrow + cross icon |
-| Holding | dashed gray |
+- airborne **patience ring** — teal → amber → red as time runs out;
+- **special-plane markers** — VIP gold body, emergency red pulsing ring, medical rose cross.
+
+> ⚠️ Earlier versions of this doc carried a "state → color" route table and a "drawing
+> lifecycle" table. Both were **aspirational and never implemented**; they were removed
+> because tools/agents kept treating them as real and "implementing" route coloring the game
+> does not have. If state-coded routes are ever built, document them here **with a code
+> reference**.
 
 ---
 
 ## Usage rules
 
-- **Backgrounds = base + neutrals.** Accents are for routes, alerts, and special objects only.
+- **Backgrounds = base + neutrals.** Accents are for alerts and special objects only (routes use cyan phosphor, not accents).
 - **Never** put two saturated accents adjacent at full strength — it kills readability.
 - Keep total on-screen dominant colors to **6–7**.
 - Glows are additive and subtle; they hint warmth, they don't shout.
-- Maintain enough contrast that every route color is distinguishable for color-blind
-  players — rely on line treatment (dash/arrow/icon) as a secondary channel, not color alone.
+- Maintain enough contrast that UI states and alert colors stay distinguishable for
+  color-blind players — rely on shape/icon as a secondary channel, not color alone.

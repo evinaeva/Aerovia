@@ -22,7 +22,7 @@ references/planeflow_style_guide_v1.png
 | # | Panel | Contents |
 | --- | --- | --- |
 | — | Header | "PLANEFLOW — Stylized Flat Airport Management Game · Art Style Guide" + a sample airport scene at night with routed aircraft, glowing taxiways, warm windows. |
-| 02 | Route Colors | Valid (green), Taxiing (amber), Conflict/Blocked (red), De-icing (blue), VIP/Priority (purple), Hold/Waiting (dashed gray). Plus route *states*: Drawing, Confirmed, Active (moving), Conflict, Holding. |
+| 02 | Route Colors | The reference image proposes per-state route colors + a drawing lifecycle. **Not implemented in the game** — all routes draw as one cyan glow line; see [`../color_palette.md`](../color_palette.md). |
 | 03 | Aircraft Types | Passenger, Cargo, Medical, VIP Jet, Military, Private Jet. |
 | 04 | Service Vehicles | Pushback, Fuel Truck, Baggage Cart, Catering Truck, De-icing Truck, Snowplow, Maintenance, Ambulance, Fire Truck, Limo, Security Car. |
 | 05 | Buildings & Structures | Terminal, Control Tower, Hangar, Fuel Station, De-icing Pad. |

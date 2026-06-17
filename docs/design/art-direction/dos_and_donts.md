@@ -10,7 +10,6 @@
 **Readability**
 - Keep aircraft silhouettes oversized and instantly recognizable.
 - Keep routes thick, glowing, high-contrast, and always visible.
-- Back up route color with a second channel (dash / arrow / icon).
 - Maintain a clear information hierarchy.
 
 **Atmosphere**
@@ -44,7 +43,6 @@
 - ✘ Cluttered UI / dense text.
 - ✘ Excessive or heavy particle effects.
 - ✘ Aggressive flashing or strobing.
-- ✘ Color encoded as the *only* channel for a route state.
 
 **Mood breakers**
 - ✘ Dark, unreadable scenes.
