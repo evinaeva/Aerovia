@@ -39,9 +39,18 @@
     }
     rr(x,y,w,h,r); const fg=ctx.createLinearGradient(0,y,0,y+h); fg.addColorStop(0,hexa(col,.10)); fg.addColorStop(1,'#0a1430'); ctx.fillStyle=fg; ctx.fill();
     ctx.fillStyle=hexa(col,.22); ctx.fillRect(x+w*0.5-12*ui, top?y+h*0.62:y+h*0.36-2*ui, 24*ui, 2*ui);
-    const wallG=(yy: number,hh: number)=>{const g=ctx.createLinearGradient(0,yy,0,yy+hh); g.addColorStop(0,'#243a66'); g.addColorStop(1,'#0d1b3c'); return g;};
+    const wallG=(yy: number,hh: number)=>{const g=ctx.createLinearGradient(0,yy,0,yy+hh); g.addColorStop(0,'#22355f'); g.addColorStop(.55,'#16254c'); g.addColorStop(1,'#0d1b3c'); return g;};   // стена темнее (как LongHangar) — цвет живёт в канте/блике, не в заливке
     const backY=top?y:y+h-wt;
     ctx.fillStyle=wallG(backY,wt); ctx.fillRect(x,backY,w,wt);
+    // пилообразная крыша «цеха» (штрих 135°, HSTYLE.1 Sawtooth) поверх задней стены —
+    // единый корпус ангары без PNG. Фаза привязана к кромке апрона (field.x0), чтобы
+    // штрих шёл непрерывно сквозь встык-стойла (r=0), а не рвался на каждом боксе.
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x,backY,w,wt); ctx.clip();
+    ctx.strokeStyle=hexa(col,.5); ctx.lineWidth=2*ui;
+    const stp=13*ui, phx=(((x-field.x0)%stp)+stp)%stp;
+    for(let sx=x-phx-wt; sx<x+w; sx+=stp){ ctx.beginPath(); ctx.moveTo(sx,backY+wt); ctx.lineTo(sx+wt,backY); ctx.stroke(); }
+    ctx.restore();
     ctx.fillStyle=wallG(y,h); ctx.fillRect(x,y,wt,h); ctx.fillRect(x+w-wt,y,wt,h);
     ctx.save(); ctx.shadowColor=hexa(col,busy?.7:.45); ctx.shadowBlur=busy?12:7; ctx.fillStyle=hexa(col,busy?.95:.6); ctx.fillRect(x, top?y:y+h-2*ui, w, 2*ui); ctx.restore();
     ctx.fillStyle='rgba(255,255,255,.18)'; ctx.fillRect(x, backY, w, 1.4*ui);
@@ -267,7 +276,7 @@
     if(!(selected && !selected.dead)) return;
     const hud=HUD_H();
     const chain=selected.requests, n=chain.length;
-    const bw2=30*ui, gap2=16*ui, x0=14*ui, y0=hud+10*ui;
+    const bw2=30*ui, gap2=16*ui, x0=14*ui, y0=hud+8*ui;   // в зарезервированной cardLane (выше апрона), не на верхней ангаре
     const pw=n*bw2+(n-1)*gap2+16*ui;
     rr(x0,y0,pw,44*ui,9*ui); ctx.fillStyle='rgba(33,29,51,.72)'; ctx.fill();
     ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(x0,y0,pw,44*ui,9*ui); ctx.stroke();

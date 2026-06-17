@@ -43,13 +43,16 @@
   }
 
   // иконки услуг (центр в (cx,cy), размер r)
-  function iconGear(cx: number,cy: number,r: number,col: string,hole?: string){ ctx.save(); ctx.translate(cx,cy); ctx.fillStyle=col;
-    const teeth=8, ro=r, ri=r*0.74, tw=0.2; ctx.beginPath();
-    for(let i=0;i<teeth;i++){ const a=i/teeth*Math.PI*2, a0=a-tw,a1=a+tw,a2=a+Math.PI/teeth-tw,a3=a+Math.PI/teeth+tw;
-      ctx.lineTo(Math.cos(a0)*ro,Math.sin(a0)*ro); ctx.lineTo(Math.cos(a1)*ro,Math.sin(a1)*ro);
-      ctx.lineTo(Math.cos(a2)*ri,Math.sin(a2)*ri); ctx.lineTo(Math.cos(a3)*ri,Math.sin(a3)*ri); }
-    ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(0,0,r*0.34,0,7); ctx.fillStyle=hole||COL.tarmac; ctx.fill(); ctx.restore(); }
+  // ремонт = гаечный ключ (handoff NIcon.repair): открытый зев + рукоять под 45°.
+  // Вырез зева/оси рисуется цветом фона (hole) — как «дырка» у прежней шестерёнки.
+  function iconWrench(cx: number,cy: number,r: number,col: string,hole?: string){ ctx.save(); ctx.translate(cx,cy); ctx.rotate(-Math.PI/4); ctx.fillStyle=col;
+    const hw=r*0.2;
+    rr(-hw,-r*0.15,hw*2,r*1.05,hw); ctx.fill();                       // рукоять (скруглённый стержень)
+    ctx.beginPath(); ctx.arc(0,-r*0.6,r*0.44,0,7); ctx.fill();        // головка
+    ctx.fillStyle=hole||COL.tarmac;                                   // открытый зев (клин) цветом фона
+    ctx.beginPath(); ctx.moveTo(-r*0.16,-r*0.55); ctx.lineTo(-r*0.46,-r*1.02);
+    ctx.lineTo(r*0.46,-r*1.02); ctx.lineTo(r*0.16,-r*0.55); ctx.closePath(); ctx.fill();
+    ctx.restore(); }
   function iconDrop(cx: number,cy: number,r: number,col: string){ ctx.save(); ctx.translate(cx,cy-r*0.1); ctx.fillStyle=col;
     ctx.beginPath(); ctx.moveTo(0,-r); ctx.bezierCurveTo(r*0.9,-r*0.1,r*0.85,r*0.9,0,r);
     ctx.bezierCurveTo(-r*0.85,r*0.9,-r*0.9,-r*0.1,0,-r); ctx.closePath(); ctx.fill();
@@ -69,7 +72,7 @@
     }
     ctx.restore(); }
   function drawIcon(type: string,cx: number,cy: number,r: number,col: string,hole?: string){
-    if(type==='repair') iconGear(cx,cy,r,col,hole);
+    if(type==='repair') iconWrench(cx,cy,r,col,hole);
     else if(type==='fuel') iconDrop(cx,cy,r,col);
     else if(type==='board') iconPerson(cx,cy,r,col);
     else if(type==='deice') iconSnow(cx,cy,r,col);
