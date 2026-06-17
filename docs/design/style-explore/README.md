@@ -1,9 +1,14 @@
-# Style exploration — 8 directions on ONE locked layout
+# Style exploration — 8 directions on one reference layout
 
-Eight visual styles rendered over a single, **non-negotiable** gameplay layout, to
+Eight visual styles rendered over a single **reference** gameplay layout, to
 pick an art direction. Regenerate with `python3 build.py` (needs `cairosvg` + `pillow`).
 
-## Locked layout (must NOT change between styles)
+> The layout below was kept identical across the 8 renders only so the styles compare
+> fairly. It is **not** a game requirement: field-element placement (apron, bays,
+> runways) is no longer prescribed — see [neon BRIEF](../skins/neon/BRIEF.md). Only the
+> HUD and the plane-needs info bar are fixed.
+
+## Reference layout used for these renders (not a requirement)
 
 - Strict **top-down / bird's-eye**, no isometry. **Landscape ~16:9**.
 - Center = a large **empty field** (the sacred drawing canvas); the HUD never overlaps it.
