@@ -356,6 +356,12 @@
     if(!survival && LV.objective.time && gameTime>=LV.objective.time){ endLevel('end.time'); return; }
   }
   function dirOut(b: any){ // направление "наружу из бокса" в поле
+    // КОНСТРУКТОР: ворота заданы явно (или авто-выведены при раскладке) — читаем их.
+    if(b.gate==='up') return {dx:0,dy:-1};
+    if(b.gate==='down') return {dx:0,dy:1};
+    if(b.gate==='left') return {dx:-1,dy:0};
+    if(b.gate==='right') return {dx:1,dy:0};
+    // СТАРАЯ РАСКЛАДКА: по стороне ангара.
     if(b.side==='top') return {dx:0,dy:1};
     if(b.side==='bottom') return {dx:0,dy:-1};
     if(b.side==='deice') return {dx:-1,dy:0}; // у правого края поля, ворота влево

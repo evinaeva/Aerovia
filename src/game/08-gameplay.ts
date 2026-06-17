@@ -12,9 +12,11 @@
     document.getElementById('pauseScreen')!.classList.add('hidden');
     bays.forEach(b=>{ b.occupied=null;
       if(b.deice){ b.open=true; b.lvl=0; return; }   // де-айс — инфраструктура, всегда открыт
-      // НЕОН-КОМПОЗИЦИЯ: исходное «открыт» хранится на боксе (open0) при сборке —
-      // side-агностично (стороны теперь только top/bottom, см. layout)
-      b.open = (b.open0!=null) ? !!b.open0 : ((LV.sides as Record<string, SideCfg>)[b.side] ? b.slot < (LV.sides as Record<string, SideCfg>)[b.side].open : false); b.lvl=0; });
+      // исходное «открыт» хранится на боксе (open0) при сборке (и layout, и sides ставят
+      // его); старый sides-фолбэк остаётся лишь на случай боксов без open0
+      const sc = LV.sides ? (LV.sides as Record<string, SideCfg>)[b.side] : undefined;
+      b.open = (b.open0!=null) ? !!b.open0 : (sc ? b.slot < sc.open : false);
+      b.lvl=0; });
     runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0; spawnedTotal=0;
@@ -91,10 +93,12 @@
     const vip = evs.vip && Math.random() < K.VIP_CHANCE;                 // частный джет
     const emergency = evs.emergency && !vip && Math.random() < K.EMERGENCY_CHANCE;        // «топливо на нуле»
     const medical = evs.medical && !vip && !emergency && Math.random() < K.MEDICAL_CHANCE; // медицинский
-    const pool = shuffle(['repair','fuel','board']);
+    // КОНСТРУКТОР: борт запрашивает услуги ТОЛЬКО из набора уровня (services). Копируем
+    // массив перед перемешиванием — levelServices() может вернуть сам конфиг (не мутируем).
+    const svcPool = shuffle(levelServices().slice());
     // медицинский: высаживает пациента в пассажирском боксе, затем сразу вылет
-    const nSvc = medical ? 1 : (Math.random() < K.TWO_SVC_CHANCE ? 2 : 1);
-    const requests = medical ? ['board','depart'] : pool.slice(0, nSvc).concat(['depart']);
+    const nSvc = medical ? 1 : Math.min(svcPool.length, (Math.random() < K.TWO_SVC_CHANCE ? 2 : 1));
+    const requests = medical ? ['board','depart'] : svcPool.slice(0, nSvc).concat(['depart']);
     // де-айсинг: в снегопад обычный борт обязан пройти антиобледенение перед вылетом
     // (медицинский — «вне очереди», пропускаем). Шаг ставится прямо перед 'depart'.
     if(LV.deice && weather==='snow' && !medical) requests.splice(requests.length-1, 0, 'deice');
@@ -309,7 +313,15 @@
     pulseFx(tx, ty, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
-  function bayUpCost(b: any){ if(b.deice) return null; return b.open ? (K.BAY_UP_COST[b.lvl]||null) : K.BAY_OPEN_COST; }
+  // потолок прокачки конкретного ангара: 0, если апгрейд выключен (up:false) или это
+  // деайс-инфраструктура; иначе глубина уровня (levelMaxUp — одна на всех ангаров карты).
+  function bayMaxLvl(b: any){ if(b.deice || b.up===false) return 0; return levelMaxUp(); }
+  function bayUpCost(b: any){
+    if(b.deice) return null;
+    if(!b.open) return K.BAY_OPEN_COST;
+    if(b.lvl >= bayMaxLvl(b)) return null;          // апгрейд выключен или достигнут потолок уровня
+    return K.BAY_UP_COST[b.lvl] || null;
+  }
 
   function down(e: any){
     if(!running) return;
