@@ -16,8 +16,8 @@
 > [`achievements.md`](achievements.md), архив сделанного — [`done.md`](done.md).
 
 > **Конкурентный разбор по отзывам игроков** (что в жанре любят / ругают / просят,
-> ~27k отзывов Google Play по 6 играм): [`competitor-reviews.md`](competitor-reviews.md).
-> 11 уроков для нас — в начале того файла.
+> ~46k отзывов Google Play по 9 играм): [`competitor-reviews.md`](competitor-reviews.md).
+> 12 уроков для нас — в начале того файла.
 
 **Три референса по духу:**
 1. **Flight Control / ATC-игры** — рисование маршрутов пальцем, нарастающее давление,
