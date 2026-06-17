@@ -65,16 +65,16 @@
 
   <div class="overlay hidden" id="overScreen">
     <div class="screen screen--center">
-      <div class="panel panel--wide" style="--panel-w:560px;text-align:center">
+      <div class="panel panel--wide panel--fit" style="--panel-w:460px;text-align:center">
         <button class="panel__corner" id="shareBtn" data-i18n-aria="over.share"><span class="mic" data-mic="share"></span></button>
         <div class="triumph-kicker" id="overKicker"></div>
         <div class="star-row star-row--xl" id="finalStars"></div>
         <p class="reward-sub" id="overMsg"></p>
         <div class="result-stats" id="overStats"></div>
         <div class="m-actions__row" style="margin-top:20px">
-          <button class="m-btn m-btn--ghost" id="toLevelsBtn"><span class="mic" data-mic="list"></span><span class="m-btn__t" data-i18n="over.toLevels"></span></button>
-          <button class="m-btn m-btn--ghost" id="againBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="over.again"></span></button>
-          <button class="m-btn m-btn--primary" id="nextBtn"><span class="mic" data-mic="next"></span><span class="m-btn__t" data-i18n="over.next"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--icon" id="toLevelsBtn" data-i18n-aria="over.toLevels"><span class="mic" data-mic="list"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--icon" id="againBtn" data-i18n-aria="over.again"><span class="mic" data-mic="again"></span></button>
+          <button class="m-btn m-btn--primary m-btn--icon" id="nextBtn" data-i18n-aria="over.next"><span class="mic" data-mic="next"></span></button>
         </div>
       </div>
     </div>
@@ -153,18 +153,13 @@
 
   <div class="overlay hidden" id="pauseScreen">
     <div class="screen screen--center">
-      <div class="panel" style="--panel-w:560px;text-align:center">
-        <div class="m-kicker" style="justify-content:center"><span class="mic" data-mic="pause"></span><span data-i18n="pause.kicker"></span></div>
-        <div class="lvl-head" style="margin-top:8px"><h1 class="m-title m-title--md" id="pauseTitle"></h1></div>
-        <div class="stat-row" id="pauseStats"></div>
-        <div class="obj-block">
-          <div class="obj-block__head"><span class="lbl" id="pauseObjLabel" data-i18n="pause.objective"></span></div>
-          <div id="pauseGoals"></div>
-        </div>
+      <div class="panel panel--fit" style="--panel-w:460px;text-align:center">
+        <div class="lvl-head"><h1 class="m-title m-title--md" id="pauseTitle"></h1></div>
+        <div class="obj-block"><div id="pauseGoals"></div></div>
         <div class="m-actions"><div class="m-actions__row">
-          <button class="m-btn m-btn--primary" id="resumeBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="pause.resume"></span></button>
-          <button class="m-btn m-btn--ghost" id="restartBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="pause.restart"></span></button>
-          <button class="m-btn m-btn--danger" id="menuBtn"><span class="mic" data-mic="home"></span><span class="m-btn__t" data-i18n="pause.menu"></span></button>
+          <button class="m-btn m-btn--primary m-btn--icon" id="resumeBtn" data-i18n-aria="pause.resume"><span class="mic" data-mic="play"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--icon" id="menuBtn" data-i18n-aria="pause.menu"><span class="mic" data-mic="home"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--icon" id="restartBtn" data-i18n-aria="pause.restart"><span class="mic" data-mic="again"></span></button>
         </div></div>
       </div>
     </div>
@@ -172,11 +167,13 @@
 
   <div class="overlay hidden" id="goalsScreen">
     <div class="screen screen--center">
-      <div class="panel" style="--panel-w:480px;text-align:center">
-        <div class="m-kicker" id="goalsKicker" style="justify-content:center"></div>
+      <div class="panel panel--fit" style="--panel-w:460px;text-align:center">
         <div class="lvl-head"><h1 class="m-title m-title--md" id="goalsTitle"></h1></div>
-        <div id="goalsBody"></div>
-        <div class="m-actions"><button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="goalsOk"><span class="mic" data-mic="check"></span><span class="m-btn__t" data-i18n="goals.ok"></span></button></div>
+        <div class="obj-block"><div id="goalsBody"></div></div>
+        <div class="m-actions"><div class="m-actions__row">
+          <button class="m-btn m-btn--primary m-btn--icon" id="goalsOk" data-i18n-aria="goals.ok"><span class="mic" data-mic="play"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--icon" id="goalsHomeBtn" data-i18n-aria="pause.menu"><span class="mic" data-mic="home"></span></button>
+        </div></div>
       </div>
     </div>
   </div>
