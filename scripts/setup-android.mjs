@@ -23,6 +23,7 @@ const A = join(ROOT, 'android');
 // Combo verified on JDK 21 + SDK 36 (tune here if the toolchain moves):
 const AGP = '8.7.2', GRADLE = '8.9', COMPILE_SDK = 36, TARGET_SDK = 36, MIN_SDK = 23;
 const PGS_APP_ID = '533472253687'; // docs/play-games-setup.md
+const APP_VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version; // Android versionName = эта версия (база сравнения Capgo OTA)
 
 const MAIN_ACTIVITY = `package com.planeflow.game;
 
@@ -104,6 +105,12 @@ patch('app/build.gradle', (s) => {
   return s.replace(/(compileSdkVersion\s+rootProject\.ext\.compileSdkVersion[^\n]*\n)/,
     `$1    buildToolsVersion "${bt}"\n`);
 });
+
+// Capgo OTA: versionName = версия из package.json (Capacitor по умолчанию ставит "1.0").
+// Нативная версия — база сравнения Capgo: бандл доставляется, только если он ВЫШЕ неё.
+// CI шлёт бандлы как MAJOR.MINOR.<run_number> (deploy.yml), т.е. заведомо выше этой версии.
+patch('app/build.gradle', (s) =>
+  s.replace(/versionName\s+"[^"]*"/, `versionName "${APP_VERSION}"`));
 
 // 2) local.properties (machine-specific SDK path; never committed)
 {

@@ -57,7 +57,11 @@ jobs:
             exit 0
           fi
           npm run build:www
-          VER="$(node -p "require('./package.json').version")-${{ github.run_number }}"
+          # Версия бандла должна быть ВЫШЕ нативной (versionName из setup-android.mjs = версия
+          # package.json), иначе Capgo считает это «понижением» и не доставляет на устройство.
+          # major.minor берём из package.json, patch = номер прогона (растёт, уникален): 0.21.0 → 0.21.43.
+          BASE="$(node -p "require('./package.json').version")"
+          VER="${BASE%.*}.${{ github.run_number }}"
           # --no-code-check: вся игра инлайнится в один index.html, поэтому эвристика CLI
           # не находит notifyAppReady() (он во встроенном <script>, а не в отдельном .js).
           # Вызов реально есть — в src/game/13-init.js (гейт на натив). См. capacitor.config.ts.
