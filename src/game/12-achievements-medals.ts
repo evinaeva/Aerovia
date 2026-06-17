@@ -78,7 +78,13 @@
     // Необязательное зеркало во внешний сервис достижений (нативный Play Games в обёртке).
     // Ставится из 12b-native-play-games; на вебе остаётся null → no-op.
     let mirror: ((id: string) => void) | null = null;
-    function mirrorAch(id: string){ if(mirror){ try{ mirror(id); }catch(e){} } }
+    // Зеркалим разблокировку в нативный Play Games ОТЛОЖЕННО: системный тост Google
+    // нельзя приглушить/подвинуть, поэтому копим id и сливаем в безопасный момент
+    // (конец уровня / пауза / экран рейтинга) — чтобы большая гугловская плашка не лезла
+    // посреди игры. Наш деликатный тост (toastAch) при этом показывается сразу.
+    let mirrorQueue: string[] = [];
+    function mirrorAch(id: string){ if(mirror) mirrorQueue.push(id); }
+    function flushMirror(){ if(!mirror){ mirrorQueue.length=0; return; } while(mirrorQueue.length){ const id=mirrorQueue.shift()!; try{ mirror(id); }catch(e){} } }
     function persist(){ save.ach=[...unlocked]; save.stats=S.stats; saveGame(); }
     // Третья и далее медаль за раунд СГОРАЕТ: отложенной выдачи нет, в новом раунде
     // «за прошлое» ничего не приходит. Одноразовые (за 1 действие) можно получить,
@@ -134,7 +140,7 @@
       init(){ S.ach=Array.isArray(save.ach)?save.ach:[]; Object.assign(S.stats, save.stats||{}); unlocked=new Set(S.ach); },
       onLevelStart(){ flushToasts(); newRun(); },   // рестарт посреди раунда: недопоказанное — сразу, хвостов нет
       onPlaneTouched(pl: any){ if(pl) pl.everTouched=true; },
-      onPause(){ give('pause'); },
+      onPause(){ give('pause'); flushMirror(); },   // пауза — безопасный момент слить нативные плашки
       onLand(_pl?: any){
         S.stats.landed++; run.landed++; S.stats.noCrashStreak++;
         run.landTimes.push(gameTime);
@@ -204,7 +210,8 @@
         }
         persist();
         checkLegend();    // «Легенда» (вся коллекция) — на итогах раунда, не посреди игры
-        flushToasts();    // остаток уведомлений — на экран итогов, в новый раунд не утекает
+        flushToasts();    // остаток наших уведомлений — на экран итогов, в новый раунд не утекает
+        flushMirror();    // нативные (гугловские) плашки — пачкой на итогах, не посреди игры
       },
       // ранг-медали (пороговые навсегда): лучший достигнутый ранг по ЛЮБОМУ срезу
       // (all-time/month/week) открывает медаль. Зовётся после Leaderboard.submitRun().
@@ -214,8 +221,9 @@
         if(best<=100) giveForce('rank_top100');
         if(best<=10)  giveForce('rank_top10');
         if(best===1)  giveForce('rank_1');
+        flushMirror();
       },
-      flushToasts,
+      flushToasts, flushMirror,
       setMirror(fn: ((id: string) => void) | null){ mirror = (typeof fn === 'function') ? fn : null; },
       list(){
         const out: any[]=[];

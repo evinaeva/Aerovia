@@ -5,6 +5,17 @@
 
   document.getElementById('medalsBtn').onclick=()=>openMedals('start');
   { const b=document.getElementById('leaderboardBtn'); if(b) b.onclick=showLeaderboard; }
+  // Play Games «G» — вход по жесту игрока (нативная сборка). На вебе кнопка скрыта.
+  // Вход при старте мы намеренно не форсим: авто-вход глушит окно согласия Play Games.
+  { const g=document.getElementById('playGamesBtn'); const cap=window.Capacitor;
+    if(g && cap && cap.isNativePlatform && cap.isNativePlatform()){
+      g.style.display='';                                   // показать только в нативной сборке
+      g.onclick=()=>{ const pg=window.PFPlayGames;
+        if(Account.signedIn() && pg){ pg.showAchievements(); return; }   // уже вошли → системные ачивки
+        Promise.resolve(Account.signIn()).then(()=>{ if(window.PFPlayGames) window.PFPlayGames.showAchievements(); }).catch(()=>{});
+      };
+    }
+  }
   { const b=document.getElementById('leaderboardBackBtn'); if(b) b.onclick=()=>{ showStart(); }; }
   document.getElementById('medalsBackBtn').onclick=()=>{
     if(medalFrom==='levels'){ hideAllScreens(); showLevels(); }
