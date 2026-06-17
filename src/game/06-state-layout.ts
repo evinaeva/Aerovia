@@ -93,7 +93,7 @@
   }
 
   // ---- layout: bays, runways, hover slots ----
-  interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; }
+  interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; up?: boolean; gate?: string; gx?: number; gy?: number; }
   interface Runway { occupied: any; closed: boolean; hazard?: any; x: number; y: number; w: number; h: number; cy: number; stopX: number; exitX: number; }
   interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; rwL?: number; rwR?: number; service?: any; }
   interface Rect { x: number; y: number; w: number; h: number; }
@@ -126,30 +126,62 @@
     // ОБЩАЯ раскладка (одинакова для всех скинов).
     if(!bays.length){
       bays = [];
-      const all: { type: string; open: boolean }[] = [];
-      for(const side of ['top','left','bottom']){
-        const cfg = (LV.sides as Record<string, SideCfg>)[side];
-        for(let i=0;i<cfg.slots;i++) all.push({type:cfg.type, open:i<cfg.open});
+      if(LV.layout && LV.layout.hangars){
+        // КОНСТРУКТОР: один ангар = одно место. (gx,gy) — доля апрона; пиксели ставятся
+        // ниже. open/up/gate — по конфигу (gate авто-выводится при раскладке, если опущен).
+        LV.layout.hangars.forEach((hg,i)=>{
+          const open = hg.open!==false;
+          bays.push({ side:'free', type:hg.type, slot:i, open, open0:open,
+                      up:hg.up!==false, gate:hg.gate, gx:hg.x, gy:hg.y,
+                      lvl:0, occupied:null, x:0,y:0,w:bw,h:bh });
+        });
+      } else {
+        // СТАРАЯ РАСКЛАДКА: слоты сторон → плоский список, чередуем верх/низ, встык в две ангары.
+        const all: { type: string; open: boolean }[] = [];
+        const sides = (LV.sides || {}) as Record<string, SideCfg>;
+        for(const side of ['top','left','bottom']){
+          const cfg = sides[side]; if(!cfg) continue;
+          for(let i=0;i<cfg.slots;i++) all.push({type:cfg.type, open:i<cfg.open});
+        }
+        all.forEach((b,i)=>{
+          bays.push({ side:(i%2===0?'top':'bottom'), type:b.type, slot:i,
+                      open:b.open, open0:b.open, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh });
+        });
       }
-      all.forEach((b,i)=>{
-        bays.push({ side:(i%2===0?'top':'bottom'), type:b.type, slot:i,
-                    open:b.open, open0:b.open, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh });
-      });
       // отдельный бокс де-айсинга (инфраструктура: всегда открыт, без апгрейда) —
       // у правого края поля, ворота в поле; нужен только в снегопад (см. spawnPlane)
       if(LV.deice) bays.push({side:'deice', type:'deice', slot:0, deice:true,
                               open:true, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh});
     }
-    // position bays — две сплошные ангары: стойла встык по всей ширине апрона
+    // position bays
     const bySide = (s: string) => bays.filter(b=>b.side===s);
     const hangH = Math.max(bh, Math.round((fy1-fy0)*0.13));   // ангара чуть выше под стойло-проезд
-    function packRow(arr: Bay[], yTop: number){
-      const n=arr.length; if(!n) return;
-      const cellW=(fx1-fx0)/n;
-      arr.forEach((b,i)=>{ b.w=cellW; b.h=hangH; b.x=fx0+i*cellW; b.y=yTop; });
+    if(LV.layout){
+      // КОНСТРУКТОР: ставим каждый ангар по его нормированной позиции; ворота — к открытому
+      // полю (ближайшая кромка апрона), если не заданы. side выводим из gate, чтобы
+      // неон-рендер вертикальных ангаров (верх/низ) рисовался правильно; горизонтальные
+      // ворота (left/right) рисуются процедурным боксом (drawBay → bayWalls по dirOut).
+      bays.filter(b=>b.side==='free' || b.gx!=null).forEach(b=>{
+        const cx = fx0 + (b.gx||0)*(fx1-fx0), cy = fy0 + (b.gy||0)*(fy1-fy0);
+        b.w = bw; b.h = hangH;
+        b.x = Math.max(fx0, Math.min(fx1-b.w, cx-b.w/2));
+        b.y = Math.max(fy0, Math.min(fy1-b.h, cy-b.h/2));
+        if(!b.gate){
+          const dT=cy-fy0, dB=fy1-cy, dL=cx-fx0, dR=fx1-cx, m=Math.min(dT,dB,dL,dR);
+          b.gate = m===dT?'down' : m===dB?'up' : m===dL?'right' : 'left';
+        }
+        b.side = b.gate==='down' ? 'top' : b.gate==='up' ? 'bottom' : 'free';
+      });
+    } else {
+      // СТАРАЯ РАСКЛАДКА: две сплошные ангары — стойла встык по всей ширине апрона
+      const packRow = (arr: Bay[], yTop: number) => {
+        const n=arr.length; if(!n) return;
+        const cellW=(fx1-fx0)/n;
+        arr.forEach((b,i)=>{ b.w=cellW; b.h=hangH; b.x=fx0+i*cellW; b.y=yTop; });
+      };
+      packRow(bySide('top'), fy0);
+      packRow(bySide('bottom'), fy1-hangH);
     }
-    packRow(bySide('top'), fy0);
-    packRow(bySide('bottom'), fy1-hangH);
     // де-айс-бокс — у правого края поля, по центру по вертикали
     const de = bays.find(b=>b.side==='deice');
     if(de){ de.w=bw; de.h=bh; de.x=fx1-bw; de.y=(fy0+fy1)/2-bh/2; }
@@ -158,21 +190,25 @@
     // полевой торец ВПП заходит на самую кромку апрона → «мост» апрон→небо (полосы не
     // висят в пустоте); длина ВПП ≈0.21W (макет 318/1600≈0.20W), правый край ≈0.84W
     const rwL = fx1 - 8*ui, rwR = W*0.84;
-    const n = LV.runways;
     const top0 = hud + M, bot0 = H - M;
     const gap = 14*ui*SZ();                 // просвет между полосами (растёт вместе с ВПП)
     const rh = 38*ui*SZ();                  // ширина ВПП привязана к SZ() (≈ размах борта)
-    const rwY0 = top0 + Math.max(0, ((bot0-top0) - (rh*n + gap*(n-1))) / 2); // центрируем n-слотов по вертикали
-    // НЕОН-КОМПОЗИЦИЯ: показываем ВСЕ n ВПП вертикально-симметрично (центральная
-    // больше не пропускается) — см. docs/design/skins/neon/handoff/
-    const slots = []; for(let i=0;i<n;i++) slots.push(i);
-    if(!runways.length || runways.length!==slots.length){
-      runways = slots.map(()=>({occupied:null, closed:false, x:0, y:0, w:0, h:0, cy:0, stopX:0, exitX:0}));
+    // центры полос по вертикали: КОНСТРУКТОР — по нормированному y каждой ВПП; иначе —
+    // n полос симметрично по центру (старая неон-композиция, центральная не пропускается).
+    let cys: number[];
+    if(LV.layout && LV.layout.runways){
+      cys = LV.layout.runways.map(rd => Math.max(top0+rh/2, Math.min(bot0-rh/2, top0 + rd.y*(bot0-top0))));
+    } else {
+      const n = Math.max(1, LV.runways || 1);
+      const rwY0 = top0 + Math.max(0, ((bot0-top0) - (rh*n + gap*(n-1))) / 2);
+      cys = []; for(let i=0;i<n;i++) cys.push(rwY0 + i*(rh+gap) + rh/2);
     }
-    slots.forEach((slotIdx,k)=>{
+    if(!runways.length || runways.length!==cys.length){
+      runways = cys.map(()=>({occupied:null, closed:false, x:0, y:0, w:0, h:0, cy:0, stopX:0, exitX:0}));
+    }
+    cys.forEach((cy,k)=>{
       const r=runways[k];
-      r.x=rwL; r.y=rwY0 + slotIdx*(rh+gap); r.w=rwR-rwL; r.h=rh;
-      r.cy = r.y + r.h/2;
+      r.x=rwL; r.y=cy - rh/2; r.w=rwR-rwL; r.h=rh; r.cy=cy;
       r.stopX = rwL + 26*ui;   // куда докатывается севший борт (полевой край)
       r.exitX = rwR + 10*ui;   // правый (водный) край
     });

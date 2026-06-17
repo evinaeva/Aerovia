@@ -5,11 +5,25 @@
 
   // ===== config shapes (types only; erased at build) =====
   interface SideCfg { type: string; slots: number; open: number; }
+  // РАССТАНОВКА (конструктор уровня): уровень может задать явный layout вместо sides.
+  // Координаты hangar.x/y нормированы 0..1 по апрону (field.x0..x1, y0..y1) — не зависят
+  // от экрана. Один ангар = одно место: тип услуги, позиция, открыт/закрыт (open, умолч.
+  // true), апгрейдируется ли (up, умолч. true) и куда смотрят ворота (gate; если опустить —
+  // выводится из ближайшей кромки апрона). ВПП — горизонтальные (заход справа): задаётся
+  // только вертикальная позиция y (0..1) и их число; len зарезервирован под будущую длину.
+  interface HangarDef { type: string; x: number; y: number; open?: boolean; up?: boolean; gate?: 'up'|'down'|'left'|'right'; }
+  interface RunwayDef { y: number; len?: number; }
+  interface LevelLayout { hangars: HangarDef[]; runways: RunwayDef[]; }
   interface Events { vip?: boolean; emergency?: boolean; medical?: boolean; rush?: boolean; fog?: boolean; wind?: boolean; [k: string]: boolean | undefined; }
   interface Objective { metric: 'served' | 'upgrades'; stars: number[]; target?: number; time?: number; race?: boolean; upg?: number[]; }
   interface Level {
-    pace?: number; objective: Objective; runways: number;
-    sides: { top?: SideCfg; left?: SideCfg; bottom?: SideCfg };
+    pace?: number; objective: Objective;
+    // геометрия — ЛИБО явный layout (конструктор), ЛИБО старые sides+runways (слоты,
+    // авто-раскладка в две ангары). Движок читает layout, если он задан, иначе sides.
+    layout?: LevelLayout; runways?: number;
+    sides?: { top?: SideCfg; left?: SideCfg; bottom?: SideCfg };
+    services?: string[];   // какие услуги запрашивают борты (подмножество SVC_TYPES; умолч. все)
+    maxUp?: number;        // глубина апгрейда на уровне 0..BAY_MAX_LVL (умолч. потолок); 0 — без апгрейдов
     events?: Events; startMoney?: number;
     biome?: string; bonus?: string; weather?: boolean; deice?: boolean;
     calm?: number; survRamp?: number; combo?: boolean; express?: boolean;
@@ -59,8 +73,9 @@
     SURV_RAMP_SECS: 300,  // Survival: за сколько сек стартовый темп карты (level.pace) выходит на максимум (1.0)
     START_MONEY: 100,
     BAY_OPEN_COST: 100,
-    BAY_UP_COST: [80,160,320], // апгрейд до ур.1/2/3
-    BAY_MAX_LVL: 3,
+    BAY_UP_COST: [80,160,320,640], // апгрейд до ур.1/2/3/4 (глобальный потолок BAY_MAX_LVL)
+    BAY_MAX_LVL: 4,                 // абсолютный потолок прокачки; per-level maxUp может срезать ниже
+    RUNWAY_MAX: 5,                  // потолок числа ВПП на карте (layout): вертикально больше не помещается
     UP_SPEED: 0.25,       // +25% скорости за уровень
     // --- экономика: оплата за услугу и стартовая касса ВЫВОДЯТСЯ из самого уровня
     //     функцией levelEconomy() (см. docs/design/game-design/economy.md). Константы
@@ -111,6 +126,10 @@
     WEATHER_RAIN_TAXI: 0.8,           // множитель скорости руления под дождём
     WEATHER_SNOW_TAXI: 0.6,           // множитель скорости руления под снегом (хуже дождя)
   };
+
+  // типы услуг (боксов) — единый источник правды. Объявлен рано: levelEconomy (через
+  // levelServices) зовётся ещё на инициализации модуля, раньше прежнего места ниже.
+  const SVC_TYPES  = ['fuel','board','repair'];
 
   // ---- лесной биом: помехи на ВПП и спец-бригады (см. docs/backlog.md) ----
   // Идея: на полосу лезут природные помехи (падающее дерево, олень, птицы), игрок
@@ -324,21 +343,40 @@
     if(lv && lv.calm && lv.calm > 0) d /= lv.calm;                          // спокойный мир (бонус) — легче
     return Math.max(0, Math.min(K.ECON_DIFF_CAP, d));
   }
+  // какие услуги запрашивают борты на карте (подмножество SVC_TYPES; умолч. — все три).
+  // Урезанный набор — рычаг разнообразия: уровень «только топливо+борт» и т.п.
+  function levelServices(lv?: Level){ const L = lv || LV; const s = L && L.services; return (Array.isArray(s) && s.length) ? s : SVC_TYPES; }
+  // глубина апгрейда на уровне: одна на всех ангаров, в [0, BAY_MAX_LVL] (умолч. потолок).
+  // 0 — апгрейдов нет; per-hangar up:false выключает апгрейд только своего ангара.
+  function levelMaxUp(lv?: Level){ const L = lv || LV; const m = L && L.maxUp; const v = (m==null) ? K.BAY_MAX_LVL : m; return Math.max(0, Math.min(K.BAY_MAX_LVL, v)); }
   function levelEconomy(lv: Level){
     const o: Objective = (lv && lv.objective) || ({} as Objective);
-    const sides: Record<string, SideCfg | undefined> = (lv && lv.sides) || {};
-    let open0 = 0, openable = 0;
-    for(const s of ['top','left','bottom']){
-      const c = sides[s]; if(!c) continue;
-      open0 += c.open; openable += Math.max(0, c.slots - c.open);
+    // «набор» считается из РАССТАНОВКИ: layout (один ангар = одно место) или старые sides
+    // (слоты). open0 — открыто на старте, openable — докупаемо; upgShare — доля рабочих
+    // мест, которые вообще апгрейдятся (up!==false).
+    let open0 = 0, openable = 0, upgShare = 1;
+    if(lv && lv.layout && lv.layout.hangars){
+      const hs = lv.layout.hangars;
+      for(const h of hs){ if(h.open===false) openable++; else open0++; }
+      const nUp = hs.filter(h=>h.up!==false).length;
+      upgShare = hs.length ? nUp / hs.length : 0;
+    } else {
+      const sides: Record<string, SideCfg | undefined> = (lv && lv.sides) || {};
+      for(const s of ['top','left','bottom']){
+        const c = sides[s]; if(!c) continue;
+        open0 += c.open; openable += Math.max(0, c.slots - c.open);
+      }
     }
     const startMoney = (lv && lv.startMoney) || K.START_MONEY;
-    const avgNSvc = 1 + K.TWO_SVC_CHANCE;
+    // 2 услуги на борт возможны только если в игре ≥2 типов услуг
+    const avgNSvc = 1 + (levelServices(lv).length >= 2 ? K.TWO_SVC_CHANCE : 0);
     const flow = levelFlow(o);
-    // (A) набор, который смена должна профинансировать
+    // (A) набор, который смена должна профинансировать. Апгрейд-часть учитывает потолок
+    // уровня (maxUp:0 → апгрейдов нет) и долю апгрейдируемых мест (upgShare).
     const expectOpen  = Math.round(openable * K.ECON_OPEN_FRAC);
     const workingBays = open0 + expectOpen;
-    const kitCost = expectOpen * K.BAY_OPEN_COST + workingBays * K.BAY_UP_COST[0] * K.ECON_UP_FRAC;
+    const upgCost = levelMaxUp(lv) > 0 ? workingBays * upgShare * K.BAY_UP_COST[0] * K.ECON_UP_FRAC : 0;
+    const kitCost = expectOpen * K.BAY_OPEN_COST + upgCost;
     // (B) сложность → щедрость
     const difficulty = levelDifficulty(lv);
     const generosity = K.ECON_GEN_BASE + K.ECON_GEN_DIFF * difficulty;
@@ -395,7 +433,6 @@
   // validateGame() возвращает список проблем (пустой = всё ок). Зовётся мягко на
   // старте (console.error) и жёстко из тестов. См. docs/DEV.md, раздел «Тесты».
   const EVENT_KEYS = ['vip','emergency','medical','rush','fog','wind'];
-  const SVC_TYPES  = ['fuel','board','repair'];
   const WEATHER_KINDS = ['clear','rain','snow'];
   // «часы» суток: фаза 0..1 (0 — полдень) и «ночность» 0..1 (1 — глубокая ночь).
   // Чистая функция времени: визуал берёт night, на саму игру это не влияет.

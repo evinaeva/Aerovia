@@ -71,13 +71,15 @@
       ctx.save(); if(afford){ctx.shadowColor=hexa(COL.green,.5); ctx.shadowBlur=10;} ctx.lineWidth=1.5; ctx.strokeStyle=afford?COL.green:hexa(COL.muted,.6); rr(cx2,cy2,cs,cs,cs*0.3); ctx.stroke(); ctx.restore();
       ctx.strokeStyle=afford?COL.green:COL.muted; ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.lineJoin='round';
       const ax=cx2+cs/2, ay=cy2+cs/2, ar=cs*0.26; ctx.beginPath(); ctx.moveTo(ax,ay+ar); ctx.lineTo(ax,ay-ar); ctx.moveTo(ax-ar*0.7,ay-ar*0.3); ctx.lineTo(ax,ay-ar); ctx.lineTo(ax+ar*0.7,ay-ar*0.3); ctx.stroke(); }
-    const totalDots=Math.max(1,Math.min(4,K.BAY_MAX_LVL)), dotR=3.2*ui, dgap=4*ui;
-    const plW=totalDots*(dotR*2+dgap)+dgap, plH=dotR*2+6*ui, plX=x+w/2-plW/2, plY=top?y+pad:y+h-pad-plH;
-    rr(plX,plY,plW,plH,plH/2); ctx.fillStyle='rgba(8,14,30,.72)'; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.18); rr(plX,plY,plW,plH,plH/2); ctx.stroke();
-    for(let i=0;i<totalDots;i++){ const dx=plX+dgap+i*(dotR*2+dgap)+dotR, dy=plY+plH/2, on=i<b.lvl;
-      ctx.beginPath(); ctx.arc(dx,dy,dotR,0,7);
-      if(on){ ctx.save(); ctx.shadowColor=hexa(COL.green,.7); ctx.shadowBlur=6; ctx.fillStyle=COL.green; ctx.fill(); ctx.restore(); ctx.lineWidth=1.4; ctx.strokeStyle=COL.green; ctx.stroke(); }
-      else { ctx.fillStyle='rgba(7,12,28,.6)'; ctx.fill(); ctx.lineWidth=1.4; ctx.strokeStyle=hexa(COL.muted,.7); ctx.stroke(); } }
+    const totalDots=Math.min(4, bayMaxLvl(b)), dotR=3.2*ui, dgap=4*ui;   // 0 → ангар неулучшаем: без плашки
+    if(totalDots>0){
+      const plW=totalDots*(dotR*2+dgap)+dgap, plH=dotR*2+6*ui, plX=x+w/2-plW/2, plY=top?y+pad:y+h-pad-plH;
+      rr(plX,plY,plW,plH,plH/2); ctx.fillStyle='rgba(8,14,30,.72)'; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.18); rr(plX,plY,plW,plH,plH/2); ctx.stroke();
+      for(let i=0;i<totalDots;i++){ const dx=plX+dgap+i*(dotR*2+dgap)+dotR, dy=plY+plH/2, on=i<b.lvl;
+        ctx.beginPath(); ctx.arc(dx,dy,dotR,0,7);
+        if(on){ ctx.save(); ctx.shadowColor=hexa(COL.green,.7); ctx.shadowBlur=6; ctx.fillStyle=COL.green; ctx.fill(); ctx.restore(); ctx.lineWidth=1.4; ctx.strokeStyle=COL.green; ctx.stroke(); }
+        else { ctx.fillStyle='rgba(7,12,28,.6)'; ctx.fill(); ctx.lineWidth=1.4; ctx.strokeStyle=hexa(COL.muted,.7); ctx.stroke(); } }
+    }
     if(busy && b.occupied.serveMax){ const frac=1-Math.max(0,b.occupied.serveTime)/b.occupied.serveMax, ccx=bx+bSize+8*ui, ccy=by+bSize/2;
       ctx.beginPath(); ctx.arc(ccx,ccy,6*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.strokeStyle=col; ctx.stroke(); }
     ctx.restore();
@@ -162,8 +164,8 @@
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(t('svc.'+b.type).toUpperCase(), b.x+b.w/2, b.y+b.h-18*ui);
     }
-    // пипсы уровня
-    const total=K.BAY_MAX_LVL, pip=5.2*ui, gap=4.5*ui;
+    // пипсы уровня (число = потолок прокачки этого ангара; 0 → без пипсов)
+    const total=bayMaxLvl(b), pip=5.2*ui, gap=4.5*ui;
     const startX=b.x+b.w/2-(total*(pip+gap)-gap)/2;
     for(let i=0;i<total;i++){
       ctx.fillStyle = i<b.lvl ? col : hexa(COL.muted,.18);

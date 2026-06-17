@@ -595,3 +595,115 @@ test('новый ключ имеет приоритет над старым', ()
   });
   assert.equal(game.save.unlocked, 7);
 });
+
+// ---------- Конструктор уровня: layout / services / maxUp ----------
+
+// валидная карта-конструктор, эквивалентная по экономике обычному уровню кампании:
+// 9 ангаров (3 на услугу), по одному открыто — те же агрегаты open0/openable, что у
+// sides L10. Кладём её последним уровнем (pace 1.0 не ломает монотонность темпа).
+function layoutLevel(extra = {}) {
+  const hangars = [];
+  for (const type of ['fuel', 'board', 'repair'])
+    for (let i = 0; i < 3; i++) hangars.push({ type, x: 0.1 + i * 0.1, y: 0.2 + i * 0.3, open: i === 0 });
+  return Object.assign({
+    pace: 1.0,
+    objective: { metric: 'served', stars: [22, 26, 30], target: 30 },
+    layout: { hangars, runways: [{ y: 0.25 }, { y: 0.5 }, { y: 0.75 }] },
+    events: {},
+  }, extra);
+}
+
+test('конструктор: валидная layout-карта проходит validateLevels без проблем', () => {
+  const { game } = boot();
+  game.LEVELS[9] = layoutLevel();
+  assert.deepEqual([...game.validateLevels()], []);
+});
+
+test('конструктор: апгрейд — 4 уровня (80/160/320/640), глобальный потолок 4', () => {
+  const { game } = boot();
+  assert.equal(game.K.BAY_MAX_LVL, 4);
+  assert.deepEqual([...game.K.BAY_UP_COST], [80, 160, 320, 640]);
+});
+
+test('levelServices: умолчание — все три услуги; явный набор отдаётся как есть', () => {
+  const { game } = boot();
+  assert.deepEqual([...game.levelServices({})], [...game.SVC_TYPES]);
+  assert.deepEqual([...game.levelServices({ services: ['fuel', 'board'] })], ['fuel', 'board']);
+});
+
+test('levelMaxUp: умолчание — потолок BAY_MAX_LVL; зажимается в [0, потолок]', () => {
+  const { game } = boot();
+  assert.equal(game.levelMaxUp({}), game.K.BAY_MAX_LVL);
+  assert.equal(game.levelMaxUp({ maxUp: 2 }), 2);
+  assert.equal(game.levelMaxUp({ maxUp: 9 }), game.K.BAY_MAX_LVL);  // выше потолка — зажат
+  assert.equal(game.levelMaxUp({ maxUp: 0 }), 0);                   // 0 — без апгрейдов
+});
+
+test('bayUpCost: открытие, тарифы апгрейда, гашение на потолке и при up:false', () => {
+  const { game } = boot();   // LV = L1, maxUp по умолчанию = 4
+  const K = game.K;
+  assert.equal(game.bayUpCost({ open: false }), K.BAY_OPEN_COST, 'закрытый → цена открытия');
+  assert.equal(game.bayUpCost({ open: true, lvl: 0 }), 80, 'ур.1 = 80');
+  assert.equal(game.bayUpCost({ open: true, lvl: 3 }), 640, 'ур.4 = 640');
+  assert.equal(game.bayUpCost({ open: true, lvl: 4 }), null, 'на потолке апгрейда нет');
+  assert.equal(game.bayUpCost({ open: true, up: false, lvl: 0 }), null, 'up:false → апгрейд недоступен');
+  assert.equal(game.bayMaxLvl({ open: true }), 4);
+  assert.equal(game.bayMaxLvl({ open: true, up: false }), 0);
+});
+
+test('конструктор: per-level maxUp срезает потолок апгрейда у всех ангаров', () => {
+  const { game } = boot();
+  game.LEVELS[9] = layoutLevel({ maxUp: 2 });
+  game.setLevel(9);
+  assert.equal(game.bayMaxLvl({ open: true }), 2, 'потолок уровня = 2');
+  assert.equal(game.bayUpCost({ open: true, lvl: 1 }), 160, 'до ур.2 можно');
+  assert.equal(game.bayUpCost({ open: true, lvl: 2 }), null, 'на ур.2 апгрейд исчерпан');
+});
+
+test('конструктор: урезанный набор услуг не понижает оплату за услугу', () => {
+  const { game } = boot();
+  const full = game.levelEconomy(layoutLevel());
+  const one = game.levelEconomy(layoutLevel({ services: ['fuel'] }));
+  assert.ok(full.svcReward >= game.K.SVC_MIN && full.svcReward <= game.K.SVC_MAX, 'полный набор: оплата в границах');
+  assert.ok(one.svcReward >= full.svcReward, 'меньше типов услуг → оплата за услугу не ниже');
+});
+
+test('конструктор: validateLevels ловит битый тип ангара', () => {
+  const { game } = boot();
+  game.LEVELS[9] = layoutLevel({ layout: { hangars: [{ type: 'oops', x: 0.1, y: 0.1 }], runways: [{ y: 0.5 }] } });
+  assert.ok(game.validateLevels().some(p => /неизвестный тип ангара/.test(p)));
+});
+
+test('конструктор: validateLevels ловит координаты ангара вне [0,1]', () => {
+  const { game } = boot();
+  const hangars = [{ type: 'fuel', x: 1.5, y: 0.1 }, { type: 'board', x: 0.2, y: 0.2 }, { type: 'repair', x: 0.3, y: 0.3 }];
+  game.LEVELS[9] = layoutLevel({ layout: { hangars, runways: [{ y: 0.5 }] } });
+  assert.ok(game.validateLevels().some(p => /\[0,1\]/.test(p)));
+});
+
+test('конструктор: validateLevels требует хотя бы одну ВПП', () => {
+  const { game } = boot();
+  game.LEVELS[9] = layoutLevel({ layout: { hangars: layoutLevel().layout.hangars, runways: [] } });
+  assert.ok(game.validateLevels().some(p => /хотя бы одну ВПП/.test(p)));
+});
+
+test('конструктор: validateLevels требует ангар под каждую заявленную услугу', () => {
+  const { game } = boot();
+  // только топливные ангары, но в services заявлен и ремонт → ремонт некому обслужить
+  const hangars = [{ type: 'fuel', x: 0.1, y: 0.2, open: true }, { type: 'fuel', x: 0.1, y: 0.6 }];
+  game.LEVELS[9] = layoutLevel({ services: ['fuel', 'repair'], layout: { hangars, runways: [{ y: 0.5 }] } });
+  assert.ok(game.validateLevels().some(p => /нет ни одного ангара этого типа/.test(p)));
+});
+
+test('конструктор: validateLevels ловит maxUp вне диапазона', () => {
+  const { game } = boot();
+  game.LEVELS[9] = layoutLevel({ maxUp: 9 });
+  assert.ok(game.validateLevels().some(p => /maxUp/.test(p)));
+});
+
+test('конструктор: медицинский борт требует услугу board в наборе', () => {
+  const { game } = boot();
+  const hangars = [{ type: 'fuel', x: 0.1, y: 0.2, open: true }];
+  game.LEVELS[9] = layoutLevel({ services: ['fuel'], events: { medical: true }, layout: { hangars, runways: [{ y: 0.5 }] } });
+  assert.ok(game.validateLevels().some(p => /medical.*board/.test(p)));
+});

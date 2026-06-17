@@ -29,15 +29,47 @@
           else if(!(o.upg[0]<=o.upg[1] && o.upg[1]<=o.upg[2])) p.push(L+'objective.upg должны идти по возрастанию');
         }
       }
-      const sides = (lv.sides || {}) as Record<string, SideCfg | undefined>;
-      ['top','left','bottom'].forEach(side=>{
-        const c = sides[side];
-        if(!c){ p.push(L+'нет стороны "'+side+'"'); return; }
-        if(!SVC_TYPES.includes(c.type)) p.push(L+side+': неизвестный тип бокса "'+c.type+'"');
-        if(!(c.slots>=1)) p.push(L+side+': slots должен быть >= 1');
-        if(!(c.open>=0 && c.open<=c.slots)) p.push(L+side+': open вне диапазона [0, slots]');
-      });
-      if(!(lv.runways>=1)) p.push(L+'runways должен быть >= 1');
+      // ГЕОМЕТРИЯ: либо явный layout (конструктор), либо старые sides+runways.
+      if(lv.layout){
+        const hs = lv.layout.hangars, rws = lv.layout.runways;
+        if(!Array.isArray(hs) || !hs.length) p.push(L+'layout.hangars должен быть непустым массивом');
+        else hs.forEach((h,hi)=>{
+          const HL = L+'hangars['+hi+']: ';
+          if(!SVC_TYPES.includes(h.type)) p.push(HL+'неизвестный тип ангара "'+h.type+'"');
+          if(!(h.x>=0 && h.x<=1) || !(h.y>=0 && h.y<=1)) p.push(HL+'x/y должны быть в [0,1] (доля апрона)');
+          if(h.open!=null && typeof h.open!=='boolean') p.push(HL+'open должен быть boolean');
+          if(h.up!=null && typeof h.up!=='boolean') p.push(HL+'up должен быть boolean');
+          if(h.gate!=null && !['up','down','left','right'].includes(h.gate)) p.push(HL+'gate должен быть up|down|left|right');
+        });
+        if(!Array.isArray(rws) || rws.length<1) p.push(L+'layout.runways должен содержать хотя бы одну ВПП');
+        else {
+          if(rws.length>K.RUNWAY_MAX) p.push(L+'layout.runways больше потолка '+K.RUNWAY_MAX);
+          rws.forEach((r,ri)=>{ if(!(r.y>=0 && r.y<=1)) p.push(L+'runways['+ri+'].y должен быть в [0,1]'); });
+        }
+        // каждая услуга, которую может запросить борт, должна иметь ангар такого типа
+        if(Array.isArray(hs)){
+          const have = new Set(hs.map(h=>h.type));
+          for(const sv of levelServices(lv)) if(!have.has(sv)) p.push(L+'услуга "'+sv+'" объявлена, но нет ни одного ангара этого типа');
+        }
+      } else {
+        const sides = (lv.sides || {}) as Record<string, SideCfg | undefined>;
+        ['top','left','bottom'].forEach(side=>{
+          const c = sides[side];
+          if(!c){ p.push(L+'нет стороны "'+side+'"'); return; }
+          if(!SVC_TYPES.includes(c.type)) p.push(L+side+': неизвестный тип бокса "'+c.type+'"');
+          if(!(c.slots>=1)) p.push(L+side+': slots должен быть >= 1');
+          if(!(c.open>=0 && c.open<=c.slots)) p.push(L+side+': open вне диапазона [0, slots]');
+        });
+        if(!(lv.runways!=null && lv.runways>=1)) p.push(L+'runways должен быть >= 1');
+      }
+      // services / maxUp — общие для обеих геометрий
+      if(lv.services!=null){
+        if(!Array.isArray(lv.services) || !lv.services.length) p.push(L+'services должен быть непустым массивом');
+        else lv.services.forEach(sv=>{ if(!SVC_TYPES.includes(sv)) p.push(L+'неизвестная услуга "'+sv+'" в services'); });
+      }
+      if(lv.maxUp!=null && !(Number.isInteger(lv.maxUp) && lv.maxUp>=0 && lv.maxUp<=K.BAY_MAX_LVL)) p.push(L+'maxUp должен быть целым в [0, '+K.BAY_MAX_LVL+']');
+      // медицинский борт высаживает пациента в пассажирском боксе — нужен board в услугах
+      if(lv.events && lv.events.medical && !levelServices(lv).includes('board')) p.push(L+'событие medical требует услугу "board" в services');
       if(lv.startMoney!=null && !(lv.startMoney>0)) p.push(L+'startMoney должен быть > 0');
       if(lv.weather!=null && lv.weather!==true) p.push(L+'weather должен быть true (или отсутствовать)');
       if(lv.deice!=null && lv.deice!==true) p.push(L+'deice должен быть true (или отсутствовать)');
@@ -134,7 +166,7 @@
         if(!(c.slots>=1)) p.push(L+side+': slots должен быть >= 1');
         if(!(c.open>=0 && c.open<=c.slots)) p.push(L+side+': open вне диапазона [0, slots]');
       });
-      if(!(lv.runways>=1)) p.push(L+'runways должен быть >= 1');
+      if(!(lv.runways!=null && lv.runways>=1)) p.push(L+'runways должен быть >= 1');
       if(lv.calm!=null && !(lv.calm>0)) p.push(L+'calm должен быть > 0');
     });
     return p;
