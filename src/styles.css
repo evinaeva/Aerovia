@@ -146,7 +146,7 @@
   .ed-body{flex:1;min-height:0;display:flex;gap:10px}
   .ed-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
   .ed-palette{display:flex;gap:6px;flex-wrap:wrap}
-  .ed-canvas-wrap{flex:1;min-height:0;border:1px solid var(--pur-line);border-radius:12px;overflow:hidden;background:#0a1020}
+  .ed-canvas-wrap{flex:1;min-width:0;min-height:0;border:1px solid var(--pur-line);border-radius:12px;overflow:hidden;background:#0a1020}
   .ed-canvas-wrap canvas{display:block;width:100%;height:100%;touch-action:none}
   .ed-side{width:240px;flex:0 0 auto;overflow:auto;display:flex;flex-direction:column;gap:8px}
   .ed-card{background:var(--raised);border:1px solid var(--pur-line);border-radius:12px;padding:10px}
