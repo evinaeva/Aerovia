@@ -216,6 +216,20 @@
   function edRow(label: string){ const r = document.createElement('div'); r.className = 'ed-row'; const l = document.createElement('span'); l.className = 'ed-row__l'; l.textContent = label; r.appendChild(l); return r; }
   function edRenderSide(){
     const side = edEl('edSide'); if (!side) return; side.innerHTML = '';
+    // палитра «Добавить» — всегда на виду, вверху панели
+    const add = document.createElement('div'); add.className = 'ed-card';
+    add.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Добавить' }));
+    const ar = document.createElement('div'); ar.className = 'ed-row';
+    ([['fuel', '+ топливо'], ['board', '+ борт'], ['repair', '+ ремонт']] as [string, string][]).forEach(([tp, lbl]) => ar.appendChild(edBtn(lbl, false, () => edAddHangar(tp))));
+    ar.appendChild(edBtn('+ ВПП', false, edAddRunway));
+    add.appendChild(ar); side.appendChild(add);
+    // открыть существующий уровень кампании
+    const opn = document.createElement('div'); opn.className = 'ed-card';
+    opn.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Открыть уровень' }));
+    const lsel = document.createElement('select'); lsel.className = 'ed-sel'; lsel.style.width = '100%';
+    lsel.innerHTML = '<option value="">— L1..L' + LEVELS.length + ' —</option>' + LEVELS.map((_, i) => '<option value="' + i + '">L' + (i + 1) + ' · ' + levelName(i) + '</option>').join('');
+    lsel.onchange = () => { if (lsel.value !== '') edOpenLevel(+lsel.value); };
+    opn.appendChild(lsel); side.appendChild(opn);
     // статус честности
     const warn = edWarnings(); const st = edEl('edStatus');
     if (st && st.textContent && /сохранён|экспортировано/.test(st.textContent)) { /* кратковременный статус — не перетираем */ }
@@ -262,6 +276,15 @@
       warn.forEach(x => wc.appendChild(Object.assign(document.createElement('div'), { className: 'ed-row__l', textContent: '• ' + x })));
       side.appendChild(wc);
     }
+    // файл: экспорт готового layout + черновик в localStorage
+    const file = document.createElement('div'); file.className = 'ed-card';
+    file.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Файл' }));
+    file.appendChild(Object.assign(document.createElement('div'), { className: 'ed-row__l', textContent: 'Экспорт — отдать JSON уровня (поделиться/скачать). Черновик — сохранить/вернуть в этом браузере.' }));
+    const fr = document.createElement('div'); fr.className = 'ed-row';
+    fr.appendChild(edBtn('Экспорт', false, edExport));
+    fr.appendChild(edBtn('Сохранить черновик', false, edSaveDraft));
+    fr.appendChild(edBtn('Загрузить черновик', false, edLoadDraft));
+    file.appendChild(fr); side.appendChild(file);
   }
 
   // ---- open / close ----
@@ -271,8 +294,6 @@
     if (typeof hideAllScreens === 'function') hideAllScreens();
     const scr = edEl('editorScreen'); if (!scr) return; scr.classList.remove('hidden');
     ED.cv = edEl<HTMLCanvasElement>('edCanvas'); if (ED.cv) ED.g = ED.cv.getContext('2d');
-    const sel = edEl<HTMLSelectElement>('edLoadLevel');
-    if (sel){ sel.innerHTML = '<option value="">Открыть уровень…</option>' + LEVELS.map((_, i) => '<option value="' + i + '">L' + (i + 1) + ' · ' + levelName(i) + '</option>').join(''); sel.value = ''; }
     edRenderSide();
     requestAnimationFrame(() => { edResize(); });   // дождаться раскладки оверлея для размеров канваса
   }
@@ -281,13 +302,9 @@
   // ---- wiring (DOM присутствует в шаблоне на момент склейки IIFE) ----
   (function edWire(){
     const open = edEl('edOpenBtn'); if (open) open.onclick = edOpen;
-    const map: [string, () => void][] = [
-      ['edCloseBtn', edClose], ['edExportBtn', edExport], ['edSaveBtn', edSaveDraft], ['edLoadBtn', edLoadDraft], ['edTestBtn', edPlayTest],
-      ['edAddFuel', () => edAddHangar('fuel')], ['edAddBoard', () => edAddHangar('board')], ['edAddRepair', () => edAddHangar('repair')], ['edAddRunway', edAddRunway],
-    ];
-    map.forEach(([id, cb]) => { const b = edEl(id); if (b) b.onclick = cb; });
-    const sel = edEl<HTMLSelectElement>('edLoadLevel');
-    if (sel) sel.onchange = () => { const v = sel.value; if (v !== ''){ edOpenLevel(+v); sel.value = ''; } };
+    const close = edEl('edCloseBtn'); if (close) close.onclick = edClose;
+    const test = edEl('edTestBtn'); if (test) test.onclick = edPlayTest;
+    // палитра/файл/«открыть уровень» рендерятся в боковой панели (edRenderSide) — там и навешиваются обработчики
     const cv = edEl<HTMLCanvasElement>('edCanvas');
     if (cv){ cv.addEventListener('pointerdown', edDown); cv.addEventListener('pointermove', edMove); window.addEventListener('pointerup', edUp); }
     window.addEventListener('resize', () => { const s = edEl('editorScreen'); if (s && !s.classList.contains('hidden')) edResize(); });
