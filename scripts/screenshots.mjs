@@ -90,8 +90,9 @@ async function pauseVisible(page) {
 async function enterGameplay(page) {
   await clickIfVisible(page, '#startBtn');
   await wait(400);
-  // первая незаблокированная карточка уровня (разные верстки за версии — пробуем по очереди)
-  const cardSelectors = ['#levelList .levelcard:not(.locked)', '.levelcard:not(.locked)', '#levelList .levelcard', '.levelcard'];
+  // первый незаблокированный узел уровня (верстка менялась за версии — пробуем по очереди):
+  // сейчас (≥0.26) это .lvlnode на карте-тропинке; раньше — .levelcard (в т.ч. .levelcard.suitcase).
+  const cardSelectors = ['#levelList .lvlnode:not(.locked)', '.lvlnode:not(.locked)', '#levelList .levelcard:not(.locked)', '.levelcard:not(.locked)', '#levelList .levelcard', '.levelcard'];
   for (const sel of cardSelectors) { if (await clickIfVisible(page, sel, 1500)) break; }
   await wait(500);
   await clickIfVisible(page, '#goalsOk', 1500); // окно целей появилось с 0.17; на старых — нет
