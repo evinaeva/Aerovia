@@ -83,6 +83,15 @@
   нативный мост Play Games (`src/game/12b-native-play-games.ts`), сборка `www/`
   (`npm run build:www`). Раннбук — [`capacitor-android.md`](capacitor-android.md).
   _Легаси TWA-путь (Bubblewrap/`.aab`) — история в_ [`android-twa.md`](android-twa.md).
+- **OTA-обновления (self-host, 2026-06-18)** — код игры (`www/`) летит «по воздуху» из **своего
+  Contabo VPS** (Caddy авто-TLS + крошечный responder + статика бандлов на `capgo.jevgenia.com`),
+  **без облака Capgo и без платы**. CI на push в `main` зипует `www/` и заливает бандл по SSH; плагин
+  `@capgo/capacitor-updater`, `updateUrl` в `capacitor.config.ts`, `notifyAppReady()` в `13-init.js`.
+  Проверено end-to-end на Pixel 9 (2026-06-18). Детали/грабли — [`capgo-self-host-migration.md`](capgo-self-host-migration.md).
+- **Решение: распространение — только Google Play** (2026-06-18) — отдельной поддерживаемой
+  веб/PWA-версии как продукта не будет. Следствие: веб-рейтинг на Firebase и веб-фоллбэк **сняты**;
+  ачивки/лидерборды — Google Play Games (в коде), облачные сейвы — Play Games Saved Games (план в
+  [`backlog.md`](backlog.md)). GitHub Pages остаётся как хост privacy-URL и dev/test-поверхность.
 - **Иконки для стора** — 512 + adaptive + maskable (см. «Бренд и визуал»).
 - _Осталось до релиза_ (в [`backlog.md`](backlog.md)): скриншоты / feature graphic,
   Developer-аккаунт, закрытый трек, AdMob.
