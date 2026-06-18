@@ -1,0 +1,16 @@
+[Unit]
+Description=PlaneFlow OTA updates responder
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/capgo-ota/server.py
+Restart=always
+RestartSec=2
+User=capgo
+Group=capgo
+WorkingDirectory=/opt/capgo-ota
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,19 @@
+capgo.jevgenia.com {
+	encode gzip
+	handle /updates* {
+		reverse_proxy 127.0.0.1:8099
+	}
+	handle_path /bundles/* {
+		root * /opt/capgo-ota/bundles
+		file_server
+	}
+	handle /stats* {
+		respond 200
+	}
+	handle /channel_self* {
+		respond "{}" 200
+	}
+	handle {
+		respond "PlaneFlow OTA" 200
+	}
+}
