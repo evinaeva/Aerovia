@@ -48,12 +48,15 @@
     LAND_BUMP_AMP: 1.5,        // амплитуда толчка при касании, ui-единиц
     TAKEOFF_OVERSHOOT: 800,    // цель разгона: exitX + это (px за краем экрана)
     TAKEOFF_HOLD: 0.25,   // крошечная остановка перед разгоном на взлёте, сек
-    DISABLE_VIP:       false as boolean, // отключить VIP-борты (для отладки скорости)
-    DISABLE_EMERGENCY: false as boolean, // отключить аварийные борты
-    DISABLE_MEDICAL:   false as boolean, // отключить медицинские борты
-    DISABLE_RUSH:      false as boolean, // отключить часы пик
-    DISABLE_WEATHER:   false as boolean, // отключить погодные условия
-    DISABLE_SLOWMO:    false as boolean, // отключить slowmo при near-miss
+    DISABLE_VIP:       true as boolean,  // отключить VIP-борты (для отладки скорости)
+    DISABLE_EMERGENCY: true as boolean,  // отключить аварийные борты
+    DISABLE_MEDICAL:   true as boolean,  // отключить медицинские борты
+    DISABLE_RUSH:      true as boolean,  // отключить часы пик
+    DISABLE_WEATHER:   true as boolean,  // отключить погодные условия
+    DISABLE_SLOWMO:    true as boolean,  // отключить slowmo при near-miss
+    DISABLE_FOREST:    true as boolean,  // отключить лесные помехи (елки, птицы, олени, снег)
+    DISABLE_DEICE:     true as boolean,  // не добавлять деайсинг в список услуг
+    DISABLE_BAY:       true as boolean,  // пропустить все услуги в боксах → сразу к вылету
     BAY_DOCK_SPEED:  0.85, // скорость движения в боксе (доля от SPEED_TAXI)
     BAY_ALIGN_SPEED: 6,    // lerp-скорость бокового выравнивания по оси ворот
     BAY_HEAD_SPEED:  2,    // скорость поворота носа при заезде/выезде из бокса

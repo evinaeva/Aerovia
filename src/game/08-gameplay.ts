@@ -101,7 +101,7 @@
     const requests = medical ? ['board','depart'] : svcPool.slice(0, nSvc).concat(['depart']);
     // де-айсинг: в снегопад обычный борт обязан пройти антиобледенение перед вылетом
     // (медицинский — «вне очереди», пропускаем). Шаг ставится прямо перед 'depart'.
-    if(LV.deice && weather==='snow' && !medical) requests.splice(requests.length-1, 0, 'deice');
+    if(LV.deice && weather==='snow' && !medical && !K.DISABLE_DEICE) requests.splice(requests.length-1, 0, 'deice');
     const waitMult = (vip||medical) ? 1 : 2;                             // НАЗЕМНОЕ терпение: джет и медицинский нетерпеливы
     // воздушное терпение: ФИКС. окно (K.AIR_BASE) — одинаковое на всех уровнях; pace не влияет.
     // спецборты урезают его множителем: vip вдвое нетерпеливее (FAQ), топливо-на-нуле —
@@ -219,6 +219,11 @@
     }
   }
   function updateForest(dt: number){
+    if(K.DISABLE_FOREST){
+      for(const h of [...hazards]) resolveHazard(h, false);
+      hazards=[]; crews=[];
+      return;
+    }
     if(gameTime>=nextHazard){ spawnHazard(); nextHazard = gameTime + FOR.SPAWN_MIN + Math.random()*(FOR.SPAWN_MAX-FOR.SPAWN_MIN); }
     // помехи
     for(const h of hazards){
