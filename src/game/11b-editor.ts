@@ -433,6 +433,7 @@
     curBiome=null; curBonus=null; survival=false;
     levelIdx=-1; levelKey='editor'; LV=edToLevel();
     bays=[]; runways=[]; layout();
+    testFromEditor = true;
     edHideScreen(); inMenu=false; reset();
   }
 

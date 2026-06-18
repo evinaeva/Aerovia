@@ -18,6 +18,7 @@
   let weather = 'clear', weatherUntil = 0, nextWeather = 0; // погода: clear|rain|snow
   let dayPhase = 0, nightAmount = 0;                  // «часы» суток (логика; рендер читает)
   let survival = false;                               // survival (на картах): режим с условием смерти, счёт за заход → в глобальный рейтинг
+  let testFromEditor = false;                         // запущено кнопкой «Тест» из редактора уровней
   // единый источник истины о текущем режиме (логика, не контент): survival/biome/bonus/campaign.
   // Раньше режим вычислялся инлайн-тернарником в нескольких местах — теперь одна функция (см. CLAUDE.md).
   function currentMode(){ return survival ? 'survival' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')); }
