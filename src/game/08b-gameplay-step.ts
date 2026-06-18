@@ -103,7 +103,7 @@
         // (садимся даже на занятую полосу — крушение только при физическом контакте)
         if(pl.x <= field.rwR!){
           let best=null;
-          for(const r of runways){ if(r.closed) continue; if(pl.y>=r.y && pl.y<=r.y+r.h){ best=r; break; } }
+          for(const r of runways){ if(r.closed || !r.landingOpen) continue; if(pl.y>=r.y && pl.y<=r.y+r.h){ best=r; break; } }
           if(best) land(pl, best);
           else pl.x = field.rwR!;   // мимо полосы — упёрся в рубеж ВПП
         }
@@ -174,7 +174,7 @@
         // вылет: все услуги сделаны -> заезд на полосу
         if(need==='depart'){
           for(const r of runways){
-            if(!r.closed && rectHit(pl.x,pl.y,r)){
+            if(!r.closed && r.takeoffOpen && rectHit(pl.x,pl.y,r)){
               // выезд на ОТКРЫТУЮ полосу под взлёт (крушение — только при контакте на ВПП)
               pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
               pl.takeoff=true; pl.moving=true; pl.path=[]; pl.holdT=K.TAKEOFF_HOLD;

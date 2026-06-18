@@ -40,11 +40,22 @@
           if(h.open!=null && typeof h.open!=='boolean') p.push(HL+'open должен быть boolean');
           if(h.up!=null && typeof h.up!=='boolean') p.push(HL+'up должен быть boolean');
           if(h.gate!=null && !['up','down','left','right'].includes(h.gate)) p.push(HL+'gate должен быть up|down|left|right');
+          const perMaxLvl = (h.maxLvl != null) ? Math.min(h.maxLvl, K.BAY_MAX_LVL) : K.BAY_MAX_LVL;
+          if(h.maxLvl != null && !(Number.isInteger(h.maxLvl) && h.maxLvl>=0 && h.maxLvl<=K.BAY_MAX_LVL)) p.push(HL+'maxLvl должен быть целым в [0, '+K.BAY_MAX_LVL+']');
+          if(h.lvl != null && !(Number.isInteger(h.lvl) && h.lvl>=0 && h.lvl<=perMaxLvl)) p.push(HL+'lvl должен быть целым в [0, maxLvl('+perMaxLvl+')]');
+          if(h.upgradeCost != null && !(h.upgradeCost>0)) p.push(HL+'upgradeCost должен быть > 0');
         });
         if(!Array.isArray(rws) || rws.length<1) p.push(L+'layout.runways должен содержать хотя бы одну ВПП');
         else {
           if(rws.length>K.RUNWAY_MAX) p.push(L+'layout.runways больше потолка '+K.RUNWAY_MAX);
-          rws.forEach((r,ri)=>{ if(!(r.y>=0 && r.y<=1)) p.push(L+'runways['+ri+'].y должен быть в [0,1]'); });
+          rws.forEach((r,ri)=>{
+            const RL = L+'runways['+ri+']: ';
+            if(!(r.y>=0 && r.y<=1)) p.push(RL+'y должен быть в [0,1]');
+            if(r.landingOpen!=null && typeof r.landingOpen!=='boolean') p.push(RL+'landingOpen должен быть boolean');
+            if(r.takeoffOpen!=null && typeof r.takeoffOpen!=='boolean') p.push(RL+'takeoffOpen должен быть boolean');
+            if(r.landingOpen===false && r.takeoffOpen===false) p.push(RL+'нельзя одновременно закрыть landingOpen и takeoffOpen');
+            if(r.openCost!=null && !(r.openCost>=0)) p.push(RL+'openCost должен быть >= 0');
+          });
         }
         // каждая услуга, которую может запросить борт, должна иметь ангар такого типа
         if(Array.isArray(hs)){
