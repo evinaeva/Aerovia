@@ -1,6 +1,9 @@
 [Unit]
 Description=PlaneFlow OTA updates responder
 After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+OnFailure=notify-capgo-ota-failure.service
 
 [Service]
 ExecStart=/usr/bin/python3 /opt/capgo-ota/server.py
