@@ -45,32 +45,35 @@ jobs:
       - name: Юнит-тесты (страховка перед публикацией)
         run: node --test tests/*.test.mjs
 
-      # Capgo OTA: на каждый push в main льём свежий веб-бандл в канал production —
-      # установленный APK подхватит его сам (см. capacitor.config.ts и docs/capacitor-android.md).
-      # Пока секрет CAPGO_TOKEN не добавлен, шаг — no-op, и Pages-деплой ниже не страдает.
-      - name: Capgo OTA — выгрузка бандла
+      # OTA (self-host): на каждый push в main собираем веб-бандл, зипуем www/ и заливаем на свой
+      # VPS — Caddy раздаёт /bundles, responder /updates сравнивает версии и отдаёт бандл устройствам
+      # (см. capacitor.config.ts и docs/capgo-self-host-migration.md). Пока секрет OTA_SSH_KEY не
+      # добавлен — шаг no-op, и Pages-деплой ниже не страдает.
+      - name: OTA — публикация бандла на свой VPS
         env:
-          CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+          OTA_SSH_KEY: ${{ secrets.OTA_SSH_KEY }}   # приватный ключ scoped deploy-юзера
+          OTA_HOST:    ${{ secrets.OTA_HOST }}       # SSH-хост VPS (напр. 185.239.209.185)
+          OTA_USER:    ${{ secrets.OTA_USER }}       # deploy-юзер (напр. capgo-deploy)
         run: |
-          if [ -z "$CAPGO_TOKEN" ]; then
-            echo "CAPGO_TOKEN не задан — пропускаю выгрузку в Capgo (норма до подключения облака)."
+          if [ -z "$OTA_SSH_KEY" ]; then
+            echo "OTA_SSH_KEY не задан — пропускаю публикацию OTA (норма до настройки деплоя)."
             exit 0
           fi
           npm run build:www
-          # Версия бандла должна быть ВЫШЕ нативной (versionName из setup-android.mjs = версия
-          # package.json), иначе Capgo считает это «понижением» и не доставляет на устройство.
-          # major.minor берём из package.json, patch = номер прогона (растёт, уникален): 0.21.0 → 0.21.43.
+          # Версия бандла ВЫШЕ нативной (versionName из package.json), иначе плагин сочтёт это
+          # «понижением». major.minor из package.json, patch = номер прогона: 0.21.0 → 0.21.43.
           BASE="$(node -p "require('./package.json').version")"
           VER="${BASE%.*}.${{ github.run_number }}"
-          # --no-code-check: вся игра инлайнится в один index.html, поэтому эвристика CLI
-          # не находит notifyAppReady() (он во встроенном <script>, а не в отдельном .js).
-          # Вызов реально есть — в src/game/13-init.js (гейт на натив). См. capacitor.config.ts.
-          npx @capgo/cli@latest bundle upload com.planeflow.game \
-            --apikey "$CAPGO_TOKEN" \
-            --channel production \
-            --bundle "$VER" \
-            --path www \
-            --no-code-check
+          ZIP="planeflow-$VER.zip"
+          ( cd www && zip -qr "../$ZIP" . )           # index.html в корне zip — как требует плагин
+          SUM="$(sha256sum "$ZIP" | cut -d' ' -f1)"
+          mkdir -p ~/.ssh && printf '%s\n' "$OTA_SSH_KEY" > ~/.ssh/ota_key && chmod 600 ~/.ssh/ota_key
+          ssh-keyscan -H "$OTA_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$ZIP" "$OTA_USER@$OTA_HOST:/opt/capgo-ota/bundles/$ZIP"
+          # манифест: версия + публичный URL бандла + sha256 (responder отдаёт его новее-установленной)
+          printf '{"version":"%s","url":"https://capgo.jevgenia.com/bundles/%s","checksum":"%s"}\n' "$VER" "$ZIP" "$SUM" > updates.json
+          scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new updates.json "$OTA_USER@$OTA_HOST:/opt/capgo-ota/updates.json"
+          echo "OTA опубликован: $VER (sha256 $SUM)"
 
       # Папка сайта = корень репо (index.html + assets + sw.js + manifest +
       # CNAME + ...), но без истории git и dev-зависимостей.

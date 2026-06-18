@@ -8,12 +8,17 @@ const config: CapacitorConfig = {
   appName: 'PlaneFlow: Air Traffic Control',
   webDir: 'www',
   plugins: {
-    // Capgo OTA: код игры (HTML/CSS/JS — у нас это вся игра) обновляется «по воздуху»
-    // из канала в обход стора. autoUpdate (дефолт) проверяет канал и применяет бандл в фоне;
-    // в старте обязателен notifyAppReady() (src/game/13-init.js), иначе плагин через ~10с
-    // откатит бандл. Бандлы льёт CI (.github/workflows/deploy.yml) на каждый push в main.
+    // OTA (self-host): код игры (HTML/CSS/JS — у нас это вся игра) обновляется «по воздуху» в обход
+    // стора. autoUpdate проверяет updateUrl и применяет бандл в фоне; в старте обязателен
+    // notifyAppReady() (src/game/13-init.js), иначе плагин через ~10с откатит бандл. Бэкенд — свой
+    // VPS (Caddy + responder + статика бандлов), НЕ облако Capgo. CI на каждый push в main зипует
+    // www/ и заливает бандл (.github/workflows/deploy.yml). stats/channel указывают на свой домен
+    // (no-op), чтобы плагин не ходил в облако Capgo. Детали: docs/capgo-self-host-migration.md.
     CapacitorUpdater: {
       autoUpdate: true,
+      updateUrl:  'https://capgo.jevgenia.com/updates',
+      channelUrl: 'https://capgo.jevgenia.com/channel_self',
+      statsUrl:   'https://capgo.jevgenia.com/stats',
     },
   },
 };
