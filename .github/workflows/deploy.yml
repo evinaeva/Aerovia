@@ -69,10 +69,19 @@ jobs:
           SUM="$(sha256sum "$ZIP" | cut -d' ' -f1)"
           mkdir -p ~/.ssh && printf '%s\n' "$OTA_SSH_KEY" > ~/.ssh/ota_key && chmod 600 ~/.ssh/ota_key
           ssh-keyscan -H "$OTA_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$ZIP" "$OTA_USER@$OTA_HOST:/opt/capgo-ota/bundles/$ZIP"
-          # манифест: версия + публичный URL бандла + sha256 (responder отдаёт его новее-установленной)
+          # Атомарная публикация: сначала загружаем под временным именем, потом mv (атомарно).
+          # Порядок: zip сначала, манифест последним — клиент никогда не получит манифест
+          # с несуществующим zip.
+          scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$ZIP" "$OTA_USER@$OTA_HOST:/opt/capgo-ota/bundles/$ZIP.tmp"
+          ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$OTA_USER@$OTA_HOST" \
+            "mv /opt/capgo-ota/bundles/$ZIP.tmp /opt/capgo-ota/bundles/$ZIP"
           printf '{"version":"%s","url":"https://capgo.jevgenia.com/bundles/%s","checksum":"%s"}\n' "$VER" "$ZIP" "$SUM" > updates.json
-          scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new updates.json "$OTA_USER@$OTA_HOST:/opt/capgo-ota/updates.json"
+          scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new updates.json "$OTA_USER@$OTA_HOST:/opt/capgo-ota/updates.json.tmp"
+          ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$OTA_USER@$OTA_HOST" \
+            "mv /opt/capgo-ota/updates.json.tmp /opt/capgo-ota/updates.json"
+          # Retention: оставляем последние 10 бандлов (буфер отката для масштаба Play Store).
+          ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$OTA_USER@$OTA_HOST" \
+            "ls -t /opt/capgo-ota/bundles/planeflow-*.zip 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true"
           echo "OTA опубликован: $VER (sha256 $SUM)"
 
       # Папка сайта = корень репо (index.html + assets + sw.js + manifest +
