@@ -116,9 +116,9 @@
           // идём по оси полосы к полевому торцу; за корпус до него — касание (толчок +
           // визг), дальше докатываемся уже на земле, не меняя размер
           const r=pl.runway;
-          steer(pl, r.stopX, r.cy, K.SPEED_AIR*0.8, dt);
+          steer(pl, r.stopX, r.cy, K.SPEED_AIR * K.APPROACH_SPEED_MULT, dt);
           if(!pl.touched && pl.x <= r.stopX + PLANE_LEN()) touchdown(pl);
-          if(pl.touched) pl.y += (r.cy - pl.y) * Math.min(1, dt*8);   // держим по оси
+          if(pl.touched) pl.y += (r.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
           if(pl.x <= r.stopX+2){ pl.x=r.stopX; pl.y=r.cy; startGround(pl); }
           continue;
         }
@@ -128,10 +128,10 @@
           // борта перед разгоном — затем плавно ускоряемся к небу, увеличиваясь
           if(pl.holdT>0){
             pl.holdT-=dt; turnTo(pl, 0, dt);
-            pl.y += (pl.runway.cy - pl.y) * Math.min(1, dt*8);
+            pl.y += (pl.runway.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
             continue;
           }
-          steer(pl, pl.runway.exitX+200, pl.runway.cy, K.SPEED_TAKEOFF, dt);
+          steer(pl, pl.runway.exitX + K.TAKEOFF_OVERSHOOT, pl.runway.cy, K.SPEED_TAKEOFF, dt);
           if(pl.x > W+30){ depart(pl); }
           continue;
         }

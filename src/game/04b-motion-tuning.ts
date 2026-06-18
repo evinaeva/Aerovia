@@ -18,8 +18,17 @@
     {key:'K.SPEED_AIR',  group:'movement', label:'Скорость в воздухе',        target:'K',  name:'SPEED_AIR',    def:K.SPEED_AIR,    min:20,  max:160, step:1,    note:'Скорость захода, глиссады и воздушного маршрута.',           impact:'Определяет темп посадок и сколько времени есть на реакции.'},
     {key:'K.SPEED_TAXI', group:'movement', label:'Скорость руления',          target:'K',  name:'SPEED_TAXI',   def:K.SPEED_TAXI,   min:10,  max:120, step:1,    note:'Базовая скорость на поле до погодных множителей.',           impact:'Выше — быстрее обслуживание, но сложнее избегать столкновений.'},
     // ── взлёт ─────────────────────────────────────────────────────────────────
-    {key:'K.SPEED_TAKEOFF', group:'takeoff', label:'Скорость взлёта',         target:'K',  name:'SPEED_TAKEOFF',def:K.SPEED_TAKEOFF,min:40,  max:260, step:1,    note:'Разгон и уход за край экрана.',                             impact:'Сокращает время занятости ВПП при вылете.'},
-    {key:'K.TAKEOFF_HOLD',  group:'takeoff', label:'Пауза перед взлётом',     target:'K',  name:'TAKEOFF_HOLD', def:K.TAKEOFF_HOLD, min:0,   max:2.5, step:.05,  note:'Секунды выравнивания перед разгоном.',                       impact:'Больше — длиннее остановка и выше риск очередей.'},
+    {key:'K.SPEED_TAKEOFF',     group:'takeoff',  label:'Скорость взлёта',         target:'K',  name:'SPEED_TAKEOFF',     def:K.SPEED_TAKEOFF,     min:40,  max:260, step:1,    note:'Разгон и уход за край экрана.',                              impact:'Сокращает время занятости ВПП при вылете.'},
+    {key:'K.TAKEOFF_HOLD',      group:'takeoff',  label:'Пауза перед взлётом',     target:'K',  name:'TAKEOFF_HOLD',      def:K.TAKEOFF_HOLD,      min:0,   max:2.5, step:.05,  note:'Секунды выравнивания перед разгоном.',                        impact:'Больше — длиннее остановка и выше риск очередей.'},
+    {key:'K.TAKEOFF_OVERSHOOT', group:'takeoff',  label:'Цель разгона за ВПП',     target:'K',  name:'TAKEOFF_OVERSHOOT', def:K.TAKEOFF_OVERSHOOT, min:0,   max:800, step:10,   note:'px за exitX — цель steer() при разгоне.',                    impact:'Меньше — борт чуть раньше уходит за край и вызывает depart.'},
+    // ── заход на посадку ─────────────────────────────────────────────────────
+    {key:'K.APPROACH_SPEED_MULT',group:'approach',label:'Скорость захода ×',        target:'K',  name:'APPROACH_SPEED_MULT',def:K.APPROACH_SPEED_MULT,min:.2,  max:1,   step:.05,  note:'Финальный заход = SPEED_AIR × этот множитель.',              impact:'Ниже — медленнее и точнее; выше — быстрее, сложнее попасть.'},
+    {key:'K.PLANE_SKY_SCALE',   group:'approach', label:'Масштаб борта в небе',     target:'K',  name:'PLANE_SKY_SCALE',   def:K.PLANE_SKY_SCALE,   min:.5,  max:3,   step:.05,  note:'Визуальный масштаб борта в воздухе.',                         impact:'Больше — заметнее самолёты; влияет только на рендер.'},
+    {key:'K.PLANE_GND_SCALE',   group:'approach', label:'Масштаб борта на земле',   target:'K',  name:'PLANE_GND_SCALE',   def:K.PLANE_GND_SCALE,   min:.3,  max:2,   step:.05,  note:'Визуальный масштаб борта на земле.',                          impact:'Больше — крупнее наземные борта.'},
+    // ── посадка ──────────────────────────────────────────────────────────────
+    {key:'K.LAND_ALIGN_SPEED',  group:'landing',  label:'Скорость центровки',       target:'K',  name:'LAND_ALIGN_SPEED',  def:K.LAND_ALIGN_SPEED,  min:1,   max:30,  step:.5,   note:'lerp-скорость довыравнивания по оси ВПП при посадке/взлёте.',impact:'Выше — резче прилипание к оси; ниже — плавнее.'},
+    {key:'K.LAND_BUMP_MS',      group:'landing',  label:'Длительность толчка',      target:'K',  name:'LAND_BUMP_MS',      def:K.LAND_BUMP_MS,      min:0,   max:1000,step:10,   note:'Продолжительность визуального отскока при касании, мс.',     impact:'0 — убрать толчок; 500+ — длинный плавный отскок.'},
+    {key:'K.LAND_BUMP_AMP',     group:'landing',  label:'Амплитуда толчка',         target:'K',  name:'LAND_BUMP_AMP',     def:K.LAND_BUMP_AMP,     min:0,   max:20,  step:.5,   note:'Высота отскока корпуса при касании, ui-единиц.',              impact:'0 — без отскока; выше — заметнее «прыжок» при посадке.'},
     // ── маршрутизация ─────────────────────────────────────────────────────────
     {key:'K.ARRIVE', group:'routing', label:'Захват точки маршрута',          target:'K',  name:'ARRIVE',       def:K.ARRIVE,       min:2,   max:40,  step:1,    note:'Минимальный порог достижения waypoint.',                    impact:'Больше — плавнее, но менее точное следование линии.'},
     {key:'K.GRAB',   group:'routing', label:'Радиус выбора борта',            target:'K',  name:'GRAB',         def:K.GRAB,         min:16,  max:90,  step:1,    note:'Радиус тапа/захвата.',                                      impact:'Влияет на удобство взаимодействия.'},
@@ -66,9 +75,10 @@
 
   const MT_GROUPS: Record<string, string> = {
     movement:'Движение', turns:'Повороты', routing:'Маршрутизация',
-    takeoff:'Взлёт',    timing:'Тайминги', service:'Обслуживание',
-    spawn:'Поток',      collisions:'Столкновения', effects:'Эффекты',
-    events:'События',   weather:'Погода',  forest:'Лесной биом',
+    takeoff:'Взлёт',     approach:'Заход на посадку', landing:'Посадка',
+    timing:'Тайминги',   service:'Обслуживание',
+    spawn:'Поток',       collisions:'Столкновения', effects:'Эффекты',
+    events:'События',    weather:'Погода',  forest:'Лесной биом',
   };
 
   function mtTarget(p: MtParam): any { return p.target === 'FOR' ? FOR as any : K as any; }
