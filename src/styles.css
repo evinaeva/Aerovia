@@ -142,6 +142,8 @@
   .ed-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .ed-title{font-weight:700;color:var(--paper);font-size:15px}
   .ed-status{font-size:12px;color:var(--muted)}
+  .ed-sizes{display:flex;gap:3px;align-items:center}
+  .ed-sz{min-width:30px!important;font-weight:700;letter-spacing:.5px}
   .ed-bar__sp{flex:1}
   .ed-body{flex:1;min-height:0;display:flex;gap:10px}
   .ed-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
