@@ -38,6 +38,7 @@
     inf:'<path d="M6.5 9a3 3 0 1 0 0 6c1.7 0 2.8-1.5 5.5-3s3.8-3 5.5-3a3 3 0 1 1 0 6c-1.7 0-2.8-1.5-5.5-3"/>',
     expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
     globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+    door:'<path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
   };
   const _ICO_FILL: Record<string, string> = {
     play:'<path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z"/>',

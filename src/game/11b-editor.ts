@@ -8,9 +8,7 @@
   interface EdHangar {
     type: string; x: number; y: number;
     open: boolean; openCost: number;
-    up: boolean;
     gate: 'auto'|'up'|'down'|'left'|'right';
-    lvl: number; maxLvl: number; upgradeCost: number;
   }
   interface EdRunway {
     y: number;
@@ -34,6 +32,7 @@
   const ED: {
     hangars: EdHangar[]; runways: EdRunway[];
     services: string[]; maxUp: number;
+    upgradesEnabled: boolean; upgradeCost: number;
     pace: number; startMoney: number;
     objective: EdObjective;
     evVip: boolean; evEmergency: boolean; evMedical: boolean; evRush: boolean;
@@ -46,6 +45,7 @@
     hangars: [],
     runways: [{ y: 0.5, landingOpen: true, landingCost: 0, takeoffOpen: true, takeoffCost: 0 }],
     services: SVC_TYPES.slice(), maxUp: K.BAY_MAX_LVL,
+    upgradesEnabled: true, upgradeCost: 0,
     pace: 0.4, startMoney: K.START_MONEY,
     objective: { metric: 'served', star1: 6, star2: 8, star3: 10, timerSecs: 0, raceMode: false },
     evVip: false, evEmergency: false, evMedical: false, evRush: false,
@@ -98,11 +98,10 @@
   // ---- canvas resize ----
   function edResize() {
     const cv = ED.cv; if (!cv) return;
-    const wrap = cv.parentElement as HTMLElement;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = wrap.clientWidth, h = wrap.clientHeight;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (w === 0 || h === 0) { requestAnimationFrame(() => edResize()); return; }
     cv.width = Math.max(1, w * dpr); cv.height = Math.max(1, h * dpr);
-    cv.style.width = w + 'px'; cv.style.height = h + 'px';
     ED.g!.setTransform(dpr, 0, 0, dpr, 0, 0);
     edDraw();
   }
@@ -238,8 +237,8 @@
       g.font = '10px system-ui'; g.textBaseline = 'top';
       g.fillStyle = h.open ? 'rgba(127,155,176,.6)' : '#ffd23b'; g.textAlign = 'left';
       g.fillText(h.open ? '○' : '⌧', b.x+4, b.y+3);
-      g.fillStyle = (h.up && ED.maxUp>0) ? '#5dca7a' : 'rgba(127,155,176,.4)'; g.textAlign = 'right';
-      g.fillText((h.up && ED.maxUp>0) ? '↑'+ED.maxUp : '–', b.x+b.w-4, b.y+3);
+      g.fillStyle = (ED.upgradesEnabled && ED.maxUp>0) ? '#5dca7a' : 'rgba(127,155,176,.4)'; g.textAlign = 'right';
+      g.fillText((ED.upgradesEnabled && ED.maxUp>0) ? '↑'+ED.maxUp : '–', b.x+b.w-4, b.y+3);
     });
 
     // gate-direction snap arrows
@@ -301,7 +300,7 @@
     const col = ED.hangars.length % 4, row = Math.floor(ED.hangars.length / 4);
     const x = edSnap(edClamp01(0.06 + col * 0.13), ED_GX);
     const y = edSnap(edClamp01(0.12 + row * 0.28), ED_GY);
-    ED.hangars.push({ type, x, y, open:true, openCost:0, up:true, gate:'auto', lvl:0, maxLvl:K.BAY_MAX_LVL, upgradeCost:0 });
+    ED.hangars.push({ type, x, y, open:true, openCost:0, gate:'auto' });
     ED.sel = { kind:'hangar', i: ED.hangars.length-1 }; edRenderSide(); edDraw();
   }
   function edAddRunway() {
@@ -329,11 +328,9 @@
           const hd: any = { type:h.type, x:+h.x.toFixed(3), y:+h.y.toFixed(3) };
           if (!h.open)  hd.open = false;
           if (h.openCost)  hd.openCost = h.openCost;
-          if (!h.up)    hd.up = false;
+          if (!ED.upgradesEnabled) hd.up = false;
           if (h.gate !== 'auto') hd.gate = h.gate;
-          if (h.lvl)    hd.lvl = h.lvl;
-          if (h.maxLvl !== K.BAY_MAX_LVL) hd.maxLvl = h.maxLvl;
-          if (h.upgradeCost) hd.upgradeCost = h.upgradeCost;
+          if (ED.upgradeCost) hd.upgradeCost = ED.upgradeCost;
           return hd;
         }),
         runways: ED.runways.map(r => {
@@ -353,6 +350,8 @@
       })(),
     };
     if (ED.startMoney !== K.START_MONEY) o.startMoney = ED.startMoney;
+    if (!ED.upgradesEnabled) o.upgradesEnabled = false;
+    if (ED.upgradeCost) o.upgradeCost = ED.upgradeCost;
     const ev: any = {};
     if (ED.evVip) ev.vip=true; if (ED.evEmergency) ev.emergency=true;
     if (ED.evMedical) ev.medical=true; if (ED.evRush) ev.rush=true;
@@ -401,11 +400,7 @@
     ED.hangars = (o.layout.hangars||[]).map((h: any) => ({
       type:h.type, x:edClamp01(+h.x||0), y:edClamp01(+h.y||0),
       open:h.open!==false, openCost:h.openCost||0,
-      up:h.up!==false,
       gate:(['up','down','left','right'].includes(h.gate)?h.gate:'auto') as EdHangar['gate'],
-      lvl:Math.max(0,Math.min(K.BAY_MAX_LVL,+h.lvl||0)),
-      maxLvl:(h.maxLvl!=null)?Math.max(0,Math.min(K.BAY_MAX_LVL,+h.maxLvl)):K.BAY_MAX_LVL,
-      upgradeCost:h.upgradeCost||0,
     }));
     ED.runways = (o.layout.runways||[]).map((r: any) => ({
       y:edClamp01(+r.y||0),
@@ -414,6 +409,11 @@
     }));
     ED.services = Array.isArray(o.services)&&o.services.length ? o.services.filter((s: string)=>SVC_TYPES.includes(s)) : SVC_TYPES.slice();
     ED.maxUp = (o.maxUp==null)?K.BAY_MAX_LVL:Math.max(0,Math.min(K.BAY_MAX_LVL,o.maxUp));
+    // map-level upgrade settings: prefer root fields; fall back to inferring from per-hangar (old JSONs)
+    ED.upgradesEnabled = (o.upgradesEnabled !== undefined) ? o.upgradesEnabled !== false
+      : !(o.layout.hangars||[]).some((h: any) => h.up === false);
+    const hWithCost = (o.layout.hangars||[]).find((h: any) => h.upgradeCost);
+    ED.upgradeCost = (o.upgradeCost != null) ? Math.max(0, +o.upgradeCost||0) : (hWithCost ? hWithCost.upgradeCost : 0);
     ED.pace = (o.pace!=null)?Math.max(0,Math.min(1,+o.pace||0)):0.4;
     ED.startMoney = (o.startMoney!=null)?Math.max(0,+o.startMoney||K.START_MONEY):K.START_MONEY;
     const ob = o.objective||{};
@@ -502,27 +502,9 @@
         ocr.appendChild(ocOut); insp.appendChild(ocr);
       }
 
-      const ur=edRow('Апгрейды');
-      ur.appendChild(edBtn('вкл',  h.up,  ()=>{h.up=true;  edRenderSide();edDraw();}));
-      ur.appendChild(edBtn('выкл', !h.up, ()=>{h.up=false; edRenderSide();edDraw();}));
-      insp.appendChild(ur);
-
       const gr=edRow('Ворота');
       (['auto','up','down','left','right'] as EdHangar['gate'][]).forEach(g2=>gr.appendChild(edBtn(ED_GATE_LABELS[g2],h.gate===g2,()=>{h.gate=g2;edRenderSide();edDraw();})));
       insp.appendChild(gr);
-
-      const lvlR=edRow('Нач. уровень');
-      for(let v=0;v<=Math.min(h.maxLvl,K.BAY_MAX_LVL);v++) lvlR.appendChild(edBtn(String(v),h.lvl===v,()=>{h.lvl=v;edRenderSide();}));
-      insp.appendChild(lvlR);
-
-      const mlR=edRow('Потолок ↑');
-      for(let v=0;v<=K.BAY_MAX_LVL;v++) mlR.appendChild(edBtn(String(v),h.maxLvl===v,()=>{h.maxLvl=v;h.lvl=Math.min(h.lvl,v);edRenderSide();}));
-      insp.appendChild(mlR);
-
-      const upCR=edRow('Цена ↑');
-      const ucOut=edOut(h.upgradeCost?String(h.upgradeCost):'глобальная');
-      upCR.appendChild(edNumIn(h.upgradeCost,0,9999,10,v=>{h.upgradeCost=v;ucOut.textContent=v?String(v):'глобальная';}));
-      upCR.appendChild(ucOut); insp.appendChild(upCR);
 
       const dr=document.createElement('div'); dr.className='ed-row';
       dr.appendChild(edBtn('🗑 удалить',false,edDeleteSel)); insp.appendChild(dr);
@@ -566,9 +548,9 @@
       side.appendChild(insp);
     }
 
-    // LEVEL settings
+    // LEVEL settings — card "Борты" (plane services + upgrades + objectives)
     const lvl=document.createElement('div'); lvl.className='ed-card';
-    lvl.appendChild(Object.assign(document.createElement('div'),{className:'ed-card__t',textContent:'Уровень'}));
+    lvl.appendChild(Object.assign(document.createElement('div'),{className:'ed-card__t',textContent:'Борты'}));
 
     const sr2=edRow('Услуги');
     SVC_TYPES.forEach(tp=>sr2.appendChild(edBtn(ED_LABEL[tp]||tp, ED.services.includes(tp), ()=>{
@@ -577,11 +559,33 @@
       edRenderSide();
     }))); lvl.appendChild(sr2);
 
-    const mr=edRow('Глубина ↑');
-    const depSl=document.createElement('input'); depSl.type='range'; depSl.min='0'; depSl.max=String(K.BAY_MAX_LVL); depSl.step='1'; depSl.value=String(ED.maxUp); depSl.className='ed-range';
-    const depOut=edOut(String(ED.maxUp));
-    depSl.oninput=()=>{ ED.maxUp=+depSl.value; depOut.textContent=String(ED.maxUp); edDraw(); };
-    mr.appendChild(depSl); mr.appendChild(depOut); lvl.appendChild(mr);
+    const upEnR=edRow('Апгрейды');
+    upEnR.appendChild(edBtn('вкл',  ED.upgradesEnabled,  ()=>{ED.upgradesEnabled=true;  edRenderSide();edDraw();}));
+    upEnR.appendChild(edBtn('выкл', !ED.upgradesEnabled, ()=>{ED.upgradesEnabled=false; edRenderSide();edDraw();}));
+    lvl.appendChild(upEnR);
+
+    if (ED.upgradesEnabled) {
+      const mr=edRow('Макс. уровень ↑');
+      const depSl=document.createElement('input'); depSl.type='range'; depSl.min='0'; depSl.max=String(K.BAY_MAX_LVL); depSl.step='1'; depSl.value=String(ED.maxUp); depSl.className='ed-range';
+      const depOut=edOut(String(ED.maxUp));
+      depSl.oninput=()=>{ ED.maxUp=+depSl.value; depOut.textContent=String(ED.maxUp); edDraw(); };
+      mr.appendChild(depSl); mr.appendChild(depOut); lvl.appendChild(mr);
+
+      const upCR=edRow('Цена ↑');
+      const ucOut=edOut(ED.upgradeCost?String(ED.upgradeCost):'по умолчанию');
+      upCR.appendChild(edNumIn(ED.upgradeCost,0,9999,10,v=>{ED.upgradeCost=v;ucOut.textContent=v?String(v):'по умолчанию';}));
+      upCR.appendChild(ucOut); lvl.appendChild(upCR);
+    }
+
+    const cR=edRow('Комбо');
+    cR.appendChild(edBtn('вкл',  ED.combo,  ()=>{ED.combo=true;  edRenderSide();}));
+    cR.appendChild(edBtn('выкл', !ED.combo, ()=>{ED.combo=false; edRenderSide();}));
+    lvl.appendChild(cR);
+
+    const exR=edRow('Экспресс');
+    exR.appendChild(edBtn('вкл',  ED.express,  ()=>{ED.express=true;  edRenderSide();}));
+    exR.appendChild(edBtn('выкл', !ED.express, ()=>{ED.express=false; edRenderSide();}));
+    lvl.appendChild(exR);
 
     const paceR=edRow('Темп');
     const paceSl=document.createElement('input'); paceSl.type='range'; paceSl.min='0'; paceSl.max='1'; paceSl.step='0.02'; paceSl.value=String(ED.pace); paceSl.className='ed-range';
@@ -615,27 +619,22 @@
       lvl.appendChild(raceR);
     }
 
-    const evR=edRow('VIP');        evR.appendChild(edBtn('вкл', ED.evVip,       ()=>{ED.evVip=!ED.evVip;             edRenderSide();})); lvl.appendChild(evR);
-    const emR=edRow('Аварийный');  emR.appendChild(edBtn('вкл', ED.evEmergency, ()=>{ED.evEmergency=!ED.evEmergency; edRenderSide();})); lvl.appendChild(emR);
-    const medR=edRow('Медицинский'); medR.appendChild(edBtn('вкл', ED.evMedical,()=>{ED.evMedical=!ED.evMedical;   edRenderSide();})); lvl.appendChild(medR);
-    const rushR=edRow('Час пик');  rushR.appendChild(edBtn('вкл', ED.evRush,    ()=>{ED.evRush=!ED.evRush;         edRenderSide();})); lvl.appendChild(rushR);
-
-    const wR=edRow('Погода');  wR.appendChild(edBtn('вкл', ED.weather, ()=>{ED.weather=!ED.weather; edRenderSide();})); lvl.appendChild(wR);
-    const dR=edRow('Де-айсинг'); dR.appendChild(edBtn('вкл', ED.deice, ()=>{ED.deice=!ED.deice;   edRenderSide();})); lvl.appendChild(dR);
-
-    const cR=edRow('Комбо');
-    cR.appendChild(edBtn('вкл',  ED.combo,  ()=>{ED.combo=true;  edRenderSide();}));
-    cR.appendChild(edBtn('выкл', !ED.combo, ()=>{ED.combo=false; edRenderSide();}));
-    lvl.appendChild(cR);
-
-    const exR=edRow('Экспресс');
-    exR.appendChild(edBtn('вкл',  ED.express,  ()=>{ED.express=true;  edRenderSide();}));
-    exR.appendChild(edBtn('выкл', !ED.express, ()=>{ED.express=false; edRenderSide();}));
-    lvl.appendChild(exR);
-
     const cr=edRow('Элементы');
     cr.appendChild(edOut(ED.hangars.length+' ангаров · '+ED.runways.length+' ВПП'));
     lvl.appendChild(cr); side.appendChild(lvl);
+
+    // LEVEL settings — card "Условия" (weather, events)
+    const cond=document.createElement('div'); cond.className='ed-card';
+    cond.appendChild(Object.assign(document.createElement('div'),{className:'ed-card__t',textContent:'Условия'}));
+
+    const evR=edRow('VIP');        evR.appendChild(edBtn('вкл', ED.evVip,       ()=>{ED.evVip=!ED.evVip;             edRenderSide();})); cond.appendChild(evR);
+    const emR=edRow('Аварийный');  emR.appendChild(edBtn('вкл', ED.evEmergency, ()=>{ED.evEmergency=!ED.evEmergency; edRenderSide();})); cond.appendChild(emR);
+    const medR=edRow('Медицинский'); medR.appendChild(edBtn('вкл', ED.evMedical,()=>{ED.evMedical=!ED.evMedical;   edRenderSide();})); cond.appendChild(medR);
+    const rushR=edRow('Час пик');  rushR.appendChild(edBtn('вкл', ED.evRush,    ()=>{ED.evRush=!ED.evRush;         edRenderSide();})); cond.appendChild(rushR);
+
+    const wR=edRow('Погода');  wR.appendChild(edBtn('вкл', ED.weather, ()=>{ED.weather=!ED.weather; edRenderSide();})); cond.appendChild(wR);
+    const dR=edRow('Де-айсинг'); dR.appendChild(edBtn('вкл', ED.deice, ()=>{ED.deice=!ED.deice;   edRenderSide();})); cond.appendChild(dR);
+    side.appendChild(cond);
 
     if (warn.length) {
       const wc=document.createElement('div'); wc.className='ed-card ed-warn';
@@ -643,15 +642,20 @@
       warn.forEach(x=>wc.appendChild(Object.assign(document.createElement('div'),{className:'ed-row__l',textContent:'• '+x})));
       side.appendChild(wc);
     }
+  }
 
-    const file=document.createElement('div'); file.className='ed-card';
-    file.appendChild(Object.assign(document.createElement('div'),{className:'ed-card__t',textContent:'Файл'}));
-    file.appendChild(Object.assign(document.createElement('div'),{className:'ed-row__l',textContent:'Экспорт — JSON уровня. Черновик — сохранить/вернуть в этом браузере.'}));
-    const fr=document.createElement('div'); fr.className='ed-row';
-    fr.appendChild(edBtn('Экспорт',false,edExport));
-    fr.appendChild(edBtn('Черновик ↓',false,edSaveDraft));
-    fr.appendChild(edBtn('Черновик ↑',false,edLoadDraft));
-    file.appendChild(fr); side.appendChild(file);
+  // ---- new map ----
+  function edNewMap() {
+    ED.hangars = [];
+    ED.runways = [{ y: 0.5, landingOpen: true, landingCost: 0, takeoffOpen: true, takeoffCost: 0 }];
+    ED.services = SVC_TYPES.slice(); ED.maxUp = K.BAY_MAX_LVL;
+    ED.upgradesEnabled = true; ED.upgradeCost = 0;
+    ED.pace = 0.4; ED.startMoney = K.START_MONEY;
+    ED.objective = { metric: 'served', star1: 6, star2: 8, star3: 10, timerSecs: 0, raceMode: false };
+    ED.evVip = false; ED.evEmergency = false; ED.evMedical = false; ED.evRush = false;
+    ED.weather = false; ED.deice = false; ED.combo = true; ED.express = true;
+    ED.sel = null;
+    edRenderSide(); edDraw();
   }
 
   // ---- phone size buttons ----
@@ -678,6 +682,10 @@
     const open=edEl('edOpenBtn');  if(open)  open.onclick=edOpen;
     const close=edEl('edCloseBtn'); if(close) close.onclick=edClose;
     const test=edEl('edTestBtn');  if(test)  test.onclick=edPlayTest;
+    const exp=edEl('edExportBtn'); if(exp)   exp.onclick=edExport;
+    const newBtn=edEl('edNewBtn'); if(newBtn) newBtn.onclick=()=>{
+      if(confirm('Удалить черновик и начать новую карту?')) edNewMap();
+    };
 
     // phone-size toggle
     (['S','M','L'] as const).forEach(sz => {
