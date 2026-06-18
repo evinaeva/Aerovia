@@ -71,6 +71,10 @@
     // ── лесной биом ───────────────────────────────────────────────────────────
     {key:'FOR.CREW_SPEED', group:'forest', label:'Скорость бригады', target:'FOR', name:'CREW_SPEED', def:FOR.CREW_SPEED, min:60,  max:600, step:5,  note:'px/sec спец-авто.',        impact:'Выше — быстрее реакция на помехи.'},
     {key:'FOR.WORK_TIME',  group:'forest', label:'Работа бригады',   target:'FOR', name:'WORK_TIME',  def:FOR.WORK_TIME,  min:.2,  max:8,   step:.1, note:'Секунды работы у помехи.', impact:'Выше — дольше закрыта полоса.'},
+    // ── бокс: заезд / стоянка / выезд ────────────────────────────────────────
+    {key:'K.BAY_DOCK_SPEED',  group:'bay_nav', label:'Скорость в боксе ×',   target:'K', name:'BAY_DOCK_SPEED',  def:K.BAY_DOCK_SPEED,  min:.1, max:2,   step:.05, note:'Движение внутри бокса = SPEED_TAXI × это значение.',     impact:'Ниже — медленнее и аккуратнее; выше — короче стоянка.'},
+    {key:'K.BAY_ALIGN_SPEED', group:'bay_nav', label:'Выравнивание по оси',  target:'K', name:'BAY_ALIGN_SPEED', def:K.BAY_ALIGN_SPEED, min:1,  max:30,  step:.5,  note:'lerp-скорость центровки на оси ворот (вход и выход).',   impact:'Выше — резче прилипание к оси; ниже — плавнее.'},
+    {key:'K.BAY_HEAD_SPEED',  group:'bay_nav', label:'Скорость разворота',   target:'K', name:'BAY_HEAD_SPEED',  def:K.BAY_HEAD_SPEED,  min:.5, max:15,  step:.5,  note:'Скорость поворота носа при заезде и выезде из бокса.',   impact:'Выше — резче разворот; ниже — плавнее.'},
     // ── контроль событий (on/off) ─────────────────────────────────────────────
     {key:'K.DISABLE_VIP',       group:'ctrl', label:'Отключить VIP-борты',    target:'K', name:'DISABLE_VIP',       def:false, note:'Блокирует спавн VIP при любом K.VIP_CHANCE.',       impact:'Чистит поле для теста скорости без дорогих бортов.'},
     {key:'K.DISABLE_EMERGENCY', group:'ctrl', label:'Отключить аварийные',    target:'K', name:'DISABLE_EMERGENCY', def:false, note:'Блокирует «топливо на нуле».',                       impact:'Убирает экстренные ситуации из тестовой сессии.'},
@@ -85,6 +89,7 @@
     takeoff:'Взлёт',     approach:'Заход на посадку', landing:'Посадка',
     timing:'Тайминги',   service:'Обслуживание',
     spawn:'Поток',       collisions:'Столкновения', effects:'Эффекты',
+    bay_nav:'Бокс: заезд/выезд',
     events:'События',    weather:'Погода',  forest:'Лесной биом',
     ctrl:'⚙ Контроль событий',
   };

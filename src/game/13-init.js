@@ -47,6 +47,14 @@
   { const _v=document.getElementById('ver'); if(_v) _v.textContent=VERSION; }  // #ver убран из neon-бренда — guard
   { const _mt=document.getElementById('motionTuningBtn'); if(_mt) _mt.onclick=()=>mtOpenPanel(); }
   window.__MT = MT;   // доступен из родительского tuning.html (same-origin iframe)
+  // Живые данные поля — для оверлея в tuning.html (same-origin)
+  window.__FIELD = {
+    get planes()  { return planes;  },
+    get runways() { return runways; },
+    get bays()    { return bays;    },
+    get W()       { return W;       },
+    get H()       { return H;       },
+  };
   resize();
   requestAnimationFrame(frame);
 

@@ -305,6 +305,59 @@
       font-size: 12px;
     }
     #search::placeholder { color: var(--muted); }
+
+    /* ── Tabs ────────────────────────────────────────────────────────────── */
+    #tab-nav {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .t-tab {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--muted);
+      padding: 5px 13px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .t-tab.active  { background: rgba(34,227,198,.14); border-color: var(--accent); color: var(--accent); }
+    .t-tab:hover:not(.active) { background: #1a2a48; }
+
+    /* ── Field view (right panel for "Поле" tab) ─────────────────────── */
+    #field-view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .f-sec {
+      border: 1px solid rgba(127,155,176,.14);
+      border-radius: 12px;
+      background: rgba(14,22,48,.5);
+      padding: 10px 14px;
+    }
+    .f-sec h3 {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+    }
+    .f-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+    .f-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+    .f-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+    .f-line { width: 18px; height: 2px; flex: none; }
+
+    .f-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .f-table th, .f-table td { padding: 3px 6px; text-align: left; border-bottom: 1px solid var(--row-sep); }
+    .f-table th { color: var(--muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .tag-ok  { color: #22e3c6; } .tag-bad { color: #e35c22; } .tag-occ { color: #e3c522; }
   </style>
 </head>
 <body>
@@ -316,6 +369,8 @@
     <div id="phone-label">Live Preview · iPhone 14 Pro</div>
     <div id="phone-shell">
       <iframe id="game-frame" src="index.html" title="Game" allow="autoplay"></iframe>
+      <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
+           style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
     </div>
     <div id="phone-controls">
       <button class="p-btn" id="btn-rotate">📱 Портрет</button>
@@ -328,7 +383,11 @@
 
     <div id="panel-head">
       <h1>🎛 Motion Tuning <span class="sub">· Designer Workbench</span></h1>
-      <div class="actions">
+      <div id="tab-nav">
+        <button class="t-tab active" data-tab="params">🎛 Параметры</button>
+        <button class="t-tab" data-tab="field">✈ Поле</button>
+      </div>
+      <div class="actions" id="params-actions">
         <button class="p-btn" id="btn-reset">↺ Reset all</button>
         <button class="p-btn" id="btn-export">↓ Export JSON</button>
         <button class="p-btn" id="btn-import">↑ Import JSON</button>
@@ -346,6 +405,46 @@
 
     <div id="groups">
       <div id="loading-msg">Ждём запуска игры…</div>
+    </div>
+
+    <!-- ── Поле tab content ──────────────────────────────────────────── -->
+    <div id="field-view">
+
+      <div class="f-sec">
+        <h3>Легенда</h3>
+        <div class="f-legend">
+          <div class="f-legend-item"><div class="f-dot" style="background:#3ad2ff"></div>Полоса</div>
+          <div class="f-legend-item"><div class="f-line" style="background:rgba(245,200,66,.85)"></div>stopX (посадка)</div>
+          <div class="f-legend-item"><div class="f-line" style="background:rgba(240,128,48,.85)"></div>exitX (взлёт)</div>
+          <div class="f-legend-item"><div class="f-dot" style="background:#22c864"></div>Бокс (свободен)</div>
+          <div class="f-legend-item"><div class="f-dot" style="background:#b060f0"></div>Бокс (занят)</div>
+          <div class="f-legend-item"><div class="f-dot" style="background:#f5c842"></div>Борт в воздухе</div>
+          <div class="f-legend-item"><div class="f-dot" style="background:#40d0c0"></div>Борт на земле</div>
+          <div class="f-legend-item"><div class="f-line" style="background:rgba(100,100,255,.6)"></div>K.ARRIVE (захват)</div>
+        </div>
+      </div>
+
+      <div class="f-sec">
+        <h3>Полосы (live)</h3>
+        <div id="info-runways"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
+      </div>
+
+      <div class="f-sec">
+        <h3>Боксы (live)</h3>
+        <div id="info-bays"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
+      </div>
+
+      <div class="f-sec" style="font-size:11px;color:var(--muted);line-height:1.5">
+        <h3>Как пользоваться</h3>
+        Запусти игру → нажми <b>▶ Demo</b> на телефоне → наблюдай оверлей.<br>
+        Настраивай параметры во вкладке <b>🎛 Параметры</b>:<br>
+        <b>Бокс</b> — BAY_DOCK/ALIGN/HEAD_SPEED<br>
+        <b>Посадка</b> — LAND_BUMP_AMP/MS, LAND_ALIGN_SPEED<br>
+        <b>Заход</b> — APPROACH_SPEED_MULT<br>
+        <b>Взлёт</b> — TAKEOFF_HOLD/OVERSHOOT<br>
+        <b>Маршрутизация</b> — ARRIVE (радиус захвата точки пути)
+      </div>
+
     </div>
 
     <div id="status-bar">—</div>
@@ -599,7 +698,149 @@
     });
   })();
 
-  /* ── 10. Demo mode: Survival + infinite lives & money ───────────────── */
+  /* ── 10. Tab switching ──────────────────────────────────────────────── */
+  (function () {
+    const searchWrap    = document.getElementById('search-wrap');
+    const groupsEl2     = document.getElementById('groups');
+    const paramsActions = document.getElementById('params-actions');
+    const fieldViewEl   = document.getElementById('field-view');
+
+    document.querySelectorAll('.t-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b === btn));
+        const isParams = tab === 'params';
+        searchWrap.style.display    = isParams ? '' : 'none';
+        groupsEl2.style.display     = isParams ? '' : 'none';
+        paramsActions.style.display = isParams ? '' : 'none';
+        fieldViewEl.style.display   = isParams ? 'none' : 'flex';
+        if (window._fieldActivate) window._fieldActivate(!isParams);
+      });
+    });
+  })();
+
+  /* ── 11. Field overlay (SVG over phone iframe) ───────────────────────── */
+  (function () {
+    const overlay    = document.getElementById('field-overlay');
+    const infoRwy    = document.getElementById('info-runways');
+    const infoBays   = document.getElementById('info-bays');
+    let   fieldOn    = false;
+
+    function getField() {
+      try { const fw = gameFrame.contentWindow; return fw && fw.__FIELD ? fw.__FIELD : null; } catch(_) { return null; }
+    }
+
+    function gateEntr(b) {
+      const g = b.gate;
+      if (g === 'up')    return { x: b.x + b.w * 0.5, y: b.y };
+      if (g === 'down')  return { x: b.x + b.w * 0.5, y: b.y + b.h };
+      if (g === 'left')  return { x: b.x,               y: b.y + b.h * 0.5 };
+      if (g === 'right') return { x: b.x + b.w,         y: b.y + b.h * 0.5 };
+      return { x: b.x + b.w * 0.5, y: b.y + b.h * 0.5 };
+    }
+
+    function zoneCol(z) {
+      return { air:'#f5c842', land:'#f08030', takeoff:'#60d060', bay:'#b060f0', field:'#40d0c0', runway:'#4090f0' }[z] || '#aaa';
+    }
+
+    function drawOverlay() {
+      const fd = getField();
+      if (!fd || !fd.W) { overlay.innerHTML = ''; return; }
+
+      const W = fd.W, H = fd.H;
+      overlay.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+      const snap   = MT ? MT.snapshot() : {};
+      const arrive = +(snap['K.ARRIVE'] || 12);
+      const GDX = { up:0, down:0, left:-1, right:1 };
+      const GDY = { up:-1, down:1, left:0, right:0 };
+
+      let s = '<defs><marker id="ga" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">'
+            + '<path d="M0,0 L0,6 L6,3 z" fill="rgba(34,200,100,.8)"/></marker></defs>';
+
+      // ── Runways ────────────────────────────────────────────────────────
+      (fd.runways || []).forEach((r, i) => {
+        s += `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="rgba(58,130,255,.05)" stroke="rgba(58,210,255,.5)" stroke-width="1.5"/>`;
+        // center line
+        s += `<line x1="${r.x}" y1="${r.cy}" x2="${r.x+r.w}" y2="${r.cy}" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="6 4"/>`;
+        // stopX (посадка — жёлтый)
+        s += `<line x1="${r.stopX}" y1="${r.y}" x2="${r.stopX}" y2="${r.y+r.h}" stroke="rgba(245,200,66,.85)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+        s += `<text x="${r.stopX+2}" y="${r.y+10}" font-size="8" fill="rgba(245,200,66,.9)">stop</text>`;
+        // exitX (взлёт — оранж)
+        s += `<line x1="${r.exitX}" y1="${r.y}" x2="${r.exitX}" y2="${r.y+r.h}" stroke="rgba(240,128,48,.85)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+        s += `<text x="${r.exitX+2}" y="${r.y+10}" font-size="8" fill="rgba(240,128,48,.9)">exit</text>`;
+        // label
+        const lbl = 'ВПП'+(i+1)+(r.closed?' ✕':'');
+        s += `<text x="${r.x+3}" y="${r.y+r.h-3}" font-size="8" fill="rgba(58,210,255,.65)">${lbl}</text>`;
+      });
+
+      // ── Bays ───────────────────────────────────────────────────────────
+      (fd.bays || []).forEach(b => {
+        const col = b.occupied ? 'rgba(180,96,240,.7)' : (b.open ? 'rgba(34,200,100,.55)' : 'rgba(200,80,80,.5)');
+        s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="${col}" fill-opacity=".1" stroke="${col}" stroke-width="1.5"/>`;
+        const ge = gateEntr(b);
+        const dx = GDX[b.gate] || 0, dy = GDY[b.gate] || 0;
+        s += `<circle cx="${ge.x}" cy="${ge.y}" r="3" fill="${col}"/>`;
+        s += `<line x1="${ge.x}" y1="${ge.y}" x2="${ge.x+dx*12}" y2="${ge.y+dy*12}" stroke="${col}" stroke-width="1.5" marker-end="url(#ga)"/>`;
+        s += `<text x="${b.x+2}" y="${b.y+9}" font-size="7" fill="${col}">${b.type||''}</text>`;
+      });
+
+      // ── Planes ─────────────────────────────────────────────────────────
+      (fd.planes || []).forEach(pl => {
+        const col = zoneCol(pl.zone);
+        if (pl.path && pl.path.length) {
+          const pts = `${pl.x},${pl.y} ` + pl.path.map(p => `${p.x},${p.y}`).join(' ');
+          s += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-opacity=".45" stroke-width="1.2" stroke-dasharray="5 3"/>`;
+          const wp = pl.path[0];
+          s += `<circle cx="${wp.x}" cy="${wp.y}" r="${arrive}" fill="none" stroke="${col}" stroke-opacity=".35" stroke-width="1" stroke-dasharray="3 3"/>`;
+          s += `<circle cx="${wp.x}" cy="${wp.y}" r="2.5" fill="${col}" fill-opacity=".8"/>`;
+        }
+        s += `<circle cx="${pl.x}" cy="${pl.y}" r="5" fill="${col}" fill-opacity=".85" stroke="rgba(0,0,0,.3)" stroke-width="1"/>`;
+      });
+
+      overlay.innerHTML = s;
+    }
+
+    function updateInfo() {
+      const fd = getField();
+      if (!fd) return;
+
+      // Runways table
+      let rh = '<table class="f-table"><tr><th>#</th><th>stopX</th><th>exitX</th><th>cy</th><th>статус</th></tr>';
+      (fd.runways || []).forEach((r, i) => {
+        const cls = r.closed ? 'tag-bad' : (r.occupied ? 'tag-occ' : 'tag-ok');
+        const lbl = r.closed ? 'закрыта' : (r.occupied ? 'занята' : 'свободна');
+        rh += `<tr><td>ВПП ${i+1}</td><td>${Math.round(r.stopX)}</td><td>${Math.round(r.exitX)}</td><td>${Math.round(r.cy)}</td><td><span class="${cls}">${lbl}</span></td></tr>`;
+      });
+      rh += '</table>';
+      if (infoRwy) infoRwy.innerHTML = rh;
+
+      // Bays table
+      let bh = '<table class="f-table"><tr><th>тип</th><th>ворота</th><th>x</th><th>y</th><th>w×h</th><th>статус</th></tr>';
+      (fd.bays || []).forEach(b => {
+        const cls = b.occupied ? 'tag-occ' : (b.open ? 'tag-ok' : 'tag-bad');
+        const lbl = b.occupied ? 'занят' : (b.open ? 'открыт' : 'закрыт');
+        bh += `<tr><td>${b.type||'?'}</td><td>${b.gate||'?'}</td><td>${Math.round(b.x)}</td><td>${Math.round(b.y)}</td><td>${Math.round(b.w)}×${Math.round(b.h)}</td><td><span class="${cls}">${lbl}</span></td></tr>`;
+      });
+      bh += '</table>';
+      if (infoBays) infoBays.innerHTML = bh;
+    }
+
+    function tick() {
+      if (!fieldOn) return;
+      drawOverlay();
+      updateInfo();
+      setTimeout(tick, 150);
+    }
+
+    window._fieldActivate = function (on) {
+      fieldOn = on;
+      overlay.style.display = on ? '' : 'none';
+      if (on) tick();
+    };
+  })();
+
+  /* ── 12. Demo mode: Survival + infinite lives & money ───────────────── */
   document.getElementById('btn-demo').addEventListener('click', () => {
     try {
       const w = gameFrame.contentWindow;
