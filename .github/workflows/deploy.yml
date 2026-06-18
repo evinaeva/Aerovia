@@ -59,6 +59,8 @@ jobs:
             echo "OTA_SSH_KEY не задан — пропускаю публикацию OTA (норма до настройки деплоя)."
             exit 0
           fi
+          mkdir -p ~/.ssh && printf '%s\n' "$OTA_SSH_KEY" > ~/.ssh/ota_key && chmod 600 ~/.ssh/ota_key
+          ssh-keyscan -H "$OTA_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           # Деплоим server.py атомарно и рестартуем сервис.
           # Требует sudoers на VPS: capgo-deploy ALL=(root) NOPASSWD: /bin/systemctl restart capgo-ota
           scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new docs/vps/server.py "$OTA_USER@$OTA_HOST:/opt/capgo-ota/server.py.tmp"
@@ -72,8 +74,6 @@ jobs:
           ZIP="planeflow-$VER.zip"
           ( cd www && zip -qr "../$ZIP" . )           # index.html в корне zip — как требует плагин
           SUM="$(sha256sum "$ZIP" | cut -d' ' -f1)"
-          mkdir -p ~/.ssh && printf '%s\n' "$OTA_SSH_KEY" > ~/.ssh/ota_key && chmod 600 ~/.ssh/ota_key
-          ssh-keyscan -H "$OTA_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           # Атомарная публикация: сначала загружаем под временным именем, потом mv (атомарно).
           # Порядок: zip сначала, манифест последним — клиент никогда не получит манифест
           # с несуществующим zip.
