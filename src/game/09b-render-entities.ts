@@ -257,7 +257,7 @@
     let by = pl.y;
     if(pl.bounceAt){
       const p=(nowT - pl.bounceAt)/K.LAND_BUMP_MS;
-      if(p>=0 && p<1) by -= Math.sin(Math.PI*p)*(1-p)*4*ui;
+      if(p>=0 && p<1) by -= Math.sin(Math.PI*p)*(1-p)*K.LAND_BUMP_AMP*ui;
       else pl.bounceAt=0;
     }
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
