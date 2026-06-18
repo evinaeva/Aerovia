@@ -25,6 +25,8 @@
     services?: string[];   // какие услуги запрашивают борты (подмножество SVC_TYPES; умолч. все)
     maxUp?: number;        // глубина апгрейда на уровне 0..BAY_MAX_LVL (умолч. потолок); 0 — без апгрейдов
     events?: Events; startMoney?: number;
+    crashPenalty?: number; // 0..1 — доля вознаграждения борта, списывается с кассы при крэше
+    latePenalty?: number;  // 0..1 — доля вознаграждения при истечении наземного терпения (умолч. 0.5)
     biome?: string; bonus?: string; weather?: boolean; deice?: boolean;
     calm?: number; survRamp?: number; combo?: boolean; express?: boolean;
   }
