@@ -175,7 +175,7 @@
         if(need==='depart'){
           for(const r of runways){
             if(!r.closed && r.takeoffOpen && rectHit(pl.x,pl.y,r)){
-              // выезд на ОТКРЫТУЮ полосу под взлёт (крушение — только при контакте на ВПП)
+              // выезд на полосу под взлёт (takeoffOpen=true; крушение — только при контакте на ВПП)
               pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
               pl.takeoff=true; pl.moving=true; pl.path=[]; pl.holdT=K.TAKEOFF_HOLD;
               break;

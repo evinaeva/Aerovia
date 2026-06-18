@@ -18,7 +18,6 @@
   let weather = 'clear', weatherUntil = 0, nextWeather = 0; // погода: clear|rain|snow
   let dayPhase = 0, nightAmount = 0;                  // «часы» суток (логика; рендер читает)
   let survival = false;                               // survival (на картах): режим с условием смерти, счёт за заход → в глобальный рейтинг
-  let testFromEditor = false;                         // запущено кнопкой «Тест» из редактора уровней
   // единый источник истины о текущем режиме (логика, не контент): survival/biome/bonus/campaign.
   // Раньше режим вычислялся инлайн-тернарником в нескольких местах — теперь одна функция (см. CLAUDE.md).
   function currentMode(){ return survival ? 'survival' : (curBiome ? 'biome' : (curBonus ? 'bonus' : 'campaign')); }
@@ -94,32 +93,8 @@
   }
 
   // ---- layout: bays, runways, hover slots ----
-
-  // Логическая точка привязки маршрута: якорь у ворот ангара или на рубеже ВПП.
-  // Координаты пересчитываются при каждом resize; в данных уровня не хранятся.
-  interface SnapPoint {
-    id: string;
-    ownerType: 'hangar' | 'runway';
-    ownerId: string;
-    x: number; y: number;          // canvas px, пересчитываются при resize
-    alignAngle: number;            // угол (рад), к которому выравнивается самолёт при привязке
-    snapRadius: number;            // px — радиус «прилипания» конца маршрута
-    role: 'gate' | 'entry' | 'holding';
-  }
-
-  interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; up?: boolean; gate?: string; gx?: number; gy?: number;
-    openCost?: number;      // override K.BAY_OPEN_COST для этого ангара
-    upgradeCost?: number;   // override K.BAY_UP_COST для этого ангара
-    maxLvl?: number;        // per-bay потолок апгрейдов
-    snapPoints: SnapPoint[];
-  }
-  interface Runway { occupied: any; closed: boolean; hazard?: any; x: number; y: number; w: number; h: number; cy: number; stopX: number; exitX: number;
-    landingOpen: boolean;   // посадка открыта (false = заблокирована)
-    landingCost: number;    // цена разблокировки посадки (0 = открыта сразу)
-    takeoffOpen: boolean;   // взлёт открыт (false = заблокирован)
-    takeoffCost: number;    // цена разблокировки взлёта (0 = открыт сразу)
-    snapPoints: SnapPoint[];
-  }
+  interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; up?: boolean; gate?: string; gx?: number; gy?: number; openCost: number; upgCost?: number; }
+  interface Runway { occupied: any; closed: boolean; hazard?: any; x: number; y: number; w: number; h: number; cy: number; stopX: number; exitX: number; landingOpen: boolean; takeoffOpen: boolean; landingOpen0: boolean; takeoffOpen0: boolean; landingCost: number; takeoffCost: number; }
   interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; rwL?: number; rwR?: number; service?: any; }
   interface Rect { x: number; y: number; w: number; h: number; }
   let bays: Bay[] = [], runways: Runway[] = [], field: Field = {x0:0,y0:0,x1:0,y1:0}, pauseBtn: Rect = {} as Rect;
@@ -158,11 +133,9 @@
           const open = hg.open!==false;
           bays.push({ side:'free', type:hg.type, slot:i, open, open0:open,
                       up:hg.up!==false, gate:hg.gate, gx:hg.x, gy:hg.y,
-                      lvl: hg.lvl || 0,
-                      openCost: hg.openCost,
-                      upgradeCost: hg.upgradeCost,
-                      maxLvl: hg.maxLvl,
-                      occupied:null, x:0,y:0,w:bw,h:bh, snapPoints:[] });
+                      openCost: hg.openCost ?? K.BAY_OPEN_COST,
+                      upgCost: hg.upgCost,
+                      lvl:0, occupied:null, x:0,y:0,w:bw,h:bh });
         });
       } else {
         // СТАРАЯ РАСКЛАДКА: слоты сторон → плоский список, чередуем верх/низ, встык в две ангары.
@@ -174,13 +147,15 @@
         }
         all.forEach((b,i)=>{
           bays.push({ side:(i%2===0?'top':'bottom'), type:b.type, slot:i,
-                      open:b.open, open0:b.open, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh, snapPoints:[] });
+                      open:b.open, open0:b.open,
+                      openCost: K.BAY_OPEN_COST, upgCost: undefined,
+                      lvl:0, occupied:null, x:0,y:0,w:bw,h:bh });
         });
       }
       // отдельный бокс де-айсинга (инфраструктура: всегда открыт, без апгрейда) —
       // у правого края поля, ворота в поле; нужен только в снегопад (см. spawnPlane)
       if(LV.deice) bays.push({side:'deice', type:'deice', slot:0, deice:true,
-                              open:true, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh, snapPoints:[]});
+                              open:true, openCost:0, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh});
     }
     // position bays
     const bySide = (s: string) => bays.filter(b=>b.side===s);
@@ -233,15 +208,15 @@
       cys = []; for(let i=0;i<n;i++) cys.push(rwY0 + i*(rh+gap) + rh/2);
     }
     if(!runways.length || runways.length!==cys.length){
-      const rdefs = (LV.layout && LV.layout.runways) || [];
+      const rdefs = (LV.layout && LV.layout.runways) ? LV.layout.runways : [];
       runways = cys.map((_,k)=>{
-        const rd = rdefs[k] || {} as RunwayDef;
+        const rd = rdefs[k];
+        const lo = rd ? (rd.landingOpen!==false) : true;
+        const to = rd ? (rd.takeoffOpen!==false) : true;
         return { occupied:null, closed:false, x:0, y:0, w:0, h:0, cy:0, stopX:0, exitX:0,
-                 landingOpen: rd.landingOpen!==false,
-                 landingCost: rd.landingCost || 0,
-                 takeoffOpen: rd.takeoffOpen!==false,
-                 takeoffCost: rd.takeoffCost || 0,
-                 snapPoints:  [] as SnapPoint[] };
+                 landingOpen:lo, takeoffOpen:to, landingOpen0:lo, takeoffOpen0:to,
+                 landingCost: rd ? (rd.landingCost??0) : 0,
+                 takeoffCost: rd ? (rd.takeoffCost??0) : 0 };
       });
     }
     cys.forEach((cy,k)=>{
@@ -264,52 +239,6 @@
       const sw=Math.min(88*ui, (field.x1-field.x0)*0.32), sh=28*ui;
       field.service={ x:(field.x0+field.x1)/2 - sw/2, y:fy0+2*ui, w:sw, h:sh };
     } else field.service=null;
-
-    computeSnapPoints();
-  }
-
-  // ---- вектор «наружу» из ворот ангара (дублирует логику dirOut из 08b без зависимости) ----
-  function _bayGateVec(b: Bay){
-    if(b.gate==='up')    return {dx:0,dy:-1};
-    if(b.gate==='down')  return {dx:0,dy:1};
-    if(b.gate==='left')  return {dx:-1,dy:0};
-    if(b.gate==='right') return {dx:1,dy:0};
-    if(b.side==='top')   return {dx:0,dy:1};
-    if(b.side==='bottom')return {dx:0,dy:-1};
-    if(b.side==='deice') return {dx:-1,dy:0};
-    return {dx:1,dy:0};
-  }
-
-  // Вычисляет snap-точки для всех ангаров и ВПП по текущим пиксельным позициям.
-  // Вызывается в конце layout() (каждый resize). Точки хранятся в bay.snapPoints /
-  // runway.snapPoints — редактор и система маршрутов читают их оттуда.
-  function computeSnapPoints(){
-    const snapR = 38*ui;   // радиус «прилипания» — немного больше ARRIVE (12px)
-    bays.forEach((b,i)=>{
-      const o=_bayGateVec(b);
-      const cx=b.x+b.w/2, cy=b.y+b.h/2;
-      const vert=Math.abs(o.dy)>Math.abs(o.dx);
-      const half=(vert?b.h:b.w)/2;
-      b.snapPoints=[{
-        id:'bay_'+i+'_gate', ownerType:'hangar', ownerId:'bay_'+i,
-        x: cx+o.dx*(half+22*ui), y: cy+o.dy*(half+22*ui),
-        alignAngle: Math.atan2(-o.dy,-o.dx),   // нос самолёта смотрит в ворота
-        snapRadius: snapR,
-        role:'gate'
-      }];
-    });
-    runways.forEach((r,i)=>{
-      r.snapPoints=[
-        // entry — порог посадки (правый торец ВПП): посадка снаружи → внутрь
-        { id:'rw_'+i+'_entry', ownerType:'runway', ownerId:'rw_'+i,
-          x:r.x+r.w-PLANE_LEN()*0.5, y:r.cy,
-          alignAngle:Math.PI, snapRadius:snapR, role:'entry' },
-        // holding — точка подхода к ВПП перед взлётом
-        { id:'rw_'+i+'_hold', ownerType:'runway', ownerId:'rw_'+i,
-          x:r.stopX+8*ui, y:r.cy,
-          alignAngle:Math.PI, snapRadius:snapR, role:'holding' },
-      ];
-    });
   }
 
   // ---- game state ----

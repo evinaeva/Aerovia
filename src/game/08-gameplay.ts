@@ -10,25 +10,14 @@
     spawnTimer=1 + Math.random()*2; running=true; paused=false; inMenu=false;
     lossLog=[]; toast=null;
     document.getElementById('pauseScreen')!.classList.add('hidden');
-    bays.forEach((b,bi)=>{ b.occupied=null;
+    bays.forEach(b=>{ b.occupied=null;
       if(b.deice){ b.open=true; b.lvl=0; return; }   // де-айс — инфраструктура, всегда открыт
       // исходное «открыт» хранится на боксе (open0) при сборке (и layout, и sides ставят
       // его); старый sides-фолбэк остаётся лишь на случай боксов без open0
       const sc = LV.sides ? (LV.sides as Record<string, SideCfg>)[b.side] : undefined;
       b.open = (b.open0!=null) ? !!b.open0 : (sc ? b.slot < sc.open : false);
-      // начальный уровень апгрейда: из HangarDef.lvl если задан, иначе 0
-      const hg = (LV.layout && LV.layout.hangars) ? LV.layout.hangars[bi] : null;
-      b.lvl = (hg && hg.lvl) ? Math.min(hg.lvl, bayMaxLvl(b)) : 0;
-    });
-    runways.forEach((r,k)=>{
-      r.occupied=null; r.closed=false; r.hazard=null;
-      // сбрасываем направленные флаги открытия из конфига уровня
-      const rd = (LV.layout && LV.layout.runways) ? LV.layout.runways[k] : null;
-      r.landingOpen = !rd || rd.landingOpen!==false;
-      r.landingCost = rd ? (rd.landingCost || 0) : 0;
-      r.takeoffOpen = !rd || rd.takeoffOpen!==false;
-      r.takeoffCost = rd ? (rd.takeoffCost || 0) : 0;
-    });
+      b.lvl=0; });
+    runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; r.landingOpen=r.landingOpen0; r.takeoffOpen=r.takeoffOpen0; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0; spawnedTotal=0;
     combo=0; runCrashes=0; runPenalties=0;
@@ -87,14 +76,13 @@
         species: sp, bug:'cat', bonusCrawl:true,                  // стадия гусеницы; авто-вползание до поля
         requests:[type,'depart'], reqIndex:0, nSvc:1,
         zone:'field',                                             // сразу на земле — без воздуха/ВПП
-        entering:false, path:[], moving:false, selected:false, target:null,
+        entering:false, path:[], moving:false, selected:false,
         landing:false, takeoff:false, exiting:false,
         runway:null, bay:null,
         airTime:Infinity, airMax:Infinity, waitMult:2,
         groundTime:groundMax, groundMax, serveTime:0, serveMax:0, landedAt:0,
         halfPay:false, dead:false,
         reward: econ.svcReward,
-        baseType:'normal' as const, rewardMultiplier:1,
         vip:false, emergency:false, medical:false,
       });
       return;
@@ -121,9 +109,8 @@
     // бонус-мир «спокойный»: гусеницы терпеливые (level.calm растягивает таймеры)
     const calmMult = LV.calm || 1;
     const airBase = airPatience({vip, emergency, medical}, calmMult);
-    const baseType: 'normal'|'vip' = vip ? 'vip' : 'normal';
-    const rewardMultiplier = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1) * (medical?K.MEDICAL_BONUS:1);
-    const reward = Math.round(nSvc * econ.svcReward * rewardMultiplier);
+    const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1) * (medical?K.MEDICAL_BONUS:1);
+    const reward = Math.round(nSvc * econ.svcReward * bonus);
     // вертикальная позиция зависания — у одной из полос/между ними
     const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
     spawnedTotal++;
@@ -131,10 +118,9 @@
       id: ++planeSeq,
       x: W + 40*ui, y, ang: Math.PI, // влетает с правого края, нос влево
       vip, emergency, medical, requests, reqIndex:0,
-      baseType, rewardMultiplier,
       zone:'air',            // air | runway | field | bay
       entering:true,         // глиссада с правого края до точки зависания
-      path:[], moving:false, selected:false, target:null,
+      path:[], moving:false, selected:false,
       landing:false, takeoff:false, exiting:false,
       runway:null, bay:null,
       airTime: airBase, airMax: airBase,
@@ -298,7 +284,6 @@
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
   // (подход снаружи → центр), так что въезд получается строго по центру и носом вперёд
   function lockRouteToBay(pl: any, b: any){
-    const sp = b.snapPoints && b.snapPoints[0];  // единственная gate-точка ангара
     const o=dirOut(b);
     const cx=b.x+b.w/2, cy=b.y+b.h/2;
     const vert=Math.abs(o.dy)>Math.abs(o.dx);
@@ -308,56 +293,53 @@
     while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, b)) pl.path.pop();
     pl.path.push({x:apx,y:apy},{x:cx,y:cy});
     pl.moving=true;
-    // сохраняем привязку к snap-точке (для редактора / FSM / дебага)
-    pl.target = sp ? { snapPointId:sp.id, entityId:sp.ownerId } : null;
     // обратная связь игроку: маленькая вспышка + щелчок у ворот
-    const snapX = sp ? sp.x : cx+o.dx*half;
-    const snapY = sp ? sp.y : cy+o.dy*half;
-    pulseFx(snapX, snapY, 'lock', 0.28);
+    pulseFx(cx+o.dx*half, cy+o.dy*half, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
-  // открытая ВПП под точкой (для фиксации конца маршрута при взлёте/посадке).
-  // kind='land' проверяет r.landingOpen; kind='take' — r.takeoffOpen.
-  function openRunwayAt(p: any, kind?: 'land'|'take'){
+  // любая ВПП под точкой — для покупки направления (без фильтрации по open/closed)
+  function runwayAt(p: any){ for(const r of runways) if(rectHit(p.x,p.y,r)) return r; return null; }
+  // открытая ВПП под точкой с учётом направления (посадка / взлёт)
+  function openRunwayAt(p: any, dir?: 'landing'|'takeoff'){
     for(const r of runways){
       if(r.closed) continue;
-      if(kind==='land' && !r.landingOpen) continue;
-      if(kind==='take' && !r.takeoffOpen) continue;
+      if(dir==='landing' && !r.landingOpen) continue;
+      if(dir==='takeoff' && !r.takeoffOpen) continue;
       if(rectHit(p.x,p.y,r)) return r;
     }
     return null;
+  }
+  // стоимость ближайшей покупки закрытого направления ВПП по точке тапа
+  // правая половина ВПП = посадочный торец (самолёты заходят справа)
+  // левая половина = взлётный (разгон идёт влево→вправо, отрыв у правого края)
+  function rwDirCost(r: any, p: any): {cost: number|null, dir: 'landing'|'takeoff'|null} {
+    const mid = r.x + r.w * 0.5;
+    if(p.x >= mid && !r.landingOpen) return {cost: r.landingCost, dir: 'landing'};
+    if(p.x <  mid && !r.takeoffOpen) return {cost: r.takeoffCost, dir: 'takeoff'};
+    // тап пришёл на «не ту» половину, но одно направление закрыто — предлагаем его
+    if(!r.landingOpen) return {cost: r.landingCost, dir: 'landing'};
+    if(!r.takeoffOpen) return {cost: r.takeoffCost, dir: 'takeoff'};
+    return {cost: null, dir: null};   // оба направления открыты — тап не потребляем
   }
   // конец маршрута доведён на ВПП → притягиваем к оси полосы и фиксируем, как у бокса
   // (посадка — створ у небесного торца; взлёт — створ у полевого торца), вспышка + щелчок
   function lockRouteToRunway(pl: any, r: any){
     while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, r)) pl.path.pop();
-    const isLanding = pl.zone==='air';
-    const tx = isLanding ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
+    const tx = (pl.zone==='air') ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
     const ty = r.cy;
     pl.path.push({x:tx, y:ty});
     pl.moving=true;
-    // находим подходящую snap-точку (entry для посадки, holding для взлёта)
-    const spRole = isLanding ? 'entry' : 'holding';
-    const sp = r.snapPoints && r.snapPoints.find((s: SnapPoint)=>s.role===spRole);
-    pl.target = sp ? { snapPointId:sp.id, entityId:sp.ownerId } : null;
     pulseFx(tx, ty, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
   // потолок прокачки конкретного ангара: 0, если апгрейд выключен (up:false) или это
-  // деайс-инфраструктура; иначе минимум из глубины уровня (levelMaxUp) и per-bay maxLvl.
-  function bayMaxLvl(b: any){
-    if(b.deice || b.up===false) return 0;
-    const global = levelMaxUp();
-    const perBay = (b.maxLvl != null) ? Math.min(b.maxLvl, K.BAY_MAX_LVL) : K.BAY_MAX_LVL;
-    return Math.min(global, perBay);
-  }
-  function bayOpenCostFor(b: any){ return (b.openCost != null) ? b.openCost : K.BAY_OPEN_COST; }
+  // деайс-инфраструктура; иначе глубина уровня (levelMaxUp — одна на всех ангаров карты).
+  function bayMaxLvl(b: any){ if(b.deice || b.up===false) return 0; return levelMaxUp(); }
   function bayUpCost(b: any){
     if(b.deice) return null;
-    if(!b.open) return bayOpenCostFor(b);
-    if(b.lvl >= bayMaxLvl(b)) return null;          // апгрейд выключен или достигнут потолок
-    if(b.upgradeCost != null) return b.upgradeCost; // per-bay цена override
-    return K.BAY_UP_COST[b.lvl] || null;
+    if(!b.open) return b.openCost ?? K.BAY_OPEN_COST;
+    if(b.lvl >= bayMaxLvl(b)) return null;          // апгрейд выключен или достигнут потолок уровня
+    return b.upgCost ?? K.BAY_UP_COST[b.lvl] ?? null;
   }
 
   function down(e: any){
@@ -379,6 +361,22 @@
         SND.build(); HAP.tap();
       }
       return;
+    }
+    // runway direction tap -> купить посадку или взлёт на ВПП
+    if(!LV.bonus){
+      const r=runwayAt(p);
+      if(r){
+        const res=rwDirCost(r, p);
+        if(res.cost!=null){
+          if(money>=res.cost){
+            money-=res.cost;
+            if(res.dir==='landing') r.landingOpen=true; else r.takeoffOpen=true;
+            upgradesDone++;
+            SND.build(); HAP.tap();
+          }
+          return;   // тап потреблён (есть что купить, даже если не хватает денег)
+        }
+      }
     }
     // лесной биом: тап по помехе высылает нужную спец-бригаду из сервисного здания
     if(LV.biome){
@@ -415,12 +413,11 @@
         const b = (pl.zone!=='air') ? openBayAt(p) : null;   // бокс — только с земли
         if(b){ lockRouteToBay(pl, b); drag.locked=true; }
         else {
-          // …или на ВПП: посадка (борт в воздухе) / взлёт (на земле, нужда 'depart')
-          const kind = pl.zone==='air' ? 'land' : 'take';
-          if(pl.zone==='air' || curNeed(pl)==='depart'){
-            const r = openRunwayAt(p, kind);
-            if(r){ lockRouteToRunway(pl, r); drag.locked=true; }
-          }
+          // ВПП: посадка (борт в воздухе) / взлёт (на земле, нужда 'depart')
+          // openRunwayAt фильтрует по направлению — нельзя сесть на takeoff-only и наоборот
+          const needDir = pl.zone==='air' ? 'landing' as const : 'takeoff' as const;
+          const r = (pl.zone==='air' || curNeed(pl)==='depart') ? openRunwayAt(p, needDir) : null;
+          if(r){ lockRouteToRunway(pl, r); drag.locked=true; }
         }
       }
     }

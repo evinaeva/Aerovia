@@ -18,3 +18,8 @@ declare let ATLAS: boolean;
 // Optional hook: refreshes the game-over leaderboard panel if that module wired it
 // up (called behind a typeof === 'function' guard). Owned by 11-menu-ui.
 declare const refreshOverLeaderboard: ((res: any) => void) | undefined;
+
+// --- from 11b-editor.ts (editor→game handoff flag) ---
+// Set true when a game session was launched from the level editor (changes pause/over
+// screen routing: "back to editor" instead of main menu / next level).
+declare let testFromEditor: boolean;
