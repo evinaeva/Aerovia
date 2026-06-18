@@ -59,6 +59,11 @@ jobs:
             echo "OTA_SSH_KEY не задан — пропускаю публикацию OTA (норма до настройки деплоя)."
             exit 0
           fi
+          # Деплоим server.py атомарно и рестартуем сервис.
+          # Требует sudoers на VPS: capgo-deploy ALL=(root) NOPASSWD: /bin/systemctl restart capgo-ota
+          scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new docs/vps/server.py "$OTA_USER@$OTA_HOST:/opt/capgo-ota/server.py.tmp"
+          ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$OTA_USER@$OTA_HOST" \
+            "mv /opt/capgo-ota/server.py.tmp /opt/capgo-ota/server.py && sudo systemctl restart capgo-ota"
           npm run build:www
           # Версия бандла ВЫШЕ нативной (versionName из package.json), иначе плагин сочтёт это
           # «понижением». major.minor из package.json, patch = номер прогона: 0.21.0 → 0.21.43.
