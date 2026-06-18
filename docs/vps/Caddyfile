@@ -1,0 +1,28 @@
+capgo.jevgenia.com {
+	log {
+		output file /var/log/caddy/capgo.log {
+			roll_size 10mb
+			roll_keep 7
+		}
+	}
+	encode gzip
+	handle /updates* {
+		reverse_proxy 127.0.0.1:8099
+	}
+	handle /health* {
+		reverse_proxy 127.0.0.1:8099
+	}
+	handle_path /bundles/* {
+		root * /opt/capgo-ota/bundles
+		file_server
+	}
+	handle /stats* {
+		respond 200
+	}
+	handle /channel_self* {
+		respond "{}" 200
+	}
+	handle {
+		respond "PlaneFlow OTA" 200
+	}
+}
