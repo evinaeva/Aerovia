@@ -76,12 +76,15 @@
     {key:'K.BAY_ALIGN_SPEED', group:'bay_nav', label:'Выравнивание по оси',  target:'K', name:'BAY_ALIGN_SPEED', def:K.BAY_ALIGN_SPEED, min:1,  max:30,  step:.5,  note:'lerp-скорость центровки на оси ворот (вход и выход).',   impact:'Выше — резче прилипание к оси; ниже — плавнее.'},
     {key:'K.BAY_HEAD_SPEED',  group:'bay_nav', label:'Скорость разворота',   target:'K', name:'BAY_HEAD_SPEED',  def:K.BAY_HEAD_SPEED,  min:.5, max:15,  step:.5,  note:'Скорость поворота носа при заезде и выезде из бокса.',   impact:'Выше — резче разворот; ниже — плавнее.'},
     // ── контроль событий (on/off) ─────────────────────────────────────────────
-    {key:'K.DISABLE_VIP',       group:'ctrl', label:'Отключить VIP-борты',    target:'K', name:'DISABLE_VIP',       def:false, note:'Блокирует спавн VIP при любом K.VIP_CHANCE.',       impact:'Чистит поле для теста скорости без дорогих бортов.'},
-    {key:'K.DISABLE_EMERGENCY', group:'ctrl', label:'Отключить аварийные',    target:'K', name:'DISABLE_EMERGENCY', def:false, note:'Блокирует «топливо на нуле».',                       impact:'Убирает экстренные ситуации из тестовой сессии.'},
-    {key:'K.DISABLE_MEDICAL',   group:'ctrl', label:'Отключить медицинские',  target:'K', name:'DISABLE_MEDICAL',   def:false, note:'Блокирует медицинские борты.',                       impact:'Устраняет приоритетные прерывания.'},
-    {key:'K.DISABLE_RUSH',      group:'ctrl', label:'Отключить час пик',      target:'K', name:'DISABLE_RUSH',      def:false, note:'Не запускает волну rush (RUSH_PERIOD/RUSH_DUR).',    impact:'Стабильный поток без всплесков.'},
-    {key:'K.DISABLE_WEATHER',   group:'ctrl', label:'Отключить погоду',       target:'K', name:'DISABLE_WEATHER',   def:false, note:'Не даёт начаться дождю/снегу; сбрасывает текущую.',  impact:'Постоянная ясная погода для теста скорости руления.'},
-    {key:'K.DISABLE_SLOWMO',    group:'ctrl', label:'Отключить slowmo',       target:'K', name:'DISABLE_SLOWMO',    def:false, note:'Near-miss не замедляет время.',                     impact:'Непрерывный темп без визуальных пауз.'},
+    {key:'K.DISABLE_VIP',       group:'ctrl', label:'Отключить VIP-борты',    target:'K', name:'DISABLE_VIP',       def:true, note:'Блокирует спавн VIP при любом K.VIP_CHANCE.',       impact:'Чистит поле для теста скорости без дорогих бортов.'},
+    {key:'K.DISABLE_EMERGENCY', group:'ctrl', label:'Отключить аварийные',    target:'K', name:'DISABLE_EMERGENCY', def:true, note:'Блокирует «топливо на нуле».',                       impact:'Убирает экстренные ситуации из тестовой сессии.'},
+    {key:'K.DISABLE_MEDICAL',   group:'ctrl', label:'Отключить медицинские',  target:'K', name:'DISABLE_MEDICAL',   def:true, note:'Блокирует медицинские борты.',                       impact:'Устраняет приоритетные прерывания.'},
+    {key:'K.DISABLE_RUSH',      group:'ctrl', label:'Отключить час пик',      target:'K', name:'DISABLE_RUSH',      def:true, note:'Не запускает волну rush (RUSH_PERIOD/RUSH_DUR).',    impact:'Стабильный поток без всплесков.'},
+    {key:'K.DISABLE_WEATHER',   group:'ctrl', label:'Отключить погоду',       target:'K', name:'DISABLE_WEATHER',   def:true, note:'Не даёт начаться дождю/снегу; сбрасывает текущую.',  impact:'Постоянная ясная погода для теста скорости руления.'},
+    {key:'K.DISABLE_SLOWMO',    group:'ctrl', label:'Отключить slowmo',       target:'K', name:'DISABLE_SLOWMO',    def:true, note:'Near-miss не замедляет время.',                     impact:'Непрерывный темп без визуальных пауз.'},
+    {key:'K.DISABLE_FOREST',    group:'ctrl', label:'Отключить лесные помехи',target:'K', name:'DISABLE_FOREST',    def:true, note:'Блокирует спавн и очищает елки, птиц, оленей, снег.', impact:'Убирает лесные прерывания с ВПП.'},
+    {key:'K.DISABLE_DEICE',     group:'ctrl', label:'Отключить деайсинг',     target:'K', name:'DISABLE_DEICE',     def:true, note:'Не добавляет деайсинг в список услуг при снеге.',     impact:'Упрощает маршруты при тестировании в снег.'},
+    {key:'K.DISABLE_BAY',       group:'ctrl', label:'Отключить боксы',        target:'K', name:'DISABLE_BAY',       def:true, note:'Пропускает все услуги в боксах — сразу к вылету.',   impact:'Чистый тест руления и взлёта без обслуживания.'},
   ];
 
   const MT_GROUPS: Record<string, string> = {

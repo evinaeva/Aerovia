@@ -366,14 +366,13 @@
 
   <!-- ── Left: phone preview ───────────────────────────────────────────── -->
   <div id="phone-area">
-    <div id="phone-label">Live Preview · iPhone 14 Pro</div>
-    <div id="phone-shell">
+    <div id="phone-label">Live Preview · Landscape</div>
+    <div id="phone-shell" class="landscape">
       <iframe id="game-frame" src="index.html" title="Game" allow="autoplay"></iframe>
       <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
            style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
     </div>
     <div id="phone-controls">
-      <button class="p-btn" id="btn-rotate">📱 Портрет</button>
       <button class="p-btn" id="btn-demo" title="Запустить Survival · бесконечные борта">▶ Demo</button>
     </div>
   </div>
@@ -667,13 +666,12 @@
     statusBar.textContent = msg;
   }
 
-  /* ── 8. Scale phone to fit available space (portrait or landscape) ───── */
+  /* ── 8. Scale phone to fit available space (always landscape) ────────── */
   function scalePhone() {
     const shell   = document.getElementById('phone-shell');
     const area    = document.getElementById('phone-area');
-    const isLand  = shell.classList.contains('landscape');
-    const phoneW  = isLand ? 844 : 390;
-    const phoneH  = isLand ? 390 : 844;
+    const phoneW  = 844;
+    const phoneH  = 390;
     const availH  = area.clientHeight - 90;   // label + controls + gaps
     const availW  = area.clientWidth  - 56;   // padding
     const scale   = Math.min(1, availH / phoneH, availW / phoneW);
@@ -682,21 +680,6 @@
 
   window.addEventListener('resize', scalePhone);
   scalePhone();
-
-  /* ── 9. Landscape ↔ portrait toggle ────────────────────────────────── */
-  (function () {
-    const btn   = document.getElementById('btn-rotate');
-    const shell = document.getElementById('phone-shell');
-    const label = document.getElementById('phone-label');
-    let land = false;
-    btn.addEventListener('click', () => {
-      land = !land;
-      shell.classList.toggle('landscape', land);
-      btn.textContent = land ? '🔄 Ландшафт' : '📱 Портрет';
-      label.textContent = land ? 'Live Preview · Landscape' : 'Live Preview · iPhone 14 Pro';
-      scalePhone();
-    });
-  })();
 
   /* ── 10. Tab switching ──────────────────────────────────────────────── */
   (function () {

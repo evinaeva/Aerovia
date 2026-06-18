@@ -151,6 +151,7 @@
       if(pl.zone==='field'){
         // бонус-мир: терпение гусеницы тикает, но улетающую бабочку не штрафуем
         if(!(LV.bonus && pl.bug==='fly')){ pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl); }
+        if(K.DISABLE_BAY){ const di=pl.requests.indexOf('depart'); if(di>=0 && di>pl.reqIndex) pl.reqIndex=di; }
         const need=curNeed(pl);
         // бонус-мир: бабочка упорхивает к правому краю (без ВПП) и «вылетает»
         if(LV.bonus && pl.bug==='fly'){
