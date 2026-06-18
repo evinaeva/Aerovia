@@ -10,14 +10,23 @@
     spawnTimer=1 + Math.random()*2; running=true; paused=false; inMenu=false;
     lossLog=[]; toast=null;
     document.getElementById('pauseScreen')!.classList.add('hidden');
-    bays.forEach(b=>{ b.occupied=null;
+    bays.forEach((b,bi)=>{ b.occupied=null;
       if(b.deice){ b.open=true; b.lvl=0; return; }   // де-айс — инфраструктура, всегда открыт
       // исходное «открыт» хранится на боксе (open0) при сборке (и layout, и sides ставят
       // его); старый sides-фолбэк остаётся лишь на случай боксов без open0
       const sc = LV.sides ? (LV.sides as Record<string, SideCfg>)[b.side] : undefined;
       b.open = (b.open0!=null) ? !!b.open0 : (sc ? b.slot < sc.open : false);
-      b.lvl=0; });
-    runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; });
+      // начальный уровень апгрейда: из HangarDef.lvl если задан, иначе 0
+      const hg = (LV.layout && LV.layout.hangars) ? LV.layout.hangars[bi] : null;
+      b.lvl = (hg && hg.lvl) ? Math.min(hg.lvl, bayMaxLvl(b)) : 0;
+    });
+    runways.forEach((r,k)=>{
+      r.occupied=null; r.closed=false; r.hazard=null;
+      // сбрасываем направленные флаги открытия из конфига уровня
+      const rd = (LV.layout && LV.layout.runways) ? LV.layout.runways[k] : null;
+      r.landingOpen = !rd || rd.landingOpen!==false;
+      r.takeoffOpen = !rd || rd.takeoffOpen!==false;
+    });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0; spawnedTotal=0;
     combo=0; runCrashes=0; runPenalties=0;
@@ -76,13 +85,14 @@
         species: sp, bug:'cat', bonusCrawl:true,                  // стадия гусеницы; авто-вползание до поля
         requests:[type,'depart'], reqIndex:0, nSvc:1,
         zone:'field',                                             // сразу на земле — без воздуха/ВПП
-        entering:false, path:[], moving:false, selected:false,
+        entering:false, path:[], moving:false, selected:false, target:null,
         landing:false, takeoff:false, exiting:false,
         runway:null, bay:null,
         airTime:Infinity, airMax:Infinity, waitMult:2,
         groundTime:groundMax, groundMax, serveTime:0, serveMax:0, landedAt:0,
         halfPay:false, dead:false,
         reward: econ.svcReward,
+        baseType:'normal' as const, rewardMultiplier:1,
         vip:false, emergency:false, medical:false,
       });
       return;
@@ -109,8 +119,9 @@
     // бонус-мир «спокойный»: гусеницы терпеливые (level.calm растягивает таймеры)
     const calmMult = LV.calm || 1;
     const airBase = airPatience({vip, emergency, medical}, calmMult);
-    const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1) * (medical?K.MEDICAL_BONUS:1);
-    const reward = Math.round(nSvc * econ.svcReward * bonus);
+    const baseType: 'normal'|'vip' = vip ? 'vip' : 'normal';
+    const rewardMultiplier = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1) * (medical?K.MEDICAL_BONUS:1);
+    const reward = Math.round(nSvc * econ.svcReward * rewardMultiplier);
     // вертикальная позиция зависания — у одной из полос/между ними
     const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
     spawnedTotal++;
@@ -118,9 +129,10 @@
       id: ++planeSeq,
       x: W + 40*ui, y, ang: Math.PI, // влетает с правого края, нос влево
       vip, emergency, medical, requests, reqIndex:0,
+      baseType, rewardMultiplier,
       zone:'air',            // air | runway | field | bay
       entering:true,         // глиссада с правого края до точки зависания
-      path:[], moving:false, selected:false,
+      path:[], moving:false, selected:false, target:null,
       landing:false, takeoff:false, exiting:false,
       runway:null, bay:null,
       airTime: airBase, airMax: airBase,
@@ -284,6 +296,7 @@
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
   // (подход снаружи → центр), так что въезд получается строго по центру и носом вперёд
   function lockRouteToBay(pl: any, b: any){
+    const sp = b.snapPoints && b.snapPoints[0];  // единственная gate-точка ангара
     const o=dirOut(b);
     const cx=b.x+b.w/2, cy=b.y+b.h/2;
     const vert=Math.abs(o.dy)>Math.abs(o.dx);
@@ -293,33 +306,54 @@
     while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, b)) pl.path.pop();
     pl.path.push({x:apx,y:apy},{x:cx,y:cy});
     pl.moving=true;
+    // сохраняем привязку к snap-точке (для редактора / FSM / дебага)
+    pl.target = sp ? { snapPointId:sp.id, entityId:sp.ownerId } : null;
     // обратная связь игроку: маленькая вспышка + щелчок у ворот
-    pulseFx(cx+o.dx*half, cy+o.dy*half, 'lock', 0.28);
+    const snapX = sp ? sp.x : cx+o.dx*half;
+    const snapY = sp ? sp.y : cy+o.dy*half;
+    pulseFx(snapX, snapY, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
-  // открытая ВПП под точкой (для фиксации конца маршрута при взлёте/посадке)
-  function openRunwayAt(p: any){
-    for(const r of runways){ if(!r.closed && rectHit(p.x,p.y,r)) return r; }
+  // открытая ВПП под точкой (для фиксации конца маршрута при взлёте/посадке).
+  // kind='land' проверяет r.landingOpen; kind='take' — r.takeoffOpen.
+  function openRunwayAt(p: any, kind?: 'land'|'take'){
+    for(const r of runways){
+      if(r.closed) continue;
+      if(kind==='land' && !r.landingOpen) continue;
+      if(kind==='take' && !r.takeoffOpen) continue;
+      if(rectHit(p.x,p.y,r)) return r;
+    }
     return null;
   }
   // конец маршрута доведён на ВПП → притягиваем к оси полосы и фиксируем, как у бокса
   // (посадка — створ у небесного торца; взлёт — створ у полевого торца), вспышка + щелчок
   function lockRouteToRunway(pl: any, r: any){
     while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, r)) pl.path.pop();
-    const tx = (pl.zone==='air') ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
+    const isLanding = pl.zone==='air';
+    const tx = isLanding ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
     const ty = r.cy;
     pl.path.push({x:tx, y:ty});
     pl.moving=true;
+    // находим подходящую snap-точку (entry для посадки, holding для взлёта)
+    const spRole = isLanding ? 'entry' : 'holding';
+    const sp = r.snapPoints && r.snapPoints.find((s: SnapPoint)=>s.role===spRole);
+    pl.target = sp ? { snapPointId:sp.id, entityId:sp.ownerId } : null;
     pulseFx(tx, ty, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
   // потолок прокачки конкретного ангара: 0, если апгрейд выключен (up:false) или это
-  // деайс-инфраструктура; иначе глубина уровня (levelMaxUp — одна на всех ангаров карты).
-  function bayMaxLvl(b: any){ if(b.deice || b.up===false) return 0; return levelMaxUp(); }
+  // деайс-инфраструктура; иначе минимум из глубины уровня (levelMaxUp) и per-bay maxLvl.
+  function bayMaxLvl(b: any){
+    if(b.deice || b.up===false) return 0;
+    const global = levelMaxUp();
+    const perBay = (b.maxLvl != null) ? Math.min(b.maxLvl, K.BAY_MAX_LVL) : K.BAY_MAX_LVL;
+    return Math.min(global, perBay);
+  }
   function bayUpCost(b: any){
     if(b.deice) return null;
     if(!b.open) return K.BAY_OPEN_COST;
-    if(b.lvl >= bayMaxLvl(b)) return null;          // апгрейд выключен или достигнут потолок уровня
+    if(b.lvl >= bayMaxLvl(b)) return null;          // апгрейд выключен или достигнут потолок
+    if(b.upgradeCost != null) return b.upgradeCost; // per-bay цена override
     return K.BAY_UP_COST[b.lvl] || null;
   }
 
@@ -379,8 +413,11 @@
         if(b){ lockRouteToBay(pl, b); drag.locked=true; }
         else {
           // …или на ВПП: посадка (борт в воздухе) / взлёт (на земле, нужда 'depart')
-          const r = openRunwayAt(p);
-          if(r && (pl.zone==='air' || curNeed(pl)==='depart')){ lockRouteToRunway(pl, r); drag.locked=true; }
+          const kind = pl.zone==='air' ? 'land' : 'take';
+          if(pl.zone==='air' || curNeed(pl)==='depart'){
+            const r = openRunwayAt(p, kind);
+            if(r){ lockRouteToRunway(pl, r); drag.locked=true; }
+          }
         }
       }
     }
@@ -391,7 +428,7 @@
     if(pl.zone!=='air' || !pl.path.length) return;
     const last = pl.path[pl.path.length-1];
     for(const r of runways){
-      if(r.closed) continue;
+      if(r.closed || !r.landingOpen) continue;
       if(rectHit(last.x, last.y, r)){ last.x = r.x + r.w - PLANE_LEN()*0.5; last.y = r.cy; break; }
     }
   }

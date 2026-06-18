@@ -8,15 +8,18 @@
 // draws to its OWN canvas (#edCanvas); the game loop/handlers stay idle (running=false).
 
   // ---- editor state ----
-  // hangars: {type, x, y(0..1 of apron), open, up}; runways: {y(0..1 of field height)}
+  // hangars: {type, x, y(0..1 of apron), open, up}; runways: {y(0..1 of field height), landingOpen, takeoffOpen, openCost}
   interface EdHangar { type: string; x: number; y: number; open: boolean; up: boolean; }
-  interface EdRunway { y: number; }
+  interface EdRunway { y: number; landingOpen: boolean; takeoffOpen: boolean; openCost: number; }
   const ED: {
     hangars: EdHangar[]; runways: EdRunway[]; services: string[]; maxUp: number;
     sel: { kind: string; i: number } | null; drag: any; cv: HTMLCanvasElement | null; g: CanvasRenderingContext2D | null;
+    showSnaps: boolean;
   } = {
-    hangars: [], runways: [{ y: 0.5 }], services: SVC_TYPES.slice(), maxUp: K.BAY_MAX_LVL,
+    hangars: [], runways: [{ y: 0.5, landingOpen: true, takeoffOpen: true, openCost: 0 }],
+    services: SVC_TYPES.slice(), maxUp: K.BAY_MAX_LVL,
     sel: null, drag: null, cv: null, g: null,
+    showSnaps: true,
   };
   const ED_DRAFT_KEY = 'pf_editor_draft';
   const ED_TONE: Record<string, string> = { fuel: '#22e3c6', board: '#ff8db0', repair: '#ffc14d' };
@@ -98,6 +101,35 @@
       g.fillStyle = (h.up && ED.maxUp > 0) ? '#5dca7a' : 'rgba(127,155,176,.4)'; g.textAlign = 'right';
       g.fillText((h.up && ED.maxUp > 0) ? '↑' + ED.maxUp : '–', b.x + b.w - 5, b.y + 4);
     });
+    // snap-overlay: стрелка у ворот ангара + маркер порога ВПП (показывается при showSnaps)
+    if(ED.showSnaps){
+      // ворота ангара — жёлтая стрелка на той кромке, откуда самолёт въезжает
+      ED.hangars.forEach(h => {
+        const b = edHangarBox(R, h);
+        const gx = edHx(R, h.x), gy = edHy(R, h.y);
+        const dT=gy-R.ay0, dB=R.ay1-gy, dL=gx-R.ax0, dR=R.ax1-gx, m=Math.min(dT,dB,dL,dR);
+        const odx = m===dL?-1: m===dR?1: 0, ody = m===dT?-1: m===dB?1: 0;
+        const ex = b.x+b.w/2 + odx*(b.w/2), ey = b.y+b.h/2 + ody*(b.h/2);
+        const ax = ex+odx*10, ay = ey+ody*10;
+        g.strokeStyle='#ffd23b'; g.lineWidth=1.5; g.setLineDash([3,3]);
+        g.beginPath(); g.moveTo(ex,ey); g.lineTo(ax,ay); g.stroke(); g.setLineDash([]);
+        g.fillStyle='#ffd23b'; g.font='9px system-ui'; g.textAlign='center'; g.textBaseline='middle';
+        g.fillText('▶', ax+odx*5, ay+ody*5);
+      });
+      // ВПП — маркер порога посадки (правый торец) и флажки посадки/взлёта
+      ED.runways.forEach(r => {
+        const b = edRunwayBox(R, r);
+        // порог посадки
+        g.strokeStyle='rgba(58,210,255,.7)'; g.lineWidth=2; g.setLineDash([]);
+        g.beginPath(); g.moveTo(b.x+b.w-4, b.y+3); g.lineTo(b.x+b.w-4, b.y+b.h-3); g.stroke();
+        // флажки
+        g.font='9px system-ui'; g.textBaseline='middle';
+        const landCol = r.landingOpen ? '#5dca7a' : 'rgba(127,155,176,.4)';
+        const takeCol = r.takeoffOpen ? '#5dca7a' : 'rgba(127,155,176,.4)';
+        g.fillStyle=landCol; g.textAlign='right'; g.fillText('↓', b.x+b.w-8, b.cy-5);
+        g.fillStyle=takeCol; g.textAlign='right'; g.fillText('↑', b.x+b.w-8, b.cy+5);
+      });
+    }
   }
 
   // ---- hit-test / pointer ----
@@ -137,7 +169,7 @@
   }
   function edAddRunway(){
     if (ED.runways.length >= K.RUNWAY_MAX) return;
-    ED.runways.push({ y: edSnap(0.2 + ED.runways.length * 0.15, ED_GY) });
+    ED.runways.push({ y: edSnap(0.2 + ED.runways.length * 0.15, ED_GY), landingOpen: true, takeoffOpen: true, openCost: 0 });
     ED.sel = { kind: 'runway', i: ED.runways.length - 1 }; edRenderSide(); edDraw();
   }
   function edDeleteSel(){
@@ -153,7 +185,13 @@
       maxUp: ED.maxUp,
       layout: {
         hangars: ED.hangars.map(h => ({ type: h.type, x: +h.x.toFixed(2), y: +h.y.toFixed(2), open: h.open, up: h.up })),
-        runways: ED.runways.map(r => ({ y: +r.y.toFixed(2) })),
+        runways: ED.runways.map(r => {
+          const rd: any = { y: +r.y.toFixed(2) };
+          if(!r.landingOpen) rd.landingOpen = false;
+          if(!r.takeoffOpen) rd.takeoffOpen = false;
+          if(r.openCost) rd.openCost = r.openCost;
+          return rd;
+        }),
       },
     };
   }
@@ -191,7 +229,7 @@
   function edLoadObj(o: any){
     if (!o || !o.layout) return;
     ED.hangars = (o.layout.hangars || []).map((h: any) => ({ type: h.type, x: edClamp01(+h.x || 0), y: edClamp01(+h.y || 0), open: h.open !== false, up: h.up !== false }));
-    ED.runways = (o.layout.runways || []).map((r: any) => ({ y: edClamp01(+r.y || 0) }));
+    ED.runways = (o.layout.runways || []).map((r: any) => ({ y: edClamp01(+r.y || 0), landingOpen: r.landingOpen !== false, takeoffOpen: r.takeoffOpen !== false, openCost: r.openCost || 0 }));
     ED.services = Array.isArray(o.services) && o.services.length ? o.services.filter((s: string) => SVC_TYPES.includes(s)) : SVC_TYPES.slice();
     ED.maxUp = (o.maxUp == null) ? K.BAY_MAX_LVL : Math.max(0, Math.min(K.BAY_MAX_LVL, o.maxUp));
     ED.sel = null;
@@ -244,8 +282,16 @@
       const ur = edRow('Апгрейд'); ur.appendChild(edBtn('вкл', h.up, () => { h.up = true; edRenderSide(); edDraw(); })); ur.appendChild(edBtn('выкл', !h.up, () => { h.up = false; edRenderSide(); edDraw(); })); insp.appendChild(ur);
       const dr = document.createElement('div'); dr.className = 'ed-row'; dr.appendChild(edBtn('🗑 удалить', false, edDeleteSel)); insp.appendChild(dr);
     } else if (ED.sel && ED.sel.kind === 'runway'){
+      const r = ED.runways[ED.sel.i];
       insp.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'ВПП' }));
       insp.appendChild(Object.assign(document.createElement('div'), { className: 'ed-row__l', textContent: 'Тяни вверх/вниз. Горизонтальная, заход справа.' }));
+      const lr = edRow('Посадка'); lr.appendChild(edBtn('открыта', r.landingOpen, ()=>{ r.landingOpen=true; edRenderSide(); edDraw(); })); lr.appendChild(edBtn('закрыта', !r.landingOpen, ()=>{ r.landingOpen=false; edRenderSide(); edDraw(); })); insp.appendChild(lr);
+      const tr = edRow('Взлёт');   tr.appendChild(edBtn('открыт',  r.takeoffOpen, ()=>{ r.takeoffOpen=true; edRenderSide(); edDraw(); })); tr.appendChild(edBtn('закрыт',  !r.takeoffOpen, ()=>{ r.takeoffOpen=false; edRenderSide(); edDraw(); })); insp.appendChild(tr);
+      const ocr = edRow('Цена открытия');
+      const ocIn = document.createElement('input'); ocIn.type='number'; ocIn.min='0'; ocIn.step='50'; ocIn.value=String(r.openCost); ocIn.className='ed-range'; ocIn.style.width='64px';
+      const ocOut = document.createElement('span'); ocOut.className='ed-out'; ocOut.textContent = r.openCost ? String(r.openCost) : 'бесплатно';
+      ocIn.oninput=()=>{ r.openCost=Math.max(0,+ocIn.value||0); ocOut.textContent=r.openCost?String(r.openCost):'бесплатно'; };
+      ocr.appendChild(ocIn); ocr.appendChild(ocOut); insp.appendChild(ocr);
       const dr = document.createElement('div'); dr.className = 'ed-row'; dr.appendChild(edBtn('🗑 удалить', false, edDeleteSel)); insp.appendChild(dr);
     } else {
       insp.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Ничего не выбрано' }));

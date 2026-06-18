@@ -11,8 +11,16 @@
   // true), апгрейдируется ли (up, умолч. true) и куда смотрят ворота (gate; если опустить —
   // выводится из ближайшей кромки апрона). ВПП — горизонтальные (заход справа): задаётся
   // только вертикальная позиция y (0..1) и их число; len зарезервирован под будущую длину.
-  interface HangarDef { type: string; x: number; y: number; open?: boolean; up?: boolean; gate?: 'up'|'down'|'left'|'right'; }
-  interface RunwayDef { y: number; len?: number; }
+  interface HangarDef { type: string; x: number; y: number; open?: boolean; up?: boolean; gate?: 'up'|'down'|'left'|'right';
+    lvl?: number;          // начальный уровень апгрейда (0..maxLvl, default 0)
+    maxLvl?: number;       // потолок апгрейдов для этого ангара (0..BAY_MAX_LVL, default BAY_MAX_LVL)
+    upgradeCost?: number;  // цена каждого апгрейда (override глобального K.BAY_UP_COST)
+  }
+  interface RunwayDef { y: number; len?: number;
+    landingOpen?: boolean; // посадка разрешена (default true)
+    takeoffOpen?: boolean; // взлёт разрешён (default true)
+    openCost?: number;     // стоимость открытия ВПП (0 = открыта сразу, default 0)
+  }
   interface LevelLayout { hangars: HangarDef[]; runways: RunwayDef[]; }
   interface Events { vip?: boolean; emergency?: boolean; medical?: boolean; rush?: boolean; fog?: boolean; wind?: boolean; [k: string]: boolean | undefined; }
   interface Objective { metric: 'served' | 'upgrades'; stars: number[]; target?: number; time?: number; race?: boolean; upg?: number[]; }
@@ -73,8 +81,8 @@
     SURV_RAMP_SECS: 300,  // Survival: за сколько сек стартовый темп карты (level.pace) выходит на максимум (1.0)
     START_MONEY: 100,
     BAY_OPEN_COST: 100,
-    BAY_UP_COST: [80,160,320,640], // апгрейд до ур.1/2/3/4 (глобальный потолок BAY_MAX_LVL)
-    BAY_MAX_LVL: 4,                 // абсолютный потолок прокачки; per-level maxUp может срезать ниже
+    BAY_UP_COST: [80,160,320,640,1280], // апгрейд до ур.1/2/3/4/5 (глобальный потолок BAY_MAX_LVL)
+    BAY_MAX_LVL: 5,                    // абсолютный потолок прокачки; per-level maxUp или per-bay maxLvl могут срезать ниже
     RUNWAY_MAX: 5,                  // потолок числа ВПП на карте (layout): вертикально больше не помещается
     UP_SPEED: 0.25,       // +25% скорости за уровень
     // --- экономика: оплата за услугу и стартовая касса ВЫВОДЯТСЯ из самого уровня
