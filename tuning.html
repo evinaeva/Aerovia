@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Aerovia · Motion Tuning Workbench</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #040810;
+      --panel-bg:   rgba(6,11,26,.98);
+      --border:     rgba(58,210,255,.18);
+      --accent:     #22e3c6;
+      --accent2:    #3ad2ff;
+      --text:       #eaf7ff;
+      --muted:      #7fa4b8;
+      --row-sep:    rgba(127,155,176,.10);
+      --btn-bg:     #101a36;
+      --input-bg:   #070e22;
+    }
+
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.45 system-ui, 'Segoe UI', sans-serif;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────────────── */
+    #workspace {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ── Phone area ─────────────────────────────────────────────────────── */
+    #phone-area {
+      flex: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 24px 28px;
+      background: #020609;
+      border-right: 1px solid var(--border);
+      min-width: 0;
+    }
+
+    #phone-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* wrapper collapses to scaled visual size via JS zoom */
+    #phone-shell {
+      position: relative;
+      width: 390px;
+      height: 844px;
+      border-radius: 52px;
+      border: 7px solid #172237;
+      box-shadow:
+        inset 0 0 0 1px #0c1930,
+        0 0 0 1px rgba(58,210,255,.12),
+        0 0 60px rgba(34,227,198,.06),
+        0 28px 90px rgba(0,0,0,.75);
+      overflow: hidden;
+      background: #000;
+      transform-origin: top center;
+    }
+
+    #phone-shell::before {           /* notch pill */
+      content: '';
+      position: absolute;
+      top: 12px; left: 50%;
+      transform: translateX(-50%);
+      width: 96px; height: 30px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    #game-frame {
+      width: 100%; height: 100%;
+      border: none; display: block;
+    }
+
+    /* ── Controls panel ─────────────────────────────────────────────────── */
+    #panel {
+      flex: 1;
+      min-width: 340px;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel-bg);
+      overflow: hidden;
+    }
+
+    /* sticky header */
+    #panel-head {
+      flex: none;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,14,32,.99);
+    }
+
+    #panel-head h1 {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #panel-head h1 span.sub {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: .04em;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .p-btn {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--btn-bg);
+      color: var(--text);
+      padding: 6px 11px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .p-btn:hover { background: #1a2a48; }
+
+    .p-input {
+      border: 1px solid rgba(127,155,176,.28);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    #preset-sel {
+      border: 1px solid rgba(127,155,176,.28);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text);
+      padding: 6px 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* ── Groups ─────────────────────────────────────────────────────────── */
+    #groups {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 10px;
+    }
+
+    #groups details {
+      margin: 6px 0;
+      border: 1px solid rgba(127,155,176,.14);
+      border-radius: 12px;
+      background: rgba(14,22,48,.5);
+    }
+
+    #groups summary {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 12px;
+      color: var(--accent);
+      user-select: none;
+      letter-spacing: .02em;
+    }
+
+    .mt-row {
+      display: grid;
+      grid-template-columns: minmax(130px,1fr) minmax(90px,1fr) 70px;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 14px;
+      border-top: 1px solid var(--row-sep);
+      cursor: default;
+    }
+    .mt-row:hover { background: rgba(58,210,255,.03); }
+
+    .mt-row .lbl b   { display: block; font-size: 12px; font-weight: 600; }
+    .mt-row .lbl em  { display: block; margin-top: 2px; font-size: 10px; color: var(--muted); font-style: normal; line-height: 1.3; }
+
+    .mt-row input[type=range] {
+      width: 100%; cursor: pointer; accent-color: var(--accent2);
+    }
+
+    .mt-num {
+      width: 70px;
+      border: 1px solid rgba(127,155,176,.22);
+      border-radius: 8px;
+      background: var(--input-bg);
+      color: #fff;
+      padding: 5px 5px;
+      font-size: 12px;
+      text-align: right;
+    }
+
+    /* ── Status bar ─────────────────────────────────────────────────────── */
+    #status-bar {
+      flex: none;
+      padding: 5px 18px;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--row-sep);
+      background: rgba(4,8,18,.9);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Loading overlay ────────────────────────────────────────────────── */
+    #loading-msg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 120px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ── Search ─────────────────────────────────────────────────────────── */
+    #search-wrap {
+      padding: 8px 10px 4px;
+      flex: none;
+    }
+    #search {
+      width: 100%;
+      border: 1px solid rgba(127,155,176,.22);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text);
+      padding: 7px 12px;
+      font-size: 12px;
+    }
+    #search::placeholder { color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<div id="workspace">
+
+  <!-- ── Left: phone preview ───────────────────────────────────────────── -->
+  <div id="phone-area">
+    <div id="phone-label">Live Preview · iPhone 14 Pro</div>
+    <div id="phone-shell">
+      <iframe id="game-frame" src="index.html" title="Game" allow="autoplay"></iframe>
+    </div>
+  </div>
+
+  <!-- ── Right: controls ──────────────────────────────────────────────── -->
+  <div id="panel">
+
+    <div id="panel-head">
+      <h1>🎛 Motion Tuning <span class="sub">· Designer Workbench</span></h1>
+      <div class="actions">
+        <button class="p-btn" id="btn-reset">↺ Reset all</button>
+        <button class="p-btn" id="btn-export">↓ Export JSON</button>
+        <button class="p-btn" id="btn-import">↑ Import JSON</button>
+        <input type="file" id="file-import" accept=".json" style="display:none">
+        <input class="p-input" id="preset-name" placeholder="Название пресета" style="width:146px">
+        <button class="p-btn" id="btn-save">💾 Save preset</button>
+        <select id="preset-sel"><option value="">Пресет…</option></select>
+        <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
+      </div>
+    </div>
+
+    <div id="search-wrap">
+      <input id="search" placeholder="Поиск параметра…" autocomplete="off" spellcheck="false">
+    </div>
+
+    <div id="groups">
+      <div id="loading-msg">Ждём запуска игры…</div>
+    </div>
+
+    <div id="status-bar">—</div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const gameFrame  = document.getElementById('game-frame');
+  const groupsEl   = document.getElementById('groups');
+  const statusBar  = document.getElementById('status-bar');
+  const searchEl   = document.getElementById('search');
+
+  let MT = null;
+
+  /* ── 1. Wait for game to expose window.__MT ─────────────────────────── */
+  function pollMT() {
+    try {
+      const mt = gameFrame.contentWindow && gameFrame.contentWindow.__MT;
+      if (mt && Array.isArray(mt.params) && mt.params.length) {
+        MT = mt;
+        buildUI();
+        setStatus('Готово · ' + mt.params.length + ' параметров.');
+        return;
+      }
+    } catch (_) { /* cross-origin: shouldn't happen on same origin */ }
+    setTimeout(pollMT, 150);
+  }
+
+  gameFrame.addEventListener('load', () => setTimeout(pollMT, 80));
+
+  /* ── 2. Build controls ───────────────────────────────────────────────── */
+  function buildUI() {
+    groupsEl.innerHTML = '';
+    const snap = MT.snapshot();
+
+    Object.keys(MT.groups).forEach(gKey => {
+      const params = MT.params.filter(p => p.group === gKey);
+      if (!params.length) return;
+
+      const det = document.createElement('details');
+      det.open = true;
+      det.dataset.group = gKey;
+      det.innerHTML = '<summary>' + MT.groups[gKey] + '</summary>';
+
+      params.forEach(p => {
+        const row = document.createElement('label');
+        row.className = 'mt-row';
+        row.dataset.key = p.key;
+        const v = snap[p.key];
+        row.innerHTML =
+          '<span class="lbl"><b>' + p.label + '</b><em>' + p.key + '</em></span>' +
+          '<input type="range"   data-key="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + v + '">' +
+          '<input class="mt-num" data-key="' + p.key + '" type="number" step="' + p.step + '" value="' + v + '">';
+        det.appendChild(row);
+      });
+
+      groupsEl.appendChild(det);
+    });
+
+    wireInputs();
+    refreshPresets();
+  }
+
+  /* ── 3. Wire slider ↔ number + live apply ───────────────────────────── */
+  function wireInputs() {
+    groupsEl.addEventListener('input', e => {
+      const key = e.target.dataset && e.target.dataset.key;
+      if (!key || !MT) return;
+
+      const val = parseFloat(e.target.value);
+      if (!Number.isFinite(val)) return;
+
+      // Sync sibling control (slider ↔ number)
+      groupsEl.querySelectorAll('[data-key="' + key + '"]').forEach(el => {
+        if (el !== e.target) el.value = val;
+      });
+
+      // Live apply — no persist on every keystroke
+      MT.apply({ [key]: val }, false);
+      setStatus(key + '  →  ' + val);
+    });
+
+    groupsEl.addEventListener('change', e => {
+      const key = e.target.dataset && e.target.dataset.key;
+      if (!key || !MT) return;
+      MT.apply({ [key]: parseFloat(e.target.value) }, true);
+    });
+  }
+
+  /* ── 4. Sync values back to UI (after reset/preset) ─────────────────── */
+  function syncUI() {
+    if (!MT) return;
+    const snap = MT.snapshot();
+    groupsEl.querySelectorAll('[data-key]').forEach(el => {
+      const v = snap[el.dataset.key];
+      if (v != null) el.value = v;
+    });
+  }
+
+  /* ── 5. Search ──────────────────────────────────────────────────────── */
+  searchEl.addEventListener('input', () => {
+    const q = searchEl.value.trim().toLowerCase();
+    groupsEl.querySelectorAll('.mt-row').forEach(row => {
+      const visible = !q || row.dataset.key.toLowerCase().includes(q) ||
+        row.querySelector('b').textContent.toLowerCase().includes(q);
+      row.style.display = visible ? '' : 'none';
+    });
+    // Hide empty groups
+    groupsEl.querySelectorAll('details').forEach(det => {
+      const hasVisible = [...det.querySelectorAll('.mt-row')].some(r => r.style.display !== 'none');
+      det.style.display = hasVisible ? '' : 'none';
+      if (q) det.open = true;
+    });
+  });
+
+  /* ── 6. Actions ─────────────────────────────────────────────────────── */
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    if (!MT) return;
+    if (!confirm('Сбросить все параметры к значениям по умолчанию?')) return;
+    MT.reset();
+    syncUI();
+    setStatus('Все параметры сброшены.');
+  });
+
+  document.getElementById('btn-export').addEventListener('click', () => {
+    if (!MT) return;
+    const blob = new Blob([MT.export()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'motion-tuning.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    setStatus('JSON экспортирован.');
+  });
+
+  document.getElementById('btn-import').addEventListener('click', () => {
+    document.getElementById('file-import').click();
+  });
+
+  document.getElementById('file-import').addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !MT) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        MT.importText(ev.target.result);
+        syncUI();
+        setStatus('Импортировано: ' + file.name);
+      } catch (err) {
+        setStatus('Ошибка импорта: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  document.getElementById('btn-save').addEventListener('click', () => {
+    if (!MT) return;
+    const name = document.getElementById('preset-name').value.trim();
+    if (!name) { setStatus('Введи название пресета.'); return; }
+    MT.savePreset(name);
+    refreshPresets();
+    setStatus('Пресет сохранён: ' + name);
+  });
+
+  document.getElementById('preset-sel').addEventListener('change', e => {
+    if (!MT || !e.target.value) return;
+    MT.applyPreset(e.target.value);
+    syncUI();
+    setStatus('Применён пресет: ' + e.target.value);
+  });
+
+  document.getElementById('btn-del-preset').addEventListener('click', () => {
+    const sel = document.getElementById('preset-sel');
+    const name = sel.value;
+    if (!name) { setStatus('Выбери пресет для удаления.'); return; }
+    if (!confirm('Удалить пресет «' + name + '»?')) return;
+    try {
+      const ps = JSON.parse(localStorage.getItem('pf_motion_presets_v1') || '{}');
+      delete ps[name];
+      localStorage.setItem('pf_motion_presets_v1', JSON.stringify(ps));
+    } catch (_) {}
+    refreshPresets();
+    setStatus('Пресет удалён: ' + name);
+  });
+
+  /* ── 7. Helpers ─────────────────────────────────────────────────────── */
+  function refreshPresets() {
+    const sel = document.getElementById('preset-sel');
+    const cur = sel.value;
+    let ps = {};
+    try { ps = JSON.parse(localStorage.getItem('pf_motion_presets_v1') || '{}') || {}; } catch (_) {}
+    sel.innerHTML = '<option value="">Пресет…</option>' +
+      Object.keys(ps).map(n => '<option' + (n === cur ? ' selected' : '') + '>' + n + '</option>').join('');
+  }
+
+  function setStatus(msg) {
+    statusBar.textContent = msg;
+  }
+
+  /* ── 8. Scale phone to fit available vertical space ─────────────────── */
+  function scalePhone() {
+    const shell   = document.getElementById('phone-shell');
+    const area    = document.getElementById('phone-area');
+    const availH  = area.clientHeight - 60;   // 60 = label + gaps
+    const availW  = area.clientWidth  - 56;   // padding
+    const scale   = Math.min(1, availH / 844, availW / 390);
+    // zoom collapses element to its visual size (works in all modern browsers)
+    shell.style.zoom = scale;
+  }
+
+  window.addEventListener('resize', scalePhone);
+  scalePhone();
+
+})();
+</script>
+</body>
+</html>
