@@ -44,6 +44,7 @@
           if(h.maxLvl != null && !(Number.isInteger(h.maxLvl) && h.maxLvl>=0 && h.maxLvl<=K.BAY_MAX_LVL)) p.push(HL+'maxLvl должен быть целым в [0, '+K.BAY_MAX_LVL+']');
           if(h.lvl != null && !(Number.isInteger(h.lvl) && h.lvl>=0 && h.lvl<=perMaxLvl)) p.push(HL+'lvl должен быть целым в [0, maxLvl('+perMaxLvl+')]');
           if(h.upgradeCost != null && !(h.upgradeCost>0)) p.push(HL+'upgradeCost должен быть > 0');
+          if(h.openCost != null && !(h.openCost>=0)) p.push(HL+'openCost должен быть >= 0');
         });
         if(!Array.isArray(rws) || rws.length<1) p.push(L+'layout.runways должен содержать хотя бы одну ВПП');
         else {
@@ -53,9 +54,14 @@
             if(!(r.y>=0 && r.y<=1)) p.push(RL+'y должен быть в [0,1]');
             if(r.landingOpen!=null && typeof r.landingOpen!=='boolean') p.push(RL+'landingOpen должен быть boolean');
             if(r.takeoffOpen!=null && typeof r.takeoffOpen!=='boolean') p.push(RL+'takeoffOpen должен быть boolean');
-            if(r.landingOpen===false && r.takeoffOpen===false) p.push(RL+'нельзя одновременно закрыть landingOpen и takeoffOpen');
-            if(r.openCost!=null && !(r.openCost>=0)) p.push(RL+'openCost должен быть >= 0');
+            if(r.landingCost!=null && !(r.landingCost>=0)) p.push(RL+'landingCost должен быть >= 0');
+            if(r.takeoffCost!=null && !(r.takeoffCost>=0)) p.push(RL+'takeoffCost должен быть >= 0');
           });
+          // уровень-целом: хотя бы одна ВПП с посадкой И хотя бы одна со взлётом
+          const hasLanding = rws.some(r=>r.landingOpen!==false);
+          const hasTakeoff = rws.some(r=>r.takeoffOpen!==false);
+          if(!hasLanding) p.push(L+'layout.runways: ни одна ВПП не разрешает посадку');
+          if(!hasTakeoff) p.push(L+'layout.runways: ни одна ВПП не разрешает взлёт');
         }
         // каждая услуга, которую может запросить борт, должна иметь ангар такого типа
         if(Array.isArray(hs)){

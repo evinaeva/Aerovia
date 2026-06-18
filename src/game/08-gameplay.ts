@@ -25,7 +25,9 @@
       // сбрасываем направленные флаги открытия из конфига уровня
       const rd = (LV.layout && LV.layout.runways) ? LV.layout.runways[k] : null;
       r.landingOpen = !rd || rd.landingOpen!==false;
+      r.landingCost = rd ? (rd.landingCost || 0) : 0;
       r.takeoffOpen = !rd || rd.takeoffOpen!==false;
+      r.takeoffCost = rd ? (rd.takeoffCost || 0) : 0;
     });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0; spawnedTotal=0;
@@ -349,9 +351,10 @@
     const perBay = (b.maxLvl != null) ? Math.min(b.maxLvl, K.BAY_MAX_LVL) : K.BAY_MAX_LVL;
     return Math.min(global, perBay);
   }
+  function bayOpenCostFor(b: any){ return (b.openCost != null) ? b.openCost : K.BAY_OPEN_COST; }
   function bayUpCost(b: any){
     if(b.deice) return null;
-    if(!b.open) return K.BAY_OPEN_COST;
+    if(!b.open) return bayOpenCostFor(b);
     if(b.lvl >= bayMaxLvl(b)) return null;          // апгрейд выключен или достигнут потолок
     if(b.upgradeCost != null) return b.upgradeCost; // per-bay цена override
     return K.BAY_UP_COST[b.lvl] || null;

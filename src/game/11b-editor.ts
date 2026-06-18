@@ -1,41 +1,62 @@
 // ===== 11b-editor — in-game level constructor (place hangars/runways → export layout JSON) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: edOpen, edClose, edToLevel (+ window.__EDITOR test hook).
-// Reads: 04 (K, SVC_TYPES); 06 (layout state: inMenu, LV, bays, runways, curBiome, curBonus, survival, levelIdx, levelKey); 06 (layout()); 08 (reset()); 11 (showStart, hideAllScreens).
+// Reads: 04 (K, SVC_TYPES, LEVELS, levelName, levelToEditorObj); 06 (inMenu, LV, bays, runways, curBiome, curBonus, survival, levelIdx, levelKey, layout); 08 (reset); 11 (showStart, hideAllScreens).
 //
 // Dev-facing tool (entry in the debug popup). Editor labels are literal strings on purpose —
 // no t() keys, so it stays out of the i18n parity check. It edits ITS OWN state (ED) and
 // draws to its OWN canvas (#edCanvas); the game loop/handlers stay idle (running=false).
 
   // ---- editor state ----
-  // hangars: {type, x, y(0..1 of apron), open, up}; runways: {y(0..1 of field height), landingOpen, takeoffOpen, openCost}
-  interface EdHangar { type: string; x: number; y: number; open: boolean; up: boolean; }
-  interface EdRunway { y: number; landingOpen: boolean; takeoffOpen: boolean; openCost: number; }
+  interface EdHangar {
+    type: string; x: number; y: number;
+    open: boolean; openCost: number;
+    up: boolean;
+    gate: 'auto'|'up'|'down'|'left'|'right';
+    lvl: number; maxLvl: number; upgradeCost: number;
+  }
+  interface EdRunway {
+    y: number;
+    landingOpen: boolean; landingCost: number;
+    takeoffOpen: boolean; takeoffCost: number;
+  }
+  interface EdObjective { metric: 'served'|'upgrades'; star1: number; star2: number; star3: number; timerSecs: number; raceMode: boolean; }
   const ED: {
-    hangars: EdHangar[]; runways: EdRunway[]; services: string[]; maxUp: number;
-    sel: { kind: string; i: number } | null; drag: any; cv: HTMLCanvasElement | null; g: CanvasRenderingContext2D | null;
+    hangars: EdHangar[]; runways: EdRunway[];
+    services: string[]; maxUp: number;
+    pace: number; startMoney: number;
+    objective: EdObjective;
+    evVip: boolean; evEmergency: boolean; evMedical: boolean; evRush: boolean;
+    weather: boolean; deice: boolean; combo: boolean; express: boolean;
+    sel: { kind: string; i: number } | null; drag: any;
+    cv: HTMLCanvasElement | null; g: CanvasRenderingContext2D | null;
     showSnaps: boolean;
   } = {
-    hangars: [], runways: [{ y: 0.5, landingOpen: true, takeoffOpen: true, openCost: 0 }],
+    hangars: [],
+    runways: [{ y: 0.5, landingOpen: true, landingCost: 0, takeoffOpen: true, takeoffCost: 0 }],
     services: SVC_TYPES.slice(), maxUp: K.BAY_MAX_LVL,
+    pace: 0.4, startMoney: K.START_MONEY,
+    objective: { metric: 'served', star1: 6, star2: 8, star3: 10, timerSecs: 0, raceMode: false },
+    evVip: false, evEmergency: false, evMedical: false, evRush: false,
+    weather: false, deice: false, combo: true, express: true,
     sel: null, drag: null, cv: null, g: null,
     showSnaps: true,
   };
   const ED_DRAFT_KEY = 'pf_editor_draft';
   const ED_TONE: Record<string, string> = { fuel: '#22e3c6', board: '#ff8db0', repair: '#ffc14d' };
   const ED_LABEL: Record<string, string> = { fuel: 'топливо', board: 'борт', repair: 'ремонт' };
-  const ED_HMAX = 14, ED_GX = 12, ED_GY = 10;   // лимит ангаров; шаг сетки привязки
+  const ED_GATE_LABELS: Record<string, string> = { auto: 'авто', up: '↑', down: '↓', left: '←', right: '→' };
+  const ED_HMAX = 14, ED_GX = 12, ED_GY = 10;
 
   function edEl<T extends HTMLElement>(id: string){ return document.getElementById(id) as T | null; }
   const edSnap = (v: number, n: number) => Math.round(v * n) / n;
   const edClamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
-  // апрон (где стоят ангары, ~левые 63%) и полоса ВПП (правее) — те же пропорции, что у поля игры
   function edRects(){
     const cv = ED.cv!; const W = cv.clientWidth, H = cv.clientHeight, M = 14;
-    const ax0 = M, ay0 = M + 30, ax1 = Math.round(W * 0.63), ay1 = H - M;     // апрон
-    const rwL = ax1, rwR = Math.round(W * 0.84);                              // полоса ВПП
-    const ftop = M, fbot = H - M;                                            // вертикальный диапазон ВПП
+    const ax0 = M, ay0 = M + 30, ax1 = Math.round(W * 0.63), ay1 = H - M;
+    const rwL = ax1, rwR = Math.round(W * 0.84);
+    const ftop = M, fbot = H - M;
     return { W, H, ax0, ay0, ax1, ay1, rwL, rwR, ftop, fbot };
   }
   const edHx = (R: any, x: number) => R.ax0 + x * (R.ax1 - R.ax0);
@@ -64,20 +85,16 @@
     const R = edRects();
     g.clearRect(0, 0, R.W, R.H);
     g.fillStyle = '#0a1020'; g.fillRect(0, 0, R.W, R.H);
-    // апрон
     g.fillStyle = 'rgba(34,227,198,.04)'; g.fillRect(R.ax0, R.ay0, R.ax1 - R.ax0, R.ay1 - R.ay0);
     g.strokeStyle = 'rgba(127,155,176,.35)'; g.lineWidth = 1; g.setLineDash([4, 4]);
     g.strokeRect(R.ax0, R.ay0, R.ax1 - R.ax0, R.ay1 - R.ay0); g.setLineDash([]);
-    // сетка привязки
-    g.strokeStyle = 'rgba(127,155,176,.10)';
-    g.beginPath();
+    g.strokeStyle = 'rgba(127,155,176,.10)'; g.beginPath();
     for (let i = 1; i < ED_GX; i++){ const x = edHx(R, i / ED_GX); g.moveTo(x, R.ay0); g.lineTo(x, R.ay1); }
     for (let i = 1; i < ED_GY; i++){ const y = edHy(R, i / ED_GY); g.moveTo(R.ax0, y); g.lineTo(R.ax1, y); }
     g.stroke();
     g.fillStyle = 'rgba(127,155,176,.5)'; g.font = '11px system-ui'; g.textAlign = 'left'; g.textBaseline = 'top';
     g.fillText('поле · апрон (тяни ангары)', R.ax0 + 4, 4);
     g.textAlign = 'right'; g.fillText('ВПП · заход справа →', R.rwR, 4);
-    // ВПП
     ED.runways.forEach((r, i) => {
       const b = edRunwayBox(R, r); const seld = ED.sel && ED.sel.kind === 'runway' && ED.sel.i === i;
       g.fillStyle = 'rgba(58,210,255,.14)'; edRoundRect(g, b.x, b.y, b.w, b.h, 5); g.fill();
@@ -85,7 +102,6 @@
       g.strokeStyle = 'rgba(58,210,255,.55)'; g.lineWidth = 1; g.setLineDash([7, 6]);
       g.beginPath(); g.moveTo(b.x + 6, b.cy); g.lineTo(b.x + b.w - 6, b.cy); g.stroke(); g.setLineDash([]);
     });
-    // ангары
     ED.hangars.forEach((h, i) => {
       const b = edHangarBox(R, h); const col = ED_TONE[h.type] || '#9fb0c8';
       const seld = ED.sel && ED.sel.kind === 'hangar' && ED.sel.i === i;
@@ -94,21 +110,24 @@
       edRoundRect(g, b.x, b.y, b.w, b.h, 7); g.stroke(); g.setLineDash([]);
       g.fillStyle = col; g.font = '12px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillText(ED_LABEL[h.type] || h.type, b.x + b.w / 2, b.y + b.h / 2 - 1);
-      // мини-индикаторы: замок (закрыт) слева-сверху, ↑ (апгрейд) справа-сверху
       g.font = '10px system-ui'; g.textBaseline = 'top';
       g.fillStyle = h.open ? 'rgba(127,155,176,.6)' : '#ffd23b'; g.textAlign = 'left';
       g.fillText(h.open ? '○' : '⌧', b.x + 5, b.y + 4);
       g.fillStyle = (h.up && ED.maxUp > 0) ? '#5dca7a' : 'rgba(127,155,176,.4)'; g.textAlign = 'right';
       g.fillText((h.up && ED.maxUp > 0) ? '↑' + ED.maxUp : '–', b.x + b.w - 5, b.y + 4);
     });
-    // snap-overlay: стрелка у ворот ангара + маркер порога ВПП (показывается при showSnaps)
     if(ED.showSnaps){
-      // ворота ангара — жёлтая стрелка на той кромке, откуда самолёт въезжает
       ED.hangars.forEach(h => {
         const b = edHangarBox(R, h);
-        const gx = edHx(R, h.x), gy = edHy(R, h.y);
-        const dT=gy-R.ay0, dB=R.ay1-gy, dL=gx-R.ax0, dR=R.ax1-gx, m=Math.min(dT,dB,dL,dR);
-        const odx = m===dL?-1: m===dR?1: 0, ody = m===dT?-1: m===dB?1: 0;
+        let odx = 0, ody = 0;
+        if(h.gate !== 'auto' && h.gate){
+          odx = h.gate==='left'?-1: h.gate==='right'?1: 0;
+          ody = h.gate==='up'?-1: h.gate==='down'?1: 0;
+        } else {
+          const gx = edHx(R, h.x), gy = edHy(R, h.y);
+          const dT=gy-R.ay0, dB=R.ay1-gy, dL=gx-R.ax0, dR=R.ax1-gx, m=Math.min(dT,dB,dL,dR);
+          odx = m===dL?-1: m===dR?1: 0; ody = m===dT?-1: m===dB?1: 0;
+        }
         const ex = b.x+b.w/2 + odx*(b.w/2), ey = b.y+b.h/2 + ody*(b.h/2);
         const ax = ex+odx*10, ay = ey+ody*10;
         g.strokeStyle='#ffd23b'; g.lineWidth=1.5; g.setLineDash([3,3]);
@@ -116,23 +135,19 @@
         g.fillStyle='#ffd23b'; g.font='9px system-ui'; g.textAlign='center'; g.textBaseline='middle';
         g.fillText('▶', ax+odx*5, ay+ody*5);
       });
-      // ВПП — маркер порога посадки (правый торец) и флажки посадки/взлёта
       ED.runways.forEach(r => {
         const b = edRunwayBox(R, r);
-        // порог посадки
         g.strokeStyle='rgba(58,210,255,.7)'; g.lineWidth=2; g.setLineDash([]);
         g.beginPath(); g.moveTo(b.x+b.w-4, b.y+3); g.lineTo(b.x+b.w-4, b.y+b.h-3); g.stroke();
-        // флажки
         g.font='9px system-ui'; g.textBaseline='middle';
-        const landCol = r.landingOpen ? '#5dca7a' : 'rgba(127,155,176,.4)';
-        const takeCol = r.takeoffOpen ? '#5dca7a' : 'rgba(127,155,176,.4)';
-        g.fillStyle=landCol; g.textAlign='right'; g.fillText('↓', b.x+b.w-8, b.cy-5);
-        g.fillStyle=takeCol; g.textAlign='right'; g.fillText('↑', b.x+b.w-8, b.cy+5);
+        g.fillStyle=r.landingOpen ? '#5dca7a' : 'rgba(127,155,176,.4)';
+        g.textAlign='right'; g.fillText('↓', b.x+b.w-8, b.cy-5);
+        g.fillStyle=r.takeoffOpen ? '#5dca7a' : 'rgba(127,155,176,.4)';
+        g.textAlign='right'; g.fillText('↑', b.x+b.w-8, b.cy+5);
       });
     }
   }
 
-  // ---- hit-test / pointer ----
   function edPt(e: PointerEvent){ const r = ED.cv!.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   function edHit(p: { x: number; y: number }){
     const R = edRects();
@@ -159,17 +174,15 @@
   }
   function edUp(){ ED.drag = null; edRenderSide(); }
 
-  // ---- mutators ----
   function edAddHangar(type: string){
     if (ED.hangars.length >= ED_HMAX) return;
-    // ставим в свободную клетку у верхней кромки апрона
     const x = edSnap(0.1 + (ED.hangars.length % 5) * 0.18, ED_GX), y = edSnap(0.12 + Math.floor(ED.hangars.length / 5) * 0.22, ED_GY);
-    ED.hangars.push({ type, x: edClamp01(x), y: edClamp01(y), open: true, up: true });
+    ED.hangars.push({ type, x: edClamp01(x), y: edClamp01(y), open: true, openCost: 0, up: true, gate: 'auto', lvl: 0, maxLvl: K.BAY_MAX_LVL, upgradeCost: 0 });
     ED.sel = { kind: 'hangar', i: ED.hangars.length - 1 }; edRenderSide(); edDraw();
   }
   function edAddRunway(){
     if (ED.runways.length >= K.RUNWAY_MAX) return;
-    ED.runways.push({ y: edSnap(0.2 + ED.runways.length * 0.15, ED_GY), landingOpen: true, takeoffOpen: true, openCost: 0 });
+    ED.runways.push({ y: edSnap(0.2 + ED.runways.length * 0.15, ED_GY), landingOpen: true, landingCost: 0, takeoffOpen: true, takeoffCost: 0 });
     ED.sel = { kind: 'runway', i: ED.runways.length - 1 }; edRenderSide(); edDraw();
   }
   function edDeleteSel(){
@@ -178,41 +191,68 @@
     ED.sel = null; edRenderSide(); edDraw();
   }
 
-  // ---- serialize / level ----
   function edLayoutObj(){
-    return {
+    const o: any = {
       services: ED.services.slice(),
       maxUp: ED.maxUp,
+      pace: +ED.pace.toFixed(2),
       layout: {
-        hangars: ED.hangars.map(h => ({ type: h.type, x: +h.x.toFixed(2), y: +h.y.toFixed(2), open: h.open, up: h.up })),
+        hangars: ED.hangars.map(h => {
+          const hd: any = { type: h.type, x: +h.x.toFixed(2), y: +h.y.toFixed(2) };
+          if(!h.open) hd.open = false;
+          if(h.openCost) hd.openCost = h.openCost;
+          if(!h.up) hd.up = false;
+          if(h.gate !== 'auto') hd.gate = h.gate;
+          if(h.lvl) hd.lvl = h.lvl;
+          if(h.maxLvl !== K.BAY_MAX_LVL) hd.maxLvl = h.maxLvl;
+          if(h.upgradeCost) hd.upgradeCost = h.upgradeCost;
+          return hd;
+        }),
         runways: ED.runways.map(r => {
           const rd: any = { y: +r.y.toFixed(2) };
           if(!r.landingOpen) rd.landingOpen = false;
+          if(r.landingCost) rd.landingCost = r.landingCost;
           if(!r.takeoffOpen) rd.takeoffOpen = false;
-          if(r.openCost) rd.openCost = r.openCost;
+          if(r.takeoffCost) rd.takeoffCost = r.takeoffCost;
           return rd;
         }),
       },
+      objective: (function(){
+        const ob: any = { metric: ED.objective.metric, stars: [ED.objective.star1, ED.objective.star2, ED.objective.star3] };
+        if(ED.objective.timerSecs > 0) ob.time = ED.objective.timerSecs;
+        if(ED.objective.raceMode && ED.objective.timerSecs > 0) ob.race = true;
+        return ob;
+      })(),
     };
+    if(ED.startMoney !== K.START_MONEY) o.startMoney = ED.startMoney;
+    const ev: any = {};
+    if(ED.evVip) ev.vip = true; if(ED.evEmergency) ev.emergency = true;
+    if(ED.evMedical) ev.medical = true; if(ED.evRush) ev.rush = true;
+    if(Object.keys(ev).length) o.events = ev;
+    if(ED.weather) o.weather = true;
+    if(ED.deice) o.deice = true;
+    if(!ED.combo) o.combo = false;
+    if(!ED.express) o.express = false;
+    return o;
   }
-  // полноценный Level для тест-прогона: набор услуг сводим к тем, под которые есть ангар
-  // (иначе борт с услугой без ангара застрянет); цель/темп/события — нейтральные дефолты.
   function edToLevel(){
     const have = new Set(ED.hangars.map(h => h.type));
     let services = ED.services.filter(s => have.has(s)); if (!services.length) services = Array.from(have);
-    const obj = edLayoutObj();
-    return {
-      pace: 0.4, objective: { metric: 'served', stars: [6, 8, 10], target: 10 }, events: {},
-      services, maxUp: obj.maxUp, layout: obj.layout,
-    } as any;
+    const obj = edLayoutObj(); obj.services = services; return obj as any;
   }
-  // предупреждения честности (живой статус) — лёгкое зеркало validateLevels
   function edWarnings(){
     const w: string[] = [];
     if (ED.runways.length < 1) w.push('нет ни одной ВПП');
+    else {
+      if(!ED.runways.some(r => r.landingOpen)) w.push('ни одна ВПП не разрешает посадку');
+      if(!ED.runways.some(r => r.takeoffOpen)) w.push('ни одна ВПП не разрешает взлёт');
+    }
     const have = new Set(ED.hangars.map(h => h.type));
     for (const s of ED.services) if (!have.has(s)) w.push('нет ангара под услугу «' + (ED_LABEL[s] || s) + '»');
     if (!ED.hangars.some(h => h.open)) w.push('ни один ангар не открыт на старте');
+    const o = ED.objective;
+    if(!(o.star1 <= o.star2 && o.star2 <= o.star3 && o.star1 > 0)) w.push('звёзды должны идти по возрастанию (1★ ≤ 2★ ≤ 3★)');
+    if(o.raceMode && o.timerSecs <= 0) w.push('режим гонки требует таймер > 0');
     return w;
   }
 
@@ -220,7 +260,7 @@
   async function edExport(){
     const text = edExportText();
     const file = new File([text], 'planeflow-level.json', { type: 'application/json' });
-    try { if (navigator.canShare && navigator.canShare({ files: [file] })){ await navigator.share({ files: [file], title: 'PlaneFlow level' }); return; } } catch (e) { /* отмена/нет поддержки → скачивание */ }
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })){ await navigator.share({ files: [file], title: 'PlaneFlow level' }); return; } } catch (e) {}
     try { const blob = new Blob([text], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'planeflow-level.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 5000); } catch (e) {}
     try { if (navigator.clipboard) navigator.clipboard.writeText(text); } catch (e) {}
     const st = edEl('edStatus'); if (st) { st.textContent = 'экспортировано (файл + буфер)'; setTimeout(() => edRenderSide(), 1800); }
@@ -228,14 +268,34 @@
   function edSaveDraft(){ try { localStorage.setItem(ED_DRAFT_KEY, edExportText()); const st = edEl('edStatus'); if (st) { st.textContent = 'черновик сохранён'; setTimeout(() => edRenderSide(), 1500); } } catch (e) {} }
   function edLoadObj(o: any){
     if (!o || !o.layout) return;
-    ED.hangars = (o.layout.hangars || []).map((h: any) => ({ type: h.type, x: edClamp01(+h.x || 0), y: edClamp01(+h.y || 0), open: h.open !== false, up: h.up !== false }));
-    ED.runways = (o.layout.runways || []).map((r: any) => ({ y: edClamp01(+r.y || 0), landingOpen: r.landingOpen !== false, takeoffOpen: r.takeoffOpen !== false, openCost: r.openCost || 0 }));
+    ED.hangars = (o.layout.hangars || []).map((h: any) => ({
+      type: h.type, x: edClamp01(+h.x || 0), y: edClamp01(+h.y || 0),
+      open: h.open !== false, openCost: h.openCost || 0,
+      up: h.up !== false,
+      gate: (['up','down','left','right'].includes(h.gate) ? h.gate : 'auto') as EdHangar['gate'],
+      lvl: Math.max(0, Math.min(K.BAY_MAX_LVL, +h.lvl || 0)),
+      maxLvl: (h.maxLvl != null) ? Math.max(0, Math.min(K.BAY_MAX_LVL, +h.maxLvl)) : K.BAY_MAX_LVL,
+      upgradeCost: h.upgradeCost || 0,
+    }));
+    ED.runways = (o.layout.runways || []).map((r: any) => ({
+      y: edClamp01(+r.y || 0),
+      landingOpen: r.landingOpen !== false, landingCost: r.landingCost || 0,
+      takeoffOpen: r.takeoffOpen !== false, takeoffCost: r.takeoffCost || 0,
+    }));
     ED.services = Array.isArray(o.services) && o.services.length ? o.services.filter((s: string) => SVC_TYPES.includes(s)) : SVC_TYPES.slice();
     ED.maxUp = (o.maxUp == null) ? K.BAY_MAX_LVL : Math.max(0, Math.min(K.BAY_MAX_LVL, o.maxUp));
+    ED.pace = (o.pace != null) ? Math.max(0, Math.min(1, +o.pace || 0)) : 0.4;
+    ED.startMoney = (o.startMoney != null) ? Math.max(0, +o.startMoney || K.START_MONEY) : K.START_MONEY;
+    const ob = o.objective || {};
+    const stars: number[] = Array.isArray(ob.stars) ? ob.stars : [6, 8, 10];
+    ED.objective = { metric: ob.metric === 'upgrades' ? 'upgrades' : 'served', star1: +stars[0]||6, star2: +stars[1]||8, star3: +stars[2]||10, timerSecs: +ob.time || 0, raceMode: !!ob.race };
+    const ev = o.events || {};
+    ED.evVip = !!ev.vip; ED.evEmergency = !!ev.emergency; ED.evMedical = !!ev.medical; ED.evRush = !!ev.rush;
+    ED.weather = !!o.weather; ED.deice = !!o.deice;
+    ED.combo = o.combo !== false; ED.express = o.express !== false;
     ED.sel = null;
   }
   function edLoadDraft(){ try { const o = JSON.parse(localStorage.getItem(ED_DRAFT_KEY) || 'null'); if (o){ edLoadObj(o); edRenderSide(); edDraw(); } } catch (e) {} }
-  // открыть существующий уровень кампании: явный layout берём как есть, старый sides — конвертируем
   function edOpenLevel(idx: number){ const lv = LEVELS[idx]; if (!lv) return; edLoadObj(levelToEditorObj(lv)); edRenderSide(); edDraw(); }
 
   function edPlayTest(){
@@ -246,94 +306,223 @@
     edHideScreen(); inMenu = false; reset();
   }
 
-  // ---- side panel (inspector + level options) ----
+  // ---- side panel helpers ----
   function edBtn(label: string, on: boolean, cb: () => void){
     const b = document.createElement('button'); b.className = 'm-btn m-btn--ghost m-btn--sm' + (on ? ' ed-on' : '');
     b.textContent = label; b.onclick = cb; return b;
   }
-  function edRow(label: string){ const r = document.createElement('div'); r.className = 'ed-row'; const l = document.createElement('span'); l.className = 'ed-row__l'; l.textContent = label; r.appendChild(l); return r; }
+  function edRow(label: string){
+    const r = document.createElement('div'); r.className = 'ed-row';
+    const l = document.createElement('span'); l.className = 'ed-row__l'; l.textContent = label;
+    r.appendChild(l); return r;
+  }
+  function edNumIn(val: number, min: number, max: number, step: number, onChange: (v: number) => void){
+    const inp = document.createElement('input'); inp.type = 'number'; inp.min = String(min); inp.max = String(max); inp.step = String(step);
+    inp.value = String(val); inp.className = 'ed-range'; inp.style.width = '72px';
+    inp.oninput = () => { const v = Math.max(min, Math.min(max, +inp.value || min)); onChange(v); };
+    return inp;
+  }
+  function edOut(text: string){ return Object.assign(document.createElement('span'), { className: 'ed-out', textContent: text }); }
+
   function edRenderSide(){
     const side = edEl('edSide'); if (!side) return; side.innerHTML = '';
-    // палитра «Добавить» — всегда на виду, вверху панели
+
+    // ---- палитра «Добавить» ----
     const add = document.createElement('div'); add.className = 'ed-card';
     add.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Добавить' }));
     const ar = document.createElement('div'); ar.className = 'ed-row';
     ([['fuel', '+ топливо'], ['board', '+ борт'], ['repair', '+ ремонт']] as [string, string][]).forEach(([tp, lbl]) => ar.appendChild(edBtn(lbl, false, () => edAddHangar(tp))));
     ar.appendChild(edBtn('+ ВПП', false, edAddRunway));
     add.appendChild(ar); side.appendChild(add);
-    // открыть существующий уровень кампании
+
+    // ---- открыть уровень кампании ----
     const opn = document.createElement('div'); opn.className = 'ed-card';
     opn.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Открыть уровень' }));
     const lsel = document.createElement('select'); lsel.className = 'ed-sel'; lsel.style.width = '100%';
     lsel.innerHTML = '<option value="">— L1..L' + LEVELS.length + ' —</option>' + LEVELS.map((_, i) => '<option value="' + i + '">L' + (i + 1) + ' · ' + levelName(i) + '</option>').join('');
     lsel.onchange = () => { if (lsel.value !== '') edOpenLevel(+lsel.value); };
     opn.appendChild(lsel); side.appendChild(opn);
-    // статус честности
+
+    // ---- статус ----
     const warn = edWarnings(); const st = edEl('edStatus');
-    if (st && st.textContent && /сохранён|экспортировано/.test(st.textContent)) { /* кратковременный статус — не перетираем */ }
+    if (st && st.textContent && /сохранён|экспортировано/.test(st.textContent)) {}
     else if (st) st.textContent = warn.length ? ('⚠ ' + warn.length) : '✓ валидна';
-    // инспектор выбранного
-    const insp = document.createElement('div'); insp.className = 'ed-card';
+
+    // ---- инспектор: АНГАР ----
     if (ED.sel && ED.sel.kind === 'hangar'){
       const h = ED.hangars[ED.sel.i];
+      const insp = document.createElement('div'); insp.className = 'ed-card';
       insp.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Ангар: ' + (ED_LABEL[h.type] || h.type) }));
-      const tr = edRow('Тип'); SVC_TYPES.forEach(tp => tr.appendChild(edBtn(ED_LABEL[tp] || tp, h.type === tp, () => { h.type = tp; edRenderSide(); edDraw(); }))); insp.appendChild(tr);
-      const or = edRow('На старте'); or.appendChild(edBtn('открыт', h.open, () => { h.open = true; edRenderSide(); edDraw(); })); or.appendChild(edBtn('закрыт', !h.open, () => { h.open = false; edRenderSide(); edDraw(); })); insp.appendChild(or);
-      const ur = edRow('Апгрейд'); ur.appendChild(edBtn('вкл', h.up, () => { h.up = true; edRenderSide(); edDraw(); })); ur.appendChild(edBtn('выкл', !h.up, () => { h.up = false; edRenderSide(); edDraw(); })); insp.appendChild(ur);
-      const dr = document.createElement('div'); dr.className = 'ed-row'; dr.appendChild(edBtn('🗑 удалить', false, edDeleteSel)); insp.appendChild(dr);
+
+      const tr = edRow('Тип');
+      SVC_TYPES.forEach(tp => tr.appendChild(edBtn(ED_LABEL[tp] || tp, h.type === tp, () => { h.type = tp; edRenderSide(); edDraw(); })));
+      insp.appendChild(tr);
+
+      const or = edRow('На старте');
+      or.appendChild(edBtn('открыт', h.open, () => { h.open = true; edRenderSide(); edDraw(); }));
+      or.appendChild(edBtn('закрыт', !h.open, () => { h.open = false; edRenderSide(); edDraw(); }));
+      insp.appendChild(or);
+
+      if(!h.open){
+        const ocr = edRow('Цена открытия');
+        const ocOut = edOut(h.openCost ? String(h.openCost) : 'глобальная');
+        ocr.appendChild(edNumIn(h.openCost, 0, 9999, 50, v => { h.openCost = v; ocOut.textContent = v ? String(v) : 'глобальная'; }));
+        ocr.appendChild(ocOut); insp.appendChild(ocr);
+      }
+
+      const ur = edRow('Апгрейды');
+      ur.appendChild(edBtn('вкл', h.up, () => { h.up = true; edRenderSide(); edDraw(); }));
+      ur.appendChild(edBtn('выкл', !h.up, () => { h.up = false; edRenderSide(); edDraw(); }));
+      insp.appendChild(ur);
+
+      const gr = edRow('Ворота');
+      (['auto','up','down','left','right'] as EdHangar['gate'][]).forEach(g2 => gr.appendChild(edBtn(ED_GATE_LABELS[g2], h.gate === g2, () => { h.gate = g2; edRenderSide(); edDraw(); })));
+      insp.appendChild(gr);
+
+      const lvlR = edRow('Нач. уровень');
+      for(let v = 0; v <= Math.min(h.maxLvl, K.BAY_MAX_LVL); v++) lvlR.appendChild(edBtn(String(v), h.lvl === v, () => { h.lvl = v; edRenderSide(); }));
+      insp.appendChild(lvlR);
+
+      const mlR = edRow('Потолок ↑');
+      for(let v = 0; v <= K.BAY_MAX_LVL; v++) mlR.appendChild(edBtn(String(v), h.maxLvl === v, () => { h.maxLvl = v; h.lvl = Math.min(h.lvl, v); edRenderSide(); }));
+      insp.appendChild(mlR);
+
+      const upCR = edRow('Цена ↑');
+      const ucOut = edOut(h.upgradeCost ? String(h.upgradeCost) : 'глобальная');
+      upCR.appendChild(edNumIn(h.upgradeCost, 0, 9999, 10, v => { h.upgradeCost = v; ucOut.textContent = v ? String(v) : 'глобальная'; }));
+      upCR.appendChild(ucOut); insp.appendChild(upCR);
+
+      const dr = document.createElement('div'); dr.className = 'ed-row';
+      dr.appendChild(edBtn('🗑 удалить', false, edDeleteSel)); insp.appendChild(dr);
+      side.appendChild(insp);
+
+    // ---- инспектор: ВПП ----
     } else if (ED.sel && ED.sel.kind === 'runway'){
       const r = ED.runways[ED.sel.i];
+      const insp = document.createElement('div'); insp.className = 'ed-card';
       insp.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'ВПП' }));
       insp.appendChild(Object.assign(document.createElement('div'), { className: 'ed-row__l', textContent: 'Тяни вверх/вниз. Горизонтальная, заход справа.' }));
-      const lr = edRow('Посадка'); lr.appendChild(edBtn('открыта', r.landingOpen, ()=>{ r.landingOpen=true; edRenderSide(); edDraw(); })); lr.appendChild(edBtn('закрыта', !r.landingOpen, ()=>{ r.landingOpen=false; edRenderSide(); edDraw(); })); insp.appendChild(lr);
-      const tr = edRow('Взлёт');   tr.appendChild(edBtn('открыт',  r.takeoffOpen, ()=>{ r.takeoffOpen=true; edRenderSide(); edDraw(); })); tr.appendChild(edBtn('закрыт',  !r.takeoffOpen, ()=>{ r.takeoffOpen=false; edRenderSide(); edDraw(); })); insp.appendChild(tr);
-      const ocr = edRow('Цена открытия');
-      const ocIn = document.createElement('input'); ocIn.type='number'; ocIn.min='0'; ocIn.step='50'; ocIn.value=String(r.openCost); ocIn.className='ed-range'; ocIn.style.width='64px';
-      const ocOut = document.createElement('span'); ocOut.className='ed-out'; ocOut.textContent = r.openCost ? String(r.openCost) : 'бесплатно';
-      ocIn.oninput=()=>{ r.openCost=Math.max(0,+ocIn.value||0); ocOut.textContent=r.openCost?String(r.openCost):'бесплатно'; };
-      ocr.appendChild(ocIn); ocr.appendChild(ocOut); insp.appendChild(ocr);
-      const dr = document.createElement('div'); dr.className = 'ed-row'; dr.appendChild(edBtn('🗑 удалить', false, edDeleteSel)); insp.appendChild(dr);
+
+      const lr = edRow('Посадка');
+      lr.appendChild(edBtn('открыта', r.landingOpen, () => { r.landingOpen = true; edRenderSide(); edDraw(); }));
+      lr.appendChild(edBtn('закрыта', !r.landingOpen, () => { r.landingOpen = false; edRenderSide(); edDraw(); }));
+      insp.appendChild(lr);
+
+      const lcR = edRow('Цена посадки');
+      const lcOut = edOut(r.landingCost ? String(r.landingCost) : 'бесплатно');
+      lcR.appendChild(edNumIn(r.landingCost, 0, 9999, 50, v => { r.landingCost = v; lcOut.textContent = v ? String(v) : 'бесплатно'; }));
+      lcR.appendChild(lcOut); insp.appendChild(lcR);
+
+      const tr2 = edRow('Взлёт');
+      tr2.appendChild(edBtn('открыт', r.takeoffOpen, () => { r.takeoffOpen = true; edRenderSide(); edDraw(); }));
+      tr2.appendChild(edBtn('закрыт', !r.takeoffOpen, () => { r.takeoffOpen = false; edRenderSide(); edDraw(); }));
+      insp.appendChild(tr2);
+
+      const tcR = edRow('Цена взлёта');
+      const tcOut = edOut(r.takeoffCost ? String(r.takeoffCost) : 'бесплатно');
+      tcR.appendChild(edNumIn(r.takeoffCost, 0, 9999, 50, v => { r.takeoffCost = v; tcOut.textContent = v ? String(v) : 'бесплатно'; }));
+      tcR.appendChild(tcOut); insp.appendChild(tcR);
+
+      const dr = document.createElement('div'); dr.className = 'ed-row';
+      dr.appendChild(edBtn('🗑 удалить', false, edDeleteSel)); insp.appendChild(dr);
+      side.appendChild(insp);
+
     } else {
+      const insp = document.createElement('div'); insp.className = 'ed-card';
       insp.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Ничего не выбрано' }));
       insp.appendChild(Object.assign(document.createElement('div'), { className: 'ed-row__l', textContent: 'Добавь элемент палитрой и тяни по полю. Тап — выбрать.' }));
+      side.appendChild(insp);
     }
-    side.appendChild(insp);
-    // настройки уровня
+
+    // ---- настройки уровня ----
     const lvl = document.createElement('div'); lvl.className = 'ed-card';
     lvl.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Уровень' }));
-    const sr = edRow('Услуги в игре');
+
+    const sr = edRow('Услуги');
     SVC_TYPES.forEach(tp => sr.appendChild(edBtn(ED_LABEL[tp] || tp, ED.services.includes(tp), () => {
       const on = ED.services.includes(tp);
       if (on && ED.services.length > 1) ED.services = ED.services.filter(s => s !== tp); else if (!on) ED.services.push(tp);
       edRenderSide();
-    })));
-    lvl.appendChild(sr);
-    const mr = edRow('Глубина апгрейда');
-    const slider = document.createElement('input'); slider.type = 'range'; slider.min = '0'; slider.max = String(K.BAY_MAX_LVL); slider.step = '1'; slider.value = String(ED.maxUp); slider.className = 'ed-range';
-    const out = document.createElement('span'); out.className = 'ed-out'; out.textContent = String(ED.maxUp);
-    slider.oninput = () => { ED.maxUp = +slider.value; out.textContent = String(ED.maxUp); edDraw(); };
-    mr.appendChild(slider); mr.appendChild(out); lvl.appendChild(mr);
-    const cr = edRow('Элементы'); cr.appendChild(Object.assign(document.createElement('span'), { className: 'ed-out', textContent: ED.hangars.length + ' ангаров · ' + ED.runways.length + ' ВПП' })); lvl.appendChild(cr);
+    }))); lvl.appendChild(sr);
+
+    const mr = edRow('Глубина ↑');
+    const depSlider = document.createElement('input'); depSlider.type = 'range'; depSlider.min = '0'; depSlider.max = String(K.BAY_MAX_LVL); depSlider.step = '1'; depSlider.value = String(ED.maxUp); depSlider.className = 'ed-range';
+    const depOut = edOut(String(ED.maxUp));
+    depSlider.oninput = () => { ED.maxUp = +depSlider.value; depOut.textContent = String(ED.maxUp); edDraw(); };
+    mr.appendChild(depSlider); mr.appendChild(depOut); lvl.appendChild(mr);
+
+    const paceR = edRow('Темп');
+    const paceSlider = document.createElement('input'); paceSlider.type = 'range'; paceSlider.min = '0'; paceSlider.max = '1'; paceSlider.step = '0.02'; paceSlider.value = String(ED.pace); paceSlider.className = 'ed-range';
+    const paceOut = edOut(ED.pace.toFixed(2));
+    paceSlider.oninput = () => { ED.pace = +paceSlider.value; paceOut.textContent = ED.pace.toFixed(2); };
+    paceR.appendChild(paceSlider); paceR.appendChild(paceOut); lvl.appendChild(paceR);
+
+    const smR = edRow('Старт $');
+    const smOut = edOut(String(ED.startMoney));
+    smR.appendChild(edNumIn(ED.startMoney, 0, 9999, 10, v => { ED.startMoney = v; smOut.textContent = String(v); }));
+    smR.appendChild(smOut); lvl.appendChild(smR);
+
+    const metR = edRow('Цель');
+    metR.appendChild(edBtn('принято', ED.objective.metric === 'served', () => { ED.objective.metric = 'served'; edRenderSide(); }));
+    metR.appendChild(edBtn('апгрейды', ED.objective.metric === 'upgrades', () => { ED.objective.metric = 'upgrades'; edRenderSide(); }));
+    lvl.appendChild(metR);
+
+    const s1R = edRow('1★'); s1R.appendChild(edNumIn(ED.objective.star1, 1, 999, 1, v => { ED.objective.star1 = v; })); lvl.appendChild(s1R);
+    const s2R = edRow('2★'); s2R.appendChild(edNumIn(ED.objective.star2, 1, 999, 1, v => { ED.objective.star2 = v; })); lvl.appendChild(s2R);
+    const s3R = edRow('3★'); s3R.appendChild(edNumIn(ED.objective.star3, 1, 999, 1, v => { ED.objective.star3 = v; })); lvl.appendChild(s3R);
+
+    const tmR = edRow('Таймер (сек)');
+    const tmOut = edOut(ED.objective.timerSecs ? String(ED.objective.timerSecs) + ' с' : 'выкл');
+    tmR.appendChild(edNumIn(ED.objective.timerSecs, 0, 3600, 30, v => { ED.objective.timerSecs = v; tmOut.textContent = v ? String(v) + ' с' : 'выкл'; if(!v) ED.objective.raceMode = false; edRenderSide(); }));
+    tmR.appendChild(tmOut); lvl.appendChild(tmR);
+
+    if(ED.objective.timerSecs > 0){
+      const raceR = edRow('Гонка');
+      raceR.appendChild(edBtn('вкл', ED.objective.raceMode, () => { ED.objective.raceMode = true; edRenderSide(); }));
+      raceR.appendChild(edBtn('выкл', !ED.objective.raceMode, () => { ED.objective.raceMode = false; edRenderSide(); }));
+      lvl.appendChild(raceR);
+    }
+
+    const evR = edRow('VIP'); evR.appendChild(edBtn('вкл', ED.evVip, () => { ED.evVip = !ED.evVip; edRenderSide(); })); lvl.appendChild(evR);
+    const emR = edRow('Аварийный'); emR.appendChild(edBtn('вкл', ED.evEmergency, () => { ED.evEmergency = !ED.evEmergency; edRenderSide(); })); lvl.appendChild(emR);
+    const medR = edRow('Медицинский'); medR.appendChild(edBtn('вкл', ED.evMedical, () => { ED.evMedical = !ED.evMedical; edRenderSide(); })); lvl.appendChild(medR);
+    const rushR = edRow('Час пик'); rushR.appendChild(edBtn('вкл', ED.evRush, () => { ED.evRush = !ED.evRush; edRenderSide(); })); lvl.appendChild(rushR);
+
+    const wR = edRow('Погода'); wR.appendChild(edBtn('вкл', ED.weather, () => { ED.weather = !ED.weather; edRenderSide(); })); lvl.appendChild(wR);
+    const dR = edRow('Де-айсинг'); dR.appendChild(edBtn('вкл', ED.deice, () => { ED.deice = !ED.deice; edRenderSide(); })); lvl.appendChild(dR);
+
+    const cR = edRow('Комбо');
+    cR.appendChild(edBtn('вкл', ED.combo, () => { ED.combo = true; edRenderSide(); }));
+    cR.appendChild(edBtn('выкл', !ED.combo, () => { ED.combo = false; edRenderSide(); }));
+    lvl.appendChild(cR);
+
+    const exR = edRow('Экспресс');
+    exR.appendChild(edBtn('вкл', ED.express, () => { ED.express = true; edRenderSide(); }));
+    exR.appendChild(edBtn('выкл', !ED.express, () => { ED.express = false; edRenderSide(); }));
+    lvl.appendChild(exR);
+
+    const cr = edRow('Элементы');
+    cr.appendChild(edOut(ED.hangars.length + ' ангаров · ' + ED.runways.length + ' ВПП'));
+    lvl.appendChild(cr);
     side.appendChild(lvl);
-    // предупреждения списком
+
     if (warn.length){
       const wc = document.createElement('div'); wc.className = 'ed-card ed-warn';
       wc.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: '⚠ Проверь' }));
       warn.forEach(x => wc.appendChild(Object.assign(document.createElement('div'), { className: 'ed-row__l', textContent: '• ' + x })));
       side.appendChild(wc);
     }
-    // файл: экспорт готового layout + черновик в localStorage
+
     const file = document.createElement('div'); file.className = 'ed-card';
     file.appendChild(Object.assign(document.createElement('div'), { className: 'ed-card__t', textContent: 'Файл' }));
-    file.appendChild(Object.assign(document.createElement('div'), { className: 'ed-row__l', textContent: 'Экспорт — отдать JSON уровня (поделиться/скачать). Черновик — сохранить/вернуть в этом браузере.' }));
+    file.appendChild(Object.assign(document.createElement('div'), { className: 'ed-row__l', textContent: 'Экспорт — отдать JSON уровня. Черновик — сохранить/вернуть в этом браузере.' }));
     const fr = document.createElement('div'); fr.className = 'ed-row';
     fr.appendChild(edBtn('Экспорт', false, edExport));
-    fr.appendChild(edBtn('Сохранить черновик', false, edSaveDraft));
-    fr.appendChild(edBtn('Загрузить черновик', false, edLoadDraft));
+    fr.appendChild(edBtn('Черновик ↓', false, edSaveDraft));
+    fr.appendChild(edBtn('Черновик ↑', false, edLoadDraft));
     file.appendChild(fr); side.appendChild(file);
   }
 
-  // ---- open / close ----
   function edHideScreen(){ const s = edEl('editorScreen'); if (s) s.classList.add('hidden'); }
   function edOpen(){
     inMenu = true; running = false; paused = false;
@@ -341,22 +530,19 @@
     const scr = edEl('editorScreen'); if (!scr) return; scr.classList.remove('hidden');
     ED.cv = edEl<HTMLCanvasElement>('edCanvas'); if (ED.cv) ED.g = ED.cv.getContext('2d');
     edRenderSide();
-    requestAnimationFrame(() => { edResize(); });   // дождаться раскладки оверлея для размеров канваса
+    requestAnimationFrame(() => { edResize(); });
   }
   function edClose(){ edHideScreen(); if (typeof showStart === 'function') showStart(); }
 
-  // ---- wiring (DOM присутствует в шаблоне на момент склейки IIFE) ----
   (function edWire(){
     const open = edEl('edOpenBtn'); if (open) open.onclick = edOpen;
     const close = edEl('edCloseBtn'); if (close) close.onclick = edClose;
     const test = edEl('edTestBtn'); if (test) test.onclick = edPlayTest;
-    // палитра/файл/«открыть уровень» рендерятся в боковой панели (edRenderSide) — там и навешиваются обработчики
     const cv = edEl<HTMLCanvasElement>('edCanvas');
     if (cv){ cv.addEventListener('pointerdown', edDown); cv.addEventListener('pointermove', edMove); window.addEventListener('pointerup', edUp); }
     window.addEventListener('resize', () => { const s = edEl('editorScreen'); if (s && !s.classList.contains('hidden')) edResize(); });
   })();
 
-  // тест-хук: round-trip и сериализация без DOM/канваса
   if (typeof location !== 'undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
     (window as any).__EDITOR = { ED, edLayoutObj, edToLevel, edWarnings, edLoadObj };
   }

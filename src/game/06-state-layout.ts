@@ -107,14 +107,16 @@
   }
 
   interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; up?: boolean; gate?: string; gx?: number; gy?: number;
+    openCost?: number;      // override K.BAY_OPEN_COST для этого ангара
     upgradeCost?: number;   // override K.BAY_UP_COST для этого ангара
     maxLvl?: number;        // per-bay потолок апгрейдов
     snapPoints: SnapPoint[];
   }
   interface Runway { occupied: any; closed: boolean; hazard?: any; x: number; y: number; w: number; h: number; cy: number; stopX: number; exitX: number;
-    landingOpen: boolean;   // посадка разрешена (независимо от closed)
-    takeoffOpen: boolean;   // взлёт разрешён (независимо от closed)
-    openCost: number;       // стоимость открытия ВПП (0 = открыта)
+    landingOpen: boolean;   // посадка открыта (false = заблокирована)
+    landingCost: number;    // цена разблокировки посадки (0 = открыта сразу)
+    takeoffOpen: boolean;   // взлёт открыт (false = заблокирован)
+    takeoffCost: number;    // цена разблокировки взлёта (0 = открыт сразу)
     snapPoints: SnapPoint[];
   }
   interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; rwL?: number; rwR?: number; service?: any; }
@@ -156,6 +158,7 @@
           bays.push({ side:'free', type:hg.type, slot:i, open, open0:open,
                       up:hg.up!==false, gate:hg.gate, gx:hg.x, gy:hg.y,
                       lvl: hg.lvl || 0,
+                      openCost: hg.openCost,
                       upgradeCost: hg.upgradeCost,
                       maxLvl: hg.maxLvl,
                       occupied:null, x:0,y:0,w:bw,h:bh, snapPoints:[] });
@@ -234,8 +237,9 @@
         const rd = rdefs[k] || {} as RunwayDef;
         return { occupied:null, closed:false, x:0, y:0, w:0, h:0, cy:0, stopX:0, exitX:0,
                  landingOpen: rd.landingOpen!==false,
+                 landingCost: rd.landingCost || 0,
                  takeoffOpen: rd.takeoffOpen!==false,
-                 openCost:    rd.openCost || 0,
+                 takeoffCost: rd.takeoffCost || 0,
                  snapPoints:  [] as SnapPoint[] };
       });
     }

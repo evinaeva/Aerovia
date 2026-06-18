@@ -12,14 +12,16 @@
   // выводится из ближайшей кромки апрона). ВПП — горизонтальные (заход справа): задаётся
   // только вертикальная позиция y (0..1) и их число; len зарезервирован под будущую длину.
   interface HangarDef { type: string; x: number; y: number; open?: boolean; up?: boolean; gate?: 'up'|'down'|'left'|'right';
+    openCost?: number;     // цена открытия этого ангара (override K.BAY_OPEN_COST; 0 = открыт сразу)
     lvl?: number;          // начальный уровень апгрейда (0..maxLvl, default 0)
     maxLvl?: number;       // потолок апгрейдов для этого ангара (0..BAY_MAX_LVL, default BAY_MAX_LVL)
     upgradeCost?: number;  // цена каждого апгрейда (override глобального K.BAY_UP_COST)
   }
   interface RunwayDef { y: number; len?: number;
-    landingOpen?: boolean; // посадка разрешена (default true)
-    takeoffOpen?: boolean; // взлёт разрешён (default true)
-    openCost?: number;     // стоимость открытия ВПП (0 = открыта сразу, default 0)
+    landingOpen?: boolean;  // посадка открыта на старте (default true)
+    landingCost?: number;   // цена разблокировки посадки (0 = открыта сразу)
+    takeoffOpen?: boolean;  // взлёт открыт на старте (default true)
+    takeoffCost?: number;   // цена разблокировки взлёта (0 = открыт сразу)
   }
   interface LevelLayout { hangars: HangarDef[]; runways: RunwayDef[]; }
   interface Events { vip?: boolean; emergency?: boolean; medical?: boolean; rush?: boolean; fog?: boolean; wind?: boolean; [k: string]: boolean | undefined; }
