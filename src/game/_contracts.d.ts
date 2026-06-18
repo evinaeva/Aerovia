@@ -22,4 +22,3 @@ declare const refreshOverLeaderboard: ((res: any) => void) | undefined;
 // --- from 11b-editor.ts (editor→game handoff flag) ---
 // Set true when a game session was launched from the level editor (changes pause/over
 // screen routing: "back to editor" instead of main menu / next level).
-declare let testFromEditor: boolean;

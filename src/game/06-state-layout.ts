@@ -4,6 +4,7 @@
 // Reads: 01 (cv, ctx); 04 (LV, curBiome, curBonus, levelName, bonusName); 03 (t, lang).
 
   let levelIdx = 0, levelKey: number | string = 0, levelPassed = false, upgradesDone = 0;
+  var testFromEditor = false;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
   // старыми сейвами), строка вида 'b_forest' для биом-карт (свои звёзды/рекорды).
   function currentLevelName(){
