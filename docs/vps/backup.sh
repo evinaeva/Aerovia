@@ -1,22 +1,22 @@
 #!/bin/bash
-# Daily VPS backup: postgres (delegatron) + static configs
+# Daily VPS backup: PlaneFlow OTA bundles + configs → Google Drive
 # Lives at /opt/backups/backup.sh — cron: 0 3 * * * /opt/backups/backup.sh >> /opt/backups/backup.log 2>&1
 set -euo pipefail
 STAMP=$(date +%Y%m%d)
 KEEP=7
 
-PG_DIR=/opt/backups/postgres
-sudo -u postgres pg_dump delegatron         | gzip > "$PG_DIR/delegatron-$STAMP.sql.gz"
-sudo -u postgres pg_dump delegatron_sandbox | gzip > "$PG_DIR/delegatron_sandbox-$STAMP.sql.gz"
-find "$PG_DIR" -name "*.sql.gz" -mtime +$KEEP -delete
-
+OTA_DIR=/opt/capgo-ota
 CFG=/opt/backups/configs
+
+# конфиги — небольшие, держим историю за KEEP дней
+mkdir -p "$CFG"
 cp /etc/caddy/Caddyfile                  "$CFG/Caddyfile-$STAMP"
 cp /etc/systemd/system/capgo-ota.service "$CFG/capgo-ota.service-$STAMP"
+cp "$OTA_DIR/updates.json"               "$CFG/updates.json-$STAMP"
 find "$CFG" -mtime +$KEEP -delete
 
-# sync to Google Drive (rclone, scope=drive.file — видит только свои файлы)
-rclone sync "$PG_DIR"  gdrive:vps-backups/postgres --quiet
-rclone sync "$CFG"     gdrive:vps-backups/configs  --quiet
+# sync to Google Drive (rclone, scope=drive.file)
+rclone sync "$OTA_DIR/bundles" gdrive:vps-backups/bundles  --quiet
+rclone sync "$CFG"             gdrive:vps-backups/configs  --quiet
 
 echo "[backup] done $STAMP"
