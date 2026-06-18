@@ -466,21 +466,26 @@
     if(pl.bay){ if(pl.bay.occupied===pl) pl.bay.occupied=null; pl.bay=null; }
   }
   // reason — ключ i18n (loss.*): в lossLog хранится ключ, перевод — при показе
-  function logLoss(pl: any, reason: string, moneyPenalty?: boolean){
+  // penaltyFrac — доля reward, списываемая с кассы (0 = нет штрафа; 1 = полная стоимость борта)
+  function logLoss(pl: any, reason: string, penaltyFrac = 0){
     if(pl.dead) return;
     pl.dead=true; boom(pl.x,pl.y); freeRes(pl);
     SND.crash(); HAP.crash();
-    combo=0; runCrashes++;          // крушение сбрасывает серию и портит «чистоту»
+    combo=0; runCrashes++;
     ACH.onCrash(pl, reason);
     if(!debug.infiniteLives) lives--;
-    if(moneyPenalty){ money-=pl.reward; addFloat(pl.x, pl.y-24*ui, '−'+fmtMoney(pl.reward), COL.life); }
+    if(penaltyFrac > 0 && !debug.infiniteLives){
+      const fine = Math.round(pl.reward * penaltyFrac);
+      money -= fine;
+      addFloat(pl.x, pl.y-24*ui, '−'+fmtMoney(fine), COL.life);
+    }
     lossLog.push({t:gameTime, reason});
     if(lossLog.length>12) lossLog.shift();
     toast={text:(debug.infiniteLives?'✈ ':'−1 ✈ ')+t(reason), t:0, good:false};
     console.log('[PlaneFlow] '+(debug.infiniteLives?'(∞) ':'-1 ✈ ')+t(reason)+' | t='+fmtTime(gameTime)+' | lives='+lives);
   }
-  function killAir(pl: any){ logLoss(pl, 'loss.airTimeout', false); }
-  function killCrash(pl: any, reason?: string){ logLoss(pl, reason||'loss.collision', true); }
+  function killAir(pl: any){ logLoss(pl, 'loss.airTimeout'); }
+  function killCrash(pl: any, reason?: string){ logLoss(pl, reason||'loss.collision', LV.crashPenalty ?? 0); }
 
   function curNeed(pl: any){ return pl.requests[pl.reqIndex]; }
 
@@ -503,11 +508,12 @@
     if(!pl.touched) touchdown(pl);   // страховка, если докатился без отдельного касания
     ACH.onLand(pl);
   }
-  // наземный таймаут: −50% оплаты (звук/вибро/всплывающий «−50%» — в одном месте)
+  // наземный таймаут: борт улетает с частичной оплатой (LV.latePenalty, умолч. 50%)
   function groundPenalty(pl: any){
     pl.halfPay=true; runPenalties++; ACH.onGroundTimeout(pl);
     SND.penalty(); HAP.penalty();
-    addFloat(pl.x, pl.y-20*ui, '−50%', COL.amber);
+    const pct = Math.round((LV.latePenalty ?? 0.5) * 100);
+    addFloat(pl.x, pl.y-20*ui, '−'+pct+'%', COL.amber);
   }
   function serveTimeFor(b: any){ return K.SERVE_BASE / (1 + b.lvl*K.UP_SPEED); }
   function comboMult(){ return 1 + Math.min(combo, K.COMBO_MAX)*K.COMBO_STEP; }
@@ -515,8 +521,8 @@
   function depart(pl: any){             // успешный вылет
     served++;
     let pay = pl.reward, express=false;
-    if(pl.halfPay){                // наземный штраф рвёт серию и режет оплату вдвое
-      combo=0; pay = Math.round(pay*0.5);
+    if(pl.halfPay){                // наземный штраф рвёт серию и режет оплату по latePenalty
+      combo=0; pay = Math.round(pay * (1 - (LV.latePenalty ?? 0.5)));
     } else {
       combo++;                                       // серия растёт всегда (для достижений/HUD)
       // денежные эффекты применяются, только если ВКЛЮЧЕНЫ на этой карте (lvFx) —

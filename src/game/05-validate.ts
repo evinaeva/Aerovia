@@ -82,7 +82,9 @@
       if(lv.maxUp!=null && !(Number.isInteger(lv.maxUp) && lv.maxUp>=0 && lv.maxUp<=K.BAY_MAX_LVL)) p.push(L+'maxUp должен быть целым в [0, '+K.BAY_MAX_LVL+']');
       // медицинский борт высаживает пациента в пассажирском боксе — нужен board в услугах
       if(lv.events && lv.events.medical && !levelServices(lv).includes('board')) p.push(L+'событие medical требует услугу "board" в services');
-      if(lv.startMoney!=null && !(lv.startMoney>0)) p.push(L+'startMoney должен быть > 0');
+      if(lv.startMoney!=null && !(lv.startMoney>=0)) p.push(L+'startMoney должен быть >= 0');
+      if(lv.crashPenalty!=null && !(lv.crashPenalty>=0 && lv.crashPenalty<=1)) p.push(L+'crashPenalty должен быть в [0, 1]');
+      if(lv.latePenalty!=null && !(lv.latePenalty>=0 && lv.latePenalty<=1)) p.push(L+'latePenalty должен быть в [0, 1]');
       if(lv.weather!=null && lv.weather!==true) p.push(L+'weather должен быть true (или отсутствовать)');
       if(lv.deice!=null && lv.deice!==true) p.push(L+'deice должен быть true (или отсутствовать)');
       // экономика уровня (levelEconomy): оплата в границах, голая смена окупает хотя бы

@@ -25,6 +25,8 @@
     services?: string[];   // какие услуги запрашивают борты (подмножество SVC_TYPES; умолч. все)
     maxUp?: number;        // глубина апгрейда на уровне 0..BAY_MAX_LVL (умолч. потолок); 0 — без апгрейдов
     events?: Events; startMoney?: number;
+    crashPenalty?: number; // 0..1 — доля вознаграждения борта, списывается с кассы при крэше
+    latePenalty?: number;  // 0..1 — доля вознаграждения при истечении наземного терпения (умолч. 0.5)
     biome?: string; bonus?: string; weather?: boolean; deice?: boolean;
     calm?: number; survRamp?: number; combo?: boolean; express?: boolean;
   }
@@ -221,6 +223,28 @@
     { pace:1.00, objective:{ metric:'served', stars:[22,26,30] },
       sides:{ top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
       runways:3, events:{ vip:true, emergency:true, rush:true, medical:true }, startMoney:80 },
+    // L11 — ТЕСТ штрафов: crashPenalty 50% + latePenalty 40%. Explicit layout, 2 ВПП.
+    // Взлётный конец нижней ВПП закрыт — игрок сам решает, когда открыть.
+    { pace:0.38,
+      objective:{ metric:'served', stars:[16,20,24] },
+      layout:{
+        hangars:[
+          { type:'fuel',   x:0.20, y:0.10, open:true  },
+          { type:'board',  x:0.55, y:0.10, open:true  },
+          { type:'repair', x:0.20, y:0.90, open:true  },
+          { type:'fuel',   x:0.55, y:0.90, open:false, openCost:120 },
+          { type:'board',  x:0.85, y:0.50, open:false, openCost:150 },
+        ],
+        runways:[
+          { y:0.35, landingOpen:true,  takeoffOpen:true  },
+          { y:0.65, landingOpen:true,  takeoffOpen:false, takeoffCost:100 },
+        ],
+      },
+      events:{ vip:true },
+      startMoney:200, maxUp:2,
+      crashPenalty:0.50,
+      latePenalty:0.40,
+    },
   ];
   // ---- biome maps (отдельная от кампании ветка карт) ----
   // Каждый биом — это конфиг уровня (как в LEVELS) + флаг biome для темы/помех.
