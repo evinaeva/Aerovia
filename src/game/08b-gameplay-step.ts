@@ -40,7 +40,7 @@
 
   function update(dt: number){
     // динамические события (на чистых картах отключены: next* = Infinity)
-    if(gameTime>=nextRush){ rushUntil=gameTime+K.RUSH_DUR; nextRush=gameTime+K.RUSH_PERIOD; toast={text:t('toast.rush'), t:0, good:false}; }
+    if(!K.DISABLE_RUSH && gameTime>=nextRush){ rushUntil=gameTime+K.RUSH_DUR; nextRush=gameTime+K.RUSH_PERIOD; toast={text:t('toast.rush'), t:0, good:false}; }
     if(gameTime>=nextWind){
       const open=runways.filter(r=>!r.closed);
       if(open.length>1){ open[Math.floor(Math.random()*open.length)].closed=true; windUntil=gameTime+K.WIND_DUR; toast={text:t('toast.wind'), t:0, good:false}; }
@@ -51,12 +51,12 @@
     // «часы» суток (логика; визуал берёт nightAmount). Не влияют на сложность.
     { const dc = dayCycle(gameTime); dayPhase = dc.phase; nightAmount = dc.night; }
     // погода: окна rain/snow по таймеру (движок выключен, если nextWeather=Infinity)
-    if(gameTime>=nextWeather){
+    if(!K.DISABLE_WEATHER && gameTime>=nextWeather){
       weather = Math.random()<K.WEATHER_SNOW_CHANCE ? 'snow' : 'rain';
       weatherUntil = gameTime+K.WEATHER_DUR; nextWeather = gameTime+K.WEATHER_PERIOD;
       toast = {text:t('toast.weather.'+weather), t:0, good:false};
     }
-    if(weather!=='clear' && gameTime>=weatherUntil) weather='clear';
+    if(weather!=='clear' && (gameTime>=weatherUntil || K.DISABLE_WEATHER)) weather='clear';
     const rush = gameTime<rushUntil;
     const fog = gameTime<fogUntil;
     // руление замедляют и туман, и непогода — берём наименьший (самый «вязкий») множитель
@@ -314,7 +314,7 @@
             nearMiss((a.x+b.x)/2, (a.y+b.y)/2);
             addFloat((a.x+b.x)/2, (a.y+b.y)/2 - 18*ui, t('float.nearMiss'), COL.phosphor);
             SND.nearmiss(); HAP.near();
-            slowmo = Math.max(slowmo, K.SLOWMO_DUR);
+            if(!K.DISABLE_SLOWMO) slowmo = Math.max(slowmo, K.SLOWMO_DUR);
             cool = gameTime + K.NEAR_COOL;
           }
           next[key] = {cool, last:d};

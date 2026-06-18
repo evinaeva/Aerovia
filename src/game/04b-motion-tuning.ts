@@ -71,6 +71,13 @@
     // ── лесной биом ───────────────────────────────────────────────────────────
     {key:'FOR.CREW_SPEED', group:'forest', label:'Скорость бригады', target:'FOR', name:'CREW_SPEED', def:FOR.CREW_SPEED, min:60,  max:600, step:5,  note:'px/sec спец-авто.',        impact:'Выше — быстрее реакция на помехи.'},
     {key:'FOR.WORK_TIME',  group:'forest', label:'Работа бригады',   target:'FOR', name:'WORK_TIME',  def:FOR.WORK_TIME,  min:.2,  max:8,   step:.1, note:'Секунды работы у помехи.', impact:'Выше — дольше закрыта полоса.'},
+    // ── контроль событий (on/off) ─────────────────────────────────────────────
+    {key:'K.DISABLE_VIP',       group:'ctrl', label:'Отключить VIP-борты',    target:'K', name:'DISABLE_VIP',       def:false, note:'Блокирует спавн VIP при любом K.VIP_CHANCE.',       impact:'Чистит поле для теста скорости без дорогих бортов.'},
+    {key:'K.DISABLE_EMERGENCY', group:'ctrl', label:'Отключить аварийные',    target:'K', name:'DISABLE_EMERGENCY', def:false, note:'Блокирует «топливо на нуле».',                       impact:'Убирает экстренные ситуации из тестовой сессии.'},
+    {key:'K.DISABLE_MEDICAL',   group:'ctrl', label:'Отключить медицинские',  target:'K', name:'DISABLE_MEDICAL',   def:false, note:'Блокирует медицинские борты.',                       impact:'Устраняет приоритетные прерывания.'},
+    {key:'K.DISABLE_RUSH',      group:'ctrl', label:'Отключить час пик',      target:'K', name:'DISABLE_RUSH',      def:false, note:'Не запускает волну rush (RUSH_PERIOD/RUSH_DUR).',    impact:'Стабильный поток без всплесков.'},
+    {key:'K.DISABLE_WEATHER',   group:'ctrl', label:'Отключить погоду',       target:'K', name:'DISABLE_WEATHER',   def:false, note:'Не даёт начаться дождю/снегу; сбрасывает текущую.',  impact:'Постоянная ясная погода для теста скорости руления.'},
+    {key:'K.DISABLE_SLOWMO',    group:'ctrl', label:'Отключить slowmo',       target:'K', name:'DISABLE_SLOWMO',    def:false, note:'Near-miss не замедляет время.',                     impact:'Непрерывный темп без визуальных пауз.'},
   ];
 
   const MT_GROUPS: Record<string, string> = {
@@ -79,6 +86,7 @@
     timing:'Тайминги',   service:'Обслуживание',
     spawn:'Поток',       collisions:'Столкновения', effects:'Эффекты',
     events:'События',    weather:'Погода',  forest:'Лесной биом',
+    ctrl:'⚙ Контроль событий',
   };
 
   function mtTarget(p: MtParam): any { return p.target === 'FOR' ? FOR as any : K as any; }

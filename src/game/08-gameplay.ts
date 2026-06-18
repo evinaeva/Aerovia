@@ -90,9 +90,9 @@
     // спец-борты как мини-события (раздел 3 копилки): частный джет (вип),
     // «топливо на нуле» (срочный + бонус), медицинский (приоритет — высадка пациента).
     const evs = levelEvents();                                           // какие спецборты разрешены уровнем
-    const vip = evs.vip && Math.random() < K.VIP_CHANCE;                 // частный джет
-    const emergency = evs.emergency && !vip && Math.random() < K.EMERGENCY_CHANCE;        // «топливо на нуле»
-    const medical = evs.medical && !vip && !emergency && Math.random() < K.MEDICAL_CHANCE; // медицинский
+    const vip = evs.vip && !K.DISABLE_VIP && Math.random() < K.VIP_CHANCE;
+    const emergency = evs.emergency && !K.DISABLE_EMERGENCY && !vip && Math.random() < K.EMERGENCY_CHANCE;
+    const medical = evs.medical && !K.DISABLE_MEDICAL && !vip && !emergency && Math.random() < K.MEDICAL_CHANCE;
     // КОНСТРУКТОР: борт запрашивает услуги ТОЛЬКО из набора уровня (services). Копируем
     // массив перед перемешиванием — levelServices() может вернуть сам конфиг (не мутируем).
     const svcPool = shuffle(levelServices().slice());
