@@ -4,6 +4,10 @@
 // Three phone-size presets (S/M/L) let the designer preview layout at different aspect ratios.
 // Provides: edOpen, edClose, edToLevel (+ window.__EDITOR test hook).
 
+  // true when the current game session was launched from the editor "test" button;
+  // controls pause/game-over routing (back to editor instead of main menu / next level)
+  let testFromEditor = false;
+
   // ---- interfaces ----
   interface EdHangar {
     type: string; x: number; y: number;
