@@ -191,7 +191,9 @@ function drawMenuScene(tm: number){
       statsBox.appendChild(d);
     });
     const hasNext = !LV.biome && !LV.bonus && levelIdx+1<LEVELS.length && (debug.unlockAll||(levelIdx+1)<save.unlocked);
-    document.getElementById('nextBtn')!.classList.toggle('hidden', !hasNext);
+    document.getElementById('nextBtn')!.classList.toggle('hidden', !hasNext || testFromEditor);
+    document.getElementById('toLevelsBtn')!.classList.toggle('hidden', testFromEditor);
+    document.getElementById('toEditorBtn')!.classList.toggle('hidden', !testFromEditor);
     document.getElementById('overScreen')!.classList.remove('hidden');
     // график рисуем после показа экрана — нужен реальный размер канваса
   }
