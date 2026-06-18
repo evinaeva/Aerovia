@@ -48,6 +48,12 @@
     LAND_BUMP_AMP: 4,           // амплитуда толчка при касании, ui-единиц
     TAKEOFF_OVERSHOOT: 200,     // цель разгона: exitX + это (px за краем экрана)
     TAKEOFF_HOLD: 0.5,    // крошечная остановка перед разгоном на взлёте, сек
+    DISABLE_VIP:       false as boolean, // отключить VIP-борты (для отладки скорости)
+    DISABLE_EMERGENCY: false as boolean, // отключить аварийные борты
+    DISABLE_MEDICAL:   false as boolean, // отключить медицинские борты
+    DISABLE_RUSH:      false as boolean, // отключить часы пик
+    DISABLE_WEATHER:   false as boolean, // отключить погодные условия
+    DISABLE_SLOWMO:    false as boolean, // отключить slowmo при near-miss
     ARRIVE: 12,
     GRAB: 42,
     CRASH_DIST: 24,       // столкновение на поле

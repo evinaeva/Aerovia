@@ -218,8 +218,39 @@
     }
     .mt-row:hover { background: rgba(58,210,255,.03); }
 
+    .mt-row.mt-bool {
+      grid-template-columns: 1fr auto;
+    }
+
     .mt-row .lbl b   { display: block; font-size: 12px; font-weight: 600; }
     .mt-row .lbl em  { display: block; margin-top: 2px; font-size: 10px; color: var(--muted); font-style: normal; line-height: 1.3; }
+
+    /* Toggle switch for boolean params */
+    .mt-toggle {
+      position: relative;
+      width: 40px; height: 22px;
+      flex: none;
+    }
+    .mt-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .mt-toggle .track {
+      position: absolute; inset: 0;
+      border-radius: 11px;
+      background: #1a2a48;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .mt-toggle input:checked + .track { background: var(--accent); border-color: var(--accent); }
+    .mt-toggle .track::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform .2s;
+    }
+    .mt-toggle input:checked + .track::after { transform: translateX(18px); }
 
     .mt-row input[type=range] {
       width: 100%; cursor: pointer; accent-color: var(--accent2);
@@ -365,13 +396,21 @@
 
       params.forEach(p => {
         const row = document.createElement('label');
-        row.className = 'mt-row';
-        row.dataset.key = p.key;
         const v = snap[p.key];
-        row.innerHTML =
-          '<span class="lbl"><b>' + p.label + '</b><em>' + p.key + '</em></span>' +
-          '<input type="range"   data-key="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + v + '">' +
-          '<input class="mt-num" data-key="' + p.key + '" type="number" step="' + p.step + '" value="' + v + '">';
+        row.dataset.key = p.key;
+
+        if (typeof p.def === 'boolean') {
+          row.className = 'mt-row mt-bool';
+          row.innerHTML =
+            '<span class="lbl"><b>' + p.label + '</b><em>' + p.key + '</em></span>' +
+            '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
+        } else {
+          row.className = 'mt-row';
+          row.innerHTML =
+            '<span class="lbl"><b>' + p.label + '</b><em>' + p.key + '</em></span>' +
+            '<input type="range"   data-key="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + v + '">' +
+            '<input class="mt-num" data-key="' + p.key + '" type="number" step="' + p.step + '" value="' + v + '">';
+        }
         det.appendChild(row);
       });
 
@@ -387,6 +426,8 @@
     groupsEl.addEventListener('input', e => {
       const key = e.target.dataset && e.target.dataset.key;
       if (!key || !MT) return;
+
+      if (e.target.type === 'checkbox') return; // handled by 'change'
 
       const val = parseFloat(e.target.value);
       if (!Number.isFinite(val)) return;
@@ -404,7 +445,13 @@
     groupsEl.addEventListener('change', e => {
       const key = e.target.dataset && e.target.dataset.key;
       if (!key || !MT) return;
-      MT.apply({ [key]: parseFloat(e.target.value) }, true);
+      if (e.target.type === 'checkbox') {
+        const val = e.target.checked;
+        MT.apply({ [key]: val }, true);
+        setStatus(key + '  →  ' + val);
+      } else {
+        MT.apply({ [key]: parseFloat(e.target.value) }, true);
+      }
     });
   }
 
@@ -414,7 +461,9 @@
     const snap = MT.snapshot();
     groupsEl.querySelectorAll('[data-key]').forEach(el => {
       const v = snap[el.dataset.key];
-      if (v != null) el.value = v;
+      if (v == null) return;
+      if (el.type === 'checkbox') el.checked = !!v;
+      else el.value = v;
     });
   }
 
