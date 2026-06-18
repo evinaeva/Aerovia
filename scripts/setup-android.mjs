@@ -37,6 +37,8 @@ public class MainActivity extends BridgeActivity {
     // Fullscreen (immersive): hide status + nav bars; they return transiently on edge-swipe.
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Регистрируем плагин Saved Games (Snapshots) ДО super.onCreate — требование Capacitor.
+        registerPlugin(SnapshotsPlugin.class);
         super.onCreate(savedInstanceState);
         hideSystemBars();
     }
@@ -54,6 +56,81 @@ public class MainActivity extends BridgeActivity {
         controller.hide(WindowInsetsCompat.Type.systemBars());
         controller.setSystemBarsBehavior(
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+    }
+}
+`;
+
+// Тонкий мост к Google Play Saved Games (Snapshots) поверх PGS v2. JS видит его как
+// window.Capacitor.Plugins.Snapshots (методы load/save) — см. src/game/12c-cloud-saves.ts.
+// Вход в Play Games (app-wide singleton) обеспечивает @openforge/capacitor-game-connect;
+// сюда мы попадаем только ПОСЛЕ Account.signIn(). Конфликт версий резолвится автоматически
+// политикой "most recently modified" (= last-writer-wins). Артефакт play-services-games-v2
+// добавляется в app/build.gradle ниже (на компил-classpath app-модуля).
+const SNAPSHOTS_PLUGIN = `package com.planeflow.game;
+
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.gms.games.PlayGames;
+import com.google.android.gms.games.SnapshotsClient;
+import com.google.android.gms.games.snapshot.Snapshot;
+import com.google.android.gms.games.snapshot.SnapshotMetadataChange;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
+@CapacitorPlugin(name = "Snapshots")
+public class SnapshotsPlugin extends Plugin {
+
+    private static final String SNAPSHOT_NAME = "planeflow_progress_v1";
+
+    @PluginMethod
+    public void load(final PluginCall call) {
+        final SnapshotsClient client;
+        try { client = PlayGames.getSnapshotsClient(getActivity()); }
+        catch (Exception e) { call.reject("snapshots client unavailable: " + e.getMessage()); return; }
+
+        client.open(SNAPSHOT_NAME, true, SnapshotsClient.RESOLUTION_POLICY_MOST_RECENTLY_MODIFIED)
+            .addOnFailureListener(e -> call.reject("open failed: " + e.getMessage()))
+            .addOnSuccessListener(result -> {
+                // Политика "most recently modified" авторезолвит конфликт уже на open(),
+                // поэтому здесь ждём данные, а не конфликт (на всякий случай — явный reject).
+                if (result.isConflict()) { call.reject("unexpected conflict on open"); return; }
+                Snapshot snapshot = result.getData();
+                try {
+                    byte[] bytes = snapshot.getSnapshotContents().readFully();
+                    JSObject ret = new JSObject();
+                    ret.put("data", (bytes == null || bytes.length == 0)
+                        ? null : new String(bytes, StandardCharsets.UTF_8));
+                    client.discardAndClose(snapshot);   // read-only: освобождаем снапшот без записи
+                    call.resolve(ret);
+                } catch (IOException e) {
+                    call.reject("read failed: " + e.getMessage());
+                }
+            });
+    }
+
+    @PluginMethod
+    public void save(final PluginCall call) {
+        final String data = call.getString("data");
+        if (data == null) { call.reject("missing 'data'"); return; }
+
+        final SnapshotsClient client;
+        try { client = PlayGames.getSnapshotsClient(getActivity()); }
+        catch (Exception e) { call.reject("snapshots client unavailable: " + e.getMessage()); return; }
+
+        client.open(SNAPSHOT_NAME, true, SnapshotsClient.RESOLUTION_POLICY_MOST_RECENTLY_MODIFIED)
+            .addOnFailureListener(e -> call.reject("open failed: " + e.getMessage()))
+            .addOnSuccessListener(result -> {
+                if (result.isConflict()) { call.reject("unexpected conflict on open"); return; }
+                Snapshot snapshot = result.getData();
+                snapshot.getSnapshotContents().writeBytes(data.getBytes(StandardCharsets.UTF_8));
+                client.commitAndClose(snapshot, SnapshotMetadataChange.EMPTY_CHANGE)
+                    .addOnSuccessListener(meta -> { JSObject ret = new JSObject(); ret.put("ok", true); call.resolve(ret); })
+                    .addOnFailureListener(e -> call.reject("commit failed: " + e.getMessage()));
+            });
     }
 }
 `;
@@ -112,6 +189,14 @@ patch('app/build.gradle', (s) => {
 patch('app/build.gradle', (s) =>
   s.replace(/versionName\s+"[^"]*"/, `versionName "${APP_VERSION}"`));
 
+// Saved Games (Snapshots): наш SnapshotsPlugin лежит в app-модуле и компилируется против
+// play-services-games-v2. @openforge тянет тот же артефакт, но как `implementation` СВОЕГО
+// модуля — на компил-classpath app он не виден, поэтому объявляем зависимость и здесь (рантайм
+// один и тот же артефакт). Версия `+` — как у @openforge, чтобы Gradle свёл их к одной.
+patch('app/build.gradle', (s) =>
+  s.includes('play-services-games-v2') ? s
+    : s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "com.google.android.gms:play-services-games-v2:+"'));
+
 // 2) local.properties (machine-specific SDK path; never committed)
 {
   const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
@@ -160,5 +245,9 @@ patch('app/src/main/AndroidManifest.xml', (s) => {
 // 6) Fullscreen / immersive MainActivity
 writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/MainActivity.java'), MAIN_ACTIVITY);
 log('wrote: MainActivity.java (immersive)');
+
+// 7) Saved Games (Snapshots) плагин — рядом с MainActivity (тот же пакет com.planeflow.game)
+writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/SnapshotsPlugin.java'), SNAPSHOTS_PLUGIN);
+log('wrote: SnapshotsPlugin.java (Saved Games / Snapshots)');
 
 console.log('setup-android: done.');
