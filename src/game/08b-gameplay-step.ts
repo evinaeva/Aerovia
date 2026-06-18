@@ -230,10 +230,10 @@
         const parkA = -(half - L - gap);           // центр борта у дальней стены (целиком внутри)
         const exitA =  (half + L + gap);           // центр борта снаружи у ворот — точка остановки после выезда
         // держим борт ровно на оси ворот → нет касания боковых стен
-        if(vert) pl.x += (cx-pl.x)*Math.min(1, dt*6);
-        else     pl.y += (cy-pl.y)*Math.min(1, dt*6);
+        if(vert) pl.x += (cx-pl.x)*Math.min(1, dt*K.BAY_ALIGN_SPEED);
+        else     pl.y += (cy-pl.y)*Math.min(1, dt*K.BAY_ALIGN_SPEED);
         const along = vert ? (pl.y-cy)*o.dy : (pl.x-cx)*o.dx;  // вдоль оси, наружу +
-        const step = taxiSpeed*dt*0.85;
+        const step = taxiSpeed * dt * K.BAY_DOCK_SPEED;
         const setAlong = (a: number) => { if(vert) pl.y=cy+a*o.dy; else pl.x=cx+a*o.dx; };
         const angIn=Math.atan2(-o.dy,-o.dx), angOut=Math.atan2(o.dy,o.dx);
         // обслуживание идёт, пока борт заезжает и стоит носом к стене (не во время выезда)
@@ -251,12 +251,12 @@
           // плавно выехать к точке остановки и встать (без рывка/телепорта)
           let d=angOut-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
           if(along < -0.5){
-            turnTo(pl, angOut, dt*1.6);                          // от дальней стены к центру, попутно доворачивая
+            turnTo(pl, angOut, dt*K.BAY_HEAD_SPEED*0.8);        // от дальней стены к центру, попутно доворачивая
             setAlong(along + Math.min(step, 0-along));
           } else if(Math.abs(d)>0.12){
-            turnTo(pl, angOut, dt*2);                            // на центре — разворот носом наружу
+            turnTo(pl, angOut, dt*K.BAY_HEAD_SPEED);             // на центре — разворот носом наружу
           } else {
-            turnTo(pl, angOut, dt*2);
+            turnTo(pl, angOut, dt*K.BAY_HEAD_SPEED);
             setAlong(along + Math.min(step, exitA-along));       // плавный выезд к точке остановки
             if(along>=exitA-0.5){
               // выехал целиком — освобождаем бокс, встаём в поле и стоим
@@ -267,7 +267,7 @@
           }
         } else {
           // ЗАЕЗД/СТОЯНКА: нос к стене, доезжаем к дальней стене и ждём обслуживания
-          turnTo(pl, angIn, dt*2);
+          turnTo(pl, angIn, dt*K.BAY_HEAD_SPEED);
           setAlong(along + Math.sign(parkA-along)*Math.min(step, Math.abs(parkA-along)));
         }
         continue;

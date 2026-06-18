@@ -54,6 +54,9 @@
     DISABLE_RUSH:      false as boolean, // отключить часы пик
     DISABLE_WEATHER:   false as boolean, // отключить погодные условия
     DISABLE_SLOWMO:    false as boolean, // отключить slowmo при near-miss
+    BAY_DOCK_SPEED:  0.85, // скорость движения в боксе (доля от SPEED_TAXI)
+    BAY_ALIGN_SPEED: 6,    // lerp-скорость бокового выравнивания по оси ворот
+    BAY_HEAD_SPEED:  2,    // скорость поворота носа при заезде/выезде из бокса
     ARRIVE: 12,
     GRAB: 42,
     CRASH_DIST: 24,       // столкновение на поле
