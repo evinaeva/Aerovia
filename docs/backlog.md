@@ -66,6 +66,12 @@
 > «Google Play Games / OAuth» в [`design/game-design/leaderboards.md`](design/game-design/leaderboards.md).
 > На старте рейтинги/ачивки хостит **сам Google** (вариант B1); Firebase — план Б, если упрёмся в
 > анти-чит или захотим веб-рейтинг. Эти два дока привести в соответствие при реализации.
+>
+> **Обновление 2026-06-18 — распространение ТОЛЬКО через Google Play.** Отдельной поддерживаемой
+> веб/PWA-версии как продукта не будет → **веб-рейтинг на Firebase и веб-фоллбэк сняты** (вернутся
+> только при веб-дистрибуции). Ачивки/лидерборды — нативный Play Games (готово, п.3); облачные
+> сейвы — Play Games Saved Games (план — см. «Облачное сохранение»). OTA — **self-host на своём
+> VPS, готово** (п.5). GitHub Pages остаётся как хост privacy-URL и dev/test-поверхность.
 
 **Цена выбора (зафиксировано):** теряем live-update TWA (игра уезжает с сайта внутрь APK) —
 возвращаем через Capgo; WebView вместо полного Chrome (проверить Canvas на слабом телефоне);
@@ -91,15 +97,17 @@
 4. **Маппинг медалей.** Завести подмножество из 49 медалей ([`achievements.md`](achievements.md))
    как Play Games achievements (⏳-будущие-режимы пропустить); ранг-медали — от позиции в Play
    Games leaderboard. **Сложность:** низкая.
-5. **Capgo (OTA) — ✅ ГОТОВО (2026-06-17).** Облако Capgo; OTA работает на Pixel 9. В коде: плагин
-   `@capgo/capacitor-updater@5`, `CapacitorUpdater` в `capacitor.config.ts`, `notifyAppReady()` в
-   `13-init.js`, выгрузка бандла в `deploy.yml` (канал `production`, версия `major.minor.<run>`,
-   `--no-code-check`). Настройка облака и грабли (ключ роли org-Админ; канал = download-default;
-   `versionName` из package.json) — в [`capacitor-android.md`](capacitor-android.md). Триал 15 дней;
-   бесплатный путь $0 (свой VPS) — [`capgo-self-host-migration.md`](capgo-self-host-migration.md).
-6. **Веб-фоллбэк.** В браузере Play Games недоступен → детект платформы, fallback на mock,
-   соц-кнопки прятать или вести «доступно в приложении». (Если веб-версии не будет вовсе — пункт
-   снимается.) **Сложность:** низкая.
+5. **Capgo (OTA) — ✅ ГОТОВО, self-host на своём VPS (2026-06-18).** OTA едет с **своего Contabo
+   VPS** (Caddy авто-TLS + крошечный responder + статика бандлов на `capgo.jevgenia.com`), **без
+   облака Capgo и без платы**. CI на push в `main` зипует `www/` и заливает бандл по SSH (`deploy.yml`);
+   `updateUrl`/`channelUrl`/`statsUrl` → свой домен в `capacitor.config.ts`, `notifyAppReady()` в
+   `13-init.js`. Проверено end-to-end на Pixel 9 (бандл `0.21.50` доставлен). Детали/грабли —
+   [`capgo-self-host-migration.md`](capgo-self-host-migration.md); сводка — [`done.md`](done.md).
+   _(Ранее: триал облака Capgo — съехали на $0 self-host.)_
+6. **Веб-фоллбэк — ❌ СНЯТО (2026-06-18, Play-only).** Распространение только через Google Play →
+   поддерживаемой веб-версии как продукта нет, mock-фоллбэк/пряча соц-кнопок на вебе не нужны.
+   Веб-код остаётся как dev/test-поверхность и хост privacy-URL, но не как продукт. (Вернётся при
+   веб-дистрибуции.)
 7. **Privacy / Data Safety (блокер релиза).** Play Games собирает идентификатор игрока → ✅
    [`../privacy.html`](../privacy.html) (добавлен раздел «Google Play Games») и
    [`play-data-safety.md`](play-data-safety.md) (блок «Play Games» → ответ формы **Yes**)
@@ -122,8 +130,9 @@
 > [`design/game-design/leaderboards.md`](design/game-design/leaderboards.md). Ниже — что нужно,
 > чтобы рейтинг стал **настоящим** глобальным.
 
-1. **Реальный бэкенд** (приём + ранжирование счётов): свой мини-API (напр. на VPS) /
-   Firebase / Supabase. Подключается заменой `Leaderboard.provider` — игру не трогаем.
+1. **Реальный бэкенд** (приём + ранжирование счётов). На Android — **нативный Play Games** (готово
+   в коде, п.3 «Переход…»): рейтинг Survival хостит Google бесплатно. _Свой мини-API / Firebase /
+   Supabase для **веб**-рейтинга_ — **снято (2026-06-18, Play-only)**; вернётся при веб-дистрибуции.
 2. **Настоящие аккаунты:** нативный **Google Play Games** (через Capacitor — см. раздел
    «Переход на Capacitor + Capgo») в `Account.authProvider`. Сейчас mock «локальный аккаунт».
 3. **Анти-чит:** серверная валидация счёта (потолки темпа, токен сессии, отбраковка
@@ -241,6 +250,11 @@
   обратно при запуске. Один scope **ничего не синхронизирует**. Сейчас прогресс только в
   `localStorage` → на новом устройстве игра начинается заново, даже после входа в Play Games (вход
   возвращает лишь серверные ачивки/лидерборд Google, не наш `save`). **Сложность:** средняя.
+  **План транспорта зафиксирован (2026-06-18):** тонкий **свой Kotlin-плагин Snapshots** поверх
+  `@openforge/capacitor-game-connect` (в PGS v2 вход общий на всё приложение → второй плагин
+  переиспользует ту же сессию, без второго sign-in); политика `RESOLUTION_POLICY_MOST_RECENTLY_MODIFIED`
+  (last-writer-wins; localStorage — источник истины, облако — best-effort). Гейт: включить **Saved
+  Games в Play Console** (пропагация до 24ч). Реализация — отдельной задачей (~1–2 дня, additive).
 
 ### 8. -
 
