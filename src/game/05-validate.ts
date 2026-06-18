@@ -107,9 +107,11 @@
       EVENT_KEYS.forEach(k=>{ if(ev[k] && firstSeen[k]==null) firstSeen[k]=i; });
       // спокойный блок L1–L4 — без единого спецсобытия
       if(i < CALM_LEVELS && EVENT_KEYS.some(k=>ev[k])) p.push(L+'спокойный блок L1–L'+CALM_LEVELS+' — без спецсобытий');
-      // ТЕМП (pace) — главная ось сложности: обязателен, в [0,1], и НЕ убывает по кампании
+      // ТЕМП (pace) — главная ось сложности: обязателен, в [0,1].
+      // Монотонность проверяется только внутри туториального блока (L1..TUTORIAL_COUNT);
+      // сгенерированные уровни (L11+) начинают новую кривую и могут стартовать ниже.
       if(!(typeof lv.pace==='number' && lv.pace>=0 && lv.pace<=1)) p.push(L+'pace должен быть числом в [0,1] (темп/интенсивность уровня)');
-      else if(i>0 && typeof LEVELS[i-1].pace==='number' && (lv.pace ?? 0) < ((LEVELS[i-1] && LEVELS[i-1].pace) ?? 0)) p.push(L+'pace должен не убывать по кампании (интенсивность только растёт)');
+      else if(i>0 && i<K.TUTORIAL_COUNT && typeof LEVELS[i-1].pace==='number' && (lv.pace ?? 0) < ((LEVELS[i-1] && LEVELS[i-1].pace) ?? 0)) p.push(L+'pace должен не убывать внутри туториального блока (L1–L'+K.TUTORIAL_COUNT+')');
     });
     // прогрессия: спецсобытия вводятся только после спокойного блока (с L5)
     Object.keys(firstSeen).forEach(k=>{
