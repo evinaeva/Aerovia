@@ -45,10 +45,10 @@ const gameModule = (name) => {
 
 // The game IIFE, in the order its modules must concatenate (01 opens it, 13 closes it).
 export const GAME_ORDER = [
-  '01-bootstrap-theme', '02-sprites', '03-i18n', '04-config-levels', '05-validate',
-  '06-state-layout', '07-audio-services', '08-gameplay', '08b-gameplay-step', '08c-fsm',
+  '01-bootstrap-theme', '02-sprites', '03-i18n', '04-config-levels', '05-validate', '14-level-analysis',
+  '06-state-layout', '07-audio-services', '08-gameplay', '08b-gameplay-step',
   '09-render', '09b-render-entities', '10-scene-loop', '11-menu-ui', '11b-editor',
-  '12-achievements-medals', '12b-native-play-games', '12c-cloud-saves', '13-init',
+  '12-achievements-medals', '12b-native-play-games', '13-init',
 ];
 
 export function build() {

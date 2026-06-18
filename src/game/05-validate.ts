@@ -40,11 +40,8 @@
           if(h.open!=null && typeof h.open!=='boolean') p.push(HL+'open должен быть boolean');
           if(h.up!=null && typeof h.up!=='boolean') p.push(HL+'up должен быть boolean');
           if(h.gate!=null && !['up','down','left','right'].includes(h.gate)) p.push(HL+'gate должен быть up|down|left|right');
-          const perMaxLvl = (h.maxLvl != null) ? Math.min(h.maxLvl, K.BAY_MAX_LVL) : K.BAY_MAX_LVL;
-          if(h.maxLvl != null && !(Number.isInteger(h.maxLvl) && h.maxLvl>=0 && h.maxLvl<=K.BAY_MAX_LVL)) p.push(HL+'maxLvl должен быть целым в [0, '+K.BAY_MAX_LVL+']');
-          if(h.lvl != null && !(Number.isInteger(h.lvl) && h.lvl>=0 && h.lvl<=perMaxLvl)) p.push(HL+'lvl должен быть целым в [0, maxLvl('+perMaxLvl+')]');
-          if(h.upgradeCost != null && !(h.upgradeCost>0)) p.push(HL+'upgradeCost должен быть > 0');
-          if(h.openCost != null && !(h.openCost>=0)) p.push(HL+'openCost должен быть >= 0');
+          if(h.openCost!=null && !(h.openCost>=0)) p.push(HL+'openCost должен быть >= 0');
+          if(h.upgCost!=null && !(h.upgCost>0)) p.push(HL+'upgCost должен быть > 0');
         });
         if(!Array.isArray(rws) || rws.length<1) p.push(L+'layout.runways должен содержать хотя бы одну ВПП');
         else {
@@ -57,11 +54,9 @@
             if(r.landingCost!=null && !(r.landingCost>=0)) p.push(RL+'landingCost должен быть >= 0');
             if(r.takeoffCost!=null && !(r.takeoffCost>=0)) p.push(RL+'takeoffCost должен быть >= 0');
           });
-          // уровень-целом: хотя бы одна ВПП с посадкой И хотя бы одна со взлётом
-          const hasLanding = rws.some(r=>r.landingOpen!==false);
-          const hasTakeoff = rws.some(r=>r.takeoffOpen!==false);
-          if(!hasLanding) p.push(L+'layout.runways: ни одна ВПП не разрешает посадку');
-          if(!hasTakeoff) p.push(L+'layout.runways: ни одна ВПП не разрешает взлёт');
+          // минимум одна открытая посадка и один открытый взлёт на старте
+          if(rws.filter(r=>r.landingOpen!==false).length < 1) p.push(L+'нет ни одной открытой посадочной ВПП (нужен landingOpen:true хотя бы на одной)');
+          if(rws.filter(r=>r.takeoffOpen!==false).length < 1) p.push(L+'нет ни одной открытой взлётной ВПП (нужен takeoffOpen:true хотя бы на одной)');
         }
         // каждая услуга, которую может запросить борт, должна иметь ангар такого типа
         if(Array.isArray(hs)){

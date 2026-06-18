@@ -11,18 +11,8 @@
   // true), апгрейдируется ли (up, умолч. true) и куда смотрят ворота (gate; если опустить —
   // выводится из ближайшей кромки апрона). ВПП — горизонтальные (заход справа): задаётся
   // только вертикальная позиция y (0..1) и их число; len зарезервирован под будущую длину.
-  interface HangarDef { type: string; x: number; y: number; open?: boolean; up?: boolean; gate?: 'up'|'down'|'left'|'right';
-    openCost?: number;     // цена открытия этого ангара (override K.BAY_OPEN_COST; 0 = открыт сразу)
-    lvl?: number;          // начальный уровень апгрейда (0..maxLvl, default 0)
-    maxLvl?: number;       // потолок апгрейдов для этого ангара (0..BAY_MAX_LVL, default BAY_MAX_LVL)
-    upgradeCost?: number;  // цена каждого апгрейда (override глобального K.BAY_UP_COST)
-  }
-  interface RunwayDef { y: number; len?: number;
-    landingOpen?: boolean;  // посадка открыта на старте (default true)
-    landingCost?: number;   // цена разблокировки посадки (0 = открыта сразу)
-    takeoffOpen?: boolean;  // взлёт открыт на старте (default true)
-    takeoffCost?: number;   // цена разблокировки взлёта (0 = открыт сразу)
-  }
+  interface HangarDef { type: string; x: number; y: number; open?: boolean; up?: boolean; gate?: 'up'|'down'|'left'|'right'; openCost?: number; upgCost?: number; }
+  interface RunwayDef { y: number; len?: number; landingOpen?: boolean; takeoffOpen?: boolean; landingCost?: number; takeoffCost?: number; }
   interface LevelLayout { hangars: HangarDef[]; runways: RunwayDef[]; }
   interface Events { vip?: boolean; emergency?: boolean; medical?: boolean; rush?: boolean; fog?: boolean; wind?: boolean; [k: string]: boolean | undefined; }
   interface Objective { metric: 'served' | 'upgrades'; stars: number[]; target?: number; time?: number; race?: boolean; upg?: number[]; }
@@ -83,8 +73,8 @@
     SURV_RAMP_SECS: 300,  // Survival: за сколько сек стартовый темп карты (level.pace) выходит на максимум (1.0)
     START_MONEY: 100,
     BAY_OPEN_COST: 100,
-    BAY_UP_COST: [80,160,320,640,1280], // апгрейд до ур.1/2/3/4/5 (глобальный потолок BAY_MAX_LVL)
-    BAY_MAX_LVL: 5,                    // абсолютный потолок прокачки; per-level maxUp или per-bay maxLvl могут срезать ниже
+    BAY_UP_COST: [80,160,320,640], // апгрейд до ур.1/2/3/4 (глобальный потолок BAY_MAX_LVL)
+    BAY_MAX_LVL: 4,                 // абсолютный потолок прокачки; per-level maxUp может срезать ниже
     RUNWAY_MAX: 5,                  // потолок числа ВПП на карте (layout): вертикально больше не помещается
     UP_SPEED: 0.25,       // +25% скорости за уровень
     // --- экономика: оплата за услугу и стартовая касса ВЫВОДЯТСЯ из самого уровня
@@ -388,12 +378,30 @@
     // «набор» считается из РАССТАНОВКИ: layout (один ангар = одно место) или старые sides
     // (слоты). open0 — открыто на старте, openable — докупаемо; upgShare — доля рабочих
     // мест, которые вообще апгрейдятся (up!==false).
+    // Per-hangar цены: openCost/upgCost на ангаре замещают глобальные K.BAY_OPEN/UP_COST;
+    // закрытые направления ВПП (landingOpen/takeoffOpen) добавляются к kit отдельно.
     let open0 = 0, openable = 0, upgShare = 1;
+    let openCostAvg = K.BAY_OPEN_COST;    // средняя цена открытия закрытых ангаров
+    let upgCostBase  = K.BAY_UP_COST[0];  // средняя цена 1-го апгрейда
+    let rwDirKitCost = 0;                 // сумма стоимости закрытых направлений ВПП
     if(lv && lv.layout && lv.layout.hangars){
       const hs = lv.layout.hangars;
-      for(const h of hs){ if(h.open===false) openable++; else open0++; }
-      const nUp = hs.filter(h=>h.up!==false).length;
-      upgShare = hs.length ? nUp / hs.length : 0;
+      let openCostSum = 0;
+      for(const h of hs){
+        if(h.open===false){ openable++; openCostSum += h.openCost ?? K.BAY_OPEN_COST; }
+        else open0++;
+      }
+      if(openable > 0) openCostAvg = openCostSum / openable;
+      const upg = hs.filter(h=>h.up!==false);
+      upgShare = hs.length ? upg.length / hs.length : 0;
+      if(upg.length > 0) upgCostBase = upg.reduce((s,h)=>s+(h.upgCost??K.BAY_UP_COST[0]),0) / upg.length;
+      // направления ВПП: все закрытые ожидаются к покупке (стоимость ≥0)
+      if(lv.layout.runways){
+        for(const rd of lv.layout.runways){
+          if(rd.landingOpen===false) rwDirKitCost += rd.landingCost ?? 0;
+          if(rd.takeoffOpen===false) rwDirKitCost += rd.takeoffCost ?? 0;
+        }
+      }
     } else {
       const sides: Record<string, SideCfg | undefined> = (lv && lv.sides) || {};
       for(const s of ['top','left','bottom']){
@@ -409,8 +417,8 @@
     // уровня (maxUp:0 → апгрейдов нет) и долю апгрейдируемых мест (upgShare).
     const expectOpen  = Math.round(openable * K.ECON_OPEN_FRAC);
     const workingBays = open0 + expectOpen;
-    const upgCost = levelMaxUp(lv) > 0 ? workingBays * upgShare * K.BAY_UP_COST[0] * K.ECON_UP_FRAC : 0;
-    const kitCost = expectOpen * K.BAY_OPEN_COST + upgCost;
+    const upgCost = levelMaxUp(lv) > 0 ? workingBays * upgShare * upgCostBase * K.ECON_UP_FRAC : 0;
+    const kitCost = expectOpen * openCostAvg + upgCost + rwDirKitCost;
     // (B) сложность → щедрость
     const difficulty = levelDifficulty(lv);
     const generosity = K.ECON_GEN_BASE + K.ECON_GEN_DIFF * difficulty;
