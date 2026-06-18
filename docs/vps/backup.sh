@@ -15,4 +15,8 @@ cp /etc/caddy/Caddyfile                  "$CFG/Caddyfile-$STAMP"
 cp /etc/systemd/system/capgo-ota.service "$CFG/capgo-ota.service-$STAMP"
 find "$CFG" -mtime +$KEEP -delete
 
+# sync to Google Drive (rclone, scope=drive.file — видит только свои файлы)
+rclone sync "$PG_DIR"  gdrive:vps-backups/postgres --quiet
+rclone sync "$CFG"     gdrive:vps-backups/configs  --quiet
+
 echo "[backup] done $STAMP"
