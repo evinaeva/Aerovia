@@ -95,3 +95,36 @@
 - **Иконки для стора** — 512 + adaptive + maskable (см. «Бренд и визуал»).
 - _Осталось до релиза_ (в [`backlog.md`](backlog.md)): скриншоты / feature graphic,
   Developer-аккаунт, закрытый трек, AdMob.
+
+## Инфраструктура Capacitor + Play Games (завершено 2026-06-17/18)
+- **Прокол рисков (Pixel 9, 2026-06-17)** — APK собирается, Canvas/тач в WebView работают,
+  ориентация landscape; нативный вход Play Games + экран достижений показывает 5 ачивок, unlock
+  зеркалится в PGS. Засады: бридж Capacitor молча не внедрялся без явного `<head>` в HTML
+  (исправлено); вход — по жесту игрока (авто-вход Play Games глушит); стек поднят под JDK 21 /
+  SDK 36 (AGP 8.7.2 / Gradle 8.9 / compileSdk 36).
+- **Play Games в Play Console** — App-запись + PGS-проект (черновик), OAuth consent, тестеры;
+  5 ачивок + лидерборд «Survival — Forest» залиты (черновик). ID зафиксированы в
+  [`play-games-setup.md`](play-games-setup.md).
+- **Мост в коде** (`12b-native-play-games.ts`) — `Account.authProvider`, `Leaderboard.provider`,
+  `ACH.unlock` → `unlockAchievement`. Вход по жесту (кнопка «G»). Нативные тосты отложены до
+  конца уровня/паузы (гугловскую плашку нельзя приглушить).
+- **Privacy / Data Safety** — `privacy.html` (раздел «Google Play Games») и
+  [`play-data-safety.md`](play-data-safety.md) готовы; при публикации внести в форму Play Console.
+
+## VPS и OTA-инфраструктура (завершено 2026-06-18)
+- **Безопасность VPS** — `PermitRootLogin prohibit-password`, `PasswordAuthentication no`
+  (drop-in), UFW: только 22/80/443; fail2ban активен; отдельный пользователь `capgo-deploy`
+  (key-only, no-PTY, no-forwarding) для CI-деплоя.
+- **Очистка VPS** — снесены delegatron-bot, sandbox-bot, postgresql, docker, banner-qa,
+  containerd, пользователь ci-deploy; директории `/opt/delegatron-3000*`, `/opt/banner-qa`,
+  `/var/lib/docker`, `/var/lib/postgresql`.
+- **Атомарный OTA-деплой** — CI заливает zip и manifest через tmp-файл + SSH `mv` (атомарно);
+  retention: хранятся последние 10 бандлов (`ls -t | tail -n +11 | xargs rm -f`).
+- **`/health` эндпоинт** — возвращает `{ok, latest_version, bundle_count, disk_free_gb}`;
+  HTTP 503 при `ok: false` — UptimeRobot ловит сломанный манифест.
+- **Caddy access log** — `/var/log/caddy/capgo.log` (roll 10 МБ, 7 файлов).
+- **Google Drive бэкапы** (rclone, scope=drive.file) — бандлы + конфиги ежедневно в 03:00
+  (`/opt/backups/backup.sh`); диск >80% → предупреждение в логе.
+- **Telegram-алерты** — `capgo-ota.service` OnFailure → Telegram; hourly cron
+  `/opt/backups/monitor.sh`: TLS <30 дней, диск >80%, `/health` 503 → Telegram.
+- **UptimeRobot** — мониторит `https://capgo.jevgenia.com/health` каждые 5 мин (email при даун).
