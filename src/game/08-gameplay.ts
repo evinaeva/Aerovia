@@ -476,7 +476,7 @@
     if(!debug.infiniteLives) lives--;
     if(penaltyFrac > 0 && !debug.infiniteLives){
       const fine = Math.round(pl.reward * penaltyFrac);
-      money = Math.max(0, money - fine);
+      money -= fine;
       addFloat(pl.x, pl.y-24*ui, '−'+fmtMoney(fine), COL.life);
     }
     lossLog.push({t:gameTime, reason});
