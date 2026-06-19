@@ -1048,6 +1048,9 @@
         <button class="t-tab active" data-tab="motion">
           <span class="tab-icon">⚡</span><span>Движение</span>
         </button>
+        <button class="t-tab" data-tab="demoscreen">
+          <span class="tab-icon">🖥</span><span>Настройки демо экрана</span>
+        </button>
         <button class="t-tab" data-tab="level">
           <span class="tab-icon">🗺</span><span>Уровни</span>
         </button>
@@ -1709,7 +1712,8 @@
     { key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones'] },
     { key:'flow',    icon:'🌊', label:'Поток',          groups:['spawn','timing'] },
     { key:'events',  icon:'🎲', label:'События',        groups:['events','weather'] },
-    { key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl','debug_overlays','mobile_preview'] },
+    // 'ctrl' / 'debug_overlays' / 'mobile_preview' were the old «Контроль» sub-tab —
+    // now promoted to the top-level «Настройки демо экрана» tab (see DEMO_GROUPS below).
     // 'zones' (safe_areas) intentionally not surfaced — see HIDDEN_GROUPS below.
     // Those params describe a target device's reserved screen regions for the
     // layout-overlay / export-warning diagnostics; the operator can't (and needn't)
@@ -1718,14 +1722,28 @@
   ];
   const SUBTAB_OF = {};
   SUBTABS.forEach(st => st.groups.forEach(g => { SUBTAB_OF[g] = st.key; }));
-  // Any group we didn't explicitly map lands in "Контроль" so nothing disappears.
-  function subtabOf(group) { return SUBTAB_OF[group] || 'control'; }
+  // Demo-screen groups live in their own top-level tab («Настройки демо экрана»),
+  // not in a Motion sub-tab. They still render in the same #groups container, but
+  // are tagged data-subtab="demoscreen" so the Motion sub-tab filter never shows them.
+  const DEMO_GROUPS = new Set(['ctrl', 'debug_overlays', 'mobile_preview']);
+  // Demo groups → their own tab; anything unmapped also lands there so nothing disappears.
+  function subtabOf(group) {
+    return DEMO_GROUPS.has(group) ? 'demoscreen' : (SUBTAB_OF[group] || 'demoscreen');
+  }
 
   function applySubtab(key) {
     currentSubtab = key;
     subtabBar.querySelectorAll('.s-tab').forEach(b => b.classList.toggle('active', b.dataset.subtab === key));
     groupsEl.querySelectorAll('details[data-subtab]').forEach(d => {
       d.style.display = d.dataset.subtab === key ? '' : 'none';
+    });
+  }
+
+  // Show only the demo-screen groups (their own top-level tab). Leaves currentSubtab
+  // — the Motion sub-tab memory — untouched, so returning to Motion restores it.
+  function applyDemoScreenView() {
+    groupsEl.querySelectorAll('details[data-subtab]').forEach(d => {
+      d.style.display = d.dataset.subtab === 'demoscreen' ? '' : 'none';
     });
   }
 
@@ -1750,7 +1768,10 @@
     const motionActive = document.querySelector('.t-tab.active')?.dataset.tab === 'motion';
     subtabBar.style.display = (available.length && motionActive) ? 'flex' : 'none';
     if (!currentSubtab || !counts[currentSubtab]) currentSubtab = available.length ? available[0].key : null;
-    if (currentSubtab) applySubtab(currentSubtab);
+    // Respect the active top-level tab: if the demo-screen tab is open when params
+    // (re)load, keep showing its groups instead of snapping back to a Motion sub-tab.
+    if (document.querySelector('.t-tab.active')?.dataset.tab === 'demoscreen') applyDemoScreenView();
+    else if (currentSubtab) applySubtab(currentSubtab);
   }
 
   // Groups the tuning panel intentionally hides (kept in the game's MotionTuning
@@ -1984,6 +2005,8 @@
     subtabBar.classList.toggle('searching', !!q);
     if (q) {
       groupsEl.querySelectorAll('details').forEach(det => {
+        // Demo-screen groups belong to their own tab — keep them out of Motion search.
+        if (det.dataset.subtab === 'demoscreen') { det.style.display = 'none'; return; }
         const hasVisible = [...det.querySelectorAll('.mt-row, .toggle-card')].some(r => r.style.display !== 'none');
         det.style.display = hasVisible ? '' : 'none';
         det.open = true;
@@ -2404,14 +2427,19 @@
         const tab = btn.dataset.tab;
         document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b === btn));
         const isMotion = tab === 'motion';
+        const isDemo   = tab === 'demoscreen';
         const isLayout = tab === 'layout';
         searchWrap.style.visibility = isMotion ? 'visible' : 'hidden';
-        groupsEl.style.display    = isMotion ? '' : 'none';
+        groupsEl.style.display    = (isMotion || isDemo) ? '' : 'none';
         subtabBar.style.display   = (isMotion && subtabBar.children.length) ? 'flex' : 'none';
         levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
         layoutViewEl.style.display = isLayout        ? 'flex' : 'none';
         diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
         assetViewEl.style.display = tab === 'assets'     ? 'flex' : 'none';
+        // #groups is shared by Motion and the demo-screen tab — re-filter its cards
+        // for whichever is now active (demo view, or the remembered Motion sub-tab).
+        if (isDemo) applyDemoScreenView();
+        else if (isMotion && currentSubtab) applySubtab(currentSubtab);
         if (window._layoutActivate) window._layoutActivate(isLayout);
       });
     });
