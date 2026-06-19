@@ -608,6 +608,7 @@
     /* ── Layout designer (field / zone editor) ──────────────────────────── */
     .ly-stage-wrap {
       position: relative; width: 100%; aspect-ratio: 20 / 9; max-height: 48vh;
+      flex: none;            /* don't let the column flex shrink the stage to 0 */
       margin-bottom: 10px; border: 1px solid var(--border); border-radius: 12px;
       background: #020609; overflow: hidden; touch-action: none;
     }
@@ -727,15 +728,57 @@
     .tag-bad { color: #e35c22; }
     .tag-occ { color: #e3c522; }
 
-    /* ── Safe-zone frames legend (under the phone, with the «Зоны» overlay) ── */
-    #frames-legend {
-      margin-top: 8px;
-      padding: 8px 10px;
+    /* ── Safe-zone legend panel (docked under the top-right toolbar buttons) ── */
+    #zones-panel {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 120;
+      width: 248px;
+      max-width: min(280px, 92vw);
+      background: rgba(6,11,26,.98);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--btn-bg);
-      max-width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+      padding: 8px;
     }
+    #zones-panel.open { display: block; }
+    .zp-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 2px 2px 8px;
+      border-bottom: 1px solid var(--row-sep);
+      margin-bottom: 4px;
+    }
+    .zp-title {
+      font-size: 10px; font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--accent);
+    }
+    .zp-close {
+      flex: none; width: 22px; height: 22px; line-height: 1;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--btn-bg); color: var(--muted);
+      font-size: 12px; cursor: pointer; font-family: inherit;
+      transition: background .12s, color .12s;
+    }
+    .zp-close:hover { background: #1a2a48; color: var(--text); }
+    .zp-list { display: flex; flex-direction: column; }
+    .zp-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 4px;
+      border-top: 1px solid var(--row-sep);
+      cursor: pointer;
+    }
+    .zp-row:first-child { border-top: none; }
+    .zp-label { flex: 1; font-size: 11px; color: var(--muted); line-height: 1.25; }
+    .zp-row .z-sw, .zp-row .mt-toggle { flex: none; }
+    .zp-master {
+      padding-top: 0; padding-bottom: 8px; margin-bottom: 2px;
+      border-top: none; border-bottom: 1px solid var(--row-sep);
+    }
+    .zp-master .zp-label { font-weight: 700; color: var(--text); font-size: 12px; }
+    /* dim per-zone rows while the master overlay is off */
+    #zones-panel.zones-off .zp-list { opacity: .45; }
 
     /* ── Safe-zone warning modal (shown on map export) ───────────────────── */
     #zone-warn-modal {
@@ -772,6 +815,13 @@
       cursor: pointer;
     }
     .zwm-ok:hover { background: rgba(34,227,198,.18); }
+    .zwm-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .zwm-btns .p-btn { padding: 7px 16px; }
+    .zwm-go { border-color: rgba(255,210,59,.6); color: #ffd23b; background: rgba(255,210,59,.08); }
+    .zwm-go:hover { background: rgba(255,210,59,.16); }
+    .zwm-item.err { color: #ff7a7a; }
+    .zwm-item.warn { color: #ffc14d; }
+    #ly-validate-modal { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; background: rgba(4,8,18,.6); }
 
     /* ── Cutout strip (inside preview-tools dock) ───────────────────────── */
     #cutout-strip {
@@ -805,9 +855,7 @@
       display: none;
     }
 
-    /* ── Zone legend ─────────────────────────────────────────────────────── */
-    .zone-legend { display: flex; flex-wrap: wrap; gap: 7px 14px; }
-    .zone-legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
+    /* ── Zone legend swatches (used in the «Зоны» legend panel) ───────────── */
     .z-sw { width: 18px; height: 3px; flex: none; border-radius: 2px; }
     .z-sw.fill { height: 10px; border-radius: 3px; }
 
@@ -946,6 +994,21 @@
         <button class="co-btn" data-co="3btn">3 кнопки</button>
       </div>
     </div>
+
+    <!-- Safe-zone legend panel — docked under the top-right buttons, toggled by «Зоны».
+         Header × hides the legend (zones stay on); per-row toggles show/hide each zone.
+         Rows are populated from i18n by renderZoneLegend() (targets #zones-list). -->
+    <div id="zones-panel">
+      <div class="zp-head">
+        <span class="zp-title">📐 Зоны экрана</span>
+        <button class="zp-close" id="zones-panel-close" title="Скрыть легенду (зоны останутся)">✕</button>
+      </div>
+      <label class="zp-row zp-master">
+        <span class="zp-label">Показывать зоны</span>
+        <span class="mt-toggle"><input type="checkbox" id="zones-master"><span class="track"></span></span>
+      </label>
+      <div class="zp-list" id="zones-list"></div>
+    </div>
   </div>
 
   <!-- Phone preview -->
@@ -965,11 +1028,6 @@
       </div>
     </div>
     <div id="phone-label">Превью · S Android Common · 800×360</div>
-    <!-- Safe-zone legend — shown only while the «Зоны» frames overlay is on.
-         Populated from i18n by renderZoneLegend() (targets #zone-legend). -->
-    <div id="frames-legend" style="display:none">
-      <div class="zone-legend" id="zone-legend"></div>
-    </div>
   </div>
 
 </div>
@@ -1135,10 +1193,29 @@
   <!-- Tab: Layout / Field Designer ─────────────────────────────────────── -->
   <div id="layout-view" class="lab-view">
 
+    <!-- field templates (create / pick / manage) -->
+    <div class="lab-section" id="ly-tpl-sec">
+      <h3>Шаблон поля <span class="h3-sub">· создать с нуля / выбрать</span></h3>
+      <div class="lab-btn-row">
+        <select class="lab-select" id="ly-tpl-sel" style="flex:1;min-width:130px"></select>
+        <button class="p-btn" id="ly-tpl-new" title="Пустое поле — собрать с нуля">＋ Новый</button>
+        <button class="p-btn" id="ly-tpl-dup" title="Копия текущего поля">⧉ Копия</button>
+        <button class="p-btn" id="ly-tpl-rename" title="Переименовать">✎</button>
+        <button class="p-btn" id="ly-tpl-del" title="Удалить шаблон">🗑</button>
+      </div>
+      <p class="lab-hint">«Новый» создаёт пустой холст (апрон + зона прилёта, без ангаров и ВПП) — собирай поле с нуля.
+        Шаблоны хранятся в браузере; для уровня экспортируй JSON.</p>
+    </div>
+
     <!-- editor stage (top): drag objects, resize zones -->
     <div class="ly-stage-wrap">
       <canvas id="ly-canvas"></canvas>
       <div class="ly-stage-hint" id="ly-hint">Тащи объекты · зоны тяни за уголки рамки</div>
+    </div>
+
+    <!-- layers: visibility toggles + grid / snap -->
+    <div class="lab-section" id="ly-layers-sec" style="padding:8px 12px">
+      <div class="lab-chips" id="ly-layers"></div>
     </div>
 
     <!-- add / delete objects -->
@@ -1212,6 +1289,9 @@
     <!-- actions -->
     <div class="lab-section">
       <h3>Действия</h3>
+      <div class="lab-btn-row" style="margin-bottom:6px">
+        <input class="p-input" id="ly-filename" placeholder="имя файла" style="flex:1;min-width:140px" spellcheck="false" autocomplete="off">
+      </div>
       <div class="lab-btn-row">
         <button class="p-btn" id="ly-export">⬇ Экспорт JSON</button>
         <button class="p-btn" id="ly-copy">📋 Копировать</button>
@@ -1549,24 +1629,44 @@
   /* initial render after layout settles */
   requestAnimationFrame(() => applyPhone(phoneKey));
 
-  /* zone legend — подписи берутся из i18n (T.zone*), а не зашиты в разметку */
+  /* Per-zone overlay visibility — shared with drawOverlay() (toolbar «Зоны»).
+     Each key gates one safety-zone group; default all-visible. */
+  window._zoneVis = window._zoneVis || {
+    gesture: true, safe: true, cutout: true, content: true, interactive: true,
+    routeStart: true, routeDraw: true, routeTarget: true, uiReserved: true,
+  };
+
+  /* zone legend — подписи берутся из i18n (T.zone*), а не зашиты в разметку.
+     Каждый пункт — отдельная строка с тоглом, который скрывает/показывает зону. */
   (function renderZoneLegend() {
-    const host = document.getElementById('zone-legend');
+    const host = document.getElementById('zones-list');
     if (!host) return;
+    // [key, swatch-class, swatch-style, label]
     const items = [
-      ['z-sw fill', 'background:rgba(255,60,60,.4);border:1px solid rgba(255,60,60,.7)', T.zoneGesture],
-      ['z-sw fill', 'background:rgba(255,160,60,.3);border:1px solid rgba(255,160,60,.6)', T.zoneSafeInsets],
-      ['z-sw fill', 'background:rgba(0,0,0,.5);border:1px solid rgba(255,60,60,.8)', T.zoneCutout],
-      ['z-sw', 'background:rgba(34,210,255,.9)', T.zoneContent],
-      ['z-sw', 'background:rgba(34,240,100,.9)', T.zoneInteractive],
-      ['z-sw', 'background:rgba(50,255,50,1)', T.zoneRouteStart],
-      ['z-sw', 'background:rgba(60,180,255,.9)', T.zoneRouteDraw],
-      ['z-sw', 'background:rgba(180,80,255,.9)', T.zoneRouteTarget],
-      ['z-sw', 'background:rgba(255,220,0,.6)', T.zoneUiReserved],
+      ['gesture',     'z-sw fill', 'background:rgba(255,60,60,.4);border:1px solid rgba(255,60,60,.7)', T.zoneGesture],
+      ['safe',        'z-sw fill', 'background:rgba(255,160,60,.3);border:1px solid rgba(255,160,60,.6)', T.zoneSafeInsets],
+      ['cutout',      'z-sw fill', 'background:rgba(0,0,0,.5);border:1px solid rgba(255,60,60,.8)', T.zoneCutout],
+      ['content',     'z-sw', 'background:rgba(34,210,255,.9)', T.zoneContent],
+      ['interactive', 'z-sw', 'background:rgba(34,240,100,.9)', T.zoneInteractive],
+      ['routeStart',  'z-sw', 'background:rgba(50,255,50,1)', T.zoneRouteStart],
+      ['routeDraw',   'z-sw', 'background:rgba(60,180,255,.9)', T.zoneRouteDraw],
+      ['routeTarget', 'z-sw', 'background:rgba(180,80,255,.9)', T.zoneRouteTarget],
+      ['uiReserved',  'z-sw', 'background:rgba(255,220,0,.6)', T.zoneUiReserved],
     ];
     host.innerHTML = items.map(it =>
-      '<div class="zone-legend-item"><div class="' + it[0] + '" style="' + it[1] + '"></div>' + it[2] + '</div>'
+      '<label class="zp-row">' +
+        '<span class="' + it[1] + '" style="' + it[2] + '"></span>' +
+        '<span class="zp-label">' + it[3] + '</span>' +
+        '<span class="mt-toggle"><input type="checkbox" data-zone="' + it[0] + '"' +
+          (window._zoneVis[it[0]] !== false ? ' checked' : '') + '><span class="track"></span></span>' +
+      '</label>'
     ).join('');
+    host.querySelectorAll('input[data-zone]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        window._zoneVis[inp.dataset.zone] = inp.checked;
+        if (window._fieldRedraw) window._fieldRedraw();
+      });
+    });
   })();
 
   /* ── Workbench logic (unchanged) ─────────────────────────────────────── */
@@ -1610,7 +1710,11 @@
     { key:'flow',    icon:'🌊', label:'Поток',          groups:['spawn','timing'] },
     { key:'events',  icon:'🎲', label:'События',        groups:['events','weather'] },
     { key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl','debug_overlays','mobile_preview'] },
-    { key:'zones',   icon:'📐', label:'Зоны/жесты',     groups:['safe_areas'] },
+    // 'zones' (safe_areas) intentionally not surfaced — see HIDDEN_GROUPS below.
+    // Those params describe a target device's reserved screen regions for the
+    // layout-overlay / export-warning diagnostics; the operator can't (and needn't)
+    // change them, so the sub-tab is hidden. The «📐 Зоны» overlay toggle and the
+    // export warnings keep working off the default values.
   ];
   const SUBTAB_OF = {};
   SUBTABS.forEach(st => st.groups.forEach(g => { SUBTAB_OF[g] = st.key; }));
@@ -1651,7 +1755,10 @@
 
   // Groups the tuning panel intentionally hides (kept in the game's MotionTuning
   // for other tooling, but not surfaced here). Forest-biome knobs live here.
-  const HIDDEN_GROUPS = new Set(['forest']);
+  // 'safe_areas' = the Android cutout/gesture/inset zone params: they only feed
+  // the layout overlay and export warnings (read-only device simulation), so the
+  // operator has nothing to change — hidden from the panel.
+  const HIDDEN_GROUPS = new Set(['forest', 'safe_areas']);
 
   // Enum params shown as a dropdown instead of a free-text field.
   const SELECT_OPTIONS = {
@@ -2331,7 +2438,10 @@
     const RH_FR = 0.072;                  // runway height — fraction of screen (fixed)
     const HANDLE = 9;                     // zone resize-handle hit size, px
     const Z_MIN  = 0.06;                  // smallest zone edge, normalized
-    const LS_KEY = 'pf_tuning_layout_v1';
+    const LS_KEY  = 'pf_tuning_layout_v1';     // legacy single-layout (migrated → templates)
+    const TPL_KEY = 'pf_tuning_templates_v1';  // { active, items: { name: LE } }
+    const LAY_KEY = 'pf_tuning_layers_v1';     // view layer visibility + grid/snap
+    const SNAP    = 0.02;                      // snap step, normalized
 
     const DEFAULTS = () => ({
       apron:   { x: 0.035, y: 0.17, w: 0.585, h: 0.74 },
@@ -2349,21 +2459,49 @@
       events: { vip: false, emergency: false, medical: false, rush: false },
     });
 
+    const BLANK = () => { const d = DEFAULTS(); d.hangars = []; d.runways = []; return d; };
+    const clone = o => JSON.parse(JSON.stringify(o));
+
     let LE = DEFAULTS();
     let sel = null;            // {kind:'apron'|'arrival'|'hangar'|'runway', i?}
     let drag = null;           // active pointer-drag descriptor
     let active = false;        // tab currently visible
+    let templates = {};        // name → LE snapshot (field templates, in localStorage)
+    let curTpl = '';           // active template name
+    let layers = { apron: true, arrival: true, runways: true, hangars: true, gates: true, grid: false, snap: false };
 
     /* ---- persistence ---- */
-    function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(LE)); } catch (_) {} }
-    function load() {
+    function saveLayers() { try { localStorage.setItem(LAY_KEY, JSON.stringify(layers)); } catch (_) {} }
+    function save() {
       try {
-        const raw = localStorage.getItem(LS_KEY);
-        if (!raw) return;
-        const o = JSON.parse(raw);
-        if (o && o.apron && Array.isArray(o.hangars) && Array.isArray(o.runways)) LE = Object.assign(DEFAULTS(), o);
+        if (curTpl) templates[curTpl] = clone(LE);
+        localStorage.setItem(TPL_KEY, JSON.stringify({ active: curTpl, items: templates }));
+        localStorage.setItem(LS_KEY, JSON.stringify(LE));    // back-compat: keep last layout
       } catch (_) {}
     }
+    function load() {
+      // templates
+      try {
+        const t = JSON.parse(localStorage.getItem(TPL_KEY) || 'null');
+        if (t && t.items && typeof t.items === 'object' && Object.keys(t.items).length) {
+          templates = t.items;
+          curTpl = (t.active && templates[t.active]) ? t.active : Object.keys(templates)[0];
+        }
+      } catch (_) {}
+      // migrate legacy single layout → first template
+      if (!Object.keys(templates).length) {
+        let base = DEFAULTS();
+        try {
+          const o = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+          if (o && o.apron && Array.isArray(o.hangars) && Array.isArray(o.runways)) base = Object.assign(DEFAULTS(), o);
+        } catch (_) {}
+        curTpl = 'Поле 1'; templates[curTpl] = base;
+      }
+      LE = Object.assign(DEFAULTS(), clone(templates[curTpl] || DEFAULTS()));
+      // layers
+      try { const l = JSON.parse(localStorage.getItem(LAY_KEY) || 'null'); if (l && typeof l === 'object') layers = Object.assign(layers, l); } catch (_) {}
+    }
+    const snapV = v => layers.snap ? Math.round(v / SNAP) * SNAP : v;
 
     /* ---- geometry (normalized → px) ---- */
     function dims() { return { W: cv.clientWidth || 1, H: cv.clientHeight || 1 }; }
@@ -2409,24 +2547,36 @@
         sw: { x: r.x, y: r.y + r.h }, w: { x: r.x, y: my },
       };
     }
+    function drawGrid() {
+      const { W, H } = dims(), step = SNAP;
+      g.strokeStyle = 'rgba(58,210,255,.07)'; g.lineWidth = 1;
+      for (let f = step; f < 1; f += step) {
+        const x = Math.round(f * W) + .5, y = Math.round(f * H) + .5;
+        g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
+        g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke();
+      }
+    }
     function draw() {
       const { W, H } = dims();
       g.clearRect(0, 0, W, H);
       // screen frame backdrop
       g.fillStyle = '#04080f'; g.fillRect(0, 0, W, H);
+      if (layers.grid) drawGrid();
       g.strokeStyle = 'rgba(58,210,255,.18)'; g.lineWidth = 1; g.strokeRect(.5, .5, W - 1, H - 1);
 
-      // arrival zone (right, air)
-      const arr = rectPx(LE.arrival);
-      g.fillStyle = 'rgba(245,200,66,.07)';
-      g.fillRect(arr.x, arr.y, arr.w, arr.h);
-      g.strokeStyle = 'rgba(245,200,66,.5)'; g.setLineDash([5, 4]); g.lineWidth = 1.4;
-      g.strokeRect(arr.x, arr.y, arr.w, arr.h); g.setLineDash([]);
-      g.fillStyle = 'rgba(245,200,66,.85)'; g.font = '10px system-ui';
-      g.fillText('прилёт', arr.x + 5, arr.y + 13);
+      // arrival zone (right, air) — «опасная» зона
+      if (layers.arrival) {
+        const arr = rectPx(LE.arrival);
+        g.fillStyle = 'rgba(245,200,66,.07)';
+        g.fillRect(arr.x, arr.y, arr.w, arr.h);
+        g.strokeStyle = 'rgba(245,200,66,.5)'; g.setLineDash([5, 4]); g.lineWidth = 1.4;
+        g.strokeRect(arr.x, arr.y, arr.w, arr.h); g.setLineDash([]);
+        g.fillStyle = 'rgba(245,200,66,.85)'; g.font = '10px system-ui';
+        g.fillText('прилёт', arr.x + 5, arr.y + 13);
+      }
 
       // runways (between apron & arrival)
-      LE.runways.forEach((r, i) => {
+      if (layers.runways) LE.runways.forEach((r, i) => {
         const b = runwayPx(r), on = sel && sel.kind === 'runway' && sel.i === i;
         g.fillStyle = 'rgba(58,130,255,.10)'; g.fillRect(b.x, b.y, b.w, b.h);
         g.strokeStyle = on ? '#fff' : RW_COL; g.lineWidth = on ? 2 : 1.4;
@@ -2439,16 +2589,18 @@
         g.fillText(tag, b.x + 4, b.y + b.h - 4);
       });
 
-      // apron
-      const ap = rectPx(LE.apron), apOn = sel && sel.kind === 'apron';
-      g.fillStyle = 'rgba(34,227,198,.06)'; roundRect(ap.x, ap.y, ap.w, ap.h, 10); g.fill();
-      g.strokeStyle = apOn ? '#fff' : 'rgba(34,227,198,.55)'; g.lineWidth = apOn ? 2 : 1.5;
-      roundRect(ap.x, ap.y, ap.w, ap.h, 10); g.stroke();
-      g.fillStyle = 'rgba(34,227,198,.7)'; g.font = '10px system-ui';
-      g.fillText('апрон', ap.x + 6, ap.y + 14);
+      // apron — «безопасная» зона
+      if (layers.apron) {
+        const ap = rectPx(LE.apron), apOn = sel && sel.kind === 'apron';
+        g.fillStyle = 'rgba(34,227,198,.06)'; roundRect(ap.x, ap.y, ap.w, ap.h, 10); g.fill();
+        g.strokeStyle = apOn ? '#fff' : 'rgba(34,227,198,.55)'; g.lineWidth = apOn ? 2 : 1.5;
+        roundRect(ap.x, ap.y, ap.w, ap.h, 10); g.stroke();
+        g.fillStyle = 'rgba(34,227,198,.7)'; g.font = '10px system-ui';
+        g.fillText('апрон', ap.x + 6, ap.y + 14);
+      }
 
       // hangars
-      LE.hangars.forEach((h, i) => {
+      if (layers.hangars) LE.hangars.forEach((h, i) => {
         const b = hangarPx(h), tone = (HANGAR[h.type] || HANGAR.fuel).col;
         const on = sel && sel.kind === 'hangar' && sel.i === i;
         g.fillStyle = h.open ? tone + '33' : 'rgba(120,120,120,.18)';
@@ -2459,7 +2611,7 @@
         g.fillText((HANGAR[h.type] || {}).label || h.type, b.x + 4, b.y + 11);
         if (!h.open) { g.fillStyle = 'rgba(255,255,255,.5)'; g.fillText('🔒', b.x + b.w - 13, b.y + 12); }
         // gate arrow
-        const dir = gateDir(h);
+        const dir = layers.gates ? gateDir(h) : null;
         if (dir) {
           const cx = b.cx, cy = b.cy, len = 11;
           g.strokeStyle = on ? '#fff' : tone; g.lineWidth = 1.5;
@@ -2468,7 +2620,7 @@
       });
 
       // selected-zone handles
-      if (sel && (sel.kind === 'apron' || sel.kind === 'arrival')) {
+      if (sel && (sel.kind === 'apron' || sel.kind === 'arrival') && layers[sel.kind === 'apron' ? 'apron' : 'arrival']) {
         const hs = zoneHandles(sel.kind === 'apron' ? LE.apron : LE.arrival);
         g.fillStyle = '#fff'; g.strokeStyle = 'rgba(34,227,198,.9)'; g.lineWidth = 1;
         Object.values(hs).forEach(p => { g.fillRect(p.x - HANDLE / 2, p.y - HANDLE / 2, HANDLE, HANDLE); g.strokeRect(p.x - HANDLE / 2, p.y - HANDLE / 2, HANDLE, HANDLE); });
@@ -2531,14 +2683,14 @@
       const dx = (p.x - drag.start.x) / W, dy = (p.y - drag.start.y) / H;
       if (drag.mode === 'move-zone') {
         const z = drag.kind === 'apron' ? LE.apron : LE.arrival;
-        z.x = drag.x0 + dx; z.y = drag.y0 + dy; clampZone(z);
+        z.x = snapV(drag.x0 + dx); z.y = snapV(drag.y0 + dy); clampZone(z);
       } else if (drag.mode === 'resize') {
         const z = drag.kind === 'apron' ? LE.apron : LE.arrival, s = drag.z0, h = drag.handle;
         let x0 = s.x, y0 = s.y, x1 = s.x + s.w, y1 = s.y + s.h;
-        if (h.includes('w')) x0 = clamp01(s.x + dx);
-        if (h.includes('e')) x1 = clamp01(s.x + s.w + dx);
-        if (h.includes('n')) y0 = clamp01(s.y + dy);
-        if (h.includes('s')) y1 = clamp01(s.y + s.h + dy);
+        if (h.includes('w')) x0 = snapV(clamp01(s.x + dx));
+        if (h.includes('e')) x1 = snapV(clamp01(s.x + s.w + dx));
+        if (h.includes('n')) y0 = snapV(clamp01(s.y + dy));
+        if (h.includes('s')) y1 = snapV(clamp01(s.y + s.h + dy));
         z.x = Math.min(x0, x1 - Z_MIN); z.w = Math.max(Z_MIN, x1 - x0);
         z.y = Math.min(y0, y1 - Z_MIN); z.h = Math.max(Z_MIN, y1 - y0);
         clampZone(z);
@@ -2546,10 +2698,10 @@
         const ap = LE.apron;
         if (drag.kind === 'hangar') {
           const o = LE.hangars[drag.i];
-          o.x = clamp01(o.x + dx / ap.w); o.y = clamp01(o.y + dy / ap.h);
+          o.x = snapV(clamp01(o.x + dx / ap.w)); o.y = snapV(clamp01(o.y + dy / ap.h));
         } else {
           const o = LE.runways[drag.i];
-          o.y = clamp01(o.y + dy / ap.h);
+          o.y = snapV(clamp01(o.y + dy / ap.h));
         }
         drag.start = { x: p.x, y: p.y };
       }
@@ -2680,6 +2832,67 @@
     }
     function renderSide() { renderSelBody(); renderZones(); }
 
+    /* ---- field templates + view layers ---- */
+    const LAYER_DEFS = [
+      ['apron', '🟢 Безопасная'], ['arrival', '🟡 Опасная'],
+      ['runways', '✈ ВПП'], ['hangars', '🏠 Ангары'], ['gates', '➤ Ворота'],
+      ['grid', '▦ Сетка'], ['snap', '🧲 Привязка'],
+    ];
+    function renderLayers() {
+      const host = $('ly-layers'); if (!host) return; host.innerHTML = '';
+      LAYER_DEFS.forEach(([k, txt]) => {
+        const c = document.createElement('label'); c.className = 'lab-chip' + (layers[k] ? ' on' : '');
+        c.innerHTML = '<input type="checkbox"' + (layers[k] ? ' checked' : '') + '><span>' + txt + '</span>';
+        c.addEventListener('click', e => { e.preventDefault(); layers[k] = !layers[k]; saveLayers(); renderLayers(); draw(); });
+        host.appendChild(c);
+      });
+    }
+    function renderTpl() {
+      const selEl = $('ly-tpl-sel'); if (!selEl) return; selEl.innerHTML = '';
+      Object.keys(templates).forEach(name => {
+        const o = document.createElement('option'); o.value = name; o.textContent = name;
+        if (name === curTpl) o.selected = true; selEl.appendChild(o);
+      });
+      const fn = $('ly-filename'); if (fn) fn.placeholder = 'aerovia-' + slug(curTpl) + '.json';
+    }
+    function uniqName(base) { let n = base, k = 2; while (templates[n]) n = base + ' ' + (k++); return n; }
+    function refreshAll() { syncParams(); renderEvents(); renderSide(); renderTpl(); renderLayers(); draw(); }
+    function selectTpl(name) {
+      if (!templates[name] || name === curTpl) { renderTpl(); return; }
+      templates[curTpl] = clone(LE);                          // stash current edits
+      curTpl = name;
+      LE = Object.assign(DEFAULTS(), clone(templates[name]));
+      sel = null; save(); refreshAll();
+    }
+    function newTpl(blank) {
+      const suggested = blank ? uniqName('Поле') : uniqName(curTpl + ' копия');
+      const nm = (prompt(blank ? 'Имя нового (пустого) поля:' : 'Имя копии поля:', suggested) || '').trim();
+      if (!nm) return;
+      const name = uniqName(nm);
+      templates[curTpl] = clone(LE);                          // stash current
+      templates[name] = blank ? BLANK() : clone(LE);
+      curTpl = name;
+      LE = Object.assign(DEFAULTS(), clone(templates[name]));
+      sel = null; save(); refreshAll();
+    }
+    function renameTpl() {
+      const nm = (prompt('Новое имя шаблона:', curTpl) || '').trim();
+      if (!nm || nm === curTpl) return;
+      const name = uniqName(nm), data = templates[curTpl];
+      delete templates[curTpl]; templates[name] = data; curTpl = name;
+      save(); renderTpl();
+    }
+    function delTpl() {
+      if (Object.keys(templates).length <= 1) {
+        if (!confirm('Это последний шаблон. Очистить его до пустого поля?')) return;
+        templates[curTpl] = BLANK();
+      } else {
+        if (!confirm('Удалить шаблон «' + curTpl + '»?')) return;
+        delete templates[curTpl]; curTpl = Object.keys(templates)[0];
+      }
+      LE = Object.assign(DEFAULTS(), clone(templates[curTpl])); sel = null; save(); refreshAll();
+    }
+
     /* ---- export / import ---- */
     function round4(r) { return { x: +r.x.toFixed(4), y: +r.y.toFixed(4), w: +r.w.toFixed(4), h: +r.h.toFixed(4) }; }
     function exportObj() {
@@ -2711,36 +2924,99 @@
       if (Object.keys(ev).length) o.events = ev;
       return o;
     }
-    function warnings() {
-      const w = [];
-      if (!LE.runways.length) w.push('нет ни одной ВПП');
+    /* Validator — splits issues into blocking errors and non-blocking warnings.
+       Errors gate the export (level would be unplayable); warnings are advisory. */
+    function validate() {
+      const E = [], W = [], ap = LE.apron, arr = LE.arrival, s = LE.stars;
+      // structural — a level needs a way in, a way out and somewhere to serve
+      if (!LE.runways.length) E.push('нет ни одной ВПП');
       else {
-        if (!LE.runways.some(r => r.landingOpen)) w.push('ни одна ВПП не разрешает посадку');
-        if (!LE.runways.some(r => r.takeoffOpen)) w.push('ни одна ВПП не разрешает взлёт');
+        if (!LE.runways.some(r => r.landingOpen)) E.push('ни одна ВПП не разрешает посадку');
+        if (!LE.runways.some(r => r.takeoffOpen)) E.push('ни одна ВПП не разрешает взлёт');
       }
-      if (!LE.hangars.length) w.push('нет ни одного ангара');
-      else if (!LE.hangars.some(h => h.open)) w.push('ни один ангар не открыт на старте');
-      const s = LE.stars; if (!(s[0] > 0 && s[0] <= s[1] && s[1] <= s[2])) w.push('звёзды должны идти по возрастанию');
-      return w;
+      if (!LE.hangars.length) E.push('нет ни одного ангара');
+      else if (!LE.hangars.some(h => h.open)) E.push('ни один ангар не открыт на старте');
+      // passability — apron and arrival must not overlap (no corridor for runways)
+      const ox = Math.min(ap.x + ap.w, arr.x + arr.w) - Math.max(ap.x, arr.x);
+      const oy = Math.min(ap.y + ap.h, arr.y + arr.h) - Math.max(ap.y, arr.y);
+      if (ox > 0 && oy > 0) E.push('апрон и зона прилёта пересекаются — нет коридора для руления/ВПП');
+      else if (ap.x + ap.w > arr.x + 0.001) W.push('апрон заходит правее левой границы прилёта');
+      if (arr.x + arr.w / 2 < ap.x + ap.w / 2) W.push('зона прилёта левее апрона — борта обычно заходят справа');
+      if (arr.w < 0.05) W.push('зона прилёта слишком узкая (<5%)');
+      // runways must connect to the apron vertically
+      LE.runways.forEach((r, i) => {
+        if (r.y < 0.02 || r.y > 0.98) W.push('ВПП' + (i + 1) + ' вне апрона по вертикали');
+      });
+      // stars must be ascending
+      if (!(s[0] > 0 && s[0] <= s[1] && s[1] <= s[2])) E.push('звёзды должны идти по возрастанию (1★ ≤ 2★ ≤ 3★)');
+      return { errors: E, warns: W };
     }
-    function doExport() {
+    function warnings() { const v = validate(); return v.errors.concat(v.warns); }
+    /* ---- filename ---- */
+    function slug(s) {
+      return (s || '').toString().trim().toLowerCase()
+        .replace(/[^a-z0-9а-яё]+/giu, '-').replace(/^-+|-+$/g, '') || 'layout';
+    }
+    function fileName() {
+      let n = ($('ly-filename').value || '').trim();
+      if (!n) n = 'aerovia-' + slug(curTpl);
+      if (!/\.json$/i.test(n)) n += '.json';
+      return n;
+    }
+    function warnLine(v) {
+      const parts = v.errors.map(x => '⛔ ' + x).concat(v.warns.map(x => '⚠ ' + x));
+      return parts.join(' · ');
+    }
+    function writeExport(v) {
       const text = JSON.stringify(exportObj(), null, 2);
       $('ly-json').value = text;
-      const w = warnings();
-      $('ly-warn').textContent = w.length ? '⚠ ' + w.join(' · ') : '';
+      $('ly-warn').textContent = warnLine(v);
       try {
         const blob = new Blob([text], { type: 'application/json' });
         const url = URL.createObjectURL(blob); const a = document.createElement('a');
-        a.href = url; a.download = 'aerovia-layout.json'; a.click();
+        a.href = url; a.download = fileName(); a.click();
         setTimeout(() => URL.revokeObjectURL(url), 4000);
       } catch (_) {}
+    }
+    function doExport() {
+      const v = validate();
+      if (v.errors.length) { showValidateModal(v, () => writeExport(v)); return; }
+      writeExport(v);
     }
     function doCopy() {
       const text = JSON.stringify(exportObj(), null, 2);
       $('ly-json').value = text;
       try { if (navigator.clipboard) navigator.clipboard.writeText(text); } catch (_) {}
       $('ly-warn').textContent = 'скопировано в буфер';
-      setTimeout(() => { $('ly-warn').textContent = warnings().length ? '⚠ ' + warnings().join(' · ') : ''; }, 1400);
+      setTimeout(() => { $('ly-warn').textContent = warnLine(validate()); }, 1400);
+    }
+    /* Blocking pre-export validator modal (errors → confirm before exporting). */
+    function showValidateModal(v, onProceed) {
+      let back = document.getElementById('ly-validate-modal');
+      if (!back) {
+        back = document.createElement('div');
+        back.id = 'ly-validate-modal';
+        back.innerHTML =
+          '<div class="zwm-box">' +
+            '<div class="zwm-title">⛔ Уровень непроходим</div>' +
+            '<div class="zwm-sub">Проверка нашла блокирующие проблемы. Экспортировать всё равно?</div>' +
+            '<div class="zwm-list"></div>' +
+            '<div class="zwm-btns">' +
+              '<button class="p-btn" id="lyv-cancel" type="button">Отмена</button>' +
+              '<button class="p-btn zwm-go" id="lyv-go" type="button">Экспортировать всё равно</button>' +
+            '</div>' +
+          '</div>';
+        document.body.appendChild(back);
+        const close = () => { back.style.display = 'none'; back._go = null; };
+        back.querySelector('#lyv-cancel').addEventListener('click', close);
+        back.querySelector('#lyv-go').addEventListener('click', () => { const fn = back._go; close(); if (fn) fn(); });
+        back.addEventListener('click', e => { if (e.target === back) close(); });
+      }
+      back.querySelector('.zwm-list').innerHTML =
+        v.errors.map(w => '<div class="zwm-item err">⛔ ' + escHtml(w) + '</div>').join('') +
+        v.warns.map(w => '<div class="zwm-item warn">⚠ ' + escHtml(w) + '</div>').join('');
+      back._go = onProceed;
+      back.style.display = 'flex';
     }
     function importObj(o) {
       try {
@@ -2783,7 +3059,13 @@
       const rd = new FileReader(); rd.onload = () => { try { importObj(JSON.parse(rd.result)); } catch (_) { $('ly-warn').textContent = 'битый JSON'; } }; rd.readAsText(f);
       e.target.value = '';
     });
-    $('ly-reset').addEventListener('click', () => { LE = DEFAULTS(); sel = null; save(); syncParams(); renderEvents(); renderSide(); draw(); });
+    $('ly-reset').addEventListener('click', () => { LE = DEFAULTS(); sel = null; save(); refreshAll(); });
+    // template controls
+    $('ly-tpl-sel').addEventListener('change', e => selectTpl(e.target.value));
+    $('ly-tpl-new').addEventListener('click', () => newTpl(true));
+    $('ly-tpl-dup').addEventListener('click', () => newTpl(false));
+    $('ly-tpl-rename').addEventListener('click', renameTpl);
+    $('ly-tpl-del').addEventListener('click', delTpl);
 
     /* ---- activation ---- */
     window._layoutActivate = function (show) {
@@ -2793,23 +3075,51 @@
     window.addEventListener('resize', () => { if (active) resize(); });
 
     // boot
-    load(); syncParams(); renderEvents(); renderSide();
+    load(); refreshAll();
   })();
 
-  /* ── Safe-zone frames overlay toggle (toolbar «Зоны» button) ──────────────
-     Independent of the active tab: shows the safety-zone frames on top of the
-     preview + a compact legend, so layout work can be checked against them. */
+  /* ── Safe-zone frames overlay + legend panel (toolbar «Зоны» button) ───────
+     Independent of the active tab. The «Зоны» button opens the legend panel
+     (docked under the top-right buttons) and reveals the safety-zone frames.
+     The panel's × hides the legend without turning the zones off; the master
+     toggle inside the panel turns the overlay on/off; per-row toggles filter
+     which zones are drawn (via window._zoneVis, read by drawOverlay). */
   (function () {
     const btn    = document.getElementById('btn-frames-toggle');
-    const legend = document.getElementById('frames-legend');
-    if (!btn) return;
-    let on = false;
-    btn.addEventListener('click', () => {
-      on = !on;
-      btn.classList.toggle('tb-active', on);
-      if (legend) legend.style.display = on ? '' : 'none';
+    const panel  = document.getElementById('zones-panel');
+    const close  = document.getElementById('zones-panel-close');
+    const master = document.getElementById('zones-master');
+    if (!btn || !panel) return;
+
+    let panelOpen = false;
+    let zonesOn   = false;
+
+    function syncBtn() { btn.classList.toggle('tb-active', panelOpen || zonesOn); }
+
+    function setZones(on) {
+      zonesOn = on;
+      if (master) master.checked = on;
+      panel.classList.toggle('zones-off', !on);
       if (window._fieldActivate) window._fieldActivate(on, on ? 'safe' : '');
-    });
+      if (on && window._fieldRedraw) window._fieldRedraw();
+      syncBtn();
+    }
+    function openPanel() {
+      panelOpen = true;
+      panel.classList.add('open');
+      if (!zonesOn) setZones(true);   // opening the legend reveals the zones
+      else syncBtn();
+    }
+    function closePanel() {            // hide the legend, leave the zones as-is
+      panelOpen = false;
+      panel.classList.remove('open');
+      syncBtn();
+    }
+
+    setZones(false);                   // initial: overlay off, panel closed
+    btn.addEventListener('click', () => panelOpen ? closePanel() : openPanel());
+    if (close)  close.addEventListener('click', closePanel);
+    if (master) master.addEventListener('change', () => setZones(master.checked));
   })();
 
   /* ── Field overlay ────────────────────────────────────────────────────── */
@@ -2880,9 +3190,12 @@
         const sr = fd.safetyRects;
         const gi = sr.gestureInsets;
         const sa = sr.safeAreaInsets;
+        // per-zone visibility (toggled from the «Зоны» legend); missing key = shown
+        const vis = window._zoneVis || {};
+        const zv  = function (k) { return vis[k] !== false; };
 
         // gesture edge strips (red hatched)
-        [
+        if (zv('gesture')) [
           [0,       0,       gi.l, H,    'жест←'],
           [W - gi.r, 0,      gi.r, H,    'жест→'],
           [0,       0,       W,    gi.t, 'жест↑'],
@@ -2896,7 +3209,7 @@
         });
 
         // safe-area strips where they extend beyond gesture zone (orange)
-        [
+        if (zv('safe')) [
           [0,        0,        sa.l,  H,    sa.l > gi.l],
           [W - sa.r, 0,        sa.r,  H,    sa.r > gi.r],
           [0,        0,        W,     sa.t, sa.t > gi.t],
@@ -2909,28 +3222,28 @@
 
         // cutout (black overlay with red border)
         var cr = sr.cutoutRect;
-        if (cr && cr.w > 0 && cr.h > 0) {
+        if (zv('cutout') && cr && cr.w > 0 && cr.h > 0) {
           s += '<rect x="'+cr.x+'" y="'+cr.y+'" width="'+cr.w+'" height="'+cr.h+'" fill="rgba(0,0,0,.55)" stroke="rgba(255,60,60,.85)" stroke-width="2"/>';
           s += '<text x="'+(cr.x+2)+'" y="'+(cr.y+9)+'" font-size="7" fill="rgba(255,80,80,.9)">'+T.zoneOvCutout+'</text>';
         }
 
         // named safe rects (outlines only — drawn on top so they're always visible)
         [
-          { r: sr.contentSafeRect,        col: 'rgba(34,210,255,.75)', da: '6 3', lbl: T.zoneOvContent     },
-          { r: sr.interactiveSafeRect,    col: 'rgba(34,240,100,.75)', da: '5 4', lbl: T.zoneOvInteractive },
-          { r: sr.routeStartAllowedRect,  col: 'rgba(50,255,50,1)',    da: '',    lbl: T.zoneOvRouteStart  },
-          { r: sr.routeDrawAllowedRect,   col: 'rgba(60,180,255,.9)',  da: '8 3', lbl: T.zoneOvRouteDraw   },
-          { r: sr.routeTargetAllowedRect, col: 'rgba(180,80,255,.9)',  da: '5 4', lbl: T.zoneOvRouteTarget },
+          { k: 'content',     r: sr.contentSafeRect,        col: 'rgba(34,210,255,.75)', da: '6 3', lbl: T.zoneOvContent     },
+          { k: 'interactive', r: sr.interactiveSafeRect,    col: 'rgba(34,240,100,.75)', da: '5 4', lbl: T.zoneOvInteractive },
+          { k: 'routeStart',  r: sr.routeStartAllowedRect,  col: 'rgba(50,255,50,1)',    da: '',    lbl: T.zoneOvRouteStart  },
+          { k: 'routeDraw',   r: sr.routeDrawAllowedRect,   col: 'rgba(60,180,255,.9)',  da: '8 3', lbl: T.zoneOvRouteDraw   },
+          { k: 'routeTarget', r: sr.routeTargetAllowedRect, col: 'rgba(180,80,255,.9)',  da: '5 4', lbl: T.zoneOvRouteTarget },
         ].forEach(function(item) {
           var r=item.r, col=item.col, da=item.da, lbl=item.lbl;
-          if (!r || r.w <= 0 || r.h <= 0) return;
+          if (!zv(item.k) || !r || r.w <= 0 || r.h <= 0) return;
           var daAttr = da ? ' stroke-dasharray="' + da + '"' : '';
           s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="none" stroke="'+col+'" stroke-width="1.5"'+daAttr+'/>';
           s += '<text x="'+(r.x+2)+'" y="'+(r.y+9)+'" font-size="7" fill="'+col+'">'+lbl+'</text>';
         });
 
         // UI reserved (HUD, pause button) — faint yellow dashed
-        (sr.uiReservedRects || []).forEach(function(r) {
+        if (zv('uiReserved')) (sr.uiReservedRects || []).forEach(function(r) {
           if (!r || r.w <= 0 || r.h <= 0) return;
           s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="rgba(255,220,0,.04)" stroke="rgba(255,220,0,.28)" stroke-width="1" stroke-dasharray="3 4"/>';
           s += '<text x="'+(r.x+2)+'" y="'+(r.y+8)+'" font-size="6" fill="rgba(255,220,0,.6)">'+r.label+'</text>';
@@ -2982,6 +3295,8 @@
       overlay.style.display = on ? '' : 'none';
       if (on) tick();
     };
+    // immediate redraw (used by the «Зоны» legend toggles for snappy feedback)
+    window._fieldRedraw = function () { if (fieldOn) drawOverlay(); };
   })();
 
   /* ── Demo mode (toggle: first click = start forest, second = main screen) */
