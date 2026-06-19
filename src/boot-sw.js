@@ -45,19 +45,7 @@
       return 'updating';
     }
 
-    // Shell актуален — просим SW освежить кэш ресурсов (спрайты, PNG скинов),
-    // ждём подтверждения и перезагружаемся, чтобы отрисовался новый арт.
-    const sw = navigator.serviceWorker.controller;
-    if (!sw) { reloading = true; location.reload(); return 'refreshed'; }
-    await new Promise((resolve) => {
-      let done = false;
-      const finish = () => { if (done) return; done = true; navigator.serviceWorker.removeEventListener('message', onMsg); resolve(); };
-      const onMsg = (ev) => { if (ev.data && ev.data.type === 'ASSETS_REFRESHED') finish(); };
-      navigator.serviceWorker.addEventListener('message', onMsg);
-      sw.postMessage({ type: 'REFRESH_ASSETS' });
-      setTimeout(finish, 8000); // подстраховка, если ответ не пришёл
-    });
-    reloading = true; location.reload();
+    // Shell актуален — версия приложения не изменилась.
     return 'refreshed';
   };
 

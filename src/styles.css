@@ -132,6 +132,23 @@
     box-shadow:0 18px 48px rgba(8,6,16,.6)}
   .corner-debug-pop .opt{margin:0;cursor:pointer}
   .corner-debug-pop .opt:last-child{border-bottom:none}
+  /* icon button off state (sound muted, vibro off) */
+  .icon-btn.icon-btn--off{color:var(--m-text-muted,#6b6d7a);opacity:.55}
+  /* debug screen checkboxes */
+  .debug-opt{display:flex;align-items:center;gap:12px;padding:10px 2px;cursor:pointer;
+    font-size:15px;color:var(--m-text-body,var(--paper));margin:0;border-top:1px solid var(--m-divider,rgba(127,155,176,.18))}
+  .debug-opt input[type=checkbox]{accent-color:var(--teal,#4ecdc4);width:17px;height:17px;cursor:pointer;flex:none}
+  /* update progress modal */
+  .upd-track{margin:18px 0 8px}
+  .upd-track__labels{display:flex;justify-content:space-between;margin-bottom:8px}
+  .upd-ver{font-size:13px;color:var(--m-text-muted,var(--muted));font-variant-numeric:tabular-nums}
+  .upd-bar{height:38px;border-radius:19px;background:var(--m-panel-3,rgba(255,255,255,.06));
+    border:1.5px solid var(--m-panel-border,rgba(127,155,176,.2));position:relative;overflow:hidden}
+  .upd-bar__fill{position:absolute;left:0;top:0;height:100%;
+    background:linear-gradient(90deg,var(--teal,#4ecdc4),var(--phosphor,#7eff6e));
+    border-radius:19px;width:0%;transition:width .5s ease}
+  .upd-bar__plane{position:absolute;top:50%;transform:translateY(-50%);
+    font-size:20px;left:6px;z-index:1;transition:left .5s ease;pointer-events:none}
   .logbox{margin-top:14px;max-height:130px;overflow:auto;border-top:1px solid rgba(127,155,176,.25);padding-top:8px}
   .logrow{font-size:11px;color:var(--paper);padding:2px 0;letter-spacing:.03em}
   .logrow.muted{color:var(--muted)}
