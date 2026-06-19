@@ -546,6 +546,11 @@
 
     /* ── Level / Difficulty lab (data-driven) ───────────────────────────── */
     .lab-empty { color: var(--muted); font-size: 11px; }
+    .lab-section h3 .h3-sub { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+    .ed-bay-row { display: grid; grid-template-columns: 1fr 64px 64px; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--row-sep); }
+    .ed-bay-row:first-child { border-top: none; }
+    .ed-bay-row .ed-bay-lbl { font-size: 12px; color: var(--text); }
+    .ed-bay-row input { width: 100%; border: 1px solid rgba(127,155,176,.22); border-radius: 6px; background: var(--input-bg); color: #fff; padding: 3px 5px; font-size: 11px; text-align: center; font-family: inherit; }
     .lab-select {
       width: 100%; border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
       background: var(--input-bg); color: #fff; padding: 5px 7px; font-size: 12px; font-family: inherit;
@@ -933,18 +938,74 @@
   <!-- Tab 3: Level Lab ──────────────────────────────────────────────────── -->
   <div id="level-view" class="lab-view">
     <div class="lab-section">
-      <h3>Кривая кампании</h3>
+      <h3>Кривая кампании <span class="h3-sub">· клик по строке — выбрать уровень</span></h3>
       <p class="lab-hint" style="margin-top:0">
         Реальные уровни из <code>LEVELS</code>. Главная ось сложности — <b>темп</b> (pace): частота прилёта
-        + одновременность бортов; по кампании он не убывает. Клик по строке — подробный разбор в табе «Сложность».
+        + одновременность бортов; по кампании он не убывает. Правки идут по рабочей копии и не трогают кампанию в превью.
       </p>
       <div id="level-table-wrap"><span class="lab-empty">Ждём запуска игры…</span></div>
     </div>
+
+    <div class="lab-section" id="level-edit-sec">
+      <h3>Правка уровня <span class="h3-sub" id="ed-name">—</span></h3>
+      <div class="lab-row">
+        <span class="lbl-main">Темп <small>pace 0…1</small></span>
+        <input type="range" id="ed-pace" min="0" max="1" step="0.01" value="0">
+        <input class="lab-num" type="number" id="ed-pace-n" min="0" max="1" step="0.01" value="0">
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">ВПП <small>число полос</small></span>
+        <input type="range" id="ed-runways" min="1" max="5" step="1" value="3">
+        <input class="lab-num" type="number" id="ed-runways-n" min="1" max="5" step="1" value="3">
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">Старт. деньги <small>0 = дефолт</small></span>
+        <input type="range" id="ed-money" min="0" max="400" step="10" value="0">
+        <input class="lab-num" type="number" id="ed-money-n" min="0" max="2000" step="10" value="0">
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">Лимит времени <small>сек, 0 = нет</small></span>
+        <input type="range" id="ed-time" min="0" max="600" step="10" value="0">
+        <input class="lab-num" type="number" id="ed-time-n" min="0" max="3600" step="5" value="0">
+      </div>
+      <div style="margin-top:10px">
+        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию; 3★ = target)</div>
+        <div style="display:flex;gap:6px">
+          <input class="lab-num" type="number" id="ed-s1" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="ed-s2" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="ed-s3" min="1" step="1" style="flex:1;text-align:center">
+        </div>
+        <div id="ed-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div>
+      </div>
+    </div>
+
     <div class="lab-section">
-      <h3>Профиль темпа</h3>
+      <h3>События <span class="h3-sub">· спецборты — не раньше L5</span></h3>
+      <div class="lab-chips" id="ed-events"></div>
+      <p class="lab-hint">Каждый спецборт добавляет вес в сложность (vip .5 · emergency .8 · rush 1 · medical 1).</p>
+    </div>
+
+    <div class="lab-section" id="ed-bays-sec">
+      <h3>Боксы по сторонам <span class="h3-sub">· слотов / открыто на старте</span></h3>
+      <div id="ed-bays"><span class="lab-empty">—</span></div>
+    </div>
+
+    <div class="lab-section">
+      <h3>Профиль темпа <span class="h3-sub" id="ed-diff-live">сложность —</span></h3>
       <div id="level-pace-chart" class="pace-chart"></div>
       <div id="level-pace-axis"  class="pace-axis"></div>
       <p class="lab-hint">Высота столбца = <code>pace</code> уровня (0…1). Кривая должна расти монотонно.</p>
+    </div>
+
+    <div class="lab-section">
+      <h3>Действия</h3>
+      <div class="lab-btn-row">
+        <button class="p-btn" id="lab-export">⬇ Экспорт JSON</button>
+        <button class="p-btn" id="lab-copy">📋 Копировать уровень</button>
+        <button class="p-btn" id="lab-reset">↺ Сброс правок</button>
+      </div>
+      <p class="lab-hint">Экспорт скачивает правленый массив <code>LEVELS</code> как JSON — вставь значения в
+        <code>src/game/04-config-levels.ts</code>. Сама <code>tuning.html</code> в исходник не пишет.</p>
     </div>
   </div>
 
@@ -1511,56 +1572,75 @@
   function setStatus(msg) { statusBar.textContent = msg; }
 
   /* ── Level & Difficulty labs ──────────────────────────────────────────────
-     Read-only inspector over the REAL campaign data. The game iframe is loaded
+     Editor + live analysis over the REAL campaign data. The game iframe loads
      with ?test=1, which exposes window.__GAME (LEVELS + the pure config helpers
-     and analyzeLevel from src/game/14-level-analysis.ts). We never edit levels
-     here — that's the in-game editor's job — we visualize the actual difficulty
-     curve documented in docs/design/game-design/difficulty_curve.md. */
-  let GAME = null;          // window.__GAME once the iframe is ready
-  let labSel = 0;           // selected campaign level index, shared by both labs
+     and analyzeLevel from src/game/14-level-analysis.ts) — ?test=1 only attaches
+     that hook, it does not change gameplay or visuals.
 
-  const LAB_EVENT_LBL = { vip:'VIP', emergency:'Mayday', rush:'Час пик', medical:'Медэвак', fog:'Туман', wind:'Ветер' };
+     Edits go onto a deep-cloned WORKING COPY (labLevels), never the running
+     campaign in the preview, and re-run the same pure functions the game uses
+     (analyzeLevel / levelEconomy / paceInterval …). "Save" is JSON export — paste
+     the values back into LEVELS in src/game/04-config-levels.ts. The difficulty
+     model is documented in docs/design/game-design/difficulty_curve.md. */
+  let GAME = null;          // window.__GAME once the iframe is ready
+  let labLevels = [];       // editable deep clones of GAME.LEVELS
+  let labSel = 0;           // selected level index, shared by both labs
+
+  const LAB_CALM = 4;       // CALM_LEVELS — no specials before L5 (validateLevels)
+  const LAB_EVENT_LBL = { vip:'VIP', emergency:'Mayday', rush:'Час пик', medical:'Медэвак' };
   const LAB_FACTOR_LBL = {
     traffic:'Трафик (темп)', capacity:'Загрузка боксов', events:'Спецборты',
     timePressure:'Время / race', economy:'Экономика', geometry:'Геометрия поля',
   };
+  const LAB_SVC_LBL = { fuel:'🛢 Топливо', board:'🚪 Посадка', repair:'🔧 Ремонт', cargo:'📦 Карго', vip:'⭐ VIP' };
 
   function labGame() {
     try { const fw = gameFrame.contentWindow; return fw && fw.__GAME ? fw.__GAME : null; } catch (_) { return null; }
   }
   function labLevelName(i) { try { return GAME.levelName(i); } catch (_) { return 'Уровень ' + (i + 1); } }
   function labRunways(lv)  { return lv.layout && lv.layout.runways ? lv.layout.runways.length : (lv.runways || 1); }
-  function labEvents(lv)   { const ev = lv.events || {}; return Object.keys(LAB_EVENT_LBL).filter(k => ev[k]).map(k => LAB_EVENT_LBL[k]); }
+  function labEventList(lv){ const ev = lv.events || {}; return Object.keys(LAB_EVENT_LBL).filter(k => ev[k]).map(k => LAB_EVENT_LBL[k]); }
   function labFmt(n, d)    { return Number(n).toFixed(d == null ? 2 : d); }
+  function curLevel()      { return labLevels[labSel]; }
 
   function pollGame() {
     const g = labGame();
     if (g && Array.isArray(g.LEVELS) && g.LEVELS.length && typeof g.analyzeLevel === 'function') {
-      GAME = g; buildLabs(); return;
+      GAME = g; cloneLevels(); buildLabs(); return;
     }
     setTimeout(pollGame, 150);
   }
 
-  function buildLabs() {
-    if (!GAME) return;
-    buildLevelTable();
-    buildPaceChart();
-    buildDiffSelect();
-    labSelect(Math.min(labSel, GAME.LEVELS.length - 1));
+  function cloneLevels() {
+    labLevels = GAME.LEVELS.map(lv => JSON.parse(JSON.stringify(lv)));   // plain data — safe to clone
   }
 
-  function buildLevelTable() {
+  function buildLabs() {
+    if (!GAME) return;
+    buildDiffSelect();
+    buildEvents();
+    wireEditor();
+    document.getElementById('lab-export').onclick = exportJSON;
+    document.getElementById('lab-copy').onclick   = copyLevel;
+    document.getElementById('lab-reset').onclick  = resetEdits;
+    const cap = document.getElementById('diff-cap');
+    if (cap && GAME.K) cap.textContent = labFmt(GAME.K.ECON_DIFF_CAP, 1);
+    labSelect(Math.min(labSel, labLevels.length - 1));
+  }
+
+  /* ---- overview table + pace sparkline (rebuilt on every edit) ---- */
+  function renderTable() {
     const wrap = document.getElementById('level-table-wrap');
     let h = '<table class="lab-table"><thead><tr>' +
       '<th>#</th><th>Имя</th><th>pace</th><th>инт.</th><th>одн.</th><th>звёзды</th><th>ВПП</th><th>боксы</th><th>события</th><th>сложн.</th>' +
       '</tr></thead><tbody>';
-    GAME.LEVELS.forEach((lv, i) => {
+    labLevels.forEach((lv, i) => {
       const pace = GAME.levelPace(lv);
       const rep  = GAME.analyzeLevel(lv);
       const stars = ((lv.objective && lv.objective.stars) || []).join('/');
-      const evs   = labEvents(lv);
+      const evs   = labEventList(lv);
       const open  = GAME.countOpenHangars(lv), tot = GAME.countTotalHangars(lv);
-      h += '<tr data-idx="' + i + '">' +
+      h += '<tr data-idx="' + i + '"' + (i === labSel ? ' class="sel"' : '') + '>' +
         '<td>' + (i + 1) + '</td>' +
         '<td>' + escHtml(labLevelName(i)) + '</td>' +
         '<td>' + labFmt(pace) + '</td>' +
@@ -1579,14 +1659,14 @@
       tr.addEventListener('click', () => labSelect(+tr.dataset.idx)));
   }
 
-  function buildPaceChart() {
+  function renderPaceChart() {
     const chart = document.getElementById('level-pace-chart');
     const axis  = document.getElementById('level-pace-axis');
     let bars = '', ax = '';
-    GAME.LEVELS.forEach((lv, i) => {
+    labLevels.forEach((lv, i) => {
       const pace = GAME.levelPace(lv);
       const ht   = Math.round(8 + pace * 92);    // 8%..100% so pace 0 is still visible
-      bars += '<div class="pace-bar" data-idx="' + i + '" style="height:' + ht + '%" title="L' + (i + 1) + ' · pace ' + labFmt(pace) + '"></div>';
+      bars += '<div class="pace-bar' + (i === labSel ? ' sel' : '') + '" data-idx="' + i + '" style="height:' + ht + '%" title="L' + (i + 1) + ' · pace ' + labFmt(pace) + '"></div>';
       ax   += '<span>' + (i + 1) + '</span>';
     });
     chart.innerHTML = bars; axis.innerHTML = ax;
@@ -1596,23 +1676,124 @@
 
   function buildDiffSelect() {
     const sel = document.getElementById('diff-level-sel');
-    sel.innerHTML = GAME.LEVELS.map((lv, i) =>
+    sel.innerHTML = labLevels.map((lv, i) =>
       '<option value="' + i + '">L' + (i + 1) + ' · ' + escHtml(labLevelName(i)) + '</option>').join('');
     sel.onchange = () => labSelect(+sel.value);
-    const cap = document.getElementById('diff-cap');
-    if (cap && GAME.K) cap.textContent = labFmt(GAME.K.ECON_DIFF_CAP, 1);
+  }
+
+  function buildEvents() {
+    document.getElementById('ed-events').innerHTML = Object.keys(LAB_EVENT_LBL).map(k =>
+      '<label class="lab-chip" data-ev="' + k + '"><input type="checkbox" data-ev="' + k + '"> ' + escHtml(LAB_EVENT_LBL[k]) + '</label>').join('');
+    document.querySelectorAll('#ed-events input[data-ev]').forEach(el => {
+      el.addEventListener('change', () => {
+        const lv = curLevel(); lv.events = lv.events || {};
+        if (el.checked) lv.events[el.dataset.ev] = true; else delete lv.events[el.dataset.ev];
+        el.closest('.lab-chip').classList.toggle('on', el.checked);
+        recompute();
+      });
+    });
+  }
+
+  /* ---- editor wiring: each control writes the working copy, then recompute ---- */
+  function bindPair(rangeId, numId, set) {
+    const r = document.getElementById(rangeId), n = document.getElementById(numId);
+    const on = src => () => { const v = parseFloat(src.value); if (!Number.isFinite(v)) return; r.value = v; n.value = v; set(v); recompute(); };
+    r.addEventListener('input', on(r)); n.addEventListener('input', on(n));
+  }
+  function wireEditor() {
+    bindPair('ed-pace', 'ed-pace-n', v => { curLevel().pace = Math.max(0, Math.min(1, v)); });
+    bindPair('ed-runways', 'ed-runways-n', v => { const lv = curLevel(); if (!lv.layout) lv.runways = Math.round(v); });
+    bindPair('ed-money', 'ed-money-n', v => { const lv = curLevel(); if (v > 0) lv.startMoney = Math.round(v); else delete lv.startMoney; });
+    bindPair('ed-time', 'ed-time-n', v => { const o = curLevel().objective; if (v > 0) o.time = Math.round(v); else delete o.time; });
+    ['ed-s1', 'ed-s2', 'ed-s3'].forEach((id, k) => {
+      document.getElementById(id).addEventListener('input', e => {
+        const o = curLevel().objective; o.stars = (o.stars || []).slice(0, 3);
+        o.stars[k] = Math.max(1, Math.round(parseFloat(e.target.value) || 1));
+        o.target = o.stars[2];   // 3★ = target (schema)
+        recompute();
+      });
+    });
+  }
+
+  /* ---- load the selected level's values into the editor controls ---- */
+  function loadEditor() {
+    const lv = curLevel(), o = lv.objective || {};
+    document.getElementById('ed-name').textContent = 'L' + (labSel + 1) + ' · ' + labLevelName(labSel);
+    const setPair = (rId, nId, v) => { document.getElementById(rId).value = v; document.getElementById(nId).value = v; };
+    setPair('ed-pace', 'ed-pace-n', GAME.levelPace(lv));
+    const isLayout = !!lv.layout;
+    setPair('ed-runways', 'ed-runways-n', labRunways(lv));
+    document.getElementById('ed-runways').disabled = isLayout;
+    document.getElementById('ed-runways-n').disabled = isLayout;
+    setPair('ed-money', 'ed-money-n', lv.startMoney || 0);
+    setPair('ed-time', 'ed-time-n', o.time || 0);
+    const st = o.stars || [];
+    document.getElementById('ed-s1').value = st[0] != null ? st[0] : '';
+    document.getElementById('ed-s2').value = st[1] != null ? st[1] : '';
+    document.getElementById('ed-s3').value = st[2] != null ? st[2] : '';
+    const ev = lv.events || {};
+    document.querySelectorAll('#ed-events input[data-ev]').forEach(cb => {
+      cb.checked = !!ev[cb.dataset.ev];
+      cb.closest('.lab-chip').classList.toggle('on', cb.checked);
+    });
+    renderBays();
+  }
+
+  function renderBays() {
+    const box = document.getElementById('ed-bays'), lv = curLevel();
+    if (lv.layout) {
+      box.innerHTML = '<span class="lab-empty">Раскладка задаётся в игровом конструкторе (явный layout). ' +
+        'Здесь правятся темп, события, звёзды, деньги и время.</span>';
+      return;
+    }
+    const sides = lv.sides || {};
+    const keys = ['top', 'left', 'bottom'].filter(s => sides[s]);
+    if (!keys.length) { box.innerHTML = '<span class="lab-empty">Нет сторон с боксами.</span>'; return; }
+    box.innerHTML = keys.map(s => {
+      const c = sides[s];
+      const name = (LAB_SVC_LBL[c.type] || c.type);
+      return '<div class="ed-bay-row">' +
+        '<span class="ed-bay-lbl">' + escHtml(s) + ' · ' + escHtml(name) + '</span>' +
+        '<input type="number" min="1" max="6" step="1" data-side="' + s + '" data-f="slots" value="' + c.slots + '" title="слотов">' +
+        '<input type="number" min="0" max="6" step="1" data-side="' + s + '" data-f="open" value="' + c.open + '" title="открыто на старте">' +
+        '</div>';
+    }).join('');
+    box.querySelectorAll('input[data-side]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const c = curLevel().sides[inp.dataset.side];
+        let v = Math.max(0, Math.round(parseFloat(inp.value) || 0));
+        if (inp.dataset.f === 'slots') { v = Math.max(1, v); c.slots = v; if (c.open > v) c.open = v; }
+        else { c.open = Math.min(v, c.slots); }
+        recompute();
+      });
+    });
+  }
+
+  /* ---- single entry point after any edit: rebuild everything from working copy ---- */
+  function recompute() {
+    renderTable();
+    renderPaceChart();
+    renderStarsWarn();
+    renderDiff();
+  }
+
+  function renderStarsWarn() {
+    const o = curLevel().objective || {}, st = o.stars || [];
+    const warn = document.getElementById('ed-stars-warn');
+    const issues = [];
+    if (st.length < 3 || st.some(x => !(x > 0))) issues.push('нужны три порога ★');
+    else if (!(st[0] < st[1] && st[1] < st[2])) issues.push('пороги должны строго возрастать (s1<s2<s3)');
+    if (labSel < LAB_CALM && labEventList(curLevel()).length) issues.push('спецборты до L5 — валидатор это запретит');
+    warn.textContent = issues.length ? '⚠ ' + issues.join(' · ') : '';
   }
 
   function labSelect(idx) {
     if (!GAME) return;
-    labSel = Math.max(0, Math.min(GAME.LEVELS.length - 1, idx | 0));
-    document.querySelectorAll('#level-table-wrap tr[data-idx]').forEach(tr =>
-      tr.classList.toggle('sel', +tr.dataset.idx === labSel));
-    document.querySelectorAll('#level-pace-chart .pace-bar').forEach(b =>
-      b.classList.toggle('sel', +b.dataset.idx === labSel));
+    labSel = Math.max(0, Math.min(labLevels.length - 1, idx | 0));
     const sel = document.getElementById('diff-level-sel');
     if (sel && +sel.value !== labSel) sel.value = String(labSel);
-    renderDiff(labSel);
+    loadEditor();
+    recompute();
   }
 
   function labEconRow(k, v) {
@@ -1620,11 +1801,12 @@
       '</td><td style="text-align:right;font-weight:600;color:var(--text)">' + escHtml(String(v)) + '</td></tr>';
   }
 
-  function renderDiff(idx) {
-    const lv  = GAME.LEVELS[idx];
+  function renderDiff() {
+    const lv  = curLevel();
     const rep = GAME.analyzeLevel(lv);
     const pace = rep.pace;
 
+    document.getElementById('ed-diff-live').textContent   = 'сложность ' + Math.round(rep.total * 100) + '%';
     document.getElementById('diff-total').textContent      = labFmt(rep.total);
     document.getElementById('diff-pace').textContent       = labFmt(pace);
     document.getElementById('diff-pace-sub').textContent   = labFmt(GAME.paceInterval(pace), 1) + 's · ' + GAME.paceCap(pace) + ' бортов';
@@ -1655,6 +1837,38 @@
     document.getElementById('diff-warnings').innerHTML = rep.warnings.length
       ? rep.warnings.map(w => '<div style="font-size:11px;color:#e3c522;padding:2px 0">⚠ ' + escHtml(w) + '</div>').join('')
       : '<span class="lab-empty">✓ Нет замечаний</span>';
+  }
+
+  /* ---- save = JSON export (tuning.html can't write source) ---- */
+  function levelsExportText() {
+    return JSON.stringify({
+      version: 1, exportedAt: new Date().toISOString(),
+      note: 'Edited campaign LEVELS from tuning.html — paste values into src/game/04-config-levels.ts',
+      levels: labLevels,
+    }, null, 2);
+  }
+  function exportJSON() {
+    const blob = new Blob([levelsExportText()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'levels-tuning.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    setStatus('Уровни экспортированы в JSON.');
+  }
+  function copyLevel() {
+    const txt = JSON.stringify(curLevel(), null, 2);
+    const done = () => setStatus('L' + (labSel + 1) + ': JSON уровня скопирован.');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => setStatus(txt));
+    else setStatus(txt);
+  }
+  function resetEdits() {
+    if (!GAME) return;
+    if (!confirm('Сбросить все правки уровней к значениям из игры?')) return;
+    cloneLevels();
+    buildDiffSelect();
+    labSelect(Math.min(labSel, labLevels.length - 1));
+    setStatus('Правки уровней сброшены.');
   }
 
   /* ── Tab switching ────────────────────────────────────────────────────── */
