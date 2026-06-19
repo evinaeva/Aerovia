@@ -45,29 +45,21 @@
       position: relative;
     }
 
-    /* ── Left panel: size strip + demo/cutout column ──────────────────── */
+    /* ── Left panel: size strip + demo button ─────────────────────────── */
     #left-panel {
       grid-area: left;
       display: flex;
-      gap: 8px;
+      flex-direction: column;
+      gap: 6px;
       align-self: start;
     }
 
-    /* ── Device size strip (left of phone) ──────────────────────────────── */
+    /* ── Device size strip ───────────────────────────────────────────────── */
     #size-strip {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
       flex: none;
-    }
-
-    /* ── Demo + Cutout column (right of size strip) ──────────────────── */
-    #demo-cut {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      flex: none;
-      min-width: 100px;
     }
 
     #btn-demo {
@@ -189,37 +181,55 @@
       grid-area: tools;
       display: flex;
       flex-direction: column;
-      gap: 7px;
-      width: clamp(180px, 20vw, 240px);
+      gap: 3px;
       align-self: start;
       padding-top: 2px;
+      width: auto;
+      min-width: 36px;
     }
 
-    .pt-section {
+    /* Collapsible icon panels */
+    .pt-panel {
+      border-radius: 10px;
+      overflow: visible;
+    }
+    .pt-panel[open] {
+      border: 1px solid var(--border);
+      background: rgba(14,22,48,.5);
+    }
+    .pt-panel > summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 7px;
+      border-radius: 10px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .pt-panel > summary::-webkit-details-marker { display: none; }
+    .pt-panel > summary .pt-icon { font-size: 16px; line-height: 1; flex: none; }
+    .pt-panel > summary .pt-lbl {
+      font-size: 9px; font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); display: none;
+    }
+    .pt-panel[open] > summary .pt-lbl { display: block; }
+    .pt-panel > summary:hover { background: rgba(58,210,255,.08); }
+    .pt-panel[open] > summary:hover { background: transparent; }
+
+    .pt-body {
       display: flex;
       flex-direction: column;
       gap: 5px;
-      padding: 8px 10px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: rgba(14,22,48,.5);
+      padding: 0 10px 10px;
+      min-width: 168px;
     }
-
-    .pt-label {
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 2px;
-    }
-
-    .pt-section .p-btn { width: 100%; text-align: left; }
-    .pt-section .p-input { width: 100%; }
-    .pt-section select { width: 100%; }
-
-    .pt-section .btn-row { display: flex; gap: 4px; }
-    .pt-section .btn-row .p-btn { flex: 1; }
+    .pt-body .p-btn { width: 100%; text-align: left; }
+    .pt-body .p-input { width: 100%; }
+    .pt-body select { width: 100%; }
+    .pt-body .btn-row { display: flex; gap: 4px; }
+    .pt-body .btn-row .p-btn { flex: 1; }
 
     /* ── SPLITTER ────────────────────────────────────────────────────────── */
     #splitter {
@@ -261,25 +271,8 @@
     /* sticky header */
     #panel-head {
       flex: none;
-      padding: 14px 18px 0;
+      padding: 0;
       background: rgba(8,14,32,.99);
-    }
-
-    #panel-head h1 {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--accent);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #panel-head h1 span.sub {
-      font-size: 11px;
-      font-weight: 400;
-      color: var(--muted);
-      letter-spacing: .04em;
     }
 
     .actions {
@@ -510,22 +503,22 @@
     }
     .lab-row {
       display: grid;
-      grid-template-columns: 1fr 72px;
-      grid-template-rows: auto auto;
-      grid-template-areas: "lbl lbl" "rng num";
-      gap: 5px 10px;
-      padding: 10px 0;
+      grid-template-columns: minmax(80px, 150px) 1fr 60px;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      height: 32px;
       border-top: 1px solid var(--row-sep);
     }
-    .lab-row:first-of-type { border-top: none; padding-top: 0; }
-    .lab-row .lbl-main { grid-area: lbl; font-size: 14px; font-weight: 700; color: var(--text); }
-    .lab-row .lbl-sub  { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 400; }
-    .lab-row input[type=range] { grid-area: rng; cursor: pointer; accent-color: var(--accent2); min-width: 0; align-self: center; }
+    .lab-row:first-of-type { border-top: none; }
+    .lab-row .lbl-main { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lab-row .lbl-sub  { display: none; }
+    .lab-row input[type=range] { min-width: 0; width: 100%; cursor: pointer; accent-color: var(--accent2); }
     .lab-row .lab-num {
-      grid-area: num; width: 72px;
-      border: 1px solid rgba(127,155,176,.22); border-radius: 8px;
+      width: 60px;
+      border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
       background: var(--input-bg); color: #fff;
-      padding: 5px; font-size: 12px; text-align: right; font-family: inherit;
+      padding: 3px 5px; font-size: 11px; text-align: right; font-family: inherit;
     }
     .lab-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0 2px; }
     .lab-chip {
@@ -670,9 +663,8 @@
     .z-sw { width: 18px; height: 3px; flex: none; border-radius: 2px; }
     .z-sw.fill { height: 10px; border-radius: 3px; }
 
-    /* co-btn in demo-cut column: full-width */
-    #demo-cut .co-btn { width: 100%; text-align: left; }
-    #demo-cut #cutout-strip { display: flex; flex-direction: column; gap: 4px; }
+    /* co-btn inside pt-body: full-width */
+    .pt-body .co-btn { width: 100%; text-align: left; }
 
     /* ── Toggle-grid for all-bool groups ─────────────────────────────────── */
     .toggle-grid {
@@ -697,11 +689,6 @@
     .toggle-card:hover { background: rgba(22,34,68,.8); }
     .toggle-card .lbl { font-size: 11px; flex: 1; font-weight: 600; line-height: 1.2; }
 
-    /* ── Responsive: medium screens ─────────────────────────────────────── */
-    @media (max-width: 1100px) {
-      #preview-tools { width: auto; min-width: 160px; }
-    }
-
     /* ── Responsive: tablet portrait / small screens ────────────────────── */
     @media (max-width: 900px) {
       #top-pane {
@@ -713,8 +700,10 @@
       }
 
       #left-panel {
+        flex-direction: row;
         flex-wrap: wrap;
         width: 100%;
+        align-items: center;
       }
 
       #size-strip {
@@ -723,8 +712,6 @@
         scrollbar-width: none;
       }
 
-      #demo-cut { flex-direction: row; flex-wrap: wrap; }
-
       #phone-col { width: 100%; }
 
       #preview-tools {
@@ -732,10 +719,8 @@
         flex-direction: row;
         flex-wrap: wrap;
         justify-content: flex-end;
-        gap: 6px;
+        gap: 4px;
       }
-
-      .pt-section { flex: none; min-width: 160px; }
 
       .mt-row { grid-template-columns: minmax(70px, 120px) 1fr 50px; }
     }
@@ -751,7 +736,7 @@
 
     <div id="size-strip">
       <button class="sz-btn" data-size="st">
-        <span class="sz-name">Stress</span>
+        <span class="sz-name">XS</span>
         <span class="sz-dims">720 × 320</span>
       </button>
       <button class="sz-btn active" data-size="s">
@@ -776,17 +761,7 @@
       </button>
     </div>
 
-    <div id="demo-cut">
-      <button class="p-btn" id="btn-demo" title="Forest Survival · бесконечные борта">▶ Demo</button>
-      <div id="cutout-strip">
-        <div class="pt-label">Cutout</div>
-        <button class="co-btn active" data-co="none">No cut</button>
-        <button class="co-btn" data-co="left">◀ Left cam</button>
-        <button class="co-btn" data-co="right">Right cam ▶</button>
-        <button class="co-btn" data-co="round">⌒ Rounded</button>
-        <button class="co-btn" data-co="3btn">3-btn nav</button>
-      </div>
-    </div>
+    <button class="p-btn" id="btn-demo" title="Forest Survival · бесконечные борта">▶ Демо</button>
 
   </div>
 
@@ -810,22 +785,36 @@
   </div>
 
   <aside id="preview-tools">
-    <div class="pt-section">
-      <div class="pt-label">Пресет</div>
-      <select id="preset-sel"><option value="">Пресет…</option></select>
-      <input class="p-input" id="preset-name" placeholder="Название пресета">
-      <div class="btn-row">
-        <button class="p-btn" id="btn-save">💾 Save</button>
-        <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
+    <details class="pt-panel">
+      <summary><span class="pt-icon">💾</span><span class="pt-lbl">Пресет</span></summary>
+      <div class="pt-body">
+        <select id="preset-sel"><option value="">Пресет…</option></select>
+        <input class="p-input" id="preset-name" placeholder="Название пресета">
+        <div class="btn-row">
+          <button class="p-btn" id="btn-save">Сохранить</button>
+          <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
+        </div>
       </div>
-    </div>
-    <div class="pt-section">
-      <div class="pt-label">Файл</div>
-      <button class="p-btn" id="btn-export">↓ Export JSON</button>
-      <button class="p-btn" id="btn-import">↑ Import JSON</button>
-      <input type="file" id="file-import" accept=".json" style="display:none">
-      <button class="p-btn" id="btn-reset">↺ Reset all</button>
-    </div>
+    </details>
+    <details class="pt-panel">
+      <summary><span class="pt-icon">📂</span><span class="pt-lbl">Файл</span></summary>
+      <div class="pt-body">
+        <button class="p-btn" id="btn-export">↓ Экспорт JSON</button>
+        <button class="p-btn" id="btn-import">↑ Импорт JSON</button>
+        <input type="file" id="file-import" accept=".json" style="display:none">
+        <button class="p-btn" id="btn-reset">↺ Сбросить всё</button>
+      </div>
+    </details>
+    <details class="pt-panel">
+      <summary><span class="pt-icon">✂️</span><span class="pt-lbl">Вырез</span></summary>
+      <div class="pt-body" id="cutout-strip">
+        <button class="co-btn active" data-co="none">Без выреза</button>
+        <button class="co-btn" data-co="left">◀ Лев. камера</button>
+        <button class="co-btn" data-co="right">Прав. камера ▶</button>
+        <button class="co-btn" data-co="round">⌒ Скруглённые</button>
+        <button class="co-btn" data-co="3btn">3 кнопки</button>
+      </div>
+    </details>
   </aside>
 
 </div>
@@ -841,22 +830,21 @@
 <div id="bottom-pane">
 
   <div id="panel-head">
-    <h1>🎛 Designer Workbench <span class="sub">· Aerovia</span></h1>
     <div id="tab-nav">
       <button class="t-tab active" data-tab="motion">
-        <span class="tab-icon">⚡</span><span>Motion Lab</span><span class="tab-num">1</span>
+        <span class="tab-icon">⚡</span><span>Движение</span><span class="tab-num">1</span>
       </button>
       <button class="t-tab" data-tab="safe">
-        <span class="tab-icon">📐</span><span>Safe Areas</span><span class="tab-num">2</span>
+        <span class="tab-icon">📐</span><span>Зоны экрана</span><span class="tab-num">2</span>
       </button>
       <button class="t-tab stub" data-tab="level">
-        <span class="tab-icon">🗺</span><span>Level Lab</span><span class="tab-num">3</span>
+        <span class="tab-icon">🗺</span><span>Уровни</span><span class="tab-num">3</span>
       </button>
       <button class="t-tab stub" data-tab="difficulty">
-        <span class="tab-icon">📊</span><span>Difficulty</span><span class="tab-num">4</span>
+        <span class="tab-icon">📊</span><span>Сложность</span><span class="tab-num">4</span>
       </button>
       <button class="t-tab stub" data-tab="assets">
-        <span class="tab-icon">🎨</span><span>Assets</span><span class="tab-num">5</span>
+        <span class="tab-icon">🎨</span><span>Ресурсы</span><span class="tab-num">5</span>
       </button>
     </div>
   </div>
@@ -1053,9 +1041,36 @@
 (function () {
   'use strict';
 
+  /* ── i18n ─────────────────────────────────────────────────────────────── */
+  const T = {
+    demo:           '▶ Демо',
+    demoStop:       '⏹ Стоп',
+    demoRunning:    'Демо: Forest запущен · бесконечные борта · без деайсинга.',
+    demoExit:       'Демо: вернулись в главное меню.',
+    demoNotLoaded:  'Игра не загружена.',
+    demoNoMenu:     'Сначала вернись в главное меню.',
+    demoBiomeNone:  'Биом не найден — попробуй ещё раз.',
+    ready:          'Готово',
+    loading:        'Ждём запуска игры…',
+    paramsReady:    (n) => 'Готово · ' + n + ' параметров.',
+    cutoutPreset:   (k) => 'Вырез: ' + k,
+    presetSaved:    (n) => 'Пресет сохранён: ' + n,
+    presetDeleted:  (n) => 'Пресет удалён: ' + n,
+    presetApplied:  (n) => 'Применён пресет: ' + n,
+    exportDone:     'JSON экспортирован.',
+    importDone:     (f) => 'Импортировано: ' + f,
+    importError:    (e) => 'Ошибка импорта: ' + e,
+    enterPreset:    'Введи название пресета.',
+    confirmReset:   'Сбросить все параметры к значениям по умолчанию?',
+    confirmDel:     (n) => 'Удалить пресет «' + n + '»?',
+    paramsReset:    'Все параметры сброшены.',
+    choosePreset:   'Выбери пресет для удаления.',
+    livePreview:    'Превью',
+  };
+
   /* ── Phone size presets ────────────────────────────────────────────────── */
   const PHONES = [
-    { key: 'st',  label: 'Stress Test',       w: 720, h: 320 },
+    { key: 'st',  label: 'XS стресс-тест',    w: 720, h: 320 },
     { key: 's',   label: 'S Android Common',   w: 800, h: 360 },
     { key: 'm',   label: 'M Android Common+',  w: 832, h: 384 },
     { key: 'l',   label: 'L Android Tall',     w: 873, h: 393 },
@@ -1090,7 +1105,7 @@
     wrapper.style.width  = Math.round(ph.w * scale) + 'px';
     wrapper.style.height = Math.round(ph.h * scale) + 'px';
 
-    label.textContent = 'Live Preview · ' + ph.label + ' · ' + ph.w + '×' + ph.h;
+    label.textContent = T.livePreview + ' · ' + ph.label + ' · ' + ph.w + '×' + ph.h;
 
     document.querySelectorAll('.sz-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.size === key);
@@ -1130,6 +1145,11 @@
   })();
 
   window.addEventListener('resize', () => applyPhone(phoneKey));
+
+  // Recalculate phone size when right-panel sections expand/collapse
+  document.querySelectorAll('#preview-tools details').forEach(det => {
+    det.addEventListener('toggle', () => requestAnimationFrame(() => applyPhone(phoneKey)));
+  });
 
   /* ── Cutout presets ────────────────────────────────────────────────────── */
   // side: 'none'|'left'|'right'  — matches MT.SA_CUTOUT_SIDE values
@@ -1191,7 +1211,7 @@
       // Trigger game resize so calcSafetyRects() re-reads updated MT values.
       try { gameFrame.contentWindow.dispatchEvent(new Event('resize')); } catch(_) {}
       if (MT) syncUI();
-      setStatus('Cutout preset: ' + key);
+      setStatus(T.cutoutPreset(key));
     } catch (e) { /* iframe not ready yet */ }
   }
 
@@ -1254,7 +1274,7 @@
       if (mt && Array.isArray(mt.params) && mt.params.length) {
         MT = mt;
         buildUI();
-        setStatus('Готово · ' + mt.params.length + ' параметров.');
+        setStatus(T.paramsReady(mt.params.length));
         return;
       }
     } catch (_) {}
@@ -1409,8 +1429,8 @@
 
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (!MT) return;
-    if (!confirm('Сбросить все параметры к значениям по умолчанию?')) return;
-    MT.reset(); syncUI(); applyCutout('none'); setStatus('Все параметры сброшены.');
+    if (!confirm(T.confirmReset)) return;
+    MT.reset(); syncUI(); applyCutout('none'); setStatus(T.paramsReset);
   });
 
   document.getElementById('btn-export').addEventListener('click', () => {
@@ -1421,7 +1441,7 @@
     a.download = 'motion-tuning.json';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    setStatus('JSON экспортирован.');
+    setStatus(T.exportDone);
   });
 
   document.getElementById('btn-import').addEventListener('click', () => {
@@ -1433,8 +1453,8 @@
     if (!file || !MT) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      try { MT.importText(ev.target.result); syncUI(); setStatus('Импортировано: ' + file.name); }
-      catch (err) { setStatus('Ошибка импорта: ' + err.message); }
+      try { MT.importText(ev.target.result); syncUI(); setStatus(T.importDone(file.name)); }
+      catch (err) { setStatus(T.importError(err.message)); }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -1443,26 +1463,26 @@
   document.getElementById('btn-save').addEventListener('click', () => {
     if (!MT) return;
     const name = document.getElementById('preset-name').value.trim();
-    if (!name) { setStatus('Введи название пресета.'); return; }
-    MT.savePreset(name); refreshPresets(); setStatus('Пресет сохранён: ' + name);
+    if (!name) { setStatus(T.enterPreset); return; }
+    MT.savePreset(name); refreshPresets(); setStatus(T.presetSaved(name));
   });
 
   document.getElementById('preset-sel').addEventListener('change', e => {
     if (!MT || !e.target.value) return;
-    MT.applyPreset(e.target.value); syncUI(); setStatus('Применён пресет: ' + e.target.value);
+    MT.applyPreset(e.target.value); syncUI(); setStatus(T.presetApplied(e.target.value));
   });
 
   document.getElementById('btn-del-preset').addEventListener('click', () => {
     const sel = document.getElementById('preset-sel');
     const name = sel.value;
-    if (!name) { setStatus('Выбери пресет для удаления.'); return; }
-    if (!confirm('Удалить пресет «' + name + '»?')) return;
+    if (!name) { setStatus(T.choosePreset); return; }
+    if (!confirm(T.confirmDel(name))) return;
     try {
       const ps = JSON.parse(localStorage.getItem('pf_motion_presets_v1') || '{}');
       delete ps[name];
       localStorage.setItem('pf_motion_presets_v1', JSON.stringify(ps));
     } catch (_) {}
-    refreshPresets(); setStatus('Пресет удалён: ' + name);
+    refreshPresets(); setStatus(T.presetDeleted(name));
   });
 
   function refreshPresets() {
@@ -1731,10 +1751,10 @@
   function updateDemoBtn() {
     const btn = document.getElementById('btn-demo');
     if (demoActive) {
-      btn.textContent = '⏹ Exit Demo';
+      btn.textContent = T.demoStop;
       btn.classList.add('demo-active');
     } else {
-      btn.textContent = '▶ Demo';
+      btn.textContent = T.demo;
       btn.classList.remove('demo-active');
     }
   }
@@ -1742,7 +1762,7 @@
   document.getElementById('btn-demo').addEventListener('click', () => {
     try {
       const w = gameFrame.contentWindow;
-      if (!w) { setStatus('Игра не загружена.'); return; }
+      if (!w) { setStatus(T.demoNotLoaded); return; }
 
       if (demoActive) {
         // Second click: return to main screen
@@ -1752,7 +1772,7 @@
         updateDemoBtn();
         // Re-disable forest hazards for normal tuning
         if (MT) { MT.apply({'K.DISABLE_FOREST': true}, false); syncUI(); }
-        setStatus('Demo: вернулись в главное меню.');
+        setStatus(T.demoExit);
         return;
       }
 
@@ -1768,7 +1788,7 @@
 
       // Navigate to biome selection, then click the first ready biome (forest)
       const survBtn = w.document.getElementById('survivalBtn');
-      if (!survBtn) { setStatus('Сначала вернись в главное меню.'); return; }
+      if (!survBtn) { setStatus(T.demoNoMenu); return; }
       survBtn.click();
 
       setTimeout(() => {
@@ -1778,9 +1798,9 @@
             card.click();
             demoActive = true;
             updateDemoBtn();
-            setStatus('Demo: Forest запущен · бесконечные борта · без деайсинга.');
+            setStatus(T.demoRunning);
           } else {
-            setStatus('Биом не найден — попробуй ещё раз.');
+            setStatus(T.demoBiomeNone);
           }
         } catch (e2) { setStatus('Demo: ' + e2.message); }
       }, 150);
