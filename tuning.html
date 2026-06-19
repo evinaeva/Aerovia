@@ -33,7 +33,7 @@
     #top-pane {
       display: grid;
       grid-template-columns: auto 1fr auto;
-      grid-template-areas: "sizes preview tools";
+      grid-template-areas: "left preview tools";
       align-items: start;
       gap: 12px;
       padding: 12px 16px;
@@ -45,15 +45,44 @@
       position: relative;
     }
 
+    /* ── Left panel: size strip + demo/cutout column ──────────────────── */
+    #left-panel {
+      grid-area: left;
+      display: flex;
+      gap: 8px;
+      align-self: start;
+    }
+
     /* ── Device size strip (left of phone) ──────────────────────────────── */
     #size-strip {
-      grid-area: sizes;
       display: flex;
       flex-direction: column;
       gap: 6px;
       flex: none;
-      align-self: center;
     }
+
+    /* ── Demo + Cutout column (right of size strip) ──────────────────── */
+    #demo-cut {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: none;
+      min-width: 100px;
+    }
+
+    #btn-demo {
+      background: rgba(34,227,198,.08);
+      border-color: rgba(34,227,198,.45);
+      color: var(--accent);
+      text-align: center;
+    }
+    #btn-demo:hover { background: rgba(34,227,198,.16); }
+    #btn-demo.demo-active {
+      background: rgba(255,80,80,.08);
+      border-color: rgba(255,80,80,.5);
+      color: #ff8080;
+    }
+    #btn-demo.demo-active:hover { background: rgba(255,80,80,.15); }
 
     .sz-btn {
       display: flex;
@@ -534,13 +563,13 @@
     .co-btn:hover { background: #1a2a48; }
     .co-btn.active { background: rgba(34,227,198,.10); border-color: var(--accent); color: var(--accent); }
 
-    /* ── Cutout simulation overlay in phone-shell ───────────────────────── */
+    /* ── Cutout simulation overlay (in phone-wrapper, above phone-shell) ── */
     #cutout-sim {
       position: absolute;
       pointer-events: none;
-      z-index: 11;
-      background: rgba(255,60,60,.18);
-      border: 1.5px solid rgba(255,60,60,.65);
+      z-index: 20;
+      background: rgba(255,50,50,.22);
+      border: 2px dashed rgba(255,80,80,.95);
       display: none;
     }
 
@@ -550,8 +579,9 @@
     .z-sw { width: 18px; height: 3px; flex: none; border-radius: 2px; }
     .z-sw.fill { height: 10px; border-radius: 3px; }
 
-    /* co-btn in dock: full-width */
-    #cutout-strip .co-btn { width: 100%; text-align: left; }
+    /* co-btn in demo-cut column: full-width */
+    #demo-cut .co-btn { width: 100%; text-align: left; }
+    #demo-cut #cutout-strip { display: flex; flex-direction: column; gap: 4px; }
 
     /* ── Toggle-grid (for all-boolean groups like ctrl) ─────────────────── */
     .toggle-grid {
@@ -585,18 +615,24 @@
     @media (max-width: 900px) {
       #top-pane {
         grid-template-columns: 1fr;
-        grid-template-areas: "sizes" "preview" "tools";
+        grid-template-areas: "left" "preview" "tools";
         align-items: center;
         min-height: unset;
         overflow-y: auto;
+      }
+
+      #left-panel {
+        flex-wrap: wrap;
+        width: 100%;
       }
 
       #size-strip {
         flex-direction: row;
         overflow-x: auto;
         scrollbar-width: none;
-        width: 100%;
       }
+
+      #demo-cut { flex-direction: row; flex-wrap: wrap; }
 
       #phone-col { width: 100%; }
 
@@ -630,42 +666,59 @@
 <!-- ── TOP PANE: Live Preview ────────────────────────────────────────────── -->
 <div id="top-pane">
 
-  <div id="size-strip">
-    <button class="sz-btn" data-size="st">
-      <span class="sz-name">Stress</span>
-      <span class="sz-dims">720 × 320</span>
-    </button>
-    <button class="sz-btn active" data-size="s">
-      <span class="sz-name">S</span>
-      <span class="sz-dims">800 × 360</span>
-    </button>
-    <button class="sz-btn" data-size="m">
-      <span class="sz-name">M</span>
-      <span class="sz-dims">832 × 384</span>
-    </button>
-    <button class="sz-btn" data-size="l">
-      <span class="sz-name">L</span>
-      <span class="sz-dims">873 × 393</span>
-    </button>
-    <button class="sz-btn" data-size="xl">
-      <span class="sz-name">XL</span>
-      <span class="sz-dims">915 × 412</span>
-    </button>
-    <button class="sz-btn" data-size="xxl">
-      <span class="sz-name">XXL</span>
-      <span class="sz-dims">960 × 432</span>
-    </button>
+  <!-- Left panel: size strip + demo/cutout column -->
+  <div id="left-panel">
+
+    <div id="size-strip">
+      <button class="sz-btn" data-size="st">
+        <span class="sz-name">Stress</span>
+        <span class="sz-dims">720 × 320</span>
+      </button>
+      <button class="sz-btn active" data-size="s">
+        <span class="sz-name">S</span>
+        <span class="sz-dims">800 × 360</span>
+      </button>
+      <button class="sz-btn" data-size="m">
+        <span class="sz-name">M</span>
+        <span class="sz-dims">832 × 384</span>
+      </button>
+      <button class="sz-btn" data-size="l">
+        <span class="sz-name">L</span>
+        <span class="sz-dims">873 × 393</span>
+      </button>
+      <button class="sz-btn" data-size="xl">
+        <span class="sz-name">XL</span>
+        <span class="sz-dims">915 × 412</span>
+      </button>
+      <button class="sz-btn" data-size="xxl">
+        <span class="sz-name">XXL</span>
+        <span class="sz-dims">960 × 432</span>
+      </button>
+    </div>
+
+    <div id="demo-cut">
+      <button class="p-btn" id="btn-demo" title="Forest Survival · бесконечные борта">▶ Demo</button>
+      <div id="cutout-strip">
+        <div class="pt-label">Cutout</div>
+        <button class="co-btn active" data-co="none">No cut</button>
+        <button class="co-btn" data-co="left">◀ Left cam</button>
+        <button class="co-btn" data-co="right">Right cam ▶</button>
+        <button class="co-btn" data-co="round">⌒ Rounded</button>
+        <button class="co-btn" data-co="3btn">3-btn nav</button>
+      </div>
+    </div>
+
   </div>
 
   <div id="phone-col">
-    <div id="phone-label">Live Preview · S Android Common · 800×360</div>
     <div id="phone-wrapper">
       <div id="phone-shell">
         <iframe id="game-frame" src="index.html" title="Game" allow="autoplay"></iframe>
-        <div id="cutout-sim"></div>
         <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
              style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
       </div>
+      <!-- cutout-sim is outside phone-shell to render above the iframe -->
+      <div id="cutout-sim"></div>
       <div id="resize-handle" title="Потяни чтобы выбрать размер экрана">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
           <path d="M6 16L16 16L16 6" stroke="rgba(58,210,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -673,12 +726,10 @@
         </svg>
       </div>
     </div>
+    <div id="phone-label">Live Preview · S Android Common · 800×360</div>
   </div>
 
   <aside id="preview-tools">
-    <div class="pt-section">
-      <button class="p-btn" id="btn-demo" title="Запустить Survival · бесконечные борта">▶ Demo</button>
-    </div>
     <div class="pt-section">
       <div class="pt-label">Пресет</div>
       <select id="preset-sel"><option value="">Пресет…</option></select>
@@ -694,16 +745,6 @@
       <button class="p-btn" id="btn-import">↑ Import JSON</button>
       <input type="file" id="file-import" accept=".json" style="display:none">
       <button class="p-btn" id="btn-reset">↺ Reset all</button>
-    </div>
-    <div class="pt-section">
-      <div id="cutout-strip">
-        <div class="pt-label">Cutout</div>
-        <button class="co-btn active" data-co="none">No cut</button>
-        <button class="co-btn" data-co="left">◀ Left cam</button>
-        <button class="co-btn" data-co="right">Right cam ▶</button>
-        <button class="co-btn" data-co="round">⌒ Rounded</button>
-        <button class="co-btn" data-co="3btn">3-btn nav</button>
-      </div>
     </div>
   </aside>
 
@@ -823,10 +864,10 @@
   function getScale(key) {
     const ph     = PHONES.find(p => p.key === key);
     const pane   = document.getElementById('top-pane');
-    const stripW = document.getElementById('size-strip').offsetWidth;
+    const leftW  = (document.getElementById('left-panel') || { offsetWidth: 0 }).offsetWidth;
     const toolsW = (document.getElementById('preview-tools') || { offsetWidth: 0 }).offsetWidth;
-    const availW = pane.clientWidth  - stripW - toolsW - 48; // gaps + padding
-    const availH = pane.clientHeight - 48;  // label + padding
+    const availW = pane.clientWidth  - leftW - toolsW - 48;
+    const availH = pane.clientHeight - 36;
     return Math.min(1, availW / ph.w, availH / ph.h);
   }
 
@@ -907,22 +948,25 @@
 
     document.querySelectorAll('.co-btn').forEach(b => b.classList.toggle('active', b.dataset.co === key));
 
-    // visual simulation overlay inside phone-shell.
-    // phone-shell already has CSS transform:scale(), so children scale automatically.
-    // Position in the shell's own layout space (ph.w × ph.h), not the visual space.
+    // Visual overlay positioned in phone-wrapper coordinates.
+    // cutoutSim is a sibling of phone-shell so it renders above the iframe.
+    // phone-shell has border: 7px; absolute children start at the padding edge (inside border).
+    // Map from phone-shell padding-relative (cx, cy) → phone-wrapper visual:
+    //   wrapper_pos = (BORDER + cx) * scale
+    const BORDER = 7;
     if (co.side !== 'none' && ph) {
-      let cx = 0, cy = co.offset, cw = co.w, ch = co.h;
+      let cx = 0, cy = co.offset;
       if (co.side === 'right') cx = ph.w - co.w;
       cutoutSim.style.display = '';
-      cutoutSim.style.left    = cx + 'px';
-      cutoutSim.style.top     = cy + 'px';
-      cutoutSim.style.width   = cw + 'px';
-      cutoutSim.style.height  = ch + 'px';
+      cutoutSim.style.left    = Math.round((BORDER + cx) * scale) + 'px';
+      cutoutSim.style.top     = Math.round((BORDER + cy) * scale) + 'px';
+      cutoutSim.style.width   = Math.round(co.w * scale) + 'px';
+      cutoutSim.style.height  = Math.round(co.h * scale) + 'px';
     } else {
       cutoutSim.style.display = 'none';
     }
 
-    // push new values into the game iframe's MT
+    // Push new values into the game iframe's MT and trigger recalculation.
     try {
       const mt = gameFrame.contentWindow && gameFrame.contentWindow.__MT;
       if (!mt) return;
@@ -937,6 +981,8 @@
         'MT.SA_GESTURE_RIGHT':  co.gestR,
         'MT.SA_GESTURE_BOTTOM': co.gestB,
       }, true);
+      // Trigger game resize so calcSafetyRects() re-reads updated MT values.
+      try { gameFrame.contentWindow.dispatchEvent(new Event('resize')); } catch(_) {}
       if (MT) syncUI();
       setStatus('Cutout preset: ' + key);
     } catch (e) { /* iframe not ready yet */ }
@@ -1138,7 +1184,7 @@
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (!MT) return;
     if (!confirm('Сбросить все параметры к значениям по умолчанию?')) return;
-    MT.reset(); syncUI(); setStatus('Все параметры сброшены.');
+    MT.reset(); syncUI(); applyCutout('none'); setStatus('Все параметры сброшены.');
   });
 
   document.getElementById('btn-export').addEventListener('click', () => {
@@ -1450,18 +1496,66 @@
     };
   })();
 
-  /* ── Demo mode ────────────────────────────────────────────────────────── */
+  /* ── Demo mode (toggle: first click = start forest, second = main screen) */
+  let demoActive = false;
+
+  function updateDemoBtn() {
+    const btn = document.getElementById('btn-demo');
+    if (demoActive) {
+      btn.textContent = '⏹ Exit Demo';
+      btn.classList.add('demo-active');
+    } else {
+      btn.textContent = '▶ Demo';
+      btn.classList.remove('demo-active');
+    }
+  }
+
   document.getElementById('btn-demo').addEventListener('click', () => {
     try {
       const w = gameFrame.contentWindow;
       if (!w) { setStatus('Игра не загружена.'); return; }
+
+      if (demoActive) {
+        // Second click: return to main screen
+        const backBtn = w.document.getElementById('backBtn');
+        if (backBtn) backBtn.click();
+        demoActive = false;
+        updateDemoBtn();
+        // Re-disable forest hazards for normal tuning
+        if (MT) { MT.apply({'K.DISABLE_FOREST': true}, false); syncUI(); }
+        setStatus('Demo: вернулись в главное меню.');
+        return;
+      }
+
+      // First click: enable infinite lives + money
       ['optLives', 'optMoney'].forEach(id => {
         const el = w.document.getElementById(id);
         if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
       });
+
+      // Enable forest hazards (K.DISABLE_FOREST = false)
+      // K.DISABLE_DEICE stays true by default — suppresses de-icing requests
+      if (MT) { MT.apply({'K.DISABLE_FOREST': false}, false); syncUI(); }
+
+      // Navigate to biome selection, then click the first ready biome (forest)
       const survBtn = w.document.getElementById('survivalBtn');
-      if (survBtn) { survBtn.click(); setStatus('Demo: Survival запущен · бесконечные борта.'); }
-      else { setStatus('Сначала вернись в главное меню, затем нажми Demo.'); }
+      if (!survBtn) { setStatus('Сначала вернись в главное меню.'); return; }
+      survBtn.click();
+
+      setTimeout(() => {
+        try {
+          const card = w.document.querySelector('.biome:not(.locked)');
+          if (card) {
+            card.click();
+            demoActive = true;
+            updateDemoBtn();
+            setStatus('Demo: Forest запущен · бесконечные борта · без деайсинга.');
+          } else {
+            setStatus('Биом не найден — попробуй ещё раз.');
+          }
+        } catch (e2) { setStatus('Demo: ' + e2.message); }
+      }, 150);
+
     } catch (e) { setStatus('Demo: ' + e.message); }
   });
 
