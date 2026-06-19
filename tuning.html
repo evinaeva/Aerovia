@@ -243,7 +243,7 @@
       flex-direction: column;
       background: var(--panel-bg);
       overflow: hidden;
-      min-height: 220px;
+      min-height: 300px;
     }
 
     /* sticky header */
@@ -1229,7 +1229,7 @@
     let topH = Math.round(window.innerHeight * 0.52);
 
     function setTopH(h) {
-      topH = Math.max(120, Math.min(h, window.innerHeight - 220));
+      topH = Math.max(120, Math.min(h, window.innerHeight - 300));
       topPane.style.height = topH + 'px';
       applyPhone(phoneKey);
     }
