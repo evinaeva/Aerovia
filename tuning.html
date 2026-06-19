@@ -21,7 +21,14 @@
     }
 
     html, body {
-      height: 100%; overflow: hidden;
+      /* Dynamic viewport height: on iOS, height:100% / 100vh resolve against the
+         *layout* viewport (taller than the visible area when Safari's bars show),
+         which made the body exceed the screen so #groups never became a bounded
+         scroll box and content was cut off instead of scrolling. dvh tracks the
+         actually-visible height. */
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
       background: var(--bg);
       color: var(--text);
       font: 13px/1.45 system-ui, 'Segoe UI', sans-serif;
@@ -408,7 +415,8 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
       gap: 6px;
-      align-content: start;
+      align-content: start;   /* pack rows at top → overflow scrolls, not stretches */
+      align-items: start;     /* cards keep natural height (never squished to a track) */
     }
 
     #groups details {
@@ -495,10 +503,12 @@
 
     .mt-row.mt-string { grid-template-columns: minmax(80px, 140px) 1fr; gap: 6px; }
     .mt-row.mt-string .mt-text {
+      width: 100%;
       border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
       background: var(--input-bg); color: #fff;
       padding: 3px 6px; font-size: 11px; font-family: inherit;
     }
+    .mt-row.mt-string select.mt-text { cursor: pointer; height: 28px; }
 
     .mt-toggle {
       position: relative;
@@ -1079,8 +1089,6 @@
     </div>
   </div>
 
-  <div id="status-bar">—</div>
-
 </div>
 
 <script>
@@ -1314,14 +1322,19 @@
     const topPane  = document.getElementById('top-pane');
     const splitter = document.getElementById('splitter');
 
+    // Actual visible height of the flex column (matches the body's dvh; on iOS
+    // this is the real visible area, unlike window.innerHeight which can report
+    // the taller layout viewport).
+    function viewH() { return document.body.clientHeight || window.innerHeight || 800; }
+
     // Default: 52% of viewport for top pane
-    let topH = Math.round(window.innerHeight * 0.52);
+    let topH = Math.round(viewH() * 0.52);
 
     function setTopH(h) {
       // Viewport-aware clamps: reserve at least ~28% (min 120px) for the
       // bottom pane so the divider still has travel on short landscape phones,
       // where a fixed 300px reserve would peg it and break dragging.
-      const vh        = window.innerHeight;
+      const vh        = viewH();
       const minTop    = 60;
       // ~300px floor on desktop, but only ~40% of a short landscape phone so the
       // divider keeps real travel; the bottom pane scrolls within whatever is left.
@@ -1333,8 +1346,10 @@
     }
 
     setTopH(topH);
-    // Re-clamp on rotation / viewport changes (keeps both panes on-screen).
+    // Re-clamp on rotation / viewport changes — incl. iOS showing/hiding its
+    // toolbars (visualViewport), which changes the visible height.
     window.addEventListener('resize', () => setTopH(topH));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', () => setTopH(topH));
 
     splitter.addEventListener('pointerdown', e => {
       e.preventDefault();
@@ -1440,6 +1455,33 @@
     if (currentSubtab) applySubtab(currentSubtab);
   }
 
+  // Enum params shown as a dropdown instead of a free-text field.
+  const SELECT_OPTIONS = {
+    'MT.SCENARIO': [
+      ['complete_cycle', 'Полный цикл'],
+      ['landing',        'Посадка'],
+      ['takeoff',        'Взлёт'],
+      ['taxi',           'Руление'],
+      ['service',        'Обслуживание'],
+    ],
+    'MT.SA_CUTOUT_SIDE': [
+      ['none',  'Без выреза'],
+      ['left',  'Слева'],
+      ['right', 'Справа'],
+      ['top',   'Сверху'],
+    ],
+  };
+
+  // "Контроль событий" toggles are stored as DISABLE_* flags (on = feature off),
+  // which reads backwards. Show them as the plain feature with normal polarity:
+  // label without the "Отключить " prefix, and toggle on = feature ON.
+  function isDisableFlag(p) { return /^Отключить\s+/i.test(p.label); }
+  function posLabel(p) {
+    if (!isDisableFlag(p)) return p.label;
+    const s = p.label.replace(/^Отключить\s+/i, '');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
   function buildUI() {
     groupsEl.innerHTML = '';
     const snap = MT.snapshot();
@@ -1468,10 +1510,12 @@
           card.className = 'toggle-card';
           card.dataset.key = p.key;
           const v = snap[p.key];
+          const inv = isDisableFlag(p);
+          const on  = inv ? !v : v;          // displayed state
           card.title = p.key + (p.description ? ' — ' + p.description : '');
           card.innerHTML =
-            '<span class="lbl">' + escHtml(p.label) + '</span>' +
-            '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
+            '<span class="lbl">' + escHtml(posLabel(p)) + '</span>' +
+            '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (inv ? ' data-invert="1"' : '') + (on ? ' checked' : '') + '><span class="track"></span></span>';
           grid.appendChild(card);
         });
         det.appendChild(grid);
@@ -1502,16 +1546,27 @@
           row.title = tipParts.join(' ');
 
           const unitHtml = p.unit ? ' <small>' + escHtml(p.unit) + '</small>' : '';
-          const lblHtml = '<span class="lbl">' + escHtml(p.label) + unitHtml + '</span>';
+          const lblHtml = '<span class="lbl">' + escHtml(posLabel(p)) + unitHtml + '</span>';
 
           if (typeof p.def === 'boolean') {
+            const inv = isDisableFlag(p);
+            const on  = inv ? !v : v;
             row.className = 'mt-row mt-bool';
             row.innerHTML = lblHtml +
-              '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
+              '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (inv ? ' data-invert="1"' : '') + (on ? ' checked' : '') + '><span class="track"></span></span>';
           } else if (typeof p.def === 'string') {
             row.className = 'mt-row mt-string';
-            row.innerHTML = lblHtml +
-              '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + escHtml(String(v)) + '">';
+            const opts = SELECT_OPTIONS[p.key];
+            if (opts) {
+              const optHtml = opts.map(o =>
+                '<option value="' + escHtml(o[0]) + '"' + (String(v) === o[0] ? ' selected' : '') + '>' + escHtml(o[1]) + '</option>'
+              ).join('');
+              row.innerHTML = lblHtml +
+                '<select class="mt-text" data-key="' + p.key + '">' + optHtml + '</select>';
+            } else {
+              row.innerHTML = lblHtml +
+                '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + escHtml(String(v)) + '">';
+            }
           } else {
             row.className = 'mt-row';
             const numAttrs =
@@ -1542,9 +1597,10 @@
     groupsEl.addEventListener('input', e => {
       const key = e.target.dataset && e.target.dataset.key;
       if (!key || !MT) return;
-      if (e.target.type === 'checkbox') return;
-      const val = e.target.type === 'text' ? e.target.value : parseFloat(e.target.value);
-      if (e.target.type !== 'text' && !Number.isFinite(val)) return;
+      if (e.target.type === 'checkbox') return;            // handled in 'change'
+      const isText = e.target.type === 'text' || e.target.tagName === 'SELECT';
+      const val = isText ? e.target.value : parseFloat(e.target.value);
+      if (!isText && !Number.isFinite(val)) return;
       groupsEl.querySelectorAll('[data-key="' + key + '"]').forEach(el => {
         if (el !== e.target) el.value = val;
       });
@@ -1556,9 +1612,13 @@
       const key = e.target.dataset && e.target.dataset.key;
       if (!key || !MT) return;
       if (e.target.type === 'checkbox') {
-        const val = e.target.checked;
+        // Inverted ("Отключить …") toggles store the opposite of what's shown.
+        const val = e.target.dataset.invert ? !e.target.checked : e.target.checked;
         MT.apply({ [key]: val }, true);
         setStatus(key + '  →  ' + val);
+      } else if (e.target.type === 'text' || e.target.tagName === 'SELECT') {
+        MT.apply({ [key]: e.target.value }, true);
+        setStatus(key + '  →  ' + e.target.value);
       } else {
         MT.apply({ [key]: parseFloat(e.target.value) }, true);
       }
@@ -1596,7 +1656,7 @@
     groupsEl.querySelectorAll('[data-key]').forEach(el => {
       const v = snap[el.dataset.key];
       if (v == null) return;
-      if (el.type === 'checkbox') el.checked = !!v;
+      if (el.type === 'checkbox') el.checked = el.dataset.invert ? !v : !!v;
       else el.value = v;
     });
   }
@@ -1694,7 +1754,7 @@
       Object.keys(ps).map(n => '<option' + (n === cur ? ' selected' : '') + '>' + n + '</option>').join('');
   }
 
-  function setStatus(msg) { statusBar.textContent = msg; }
+  function setStatus(msg) { if (statusBar) statusBar.textContent = msg; }   /* status bar removed — no-op safe */
 
   /* ── Tab switching ────────────────────────────────────────────────────── */
   (function () {
