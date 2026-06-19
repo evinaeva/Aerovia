@@ -1138,7 +1138,7 @@
   const T = {
     demo:           '▶ Демо',
     demoStop:       '⏹ Стоп',
-    demoRunning:    'Демо: Forest запущен · бесконечные борта · без деайсинга.',
+    demoRunning:    'Демо: Forest запущен · бесконечные борта · без помех и деайсинга.',
     demoExit:       'Демо: вернулись в главное меню.',
     demoNotLoaded:  'Игра не загружена.',
     demoNoMenu:     'Сначала вернись в главное меню.',
@@ -1453,7 +1453,7 @@
     { key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','routing'] },
     { key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones'] },
     { key:'flow',    icon:'🌊', label:'Поток',          groups:['spawn','timing'] },
-    { key:'events',  icon:'🎲', label:'События',        groups:['events','weather','forest'] },
+    { key:'events',  icon:'🎲', label:'События',        groups:['events','weather'] },
     { key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl','debug_overlays','mobile_preview'] },
     { key:'zones',   icon:'📐', label:'Зоны/жесты',     groups:['safe_areas'] },
   ];
@@ -1494,6 +1494,10 @@
     if (currentSubtab) applySubtab(currentSubtab);
   }
 
+  // Groups the tuning panel intentionally hides (kept in the game's MotionTuning
+  // for other tooling, but not surfaced here). Forest-biome knobs live here.
+  const HIDDEN_GROUPS = new Set(['forest']);
+
   // Enum params shown as a dropdown instead of a free-text field.
   const SELECT_OPTIONS = {
     'MT.SCENARIO': [
@@ -1526,6 +1530,7 @@
     const snap = MT.snapshot();
 
     Object.keys(MT.groups).forEach(gKey => {
+      if (HIDDEN_GROUPS.has(gKey)) return;
       const params = MT.params.filter(p => p.group === gKey);
       if (!params.length) return;
 
@@ -2371,8 +2376,6 @@
         if (backBtn) backBtn.click();
         demoActive = false;
         updateDemoBtn();
-        // Re-disable forest hazards for normal tuning
-        if (MT) { MT.apply({'K.DISABLE_FOREST': true}, false); syncUI(); }
         setStatus(T.demoExit);
         return;
       }
@@ -2383,9 +2386,12 @@
         if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
       });
 
-      // Enable forest hazards (K.DISABLE_FOREST = false)
-      // K.DISABLE_DEICE stays true by default — suppresses de-icing requests
-      if (MT) { MT.apply({'K.DISABLE_FOREST': false}, false); syncUI(); }
+      // Keep the field clean for the demo: forest hazards stay off
+      // (K.DISABLE_FOREST = true → no елки/птицы/олени/снег on the runway) and
+      // de-icing stays off (K.DISABLE_DEICE = true → no de-ice requests and,
+      // see state-layout, no de-icing box on the field). Both are defaults, so
+      // we just make sure they aren't left enabled from a previous tweak.
+      if (MT) { MT.apply({'K.DISABLE_FOREST': true, 'K.DISABLE_DEICE': true}, false); syncUI(); }
 
       // Navigate to biome selection, then click the first ready biome (forest)
       const survBtn = w.document.getElementById('survivalBtn');
