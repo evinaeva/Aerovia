@@ -247,7 +247,10 @@
       flex-direction: column;
       background: var(--panel-bg);
       overflow: hidden;
-      min-height: 300px;
+      min-height: 0;            /* shrink with the splitter; #groups scrolls inside
+                                   (a fixed min-height overflows the clipped body on
+                                   short screens → content gets cut/squished instead
+                                   of scrolling). The splitter clamp guards the floor. */
     }
 
     /* sticky header */
@@ -340,6 +343,38 @@
     .t-tab.stub { opacity: .55; }
     .t-tab.stub:hover:not(.active) { opacity: .8; }
 
+    /* ── Sub-tab bar (inside the Motion tab — splits ~20 groups by domain) ── */
+    #subtab-bar {
+      display: none;                 /* shown once buildSubtabs() populates it */
+      gap: 4px;
+      padding: 6px 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      border-bottom: 1px solid var(--row-sep);
+      background: rgba(8,14,32,.6);
+    }
+    #subtab-bar::-webkit-scrollbar { display: none; }
+    #subtab-bar.searching { opacity: .4; pointer-events: none; }
+    .s-tab {
+      flex: none;
+      display: flex; align-items: center; gap: 5px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--btn-bg);
+      color: var(--muted);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: color .15s, background .15s, border-color .15s;
+    }
+    .s-tab:hover:not(.active) { color: var(--text); background: #1a2a48; }
+    .s-tab.active { color: var(--accent); border-color: var(--accent); background: rgba(34,227,198,.1); }
+    .s-tab .s-count { font-size: 10px; opacity: .6; font-weight: 400; }
+
     /* Inline search (right of tab bar) */
     #search-wrap {
       display: flex;
@@ -368,6 +403,7 @@
       min-height: 0;
       overflow-y: auto;
       overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;   /* momentum scroll on iOS */
       padding: 8px;
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
@@ -416,7 +452,7 @@
       align-items: center;
       gap: 6px;
       padding: 0 10px;
-      height: 36px;
+      min-height: 36px;        /* min-height (not height) so rows never squish */
       border-top: 1px solid var(--row-sep);
       cursor: default;
     }
@@ -694,8 +730,7 @@
        view. Relax the minimums so the splitter has real travel and the tab
        bar + rows stay on-screen and tappable. */
     @media (max-height: 560px) {
-      #bottom-pane { min-height: 120px; }
-      #top-pane    { min-height: 60px; }
+      #top-pane { min-height: 60px; }
     }
 
     /* Touch devices: fatten the splitter into a real finger-sized grab target
@@ -708,7 +743,7 @@
 
     /* Snappier taps on iOS — no 300ms delay, no grey flash.
        (#splitter / #resize-handle keep touch-action:none for dragging.) */
-    .tb-btn, .p-btn, .co-btn, .sz-btn, .t-tab, #groups summary,
+    .tb-btn, .p-btn, .co-btn, .sz-btn, .t-tab, .s-tab, #groups summary,
     .toggle-card, .lab-chip {
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
@@ -842,6 +877,7 @@
         <input id="search" placeholder="Поиск…" autocomplete="off" spellcheck="false">
       </div>
     </div>
+    <div id="subtab-bar"></div>
   </div>
   <div id="groups">
     <div id="loading-msg">Ждём запуска игры…</div>
@@ -1267,7 +1303,9 @@
       // where a fixed 300px reserve would peg it and break dragging.
       const vh        = window.innerHeight;
       const minTop    = 60;
-      const minBottom = Math.max(120, Math.round(vh * 0.28));
+      // ~300px floor on desktop, but only ~40% of a short landscape phone so the
+      // divider keeps real travel; the bottom pane scrolls within whatever is left.
+      const minBottom = Math.max(120, Math.min(300, Math.round(vh * 0.4)));
       const maxTop    = Math.max(minTop, vh - minBottom);
       topH = Math.max(minTop, Math.min(h, maxTop));
       topPane.style.height = topH + 'px';
@@ -1330,6 +1368,58 @@
 
   gameFrame.addEventListener('load', () => setTimeout(pollMT, 80));
 
+  /* ── Sub-tabs for the Motion tab ──────────────────────────────────────────
+     ~20 parameter groups in one list is unreadable, so we bucket them by domain
+     and show one bucket at a time. Each <details> card is tagged data-subtab. */
+  const subtabBar = document.getElementById('subtab-bar');
+  let   currentSubtab = null;
+
+  const SUBTABS = [
+    { key:'plane',   icon:'✈',  label:'Самолёт',       groups:['movement','turns','collisions','effects'] },
+    { key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','routing'] },
+    { key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones'] },
+    { key:'flow',    icon:'🌊', label:'Поток',          groups:['spawn','timing'] },
+    { key:'events',  icon:'🎲', label:'События',        groups:['events','weather','forest'] },
+    { key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl','debug_overlays','mobile_preview'] },
+    { key:'zones',   icon:'📐', label:'Зоны/жесты',     groups:['safe_areas'] },
+  ];
+  const SUBTAB_OF = {};
+  SUBTABS.forEach(st => st.groups.forEach(g => { SUBTAB_OF[g] = st.key; }));
+  // Any group we didn't explicitly map lands in "Контроль" so nothing disappears.
+  function subtabOf(group) { return SUBTAB_OF[group] || 'control'; }
+
+  function applySubtab(key) {
+    currentSubtab = key;
+    subtabBar.querySelectorAll('.s-tab').forEach(b => b.classList.toggle('active', b.dataset.subtab === key));
+    groupsEl.querySelectorAll('details[data-subtab]').forEach(d => {
+      d.style.display = d.dataset.subtab === key ? '' : 'none';
+    });
+  }
+
+  function buildSubtabs() {
+    if (!subtabBar) return;
+    const counts = {};
+    groupsEl.querySelectorAll('details[data-subtab]').forEach(d => {
+      counts[d.dataset.subtab] = (counts[d.dataset.subtab] || 0) + 1;
+    });
+    const available = SUBTABS.filter(st => counts[st.key]);
+    subtabBar.innerHTML = '';
+    available.forEach(st => {
+      const b = document.createElement('button');
+      b.className = 's-tab';
+      b.dataset.subtab = st.key;
+      b.innerHTML = '<span>' + st.icon + '</span><span>' + st.label +
+        '</span><span class="s-count">' + counts[st.key] + '</span>';
+      b.addEventListener('click', () => applySubtab(st.key));
+      subtabBar.appendChild(b);
+    });
+    // Only reveal the bar in the Motion tab (the active tab on first build).
+    const motionActive = document.querySelector('.t-tab.active')?.dataset.tab === 'motion';
+    subtabBar.style.display = (available.length && motionActive) ? 'flex' : 'none';
+    if (!currentSubtab || !counts[currentSubtab]) currentSubtab = available.length ? available[0].key : null;
+    if (currentSubtab) applySubtab(currentSubtab);
+  }
+
   function buildUI() {
     groupsEl.innerHTML = '';
     const snap = MT.snapshot();
@@ -1340,6 +1430,7 @@
 
       const det = document.createElement('details');
       det.dataset.group = gKey;
+      det.dataset.subtab = subtabOf(gKey);
 
       // Wide card for groups with many params or boolean-only groups
       const allBool = params.every(p => typeof p.def === 'boolean');
@@ -1414,6 +1505,7 @@
 
     wireInputs();
     refreshPresets();
+    buildSubtabs();
   }
 
   function wireInputs() {
@@ -1466,11 +1558,18 @@
         (p && p.category && p.category.toLowerCase().includes(q));
       row.style.display = visible ? '' : 'none';
     });
-    groupsEl.querySelectorAll('details').forEach(det => {
-      const hasVisible = [...det.querySelectorAll('.mt-row, .toggle-card')].some(r => r.style.display !== 'none');
-      det.style.display = hasVisible ? '' : 'none';
-      if (q) det.open = true;
-    });
+    // While searching, span every sub-tab (the sub-tab filter is suspended);
+    // when the query is cleared, restore the active sub-tab.
+    subtabBar.classList.toggle('searching', !!q);
+    if (q) {
+      groupsEl.querySelectorAll('details').forEach(det => {
+        const hasVisible = [...det.querySelectorAll('.mt-row, .toggle-card')].some(r => r.style.display !== 'none');
+        det.style.display = hasVisible ? '' : 'none';
+        det.open = true;
+      });
+    } else if (currentSubtab) {
+      applySubtab(currentSubtab);
+    }
   });
 
   document.getElementById('btn-reset').addEventListener('click', () => {
@@ -1558,6 +1657,7 @@
         const isSafe   = tab === 'safe';
         searchWrap.style.visibility = isMotion ? 'visible' : 'hidden';
         groupsEl.style.display    = isMotion ? '' : 'none';
+        subtabBar.style.display   = (isMotion && subtabBar.children.length) ? 'flex' : 'none';
         safeViewEl.style.display  = isSafe          ? 'flex' : 'none';
         levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
         diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
