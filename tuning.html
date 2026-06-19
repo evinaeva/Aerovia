@@ -243,7 +243,7 @@
       flex-direction: column;
       background: var(--panel-bg);
       overflow: hidden;
-      min-height: 80px;
+      min-height: 220px;
     }
 
     /* sticky header */
@@ -361,10 +361,12 @@
     /* ── Groups: 2-col card grid ─────────────────────────────────────────── */
     #groups {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 8px;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
       gap: 6px;
       align-content: start;
     }
@@ -401,7 +403,7 @@
     /* ── Param rows grid inside a card ──────────────────────────────────── */
     .mt-params-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: 1fr;
     }
 
     .mt-row {
@@ -1227,7 +1229,7 @@
     let topH = Math.round(window.innerHeight * 0.52);
 
     function setTopH(h) {
-      topH = Math.max(120, Math.min(h, window.innerHeight - 100));
+      topH = Math.max(120, Math.min(h, window.innerHeight - 220));
       topPane.style.height = topH + 'px';
       applyPhone(phoneKey);
     }
