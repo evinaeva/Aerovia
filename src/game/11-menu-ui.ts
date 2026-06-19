@@ -118,7 +118,7 @@
     }
   }
 
-  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','debugScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen','editorScreen'].forEach(s=>{ const el=document.getElementById(s); if(el) el.classList.add('hidden'); }); }
+  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','debugScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen'].forEach(s=>{ const el=document.getElementById(s); if(el) el.classList.add('hidden'); }); }
   // главный экран: чип звёзд = сумма заработанных / максимум по основным уровням
   function updateStartChips(){
     let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;
@@ -304,15 +304,6 @@
   document.getElementById('againBtn')!.onclick=()=>{ document.getElementById('overScreen')!.classList.add('hidden'); reset(); };
   function backToSelect(){ if(curBiome) showBiomes(); else showLevels(); }
   document.getElementById('toLevelsBtn')!.onclick=backToSelect;
-  function returnToEditor(){
-    document.getElementById('overScreen')!.classList.add('hidden');
-    document.getElementById('pauseScreen')!.classList.add('hidden');
-    recordResult(); running=false; paused=false; ACH.flushToasts();
-    testFromEditor=false;
-    edOpen();
-  }
-  document.getElementById('toEditorBtn')!.onclick=returnToEditor;
-  document.getElementById('editorBtn')!.onclick=returnToEditor;
   document.getElementById('biomesBackBtn')!.onclick=()=>{ showStart(); };
   document.getElementById('nextBtn')!.onclick=()=>{ if(levelIdx+1<LEVELS.length) startLevel(levelIdx+1); };
   document.getElementById('shareBtn')!.onclick=shareShift;
@@ -328,9 +319,6 @@
   function buildPauseInfo(){
     document.getElementById('pauseTitle')!.textContent = currentLevelName();
     document.getElementById('pauseGoals')!.innerHTML = goalRowsHTML(t('pause.objective'));
-    document.getElementById('menuBtn')!.classList.toggle('hidden', testFromEditor);
-    document.getElementById('restartBtn')!.classList.toggle('hidden', testFromEditor);
-    document.getElementById('editorBtn')!.classList.toggle('hidden', !testFromEditor);
   }
   document.getElementById('resumeBtn')!.onclick=()=>setPaused(false);
   document.getElementById('restartBtn')!.onclick=()=>reset();

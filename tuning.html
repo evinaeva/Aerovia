@@ -727,22 +727,51 @@
     .tag-bad { color: #e35c22; }
     .tag-occ { color: #e3c522; }
 
-    /* ── Safe zones view ─────────────────────────────────────────────────── */
-    #safe-view {
-      display: none;
-      flex: 1;
-      flex-direction: column;
-      gap: 10px;
-      overflow-y: auto;
-      padding: 10px;
+    /* ── Safe-zone frames legend (under the phone, with the «Зоны» overlay) ── */
+    #frames-legend {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--btn-bg);
+      max-width: 100%;
     }
 
-    .sa-warn {
-      color: #ffa060;
-      font-size: 11px;
-      padding: 3px 0;
-      border-bottom: 1px solid var(--row-sep);
+    /* ── Safe-zone warning modal (shown on map export) ───────────────────── */
+    #zone-warn-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(4,8,18,.6);
     }
+    .zwm-box {
+      width: min(420px, calc(100vw - 32px));
+      background: var(--panel, #0f1830);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    }
+    .zwm-title { font-size: 15px; font-weight: 700; color: #ffd23b; margin-bottom: 6px; }
+    .zwm-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .zwm-list { max-height: 40vh; overflow-y: auto; margin-bottom: 14px; }
+    .zwm-item { font-size: 12px; color: #ffa060; padding: 3px 0; border-bottom: 1px solid var(--row-sep); }
+    .zwm-ok {
+      display: block;
+      margin-left: auto;
+      padding: 7px 22px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: rgba(34,227,198,.10);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .zwm-ok:hover { background: rgba(34,227,198,.18); }
 
     /* ── Cutout strip (inside preview-tools dock) ───────────────────────── */
     #cutout-strip {
@@ -864,6 +893,10 @@
       <button class="tb-btn" id="btn-file-toggle" title="Файл">📂</button>
       <!-- Cutout -->
       <button class="tb-btn" id="btn-cutout-toggle" title="Вырез экрана">✂️</button>
+      <!-- Safe-zone frames overlay -->
+      <button class="tb-btn" id="btn-frames-toggle" title="Зоны экрана — рамки поверх превью">
+        <span class="tb-icon">📐</span><span>Зоны</span>
+      </button>
     </div>
 
     <!-- Popup backdrop -->
@@ -932,6 +965,11 @@
       </div>
     </div>
     <div id="phone-label">Превью · S Android Common · 800×360</div>
+    <!-- Safe-zone legend — shown only while the «Зоны» frames overlay is on.
+         Populated from i18n by renderZoneLegend() (targets #zone-legend). -->
+    <div id="frames-legend" style="display:none">
+      <div class="zone-legend" id="zone-legend"></div>
+    </div>
   </div>
 
 </div>
@@ -951,9 +989,6 @@
       <div id="tab-nav">
         <button class="t-tab active" data-tab="motion">
           <span class="tab-icon">⚡</span><span>Движение</span>
-        </button>
-        <button class="t-tab" data-tab="safe">
-          <span class="tab-icon">📐</span><span>Зоны экрана</span>
         </button>
         <button class="t-tab" data-tab="level">
           <span class="tab-icon">🗺</span><span>Уровни</span>
@@ -978,51 +1013,6 @@
     <div id="loading-msg">Ждём запуска игры…</div>
   </div>
 
-  <!-- Tab 2: Safe Areas & Devices ─────────────────────────────────────── -->
-  <div id="safe-view">
-
-    <div class="f-sec">
-      <h3>Зоны — легенда</h3>
-      <!-- подписи берутся из i18n (T.zone*), рендерятся в renderZoneLegend() -->
-      <div class="zone-legend" id="zone-legend"></div>
-    </div>
-    <div class="f-sec">
-      <h3>Размеры зон (live)</h3>
-      <div id="info-safe-rects"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
-    </div>
-    <div class="f-sec">
-      <h3>Предупреждения</h3>
-      <div id="safe-warnings"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
-    </div>
-
-    <div class="f-sec">
-      <h3>Поле — легенда</h3>
-      <div class="f-legend">
-        <div class="f-legend-item"><div class="f-dot" style="background:#3ad2ff"></div>Полоса</div>
-        <div class="f-legend-item"><div class="f-line" style="background:rgba(245,200,66,.85)"></div>stopX (посадка)</div>
-        <div class="f-legend-item"><div class="f-line" style="background:rgba(240,128,48,.85)"></div>exitX (взлёт)</div>
-        <div class="f-legend-item"><div class="f-dot" style="background:#22c864"></div>Бокс (свободен)</div>
-        <div class="f-legend-item"><div class="f-dot" style="background:#b060f0"></div>Бокс (занят)</div>
-        <div class="f-legend-item"><div class="f-dot" style="background:#f5c842"></div>Борт в воздухе</div>
-        <div class="f-legend-item"><div class="f-dot" style="background:#40d0c0"></div>Борт на земле</div>
-        <div class="f-legend-item"><div class="f-line" style="background:rgba(100,100,255,.6)"></div>K.ARRIVE (захват)</div>
-      </div>
-    </div>
-    <div class="f-sec">
-      <h3>Полосы (live)</h3>
-      <div id="info-runways"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
-    </div>
-    <div class="f-sec">
-      <h3>Боксы (live)</h3>
-      <div id="info-bays"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
-    </div>
-    <div class="f-sec" style="font-size:11px;color:var(--muted);line-height:1.6">
-      <h3>Как читать</h3>
-      <b>Красный</b> — жест-зоны: нельзя начинать маршрут (жест «назад/домой»).<br>
-      <b>Зелёный</b> — зона старта маршрута: здесь начинать маршрут безопасно.<br>
-      Запусти игру → <b>▶ Демо</b> → наблюдай оверлей. Переключай вырез камеры в боковой панели.
-    </div>
-  </div>
 
   <!-- Tab 3: Level Lab ──────────────────────────────────────────────────── -->
   <div id="level-view" class="lab-view">
@@ -2250,6 +2240,34 @@
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     setStatus('Уровни экспортированы в JSON.');
+    // Non-blocking: surface safe-zone warnings (if any) after the export fires.
+    const warns = (window._zoneWarnings && window._zoneWarnings()) || [];
+    if (warns.length) showZoneWarningModal(warns);
+  }
+
+  /* ── Safe-zone warning modal ──────────────────────────────────────────────
+     Shown on map/levels export when the live field has runways/boxes that fall
+     outside the safe frames. Informational only — the export already happened. */
+  function showZoneWarningModal(warnings) {
+    let back = document.getElementById('zone-warn-modal');
+    if (!back) {
+      back = document.createElement('div');
+      back.id = 'zone-warn-modal';
+      back.innerHTML =
+        '<div class="zwm-box">' +
+          '<div class="zwm-title">⚠ Зоны экрана</div>' +
+          '<div class="zwm-sub">Карта экспортирована, но есть замечания по безопасным зонам:</div>' +
+          '<div class="zwm-list"></div>' +
+          '<button class="zwm-ok" type="button">ОК</button>' +
+        '</div>';
+      document.body.appendChild(back);
+      const close = () => { back.style.display = 'none'; };
+      back.querySelector('.zwm-ok').addEventListener('click', close);
+      back.addEventListener('click', e => { if (e.target === back) close(); });
+    }
+    back.querySelector('.zwm-list').innerHTML =
+      warnings.map(w => '<div class="zwm-item">• ' + escHtml(w) + '</div>').join('');
+    back.style.display = 'flex';
   }
   function copyLevel() {
     const txt = JSON.stringify(curLevel(), null, 2);
@@ -2269,7 +2287,6 @@
   /* ── Tab switching ────────────────────────────────────────────────────── */
   (function () {
     const searchWrap  = document.getElementById('search-wrap');
-    const safeViewEl   = document.getElementById('safe-view');
     const levelViewEl  = document.getElementById('level-view');
     const layoutViewEl = document.getElementById('layout-view');
     const diffViewEl   = document.getElementById('difficulty-view');
@@ -2280,17 +2297,14 @@
         const tab = btn.dataset.tab;
         document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b === btn));
         const isMotion = tab === 'motion';
-        const isSafe   = tab === 'safe';
         const isLayout = tab === 'layout';
         searchWrap.style.visibility = isMotion ? 'visible' : 'hidden';
         groupsEl.style.display    = isMotion ? '' : 'none';
         subtabBar.style.display   = (isMotion && subtabBar.children.length) ? 'flex' : 'none';
-        safeViewEl.style.display  = isSafe          ? 'flex' : 'none';
         levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
         layoutViewEl.style.display = isLayout        ? 'flex' : 'none';
         diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
         assetViewEl.style.display = tab === 'assets'     ? 'flex' : 'none';
-        if (window._fieldActivate) window._fieldActivate(isSafe, tab);
         if (window._layoutActivate) window._layoutActivate(isLayout);
       });
     });
@@ -2782,11 +2796,25 @@
     load(); syncParams(); renderEvents(); renderSide();
   })();
 
+  /* ── Safe-zone frames overlay toggle (toolbar «Зоны» button) ──────────────
+     Independent of the active tab: shows the safety-zone frames on top of the
+     preview + a compact legend, so layout work can be checked against them. */
+  (function () {
+    const btn    = document.getElementById('btn-frames-toggle');
+    const legend = document.getElementById('frames-legend');
+    if (!btn) return;
+    let on = false;
+    btn.addEventListener('click', () => {
+      on = !on;
+      btn.classList.toggle('tb-active', on);
+      if (legend) legend.style.display = on ? '' : 'none';
+      if (window._fieldActivate) window._fieldActivate(on, on ? 'safe' : '');
+    });
+  })();
+
   /* ── Field overlay ────────────────────────────────────────────────────── */
   (function () {
     const overlay  = document.getElementById('field-overlay');
-    const infoRwy  = document.getElementById('info-runways');
-    const infoBays = document.getElementById('info-bays');
     let   fieldOn  = false;
     let   overlayTab = '';
 
@@ -2912,89 +2940,39 @@
       overlay.innerHTML = s;
     }
 
-    function updateInfo() {
+    // Safe-zone validation — runs on demand (map export), not live. Reads the
+    // live game field; returns [] when the game isn't running or has no rects.
+    function zoneWarnings() {
       const fd = getField();
-      if (!fd) return;
-      let rh = '<table class="f-table"><tr><th>#</th><th>stopX</th><th>exitX</th><th>cy</th><th>статус</th></tr>';
-      (fd.runways || []).forEach((r, i) => {
-        const cls = r.closed ? 'tag-bad' : (r.occupied ? 'tag-occ' : 'tag-ok');
-        const lbl = r.closed ? 'закрыта' : (r.occupied ? 'занята' : 'свободна');
-        rh += '<tr><td>ВПП '+(i+1)+'</td><td>'+Math.round(r.stopX)+'</td><td>'+Math.round(r.exitX)+'</td><td>'+Math.round(r.cy)+'</td><td><span class="'+cls+'">'+lbl+'</span></td></tr>';
-      });
-      rh += '</table>';
-      if (infoRwy) infoRwy.innerHTML = rh;
-      let bh = '<table class="f-table"><tr><th>тип</th><th>ворота</th><th>x</th><th>y</th><th>w×h</th><th>статус</th></tr>';
-      (fd.bays || []).forEach(b => {
-        const cls = b.occupied ? 'tag-occ' : (b.open ? 'tag-ok' : 'tag-bad');
-        const lbl = b.occupied ? 'занят' : (b.open ? 'открыт' : 'закрыт');
-        bh += '<tr><td>'+(b.type||'?')+'</td><td>'+(b.gate||'?')+'</td><td>'+Math.round(b.x)+'</td><td>'+Math.round(b.y)+'</td><td>'+Math.round(b.w)+'×'+Math.round(b.h)+'</td><td><span class="'+cls+'">'+lbl+'</span></td></tr>';
-      });
-      bh += '</table>';
-      if (infoBays) infoBays.innerHTML = bh;
-    }
-
-    function updateSafeView() {
-      var infoRects = document.getElementById('info-safe-rects');
-      var warnEl    = document.getElementById('safe-warnings');
-      if (!infoRects || !warnEl) return;
-      var fd = getField();
-      if (!fd || !fd.safetyRects) {
-        infoRects.innerHTML = '<span style="color:var(--muted);font-size:11px">Ждём данных…</span>';
-        return;
-      }
-      var sr = fd.safetyRects;
-
-      // live rect table
-      function fmtR(r) { return !r ? '—' : Math.round(r.x)+'·'+Math.round(r.y)+' '+Math.round(r.w)+'×'+Math.round(r.h); }
-      var rh = '<table class="f-table"><tr><th>Зона</th><th>x·y w×h</th></tr>';
-      rh += '<tr><td>'+T.zoneViewport+'</td><td>'       + fmtR(sr.viewportRect)           + '</td></tr>';
-      rh += '<tr><td>'+T.zoneContent+'</td><td>'        + fmtR(sr.contentSafeRect)        + '</td></tr>';
-      rh += '<tr><td>'+T.zoneInteractive+'</td><td>'    + fmtR(sr.interactiveSafeRect)    + '</td></tr>';
-      rh += '<tr><td>'+T.zoneRouteStart+'</td><td>'     + fmtR(sr.routeStartAllowedRect)  + '</td></tr>';
-      rh += '<tr><td>'+T.zoneRouteDraw+'</td><td>'      + fmtR(sr.routeDrawAllowedRect)   + '</td></tr>';
-      rh += '<tr><td>'+T.zoneRouteTarget+'</td><td>'    + fmtR(sr.routeTargetAllowedRect) + '</td></tr>';
-      var gi = sr.gestureInsets, sa = sr.safeAreaInsets, css = sr.cssReadSafe;
-      rh += '<tr><td>'+T.zoneGestureInsets+'</td><td>t:'+gi.t+' r:'+gi.r+' b:'+gi.b+' l:'+gi.l+'</td></tr>';
-      rh += '<tr><td>'+T.zoneSafeInsets+'</td><td>t:'+sa.t+' r:'+sa.r+' b:'+sa.b+' l:'+sa.l+'</td></tr>';
-      if (sr.cutoutRect && sr.cutoutRect.w > 0)
-        rh += '<tr><td>'+T.zoneCutout+'</td><td>' + fmtR(sr.cutoutRect) + '</td></tr>';
-      rh += '<tr><td style="color:var(--muted)">CSS env()</td><td style="color:var(--muted)">t:'+css.t+' r:'+css.r+' b:'+css.b+' l:'+css.l+'</td></tr>';
-      rh += '</table>';
-      infoRects.innerHTML = rh;
-
-      // validation warnings
+      if (!fd || !fd.safetyRects) return [];
+      const sr = fd.safetyRects;
       function rectsOverlap(a, b) {
         return b.w > 0 && b.h > 0 && a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
       }
       function inRect(px, py, r) {
         return r.w > 0 && r.h > 0 && px >= r.x && px <= r.x+r.w && py >= r.y && py <= r.y+r.h;
       }
-      var warnings = [];
-      var rt = sr.routeTargetAllowedRect;
-      var cr = sr.cutoutRect || { w:0 };
-
+      const warnings = [];
+      const rt = sr.routeTargetAllowedRect;
+      const cr = sr.cutoutRect || { w:0 };
       (fd.runways || []).forEach(function(r, i) {
-        var lbl = 'ВПП '+(i+1);
+        const lbl = 'ВПП '+(i+1);
         if (cr.w > 0 && rectsOverlap(r, cr))
           warnings.push(T.warnHitCutout(lbl));
-        if (!inRect(r.stopX, r.cy, rt))
+        if (rt && !inRect(r.stopX, r.cy, rt))
           warnings.push(T.warnStopOutside(lbl));
       });
       (fd.bays || []).forEach(function(b) {
         if (cr.w > 0 && rectsOverlap(b, cr))
           warnings.push(T.warnBayCutout(b.type || '?'));
       });
-
-      warnEl.innerHTML = warnings.length === 0
-        ? '<span style="color:var(--accent)">'+T.warnNone+'</span>'
-        : warnings.map(function(w){ return '<div class="sa-warn">⚠ '+escHtml(w)+'</div>'; }).join('');
+      return warnings;
     }
+    window._zoneWarnings = zoneWarnings;
 
     function tick() {
       if (!fieldOn) return;
       drawOverlay();
-      updateInfo();
-      if (overlayTab === 'safe') updateSafeView();
       setTimeout(tick, 150);
     }
 
