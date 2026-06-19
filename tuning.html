@@ -605,6 +605,37 @@
     .lab-coming .big { font-size: 36px; }
     .lab-coming strong { font-size: 14px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px; }
 
+    /* ── Layout designer (field / zone editor) ──────────────────────────── */
+    .ly-stage-wrap {
+      position: relative; width: 100%; aspect-ratio: 20 / 9; max-height: 48vh;
+      margin-bottom: 10px; border: 1px solid var(--border); border-radius: 12px;
+      background: #020609; overflow: hidden; touch-action: none;
+    }
+    #ly-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .ly-stage-hint {
+      position: absolute; left: 8px; bottom: 6px; font-size: 10px; color: var(--muted);
+      pointer-events: none; background: rgba(2,6,9,.65); padding: 2px 6px; border-radius: 6px;
+    }
+    .ly-prop-row {
+      display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px;
+      padding: 5px 0; min-height: 30px; border-top: 1px solid var(--row-sep);
+    }
+    .ly-prop-row:first-child { border-top: none; }
+    .ly-prop-row .lbl-main { font-size: 12px; font-weight: 600; color: var(--text); }
+    .ly-seg { display: flex; gap: 4px; flex-wrap: wrap; }
+    .ly-seg .p-btn { padding: 4px 9px; }
+    .ly-seg .p-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(34,227,198,.1); }
+    .ly-prop-num {
+      width: 70px; border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
+      background: var(--input-bg); color: #fff; padding: 4px 6px; font-size: 12px;
+      text-align: center; font-family: inherit;
+    }
+    #ly-json {
+      width: 100%; min-height: 130px; margin-top: 10px; resize: vertical;
+      border: 1px solid rgba(127,155,176,.22); border-radius: 8px;
+      background: var(--input-bg); color: #cfeefe; font: 11px/1.45 ui-monospace, 'SF Mono', Menlo, monospace; padding: 8px;
+    }
+
     /* ── Level / Difficulty lab (data-driven) ───────────────────────────── */
     .lab-empty { color: var(--muted); font-size: 11px; }
     .lab-section h3 .h3-sub { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
@@ -927,6 +958,9 @@
         <button class="t-tab" data-tab="level">
           <span class="tab-icon">🗺</span><span>Уровни</span>
         </button>
+        <button class="t-tab" data-tab="layout">
+          <span class="tab-icon">🛠</span><span>Разметка</span>
+        </button>
         <button class="t-tab" data-tab="difficulty">
           <span class="tab-icon">📊</span><span>Сложность</span>
         </button>
@@ -1105,6 +1139,101 @@
     <div class="lab-section">
       <h3>Предупреждения</h3>
       <div id="diff-warnings"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+  </div>
+
+  <!-- Tab: Layout / Field Designer ─────────────────────────────────────── -->
+  <div id="layout-view" class="lab-view">
+
+    <!-- editor stage (top): drag objects, resize zones -->
+    <div class="ly-stage-wrap">
+      <canvas id="ly-canvas"></canvas>
+      <div class="ly-stage-hint" id="ly-hint">Тащи объекты · зоны тяни за уголки рамки</div>
+    </div>
+
+    <!-- add / delete objects -->
+    <div class="lab-section">
+      <h3>Объекты <span class="h3-sub">· добавить / удалить</span></h3>
+      <div class="lab-btn-row">
+        <button class="p-btn" data-add-hangar="fuel">＋ Ангар · топливо</button>
+        <button class="p-btn" data-add-hangar="board">＋ Ангар · борт</button>
+        <button class="p-btn" data-add-hangar="repair">＋ Ангар · ремонт</button>
+        <button class="p-btn" id="ly-add-runway">＋ ВПП</button>
+        <button class="p-btn" id="ly-del" title="Удалить выбранный (Del / Backspace)">🗑 Удалить выбранный</button>
+      </div>
+      <p class="lab-hint">Размер ангаров и ВПП фиксированный — на холсте их можно только двигать.
+        Менять размер можно только у зон (апрон, прилёт) — тяни за уголки рамки выделенной зоны.</p>
+    </div>
+
+    <!-- selected object props -->
+    <div class="lab-section" id="ly-sel-sec">
+      <h3>Выбранный объект <span class="h3-sub" id="ly-sel-name">—</span></h3>
+      <div id="ly-sel-body"><span class="lab-empty">Кликни объект на холсте.</span></div>
+    </div>
+
+    <!-- zones (numeric) -->
+    <div class="lab-section">
+      <h3>Зоны <span class="h3-sub">· границы, % экрана</span></h3>
+      <div id="ly-zones"></div>
+    </div>
+
+    <!-- level params -->
+    <div class="lab-section">
+      <h3>Параметры уровня</h3>
+      <div class="lab-row">
+        <span class="lbl-main">Темп <small style="color:var(--muted)">pace 0…1</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-ly-step="pace" data-dir="-1" tabindex="-1">−</button>
+          <input class="lab-num" id="ly-pace" type="number" inputmode="decimal" min="0" max="1" step="0.05" value="0.4">
+          <button type="button" class="mt-step" data-ly-step="pace" data-dir="1" tabindex="-1">+</button>
+        </div>
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">Старт. деньги <small style="color:var(--muted)">0 = дефолт</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-ly-step="money" data-dir="-1" tabindex="-1">−</button>
+          <input class="lab-num" id="ly-money" type="number" inputmode="numeric" min="0" max="2000" step="10" value="0">
+          <button type="button" class="mt-step" data-ly-step="money" data-dir="1" tabindex="-1">+</button>
+        </div>
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">Глубина апгрейда <small style="color:var(--muted)">maxUp 0…5</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-ly-step="maxup" data-dir="-1" tabindex="-1">−</button>
+          <input class="lab-num" id="ly-maxup" type="number" inputmode="numeric" min="0" max="5" step="1" value="3">
+          <button type="button" class="mt-step" data-ly-step="maxup" data-dir="1" tabindex="-1">+</button>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию)</div>
+        <div style="display:flex;gap:6px">
+          <input class="lab-num" type="number" id="ly-s1" min="1" step="1" style="flex:1;text-align:center" value="6">
+          <input class="lab-num" type="number" id="ly-s2" min="1" step="1" style="flex:1;text-align:center" value="8">
+          <input class="lab-num" type="number" id="ly-s3" min="1" step="1" style="flex:1;text-align:center" value="10">
+        </div>
+        <div id="ly-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">События (спецборты)</div>
+        <div class="lab-chips" id="ly-events"></div>
+      </div>
+    </div>
+
+    <!-- actions -->
+    <div class="lab-section">
+      <h3>Действия</h3>
+      <div class="lab-btn-row">
+        <button class="p-btn" id="ly-export">⬇ Экспорт JSON</button>
+        <button class="p-btn" id="ly-copy">📋 Копировать</button>
+        <button class="p-btn" id="ly-import-btn">↑ Импорт</button>
+        <input type="file" id="ly-file" accept=".json" style="display:none">
+        <button class="p-btn" id="ly-reset">↺ Сброс</button>
+      </div>
+      <p class="lab-hint">Экспорт собирает <code>layout</code> (апрон, зоны, ангары, ВПП) + параметры уровня в JSON —
+        вставь его в массив <code>LEVELS</code> в <code>src/game/04-config-levels.ts</code>.
+        Поля <code>apron</code>/<code>zones</code> движок пока не отрисовывает (геометрия апрона процедурная) — это замысел разметки.</p>
+      <textarea id="ly-json" readonly spellcheck="false" placeholder="JSON появится после «Экспорт»"></textarea>
+      <div id="ly-warn" style="margin-top:6px;font-size:11px;color:#e3c522"></div>
     </div>
   </div>
 
@@ -2140,10 +2269,11 @@
   /* ── Tab switching ────────────────────────────────────────────────────── */
   (function () {
     const searchWrap  = document.getElementById('search-wrap');
-    const safeViewEl  = document.getElementById('safe-view');
-    const levelViewEl = document.getElementById('level-view');
-    const diffViewEl  = document.getElementById('difficulty-view');
-    const assetViewEl = document.getElementById('asset-view');
+    const safeViewEl   = document.getElementById('safe-view');
+    const levelViewEl  = document.getElementById('level-view');
+    const layoutViewEl = document.getElementById('layout-view');
+    const diffViewEl   = document.getElementById('difficulty-view');
+    const assetViewEl  = document.getElementById('asset-view');
 
     document.querySelectorAll('.t-tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2151,16 +2281,505 @@
         document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b === btn));
         const isMotion = tab === 'motion';
         const isSafe   = tab === 'safe';
+        const isLayout = tab === 'layout';
         searchWrap.style.visibility = isMotion ? 'visible' : 'hidden';
         groupsEl.style.display    = isMotion ? '' : 'none';
         subtabBar.style.display   = (isMotion && subtabBar.children.length) ? 'flex' : 'none';
         safeViewEl.style.display  = isSafe          ? 'flex' : 'none';
         levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
+        layoutViewEl.style.display = isLayout        ? 'flex' : 'none';
         diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
         assetViewEl.style.display = tab === 'assets'     ? 'flex' : 'none';
         if (window._fieldActivate) window._fieldActivate(isSafe, tab);
+        if (window._layoutActivate) window._layoutActivate(isLayout);
       });
     });
+  })();
+
+  /* ── Layout designer (field / zone editor) ──────────────────────────────
+     Standalone visual editor: drag the apron, runways, hangars and the
+     arrival zone on a phone-shaped canvas, resize the zones, then export a
+     layout-JSON compatible with LEVELS[].layout in 04-config-levels.ts.
+     Self-contained — does not read or drive the game iframe. */
+  (function () {
+    const cv = document.getElementById('ly-canvas');
+    if (!cv) return;
+    const g = cv.getContext('2d');
+
+    const HANGAR = {
+      fuel:   { label: 'топливо', col: '#22e3c6' },
+      board:  { label: 'борт',    col: '#ff8db0' },
+      repair: { label: 'ремонт',  col: '#ffc14d' },
+    };
+    const EVENTS = [ ['vip','VIP'], ['emergency','авария'], ['medical','медицина'], ['rush','час пик'] ];
+    const RW_COL = '#3ad2ff';
+    const HW_FR = 0.072, HH_FR = 0.135;   // hangar size — fraction of screen (fixed)
+    const RH_FR = 0.072;                  // runway height — fraction of screen (fixed)
+    const HANDLE = 9;                     // zone resize-handle hit size, px
+    const Z_MIN  = 0.06;                  // smallest zone edge, normalized
+    const LS_KEY = 'pf_tuning_layout_v1';
+
+    const DEFAULTS = () => ({
+      apron:   { x: 0.035, y: 0.17, w: 0.585, h: 0.74 },
+      arrival: { x: 0.855, y: 0.17, w: 0.13,  h: 0.74 },
+      hangars: [
+        { type: 'fuel',   x: 0.22, y: 0.18, open: true, gate: 'auto' },
+        { type: 'board',  x: 0.55, y: 0.18, open: true, gate: 'auto' },
+        { type: 'repair', x: 0.22, y: 0.82, open: true, gate: 'auto' },
+      ],
+      runways: [
+        { y: 0.34, landingOpen: true, takeoffOpen: true },
+        { y: 0.70, landingOpen: true, takeoffOpen: true },
+      ],
+      pace: 0.4, startMoney: 0, maxUp: 3, stars: [6, 8, 10],
+      events: { vip: false, emergency: false, medical: false, rush: false },
+    });
+
+    let LE = DEFAULTS();
+    let sel = null;            // {kind:'apron'|'arrival'|'hangar'|'runway', i?}
+    let drag = null;           // active pointer-drag descriptor
+    let active = false;        // tab currently visible
+
+    /* ---- persistence ---- */
+    function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(LE)); } catch (_) {} }
+    function load() {
+      try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return;
+        const o = JSON.parse(raw);
+        if (o && o.apron && Array.isArray(o.hangars) && Array.isArray(o.runways)) LE = Object.assign(DEFAULTS(), o);
+      } catch (_) {}
+    }
+
+    /* ---- geometry (normalized → px) ---- */
+    function dims() { return { W: cv.clientWidth || 1, H: cv.clientHeight || 1 }; }
+    function rectPx(r) { const { W, H } = dims(); return { x: r.x * W, y: r.y * H, w: r.w * W, h: r.h * H }; }
+    function hangarPx(h) {
+      const ap = rectPx(LE.apron), { W, H } = dims();
+      const w = W * HW_FR, hh = H * HH_FR;
+      const cx = ap.x + h.x * ap.w, cy = ap.y + h.y * ap.h;
+      return { x: cx - w / 2, y: cy - hh / 2, w, h: hh, cx, cy };
+    }
+    function runwayPx(r) {
+      const ap = rectPx(LE.apron), arr = rectPx(LE.arrival), { W, H } = dims();
+      const hh = H * RH_FR;
+      const cy = ap.y + r.y * ap.h;
+      const x = ap.x + ap.w;
+      const right = Math.max(x + W * 0.05, arr.x);
+      return { x, y: cy - hh / 2, w: right - x, h: hh, cy };
+    }
+    const clamp01 = v => Math.max(0, Math.min(1, v));
+    const clampZone = z => { z.w = Math.max(Z_MIN, Math.min(1, z.w)); z.h = Math.max(Z_MIN, Math.min(1, z.h)); z.x = Math.max(0, Math.min(1 - z.w, z.x)); z.y = Math.max(0, Math.min(1 - z.h, z.y)); };
+
+    /* ---- draw ---- */
+    function resize() {
+      if (!active) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = cv.clientWidth, h = cv.clientHeight;
+      if (!w || !h) { requestAnimationFrame(resize); return; }
+      cv.width = Math.max(1, Math.round(w * dpr));
+      cv.height = Math.max(1, Math.round(h * dpr));
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+    function roundRect(x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2); g.beginPath();
+      g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+      g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+    }
+    function zoneHandles(z) {
+      const r = rectPx(z), mx = r.x + r.w / 2, my = r.y + r.h / 2;
+      return {
+        nw: { x: r.x, y: r.y }, n: { x: mx, y: r.y }, ne: { x: r.x + r.w, y: r.y },
+        e:  { x: r.x + r.w, y: my }, se: { x: r.x + r.w, y: r.y + r.h }, s: { x: mx, y: r.y + r.h },
+        sw: { x: r.x, y: r.y + r.h }, w: { x: r.x, y: my },
+      };
+    }
+    function draw() {
+      const { W, H } = dims();
+      g.clearRect(0, 0, W, H);
+      // screen frame backdrop
+      g.fillStyle = '#04080f'; g.fillRect(0, 0, W, H);
+      g.strokeStyle = 'rgba(58,210,255,.18)'; g.lineWidth = 1; g.strokeRect(.5, .5, W - 1, H - 1);
+
+      // arrival zone (right, air)
+      const arr = rectPx(LE.arrival);
+      g.fillStyle = 'rgba(245,200,66,.07)';
+      g.fillRect(arr.x, arr.y, arr.w, arr.h);
+      g.strokeStyle = 'rgba(245,200,66,.5)'; g.setLineDash([5, 4]); g.lineWidth = 1.4;
+      g.strokeRect(arr.x, arr.y, arr.w, arr.h); g.setLineDash([]);
+      g.fillStyle = 'rgba(245,200,66,.85)'; g.font = '10px system-ui';
+      g.fillText('прилёт', arr.x + 5, arr.y + 13);
+
+      // runways (between apron & arrival)
+      LE.runways.forEach((r, i) => {
+        const b = runwayPx(r), on = sel && sel.kind === 'runway' && sel.i === i;
+        g.fillStyle = 'rgba(58,130,255,.10)'; g.fillRect(b.x, b.y, b.w, b.h);
+        g.strokeStyle = on ? '#fff' : RW_COL; g.lineWidth = on ? 2 : 1.4;
+        g.strokeRect(b.x, b.y, b.w, b.h);
+        g.strokeStyle = 'rgba(255,255,255,.18)'; g.setLineDash([6, 5]); g.lineWidth = 1;
+        g.beginPath(); g.moveTo(b.x, b.cy); g.lineTo(b.x + b.w, b.cy); g.stroke(); g.setLineDash([]);
+        g.fillStyle = RW_COL; g.font = '9px system-ui';
+        let tag = 'ВПП' + (i + 1);
+        if (!r.landingOpen) tag += ' ⊘пос'; if (!r.takeoffOpen) tag += ' ⊘взл';
+        g.fillText(tag, b.x + 4, b.y + b.h - 4);
+      });
+
+      // apron
+      const ap = rectPx(LE.apron), apOn = sel && sel.kind === 'apron';
+      g.fillStyle = 'rgba(34,227,198,.06)'; roundRect(ap.x, ap.y, ap.w, ap.h, 10); g.fill();
+      g.strokeStyle = apOn ? '#fff' : 'rgba(34,227,198,.55)'; g.lineWidth = apOn ? 2 : 1.5;
+      roundRect(ap.x, ap.y, ap.w, ap.h, 10); g.stroke();
+      g.fillStyle = 'rgba(34,227,198,.7)'; g.font = '10px system-ui';
+      g.fillText('апрон', ap.x + 6, ap.y + 14);
+
+      // hangars
+      LE.hangars.forEach((h, i) => {
+        const b = hangarPx(h), tone = (HANGAR[h.type] || HANGAR.fuel).col;
+        const on = sel && sel.kind === 'hangar' && sel.i === i;
+        g.fillStyle = h.open ? tone + '33' : 'rgba(120,120,120,.18)';
+        roundRect(b.x, b.y, b.w, b.h, 5); g.fill();
+        g.strokeStyle = on ? '#fff' : (h.open ? tone : 'rgba(200,200,200,.45)');
+        g.lineWidth = on ? 2 : 1.4; roundRect(b.x, b.y, b.w, b.h, 5); g.stroke();
+        g.fillStyle = h.open ? tone : 'rgba(220,220,220,.6)'; g.font = '9px system-ui';
+        g.fillText((HANGAR[h.type] || {}).label || h.type, b.x + 4, b.y + 11);
+        if (!h.open) { g.fillStyle = 'rgba(255,255,255,.5)'; g.fillText('🔒', b.x + b.w - 13, b.y + 12); }
+        // gate arrow
+        const dir = gateDir(h);
+        if (dir) {
+          const cx = b.cx, cy = b.cy, len = 11;
+          g.strokeStyle = on ? '#fff' : tone; g.lineWidth = 1.5;
+          g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + dir.x * len, cy + dir.y * len); g.stroke();
+        }
+      });
+
+      // selected-zone handles
+      if (sel && (sel.kind === 'apron' || sel.kind === 'arrival')) {
+        const hs = zoneHandles(sel.kind === 'apron' ? LE.apron : LE.arrival);
+        g.fillStyle = '#fff'; g.strokeStyle = 'rgba(34,227,198,.9)'; g.lineWidth = 1;
+        Object.values(hs).forEach(p => { g.fillRect(p.x - HANDLE / 2, p.y - HANDLE / 2, HANDLE, HANDLE); g.strokeRect(p.x - HANDLE / 2, p.y - HANDLE / 2, HANDLE, HANDLE); });
+      }
+    }
+    function gateDir(h) {
+      const map = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
+      if (h.gate && h.gate !== 'auto') return map[h.gate];
+      // auto: point toward nearest apron edge
+      const d = [['up', h.y], ['down', 1 - h.y], ['left', h.x], ['right', 1 - h.x]].sort((a, b) => a[1] - b[1]);
+      return map[d[0][0]];
+    }
+
+    /* ---- hit testing ---- */
+    function ptIn(b, x, y) { return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; }
+    function hitHandle(z, x, y) {
+      const hs = zoneHandles(z);
+      for (const k in hs) { const p = hs[k]; if (Math.abs(x - p.x) <= HANDLE && Math.abs(y - p.y) <= HANDLE) return k; }
+      return null;
+    }
+    function pick(x, y) {
+      // 1) resize handle of currently-selected zone
+      if (sel && (sel.kind === 'apron' || sel.kind === 'arrival')) {
+        const z = sel.kind === 'apron' ? LE.apron : LE.arrival;
+        const h = hitHandle(z, x, y);
+        if (h) return { kind: sel.kind, handle: h };
+      }
+      // 2) hangars (top-most first)
+      for (let i = LE.hangars.length - 1; i >= 0; i--) if (ptIn(hangarPx(LE.hangars[i]), x, y)) return { kind: 'hangar', i };
+      // 3) runways
+      for (let i = LE.runways.length - 1; i >= 0; i--) if (ptIn(runwayPx(LE.runways[i]), x, y)) return { kind: 'runway', i };
+      // 4) arrival body, then apron body
+      if (ptIn(rectPx(LE.arrival), x, y)) return { kind: 'arrival' };
+      if (ptIn(rectPx(LE.apron), x, y)) return { kind: 'apron' };
+      return null;
+    }
+    function evPos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+
+    cv.addEventListener('pointerdown', e => {
+      const p = evPos(e), hit = pick(p.x, p.y);
+      if (!hit) { sel = null; drag = null; renderSide(); draw(); return; }
+      const { W, H } = dims();
+      if (hit.handle) {
+        const z = hit.kind === 'apron' ? LE.apron : LE.arrival;
+        drag = { mode: 'resize', kind: hit.kind, handle: hit.handle, start: { x: p.x, y: p.y }, z0: Object.assign({}, z) };
+      } else if (hit.kind === 'hangar' || hit.kind === 'runway') {
+        sel = { kind: hit.kind, i: hit.i };
+        drag = { mode: 'move-obj', kind: hit.kind, i: hit.i, start: { x: p.x, y: p.y } };
+      } else {
+        sel = { kind: hit.kind };
+        const z = hit.kind === 'apron' ? LE.apron : LE.arrival;
+        drag = { mode: 'move-zone', kind: hit.kind, start: { x: p.x, y: p.y }, x0: z.x, y0: z.y };
+      }
+      cv.setPointerCapture(e.pointerId);
+      renderSide(); draw();
+    });
+    cv.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const p = evPos(e), { W, H } = dims();
+      const dx = (p.x - drag.start.x) / W, dy = (p.y - drag.start.y) / H;
+      if (drag.mode === 'move-zone') {
+        const z = drag.kind === 'apron' ? LE.apron : LE.arrival;
+        z.x = drag.x0 + dx; z.y = drag.y0 + dy; clampZone(z);
+      } else if (drag.mode === 'resize') {
+        const z = drag.kind === 'apron' ? LE.apron : LE.arrival, s = drag.z0, h = drag.handle;
+        let x0 = s.x, y0 = s.y, x1 = s.x + s.w, y1 = s.y + s.h;
+        if (h.includes('w')) x0 = clamp01(s.x + dx);
+        if (h.includes('e')) x1 = clamp01(s.x + s.w + dx);
+        if (h.includes('n')) y0 = clamp01(s.y + dy);
+        if (h.includes('s')) y1 = clamp01(s.y + s.h + dy);
+        z.x = Math.min(x0, x1 - Z_MIN); z.w = Math.max(Z_MIN, x1 - x0);
+        z.y = Math.min(y0, y1 - Z_MIN); z.h = Math.max(Z_MIN, y1 - y0);
+        clampZone(z);
+      } else if (drag.mode === 'move-obj') {
+        const ap = LE.apron;
+        if (drag.kind === 'hangar') {
+          const o = LE.hangars[drag.i];
+          o.x = clamp01(o.x + dx / ap.w); o.y = clamp01(o.y + dy / ap.h);
+        } else {
+          const o = LE.runways[drag.i];
+          o.y = clamp01(o.y + dy / ap.h);
+        }
+        drag.start = { x: p.x, y: p.y };
+      }
+      draw();
+    });
+    function endDrag(e) { if (!drag) return; drag = null; try { cv.releasePointerCapture(e.pointerId); } catch (_) {} renderSide(); save(); }
+    cv.addEventListener('pointerup', endDrag);
+    cv.addEventListener('pointercancel', endDrag);
+
+    document.addEventListener('keydown', e => {
+      if (!active) return;
+      if ((e.key === 'Delete' || e.key === 'Backspace') && sel && (sel.kind === 'hangar' || sel.kind === 'runway')) {
+        const t = e.target; if (t && /input|textarea|select/i.test(t.tagName)) return;
+        e.preventDefault(); delSelected();
+      }
+    });
+
+    /* ---- add / delete ---- */
+    function addHangar(type) {
+      LE.hangars.push({ type, x: 0.5, y: 0.5, open: true, gate: 'auto' });
+      sel = { kind: 'hangar', i: LE.hangars.length - 1 };
+      renderSide(); save(); draw();
+    }
+    function addRunway() {
+      const ys = LE.runways.map(r => r.y);
+      let y = 0.5; for (let k = 1; k <= 9; k++) { const c = k / 10; if (!ys.some(v => Math.abs(v - c) < 0.05)) { y = c; break; } }
+      LE.runways.push({ y, landingOpen: true, takeoffOpen: true });
+      sel = { kind: 'runway', i: LE.runways.length - 1 };
+      renderSide(); save(); draw();
+    }
+    function delSelected() {
+      if (!sel) return;
+      if (sel.kind === 'hangar') LE.hangars.splice(sel.i, 1);
+      else if (sel.kind === 'runway') LE.runways.splice(sel.i, 1);
+      else return;
+      sel = null; renderSide(); save(); draw();
+    }
+
+    /* ---- side panel ---- */
+    const $ = id => document.getElementById(id);
+    function seg(label, opts, cur, on) {
+      const wrap = document.createElement('div'); wrap.className = 'ly-prop-row';
+      const lab = document.createElement('span'); lab.className = 'lbl-main'; lab.textContent = label; wrap.appendChild(lab);
+      const box = document.createElement('div'); box.className = 'ly-seg';
+      opts.forEach(([val, txt]) => {
+        const b = document.createElement('button'); b.className = 'p-btn' + (val === cur ? ' on' : ''); b.textContent = txt;
+        b.addEventListener('click', () => { on(val); });
+        box.appendChild(b);
+      });
+      wrap.appendChild(box); return wrap;
+    }
+    function toggleRow(label, val, on) {
+      const wrap = document.createElement('div'); wrap.className = 'ly-prop-row';
+      const lab = document.createElement('span'); lab.className = 'lbl-main'; lab.textContent = label; wrap.appendChild(lab);
+      const b = document.createElement('button'); b.className = 'p-btn' + (val ? ' on' : ''); b.textContent = val ? 'да' : 'нет';
+      b.style.minWidth = '54px'; b.addEventListener('click', () => on(!val));
+      const box = document.createElement('div'); box.className = 'ly-seg'; box.appendChild(b); wrap.appendChild(box); return wrap;
+    }
+    function readout(label, txt) {
+      const wrap = document.createElement('div'); wrap.className = 'ly-prop-row';
+      const lab = document.createElement('span'); lab.className = 'lbl-main'; lab.textContent = label; wrap.appendChild(lab);
+      const v = document.createElement('span'); v.style.cssText = 'font-size:12px;color:var(--muted)'; v.textContent = txt; wrap.appendChild(v);
+      return wrap;
+    }
+    function renderSelBody() {
+      const name = $('ly-sel-name'), body = $('ly-sel-body');
+      body.innerHTML = '';
+      if (!sel) { name.textContent = '—'; body.innerHTML = '<span class="lab-empty">Кликни объект на холсте.</span>'; return; }
+      if (sel.kind === 'hangar') {
+        const h = LE.hangars[sel.i]; name.textContent = 'ангар #' + (sel.i + 1);
+        body.appendChild(seg('Услуга', [['fuel','топливо'],['board','борт'],['repair','ремонт']], h.type, v => { h.type = v; save(); renderSide(); draw(); }));
+        body.appendChild(seg('Ворота', [['auto','авто'],['up','↑'],['down','↓'],['left','←'],['right','→']], h.gate || 'auto', v => { h.gate = v; save(); renderSide(); draw(); }));
+        body.appendChild(toggleRow('Открыт на старте', !!h.open, v => { h.open = v; save(); renderSide(); draw(); }));
+        body.appendChild(readout('Позиция (% апрона)', Math.round(h.x * 100) + ' · ' + Math.round(h.y * 100)));
+      } else if (sel.kind === 'runway') {
+        const r = LE.runways[sel.i]; name.textContent = 'ВПП #' + (sel.i + 1);
+        body.appendChild(toggleRow('Посадка', !!r.landingOpen, v => { r.landingOpen = v; save(); renderSide(); draw(); }));
+        body.appendChild(toggleRow('Взлёт', !!r.takeoffOpen, v => { r.takeoffOpen = v; save(); renderSide(); draw(); }));
+        body.appendChild(readout('Позиция Y (% апрона)', Math.round(r.y * 100) + ''));
+      } else {
+        name.textContent = sel.kind === 'apron' ? 'апрон (зона)' : 'зона прилёта';
+        body.innerHTML = '<span class="lab-empty">Двигай мышью; меняй размер за уголки рамки или числами в блоке «Зоны».</span>';
+      }
+    }
+    function zoneEditor(label, key) {
+      const z = LE[key], wrap = document.createElement('div');
+      wrap.className = 'ly-prop-row';
+      const lab = document.createElement('span'); lab.className = 'lbl-main'; lab.textContent = label; wrap.appendChild(lab);
+      const box = document.createElement('div'); box.className = 'ly-seg';
+      [['x','x'],['y','y'],['w','ш'],['h','в']].forEach(([f, t]) => {
+        const inp = document.createElement('input'); inp.type = 'number'; inp.className = 'ly-prop-num';
+        inp.style.width = '52px'; inp.min = 0; inp.max = 100; inp.step = 1; inp.title = t;
+        inp.value = Math.round(z[f] * 100);
+        inp.addEventListener('change', () => {
+          let v = Math.max(0, Math.min(100, +inp.value || 0)) / 100; z[f] = v; clampZone(z);
+          inp.value = Math.round(z[f] * 100); save(); draw();
+        });
+        box.appendChild(inp);
+      });
+      wrap.appendChild(box); return wrap;
+    }
+    function renderZones() {
+      const host = $('ly-zones'); host.innerHTML = '';
+      const hint = document.createElement('div');
+      hint.style.cssText = 'font-size:10px;color:var(--muted);margin-bottom:4px';
+      hint.textContent = 'x · y · ширина · высота (в % экрана)';
+      host.appendChild(hint);
+      host.appendChild(zoneEditor('Апрон', 'apron'));
+      host.appendChild(zoneEditor('Прилёт', 'arrival'));
+    }
+    function renderEvents() {
+      const host = $('ly-events'); host.innerHTML = '';
+      EVENTS.forEach(([k, txt]) => {
+        const chip = document.createElement('label'); chip.className = 'lab-chip' + (LE.events[k] ? ' on' : '');
+        chip.innerHTML = '<input type="checkbox"' + (LE.events[k] ? ' checked' : '') + '><span>' + txt + '</span>';
+        chip.addEventListener('click', e => { e.preventDefault(); LE.events[k] = !LE.events[k]; save(); renderEvents(); });
+        host.appendChild(chip);
+      });
+    }
+    function syncParams() {
+      $('ly-pace').value = LE.pace; $('ly-money').value = LE.startMoney; $('ly-maxup').value = LE.maxUp;
+      $('ly-s1').value = LE.stars[0]; $('ly-s2').value = LE.stars[1]; $('ly-s3').value = LE.stars[2];
+      checkStars();
+    }
+    function checkStars() {
+      const w = $('ly-stars-warn'); const s = LE.stars;
+      w.textContent = (s[0] > 0 && s[0] <= s[1] && s[1] <= s[2]) ? '' : '⚠ звёзды должны идти по возрастанию (1★ ≤ 2★ ≤ 3★)';
+    }
+    function renderSide() { renderSelBody(); renderZones(); }
+
+    /* ---- export / import ---- */
+    function round4(r) { return { x: +r.x.toFixed(4), y: +r.y.toFixed(4), w: +r.w.toFixed(4), h: +r.h.toFixed(4) }; }
+    function exportObj() {
+      const services = Array.from(new Set(LE.hangars.map(h => h.type)));
+      const o = {
+        pace: +(+LE.pace).toFixed(2),
+        objective: { metric: 'served', stars: [LE.stars[0], LE.stars[1], LE.stars[2]] },
+        services,
+        maxUp: LE.maxUp,
+        layout: {
+          apron: round4(LE.apron),
+          zones: { arrival: round4(LE.arrival) },
+          hangars: LE.hangars.map(h => {
+            const d = { type: h.type, x: +h.x.toFixed(3), y: +h.y.toFixed(3) };
+            if (!h.open) d.open = false;
+            if (h.gate && h.gate !== 'auto') d.gate = h.gate;
+            return d;
+          }),
+          runways: LE.runways.map(r => {
+            const d = { y: +r.y.toFixed(3) };
+            if (!r.landingOpen) d.landingOpen = false;
+            if (!r.takeoffOpen) d.takeoffOpen = false;
+            return d;
+          }),
+        },
+      };
+      if (LE.startMoney > 0) o.startMoney = LE.startMoney;
+      const ev = {}; EVENTS.forEach(([k]) => { if (LE.events[k]) ev[k] = true; });
+      if (Object.keys(ev).length) o.events = ev;
+      return o;
+    }
+    function warnings() {
+      const w = [];
+      if (!LE.runways.length) w.push('нет ни одной ВПП');
+      else {
+        if (!LE.runways.some(r => r.landingOpen)) w.push('ни одна ВПП не разрешает посадку');
+        if (!LE.runways.some(r => r.takeoffOpen)) w.push('ни одна ВПП не разрешает взлёт');
+      }
+      if (!LE.hangars.length) w.push('нет ни одного ангара');
+      else if (!LE.hangars.some(h => h.open)) w.push('ни один ангар не открыт на старте');
+      const s = LE.stars; if (!(s[0] > 0 && s[0] <= s[1] && s[1] <= s[2])) w.push('звёзды должны идти по возрастанию');
+      return w;
+    }
+    function doExport() {
+      const text = JSON.stringify(exportObj(), null, 2);
+      $('ly-json').value = text;
+      const w = warnings();
+      $('ly-warn').textContent = w.length ? '⚠ ' + w.join(' · ') : '';
+      try {
+        const blob = new Blob([text], { type: 'application/json' });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a');
+        a.href = url; a.download = 'aerovia-layout.json'; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      } catch (_) {}
+    }
+    function doCopy() {
+      const text = JSON.stringify(exportObj(), null, 2);
+      $('ly-json').value = text;
+      try { if (navigator.clipboard) navigator.clipboard.writeText(text); } catch (_) {}
+      $('ly-warn').textContent = 'скопировано в буфер';
+      setTimeout(() => { $('ly-warn').textContent = warnings().length ? '⚠ ' + warnings().join(' · ') : ''; }, 1400);
+    }
+    function importObj(o) {
+      try {
+        const L = o.layout || o;
+        const next = DEFAULTS();
+        if (L.apron) next.apron = Object.assign(next.apron, L.apron);
+        if (L.zones && L.zones.arrival) next.arrival = Object.assign(next.arrival, L.zones.arrival);
+        if (Array.isArray(L.hangars)) next.hangars = L.hangars.map(h => ({ type: h.type || 'fuel', x: +h.x || 0.5, y: +h.y || 0.5, open: h.open !== false, gate: h.gate || 'auto' }));
+        if (Array.isArray(L.runways)) next.runways = L.runways.map(r => ({ y: +r.y || 0.5, landingOpen: r.landingOpen !== false, takeoffOpen: r.takeoffOpen !== false }));
+        if (o.pace != null) next.pace = +o.pace;
+        if (o.startMoney != null) next.startMoney = +o.startMoney;
+        if (o.maxUp != null) next.maxUp = +o.maxUp;
+        if (o.objective && Array.isArray(o.objective.stars)) next.stars = o.objective.stars.slice(0, 3);
+        if (o.events) EVENTS.forEach(([k]) => { next.events[k] = !!o.events[k]; });
+        LE = next; sel = null; save(); syncParams(); renderEvents(); renderSide(); draw();
+      } catch (err) { $('ly-warn').textContent = 'не удалось импортировать JSON'; }
+    }
+
+    /* ---- param controls ---- */
+    function clampParams() {
+      LE.pace = Math.max(0, Math.min(1, +$('ly-pace').value || 0));
+      LE.startMoney = Math.max(0, Math.min(2000, Math.round(+$('ly-money').value || 0)));
+      LE.maxUp = Math.max(0, Math.min(5, Math.round(+$('ly-maxup').value || 0)));
+      LE.stars = [Math.max(1, +$('ly-s1').value || 1), Math.max(1, +$('ly-s2').value || 1), Math.max(1, +$('ly-s3').value || 1)];
+      checkStars(); save();
+    }
+    // The −/+ steppers reuse the shared document-level .mt-step handler, which
+    // nudges the number field and dispatches 'input'/'change'; we just listen.
+    ['ly-pace', 'ly-money', 'ly-maxup', 'ly-s1', 'ly-s2', 'ly-s3'].forEach(id => {
+      const el = $(id); if (el) { el.addEventListener('input', clampParams); el.addEventListener('change', clampParams); }
+    });
+    document.querySelectorAll('[data-add-hangar]').forEach(b => b.addEventListener('click', () => addHangar(b.dataset.addHangar)));
+    $('ly-add-runway').addEventListener('click', addRunway);
+    $('ly-del').addEventListener('click', delSelected);
+    $('ly-export').addEventListener('click', doExport);
+    $('ly-copy').addEventListener('click', doCopy);
+    $('ly-import-btn').addEventListener('click', () => $('ly-file').click());
+    $('ly-file').addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      const rd = new FileReader(); rd.onload = () => { try { importObj(JSON.parse(rd.result)); } catch (_) { $('ly-warn').textContent = 'битый JSON'; } }; rd.readAsText(f);
+      e.target.value = '';
+    });
+    $('ly-reset').addEventListener('click', () => { LE = DEFAULTS(); sel = null; save(); syncParams(); renderEvents(); renderSide(); draw(); });
+
+    /* ---- activation ---- */
+    window._layoutActivate = function (show) {
+      active = !!show;
+      if (active) { requestAnimationFrame(() => { resize(); }); }
+    };
+    window.addEventListener('resize', () => { if (active) resize(); });
+
+    // boot
+    load(); syncParams(); renderEvents(); renderSide();
   })();
 
   /* ── Field overlay ────────────────────────────────────────────────────── */
