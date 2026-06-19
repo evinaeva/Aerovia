@@ -544,6 +544,34 @@
     .lab-coming .big { font-size: 36px; }
     .lab-coming strong { font-size: 14px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px; }
 
+    /* ── Level / Difficulty lab (data-driven) ───────────────────────────── */
+    .lab-empty { color: var(--muted); font-size: 11px; }
+    .lab-select {
+      width: 100%; border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
+      background: var(--input-bg); color: #fff; padding: 5px 7px; font-size: 12px; font-family: inherit;
+    }
+    .lab-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .lab-table th, .lab-table td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--row-sep); white-space: nowrap; }
+    .lab-table th { color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .lab-table th:nth-child(2), .lab-table td:nth-child(2) { text-align: left; }
+    .lab-table tbody tr { cursor: pointer; transition: background .12s; }
+    .lab-table tbody tr:hover { background: rgba(58,210,255,.07); }
+    .lab-table tbody tr.sel { background: rgba(34,227,198,.13); }
+    .lab-table tbody tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+    .lab-table .cell-cons { color: var(--accent2); font-weight: 700; }
+    .lab-table .diff-cell { font-weight: 700; }
+    /* pace profile sparkline */
+    .pace-chart { display: flex; align-items: flex-end; gap: 3px; height: 70px; padding-top: 4px; }
+    .pace-bar {
+      flex: 1; min-width: 0; background: linear-gradient(180deg, var(--accent2), var(--accent));
+      border-radius: 2px 2px 0 0; opacity: .8; cursor: pointer; transition: opacity .12s, outline .12s;
+      position: relative;
+    }
+    .pace-bar:hover { opacity: 1; }
+    .pace-bar.sel { opacity: 1; outline: 1px solid var(--accent); }
+    .pace-axis { display: flex; gap: 3px; margin-top: 3px; }
+    .pace-axis span { flex: 1; min-width: 0; text-align: center; font-size: 8px; color: var(--muted); }
+
     /* ── Status bar ─────────────────────────────────────────────────────── */
     #status-bar {
       flex: none;
@@ -792,7 +820,7 @@
   <div id="phone-col">
     <div id="phone-wrapper">
       <div id="phone-shell">
-        <iframe id="game-frame" src="index.html" title="Game" allow="autoplay"></iframe>
+        <iframe id="game-frame" src="index.html?test=1" title="Game" allow="autoplay"></iframe>
         <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
              style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
       </div>
@@ -828,10 +856,10 @@
         <button class="t-tab" data-tab="safe">
           <span class="tab-icon">📐</span><span>Зоны экрана</span>
         </button>
-        <button class="t-tab stub" data-tab="level">
+        <button class="t-tab" data-tab="level">
           <span class="tab-icon">🗺</span><span>Уровни</span>
         </button>
-        <button class="t-tab stub" data-tab="difficulty">
+        <button class="t-tab" data-tab="difficulty">
           <span class="tab-icon">📊</span><span>Сложность</span>
         </button>
         <button class="t-tab stub" data-tab="assets">
@@ -905,110 +933,50 @@
   <!-- Tab 3: Level Lab ──────────────────────────────────────────────────── -->
   <div id="level-view" class="lab-view">
     <div class="lab-section">
-      <h3>Параметры уровня</h3>
-      <div class="lab-row">
-        <span class="lbl-main">Сложность <span class="lbl-sub">target difficulty · 0 = легко, 1 = невозможно</span></span>
-        <input type="range" min="0" max="1" step="0.01" value="0.45"
-               oninput="this.nextElementSibling.value=parseFloat(this.value).toFixed(2)">
-        <input class="lab-num" type="number" min="0" max="1" step="0.01" value="0.45"
-               oninput="this.previousElementSibling.value=this.value">
-      </div>
-      <div class="lab-row">
-        <span class="lbl-main">ВПП <span class="lbl-sub">количество взлётно-посадочных полос</span></span>
-        <input type="range" min="1" max="4" step="1" value="2"
-               oninput="this.nextElementSibling.value=this.value">
-        <input class="lab-num" type="number" min="1" max="4" step="1" value="2"
-               oninput="this.previousElementSibling.value=this.value">
-      </div>
+      <h3>Кривая кампании</h3>
+      <p class="lab-hint" style="margin-top:0">
+        Реальные уровни из <code>LEVELS</code>. Главная ось сложности — <b>темп</b> (pace): частота прилёта
+        + одновременность бортов; по кампании он не убывает. Клик по строке — подробный разбор в табе «Сложность».
+      </p>
+      <div id="level-table-wrap"><span class="lab-empty">Ждём запуска игры…</span></div>
     </div>
     <div class="lab-section">
-      <h3>Сервисы</h3>
-      <div class="lab-chips">
-        <label class="lab-chip on" onclick="this.classList.toggle('on')"><input type="checkbox" checked> Заправка</label>
-        <label class="lab-chip on" onclick="this.classList.toggle('on')"><input type="checkbox" checked> Посадка</label>
-        <label class="lab-chip on" onclick="this.classList.toggle('on')"><input type="checkbox" checked> Ремонт</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> Карго</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> VIP-зал</label>
-      </div>
-    </div>
-    <div class="lab-section">
-      <h3>События</h3>
-      <div class="lab-chips">
-        <label class="lab-chip on" onclick="this.classList.toggle('on')"><input type="checkbox" checked> VIP-борт</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> Экстренная посадка</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> Туман</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> Шторм</label>
-      </div>
-    </div>
-    <div class="lab-section">
-      <h3>Действия</h3>
-      <div class="lab-btn-row">
-        <button class="p-btn" disabled>⚙ Generate</button>
-        <button class="p-btn" disabled>✓ Validate</button>
-        <button class="p-btn" disabled>▶ Playtest</button>
-        <button class="p-btn" disabled>💾 Save</button>
-      </div>
-      <p class="lab-hint">🚧 Level Lab в разработке — параметры кликабельны, логика генерации будет подключена позже.</p>
+      <h3>Профиль темпа</h3>
+      <div id="level-pace-chart" class="pace-chart"></div>
+      <div id="level-pace-axis"  class="pace-axis"></div>
+      <p class="lab-hint">Высота столбца = <code>pace</code> уровня (0…1). Кривая должна расти монотонно.</p>
     </div>
   </div>
 
   <!-- Tab 4: Difficulty Lab ─────────────────────────────────────────────── -->
   <div id="difficulty-view" class="lab-view">
     <div class="lab-section">
-      <h3>Целевая сложность</h3>
+      <h3>Уровень</h3>
       <div class="lab-row">
-        <span class="lbl-main">Target difficulty <span class="lbl-sub">итоговый балл уровня</span></span>
-        <input type="range" min="0" max="1" step="0.01" value="0.6"
-               oninput="this.nextElementSibling.value=parseFloat(this.value).toFixed(2);document.getElementById('diff-target').textContent=parseFloat(this.value).toFixed(2)">
-        <input class="lab-num" type="number" min="0" max="1" step="0.01" value="0.60"
-               oninput="this.previousElementSibling.value=this.value">
+        <span class="lbl-main">Карта кампании</span>
+        <select id="diff-level-sel" class="lab-select" style="grid-column:2 / 4"><option>Ждём запуска игры…</option></select>
       </div>
     </div>
     <div class="lab-section">
-      <h3>Расчёт (симуляция)</h3>
-      <div class="lab-stat-grid">
-        <div class="lab-stat">
-          <div class="lab-stat-label">Target</div>
-          <div class="lab-stat-val" id="diff-target">0.60</div>
-        </div>
-        <div class="lab-stat">
-          <div class="lab-stat-label">Actual</div>
-          <div class="lab-stat-val" id="diff-actual" style="color:var(--muted)">—</div>
-        </div>
-        <div class="lab-stat">
-          <div class="lab-stat-label">Δ</div>
-          <div class="lab-stat-val" id="diff-delta" style="color:var(--muted)">—</div>
-        </div>
+      <h3>Сводка</h3>
+      <div class="lab-stat-grid" id="diff-stats">
+        <div class="lab-stat"><div class="lab-stat-label">Сложность</div><div class="lab-stat-val" id="diff-total">—</div><div class="lab-stat-sub">0…1 (analyzeLevel)</div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Темп pace</div><div class="lab-stat-val" id="diff-pace">—</div><div class="lab-stat-sub" id="diff-pace-sub">—</div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Балл econ</div><div class="lab-stat-val" id="diff-econ-score">—</div><div class="lab-stat-sub">levelDifficulty · 0…<span id="diff-cap">1.2</span></div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Звёзды</div><div class="lab-stat-val" id="diff-stars" style="font-size:18px">—</div><div class="lab-stat-sub">1★ / 2★ / 3★</div></div>
       </div>
     </div>
     <div class="lab-section">
-      <h3>Факторы сложности</h3>
-      <div class="lab-bar-row">
-        <span class="lab-bar-label">Трафик</span>
-        <div class="lab-bar-track"><div class="lab-bar-fill" style="width:0%"></div></div>
-        <span class="lab-bar-val">—</span>
-      </div>
-      <div class="lab-bar-row">
-        <span class="lab-bar-label">Помощь ВПП</span>
-        <div class="lab-bar-track"><div class="lab-bar-fill" style="width:0%"></div></div>
-        <span class="lab-bar-val">—</span>
-      </div>
-      <div class="lab-bar-row">
-        <span class="lab-bar-label">Экономика</span>
-        <div class="lab-bar-track"><div class="lab-bar-fill" style="width:0%"></div></div>
-        <span class="lab-bar-val">—</span>
-      </div>
-      <div class="lab-bar-row">
-        <span class="lab-bar-label">Сложность маршрутов</span>
-        <div class="lab-bar-track"><div class="lab-bar-fill" style="width:0%"></div></div>
-        <span class="lab-bar-val">—</span>
-      </div>
+      <h3>Факторы сложности <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">· вклад в итог (вес × балл)</span></h3>
+      <div id="diff-factors"><span class="lab-empty">Ждём запуска игры…</span></div>
     </div>
     <div class="lab-section">
-      <div class="lab-btn-row">
-        <button class="p-btn" disabled>▶ Simulate</button>
-      </div>
-      <p class="lab-hint">🚧 Difficulty Lab в разработке — формула сложности будет подключена когда накопится достаточно игровых данных.</p>
+      <h3>Экономика <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">· выводится из сложности (levelEconomy)</span></h3>
+      <div id="diff-econ"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+    <div class="lab-section">
+      <h3>Предупреждения</h3>
+      <div id="diff-warnings"><span class="lab-empty">Ждём запуска игры…</span></div>
     </div>
   </div>
 
@@ -1328,7 +1296,7 @@
     setTimeout(pollMT, 150);
   }
 
-  gameFrame.addEventListener('load', () => setTimeout(pollMT, 80));
+  gameFrame.addEventListener('load', () => { setTimeout(pollMT, 80); setTimeout(pollGame, 80); });
 
   function buildUI() {
     groupsEl.innerHTML = '';
@@ -1541,6 +1509,153 @@
   }
 
   function setStatus(msg) { statusBar.textContent = msg; }
+
+  /* ── Level & Difficulty labs ──────────────────────────────────────────────
+     Read-only inspector over the REAL campaign data. The game iframe is loaded
+     with ?test=1, which exposes window.__GAME (LEVELS + the pure config helpers
+     and analyzeLevel from src/game/14-level-analysis.ts). We never edit levels
+     here — that's the in-game editor's job — we visualize the actual difficulty
+     curve documented in docs/design/game-design/difficulty_curve.md. */
+  let GAME = null;          // window.__GAME once the iframe is ready
+  let labSel = 0;           // selected campaign level index, shared by both labs
+
+  const LAB_EVENT_LBL = { vip:'VIP', emergency:'Mayday', rush:'Час пик', medical:'Медэвак', fog:'Туман', wind:'Ветер' };
+  const LAB_FACTOR_LBL = {
+    traffic:'Трафик (темп)', capacity:'Загрузка боксов', events:'Спецборты',
+    timePressure:'Время / race', economy:'Экономика', geometry:'Геометрия поля',
+  };
+
+  function labGame() {
+    try { const fw = gameFrame.contentWindow; return fw && fw.__GAME ? fw.__GAME : null; } catch (_) { return null; }
+  }
+  function labLevelName(i) { try { return GAME.levelName(i); } catch (_) { return 'Уровень ' + (i + 1); } }
+  function labRunways(lv)  { return lv.layout && lv.layout.runways ? lv.layout.runways.length : (lv.runways || 1); }
+  function labEvents(lv)   { const ev = lv.events || {}; return Object.keys(LAB_EVENT_LBL).filter(k => ev[k]).map(k => LAB_EVENT_LBL[k]); }
+  function labFmt(n, d)    { return Number(n).toFixed(d == null ? 2 : d); }
+
+  function pollGame() {
+    const g = labGame();
+    if (g && Array.isArray(g.LEVELS) && g.LEVELS.length && typeof g.analyzeLevel === 'function') {
+      GAME = g; buildLabs(); return;
+    }
+    setTimeout(pollGame, 150);
+  }
+
+  function buildLabs() {
+    if (!GAME) return;
+    buildLevelTable();
+    buildPaceChart();
+    buildDiffSelect();
+    labSelect(Math.min(labSel, GAME.LEVELS.length - 1));
+  }
+
+  function buildLevelTable() {
+    const wrap = document.getElementById('level-table-wrap');
+    let h = '<table class="lab-table"><thead><tr>' +
+      '<th>#</th><th>Имя</th><th>pace</th><th>инт.</th><th>одн.</th><th>звёзды</th><th>ВПП</th><th>боксы</th><th>события</th><th>сложн.</th>' +
+      '</tr></thead><tbody>';
+    GAME.LEVELS.forEach((lv, i) => {
+      const pace = GAME.levelPace(lv);
+      const rep  = GAME.analyzeLevel(lv);
+      const stars = ((lv.objective && lv.objective.stars) || []).join('/');
+      const evs   = labEvents(lv);
+      const open  = GAME.countOpenHangars(lv), tot = GAME.countTotalHangars(lv);
+      h += '<tr data-idx="' + i + '">' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td>' + escHtml(labLevelName(i)) + '</td>' +
+        '<td>' + labFmt(pace) + '</td>' +
+        '<td>' + labFmt(GAME.paceInterval(pace), 1) + 's</td>' +
+        '<td>' + GAME.paceCap(pace) + '</td>' +
+        '<td>' + (stars || '—') + '</td>' +
+        '<td>' + labRunways(lv) + '</td>' +
+        '<td>' + open + '/' + tot + '</td>' +
+        '<td>' + (evs.length ? escHtml(evs.join(' · ')) : '—') + '</td>' +
+        '<td class="diff-cell">' + Math.round(rep.total * 100) + '%</td>' +
+        '</tr>';
+    });
+    h += '</tbody></table>';
+    wrap.innerHTML = h;
+    wrap.querySelectorAll('tr[data-idx]').forEach(tr =>
+      tr.addEventListener('click', () => labSelect(+tr.dataset.idx)));
+  }
+
+  function buildPaceChart() {
+    const chart = document.getElementById('level-pace-chart');
+    const axis  = document.getElementById('level-pace-axis');
+    let bars = '', ax = '';
+    GAME.LEVELS.forEach((lv, i) => {
+      const pace = GAME.levelPace(lv);
+      const ht   = Math.round(8 + pace * 92);    // 8%..100% so pace 0 is still visible
+      bars += '<div class="pace-bar" data-idx="' + i + '" style="height:' + ht + '%" title="L' + (i + 1) + ' · pace ' + labFmt(pace) + '"></div>';
+      ax   += '<span>' + (i + 1) + '</span>';
+    });
+    chart.innerHTML = bars; axis.innerHTML = ax;
+    chart.querySelectorAll('.pace-bar').forEach(b =>
+      b.addEventListener('click', () => labSelect(+b.dataset.idx)));
+  }
+
+  function buildDiffSelect() {
+    const sel = document.getElementById('diff-level-sel');
+    sel.innerHTML = GAME.LEVELS.map((lv, i) =>
+      '<option value="' + i + '">L' + (i + 1) + ' · ' + escHtml(labLevelName(i)) + '</option>').join('');
+    sel.onchange = () => labSelect(+sel.value);
+    const cap = document.getElementById('diff-cap');
+    if (cap && GAME.K) cap.textContent = labFmt(GAME.K.ECON_DIFF_CAP, 1);
+  }
+
+  function labSelect(idx) {
+    if (!GAME) return;
+    labSel = Math.max(0, Math.min(GAME.LEVELS.length - 1, idx | 0));
+    document.querySelectorAll('#level-table-wrap tr[data-idx]').forEach(tr =>
+      tr.classList.toggle('sel', +tr.dataset.idx === labSel));
+    document.querySelectorAll('#level-pace-chart .pace-bar').forEach(b =>
+      b.classList.toggle('sel', +b.dataset.idx === labSel));
+    const sel = document.getElementById('diff-level-sel');
+    if (sel && +sel.value !== labSel) sel.value = String(labSel);
+    renderDiff(labSel);
+  }
+
+  function labEconRow(k, v) {
+    return '<tr><td style="color:var(--muted)">' + escHtml(k) +
+      '</td><td style="text-align:right;font-weight:600;color:var(--text)">' + escHtml(String(v)) + '</td></tr>';
+  }
+
+  function renderDiff(idx) {
+    const lv  = GAME.LEVELS[idx];
+    const rep = GAME.analyzeLevel(lv);
+    const pace = rep.pace;
+
+    document.getElementById('diff-total').textContent      = labFmt(rep.total);
+    document.getElementById('diff-pace').textContent       = labFmt(pace);
+    document.getElementById('diff-pace-sub').textContent   = labFmt(GAME.paceInterval(pace), 1) + 's · ' + GAME.paceCap(pace) + ' бортов';
+    document.getElementById('diff-econ-score').textContent = labFmt(rep.difficulty);
+    document.getElementById('diff-stars').textContent      = ((lv.objective && lv.objective.stars) || []).join(' / ') || '—';
+
+    document.getElementById('diff-factors').innerHTML = rep.components.map(c => {
+      const lbl = LAB_FACTOR_LBL[c.label] || c.label;
+      const pct = Math.round(c.score * 100);
+      return '<div class="lab-bar-row">' +
+        '<span class="lab-bar-label">' + escHtml(lbl) + ' <small style="color:var(--muted)">×' + labFmt(c.weight) + '</small></span>' +
+        '<div class="lab-bar-track"><div class="lab-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<span class="lab-bar-val">+' + labFmt(c.contrib) + '</span>' +
+        '</div>';
+    }).join('');
+
+    const ec = rep.economy;
+    document.getElementById('diff-econ').innerHTML =
+      '<table class="f-table">' +
+      labEconRow('Стартовые деньги', ec.startMoney) +
+      labEconRow('Оплата за услугу', ec.svcReward) +
+      labEconRow('Поток за смену',   ec.flow) +
+      labEconRow('Цена набора',      Math.round(ec.kitCost)) +
+      labEconRow('Щедрость',         '×' + labFmt(ec.generosity)) +
+      labEconRow('Скилл-добор',      '×' + labFmt(ec.skillMult)) +
+      '</table>';
+
+    document.getElementById('diff-warnings').innerHTML = rep.warnings.length
+      ? rep.warnings.map(w => '<div style="font-size:11px;color:#e3c522;padding:2px 0">⚠ ' + escHtml(w) + '</div>').join('')
+      : '<span class="lab-empty">✓ Нет замечаний</span>';
+  }
 
   /* ── Tab switching ────────────────────────────────────────────────────── */
   (function () {
