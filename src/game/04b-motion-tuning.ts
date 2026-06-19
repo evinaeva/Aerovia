@@ -4,13 +4,45 @@
 
   type MtParam = {
     key: string; group: string; label: string;
-    target: 'K' | 'FOR'; name: string; def: number | boolean | number[];
-    min?: number; max?: number; step?: number;
+    target: 'K' | 'FOR' | 'META'; name: string; def: number | boolean | number[] | string;
+    min?: number; max?: number; step?: number; unit?: string;
+    category?: string; description?: string; valueType?: 'number' | 'boolean' | 'string' | 'number[]';
+    affectsGameplay?: boolean; visualsOnly?: boolean; liveSafe?: boolean; requiresReplay?: boolean; export?: boolean; debugOnly?: boolean;
     note: string; impact: string;
   };
 
   const MT_STORE_KEY   = 'pf_motion_tuning_v1';
   const MT_PRESETS_KEY = 'pf_motion_presets_v1';
+
+  const MT_META_VALUES: Record<string, any> = {};
+
+  const MT_CATEGORY_LABELS: Record<string, string> = {
+    input_touch:'Input & Touch', route_drawing:'Route Drawing', route_smoothing:'Route Smoothing', snap_zones:'Snap Zones',
+    runway_geometry:'Runway Geometry', landing:'Landing', rollout_stop:'Runway Rollout & Stop', takeoff:'Takeoff',
+    taxi_movement:'Taxi Movement', service_bay_geometry:'Service Bay Geometry', service_bay_entry:'Service Bay Entry',
+    service_bay_service:'Service Bay Service', service_bay_exit:'Service Bay Exit', aircraft_state:'Aircraft State',
+    aircraft_scale:'Aircraft Scale', rotation_alignment:'Rotation & Alignment', speed_accel:'Speed & Acceleration',
+    timing_delays:'Timing & Delays', visual_feedback:'Visual Feedback', sound_haptics:'Sound & Haptics',
+    debug_overlays:'Debug Overlays', presets_persistence:'Presets & Persistence', mobile_preview:'Mobile Preview',
+  };
+
+  const MT_GROUP_CATEGORY: Record<string, string> = {
+    movement:'Speed & Acceleration', turns:'Rotation & Alignment', routing:'Route Drawing',
+    takeoff:'Takeoff', approach:'Landing', landing:'Landing', timing:'Timing & Delays', service:'Service Bay Service',
+    spawn:'Timing & Delays', collisions:'Taxi Movement', effects:'Visual Feedback', bay_nav:'Service Bay Entry',
+    events:'Timing & Delays', weather:'Speed & Acceleration', forest:'Mobile Preview', ctrl:'Mobile Preview',
+  };
+
+  const MT_PLANNED_PARAMS: MtParam[] = [
+    {key:'MT.ROUTE_SNAP_ENABLED', group:'snap_zones', category:'Snap Zones', label:'Snap enabled', target:'META', name:'ROUTE_SNAP_ENABLED', def:false, note:'Planned route endpoint snapping switch; no gameplay wiring in this safe patch.', impact:'Placeholder for future route-to-object snap validation.', affectsGameplay:true, liveSafe:false, requiresReplay:true, export:true},
+    {key:'MT.SNAP_RADIUS', group:'snap_zones', category:'Snap Zones', label:'Snap radius', target:'META', name:'SNAP_RADIUS', def:40, min:0, max:180, step:1, unit:'px', note:'Planned radius for runway/bay snap zones; no gameplay wiring in this safe patch.', impact:'Defines future endpoint capture distance.', affectsGameplay:true, liveSafe:false, requiresReplay:true, export:true},
+    {key:'MT.RUNWAY_HIT_PADDING', group:'runway_geometry', category:'Runway Geometry', label:'Runway hit area padding', target:'META', name:'RUNWAY_HIT_PADDING', def:16, min:0, max:120, step:1, unit:'px', note:'Planned runway touch/hit expansion.', impact:'Will make runway targeting more forgiving once wired.', affectsGameplay:true, liveSafe:false, requiresReplay:true, export:true},
+    {key:'MT.BAY_HIT_PADDING', group:'service_bay_geometry', category:'Service Bay Geometry', label:'Bay hit area padding', target:'META', name:'BAY_HIT_PADDING', def:12, min:0, max:120, step:1, unit:'px', note:'Planned service bay touch/hit expansion.', impact:'Will make bay targeting more forgiving once wired.', affectsGameplay:true, liveSafe:false, requiresReplay:true, export:true},
+    {key:'MT.DEBUG_RUNWAY_SNAP_ZONES', group:'debug_overlays', category:'Debug Overlays', label:'Show runway snap zones', target:'META', name:'DEBUG_RUNWAY_SNAP_ZONES', def:false, note:'Safe no-op overlay toggle until overlay rendering is added.', impact:'No gameplay effect in this patch.', visualsOnly:true, liveSafe:true, export:true, debugOnly:true},
+    {key:'MT.DEBUG_BAY_SNAP_ZONES', group:'debug_overlays', category:'Debug Overlays', label:'Show bay snap zones', target:'META', name:'DEBUG_BAY_SNAP_ZONES', def:false, note:'Safe no-op overlay toggle until overlay rendering is added.', impact:'No gameplay effect in this patch.', visualsOnly:true, liveSafe:true, export:true, debugOnly:true},
+    {key:'MT.DEBUG_RAW_ROUTE_POINTS', group:'debug_overlays', category:'Debug Overlays', label:'Show raw route points', target:'META', name:'DEBUG_RAW_ROUTE_POINTS', def:false, note:'Safe no-op overlay toggle until route point overlay rendering is added.', impact:'No gameplay effect in this patch.', visualsOnly:true, liveSafe:true, export:true, debugOnly:true},
+    {key:'MT.SCENARIO', group:'mobile_preview', category:'Mobile Preview', label:'Preview scenario', target:'META', name:'SCENARIO', def:'complete_cycle', note:'Planned scenario selector: landing, takeoff, taxi, service cycle.', impact:'Stored/exported for workbench state; replay wiring remains future work.', liveSafe:false, requiresReplay:true, export:true},
+  ];
 
   const MT_PARAMS: MtParam[] = [
     // ── движение ──────────────────────────────────────────────────────────────
@@ -87,24 +119,39 @@
     {key:'K.DISABLE_BAY',       group:'ctrl', label:'Отключить боксы',        target:'K', name:'DISABLE_BAY',       def:true, note:'Пропускает все услуги в боксах — сразу к вылету.',   impact:'Чистый тест руления и взлёта без обслуживания.'},
   ];
 
+  MT_PARAMS.forEach(p => {
+    p.category = p.category || MT_GROUP_CATEGORY[p.group] || p.group;
+    p.description = p.description || p.note;
+    p.valueType = p.valueType || (Array.isArray(p.def) ? 'number[]' : typeof p.def === 'boolean' ? 'boolean' : typeof p.def === 'string' ? 'string' : 'number');
+    p.affectsGameplay = p.affectsGameplay ?? !p.visualsOnly;
+    p.visualsOnly = p.visualsOnly ?? ['K.PLANE_SKY_SCALE','K.PLANE_GND_SCALE','K.LAND_BUMP_MS','K.LAND_BUMP_AMP','K.NEAR_DIST','K.NEAR_COOL','K.SLOWMO_DUR','K.SLOWMO_SCALE'].includes(p.key);
+    p.liveSafe = p.liveSafe ?? true;
+    p.requiresReplay = p.requiresReplay ?? false;
+    p.export = p.export ?? true;
+    p.debugOnly = p.debugOnly ?? false;
+  });
+  MT_PLANNED_PARAMS.forEach(p => { MT_META_VALUES[p.name] = p.def; MT_PARAMS.push(p); });
+
   const MT_GROUPS: Record<string, string> = {
-    movement:'Движение', turns:'Повороты', routing:'Маршрутизация',
-    takeoff:'Взлёт',     approach:'Заход на посадку', landing:'Посадка',
-    timing:'Тайминги',   service:'Обслуживание',
-    spawn:'Поток',       collisions:'Столкновения', effects:'Эффекты',
-    bay_nav:'Бокс: заезд/выезд',
-    events:'События',    weather:'Погода',  forest:'Лесной биом',
-    ctrl:'⚙ Контроль событий',
+    input_touch:'Input & Touch', route_drawing:'Route Drawing', route_smoothing:'Route Smoothing', snap_zones:'Snap Zones', runway_geometry:'Runway Geometry',
+    movement:'Speed & Acceleration', turns:'Rotation & Alignment', routing:'Route Drawing',
+    takeoff:'Takeoff', approach:'Landing', landing:'Landing', rollout_stop:'Runway Rollout & Stop',
+    timing:'Timing & Delays', service:'Service Bay Service', spawn:'Timing & Delays', collisions:'Taxi Movement', effects:'Visual Feedback',
+    bay_nav:'Service Bay Entry', service_bay_geometry:'Service Bay Geometry', service_bay_exit:'Service Bay Exit', aircraft_state:'Aircraft State', aircraft_scale:'Aircraft Scale',
+    events:'Timing & Delays', weather:'Speed & Acceleration', sound_haptics:'Sound & Haptics', debug_overlays:'Debug Overlays', presets_persistence:'Presets & Persistence',
+    forest:'Mobile Preview', ctrl:'Mobile Preview', mobile_preview:'Mobile Preview',
   };
 
-  function mtTarget(p: MtParam): any { return p.target === 'FOR' ? FOR as any : K as any; }
+  function mtTarget(p: MtParam): any { return p.target === 'META' ? MT_META_VALUES : p.target === 'FOR' ? FOR as any : K as any; }
   function mtGet(p: MtParam): any    { return mtTarget(p)[p.name]; }
 
   function mtSet(key: string, value: any): boolean {
     const p = MT_PARAMS.find(x => x.key === key);
     if (!p) return false;
     const t = mtTarget(p);
-    if (Array.isArray(p.def)) {
+    if (typeof p.def === 'string') {
+      t[p.name] = String(value);
+    } else if (Array.isArray(p.def)) {
       t[p.name] = String(value).split(',').map((x: string) => +x.trim()).filter((x: number) => Number.isFinite(x));
     } else if (typeof p.def === 'boolean') {
       t[p.name] = !!value;
@@ -155,7 +202,7 @@
   }
 
   function mtExport(): string {
-    return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), values: mtSnapshot() }, null, 2);
+    return JSON.stringify({ schemaVersion: 2, version: 1, exportedAt: new Date().toISOString(), values: mtSnapshot() }, null, 2);
   }
 
   function mtImportText(text: string): void {
@@ -173,13 +220,19 @@
   function mtBuildHTML(ps: Record<string, any>): string {
     const presetOpts = Object.keys(ps).map(n => '<option>' + n + '</option>').join('');
     const groups = Object.keys(MT_GROUPS).map(g => {
-      const rows = MT_PARAMS.filter(p => p.group === g).map(p =>
-        '<label class="mt-row">' +
-          '<span><b>' + p.label + '</b><em>' + p.key + ' · ' + p.impact + '</em></span>' +
+      const rows = MT_PARAMS.filter(p => p.group === g).map(p => {
+        const meta = '<span><b>' + p.label + '</b><em>' + p.key + ' · ' + p.impact + '</em></span>';
+        if (typeof p.def === 'boolean') {
+          return '<label class="mt-row mt-bool">' + meta + '<input type="checkbox" data-mt="' + p.key + '" ' + (mtGet(p) ? 'checked' : '') + '></label>';
+        }
+        if (typeof p.def === 'string') {
+          return '<label class="mt-row">' + meta + '<input class="mt-num" data-mt="' + p.key + '" type="text" value="' + mtGet(p) + '"></label>';
+        }
+        return '<label class="mt-row">' + meta +
           '<input type="range" data-mt="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + mtGet(p) + '">' +
           '<input class="mt-num" data-mt="' + p.key + '" type="number" step="' + p.step + '" value="' + mtGet(p) + '">' +
-        '</label>'
-      ).join('');
+        '</label>';
+      }).join('');
       return '<details open><summary>' + MT_GROUPS[g] + '</summary>' + rows + '</details>';
     }).join('');
     return (
@@ -235,7 +288,7 @@
     });
 
     root.querySelectorAll('[data-mt]').forEach((el: any) => el.addEventListener('input', (e: any) => {
-      mtSet(e.target.dataset.mt, e.target.value);
+      mtSet(e.target.dataset.mt, e.target.type === 'checkbox' ? e.target.checked : e.target.value);
       try { localStorage.setItem(MT_STORE_KEY, JSON.stringify(mtSnapshot())); } catch (_) {}
       // синхронизировать slider ↔ number для того же параметра
       root.querySelectorAll('[data-mt="' + e.target.dataset.mt + '"]').forEach((x: any) => {
