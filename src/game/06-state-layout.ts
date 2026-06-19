@@ -1,7 +1,7 @@
 // ===== 06-state-layout — all mutable game state, the save shape, canvas/field metrics & bay/runway layout =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: save, planes, bays, runways, money, lives, served, gameTime, field, W/H/SZ, VERSION, layout, resize, debug, currentMode, addFloat, … (the shared state).
-// Reads: 01 (cv, ctx); 04 (LV, curBiome, curBonus, levelName, bonusName); 03 (t, lang).
+// Provides: save, planes, bays, runways, money, lives, served, gameTime, field, W/H/SZ, VERSION, layout, resize, debug, currentMode, addFloat, calcSafetyRects, … (the shared state).
+// Reads: 01 (cv, ctx); 04 (LV, curBiome, curBonus, levelName, bonusName); 03 (t, lang); 04b (MT_META_VALUES — for safe-zone params).
 
   let levelIdx = 0, levelKey: number | string = 0, levelPassed = false, upgradesDone = 0;
   // levelKey — ключ сохранения текущей карты: число для кампании (совместимо со
@@ -239,6 +239,132 @@
       const sw=Math.min(88*ui, (field.x1-field.x0)*0.32), sh=28*ui;
       field.service={ x:(field.x0+field.x1)/2 - sw/2, y:fy0+2*ui, w:sw, h:sh };
     } else field.service=null;
+  }
+
+  // ---- safety rects ----
+  interface SafetyRects {
+    viewportRect: Rect;
+    safeAreaInsets: { t: number; r: number; b: number; l: number };
+    cutoutRect: Rect;
+    gestureInsets: { t: number; r: number; b: number; l: number };
+    uiReservedRects: Array<Rect & { label: string }>;
+    decorativeOnlyRects: Array<Rect & { label: string }>;
+    contentSafeRect: Rect;
+    interactiveSafeRect: Rect;
+    routeStartAllowedRect: Rect;
+    routeDrawAllowedRect: Rect;
+    routeTargetAllowedRect: Rect;
+    cssReadSafe: { t: number; r: number; b: number; l: number };
+  }
+
+  // Computes all safety/gesture/cutout rects from current viewport and MT_META_VALUES.
+  // Does NOT change any gameplay — read-only view of what zones exist.
+  // Called by __FIELD.safetyRects in 13-init.js for Workbench overlay.
+  function calcSafetyRects(): SafetyRects {
+    function n(key: string, def: number): number {
+      const v = MT_META_VALUES[key]; return typeof v === 'number' ? v : def;
+    }
+    function s(key: string, def: string): string {
+      const v = MT_META_VALUES[key]; return typeof v === 'string' ? v : def;
+    }
+
+    // Manual safe-area insets; 0 means fall back to CSS env()-probe value
+    const saT = n('SA_INSET_TOP',    0) || safe.t;
+    const saR = n('SA_INSET_RIGHT',  0) || safe.r;
+    const saB = n('SA_INSET_BOTTOM', 0) || safe.b;
+    const saL = n('SA_INSET_LEFT',   0) || safe.l;
+
+    // Camera / notch cutout
+    const cutSide   = s('SA_CUTOUT_SIDE', 'none');
+    const cutW      = n('SA_CUTOUT_W', 28);
+    const cutH      = n('SA_CUTOUT_H', 90);
+    const cutOffset = n('SA_CUTOUT_OFFSET', 0);
+
+    let cutoutRect: Rect = { x: 0, y: 0, w: 0, h: 0 };
+    if (cutSide === 'left')  cutoutRect = { x: 0,       y: cutOffset, w: cutW, h: cutH };
+    if (cutSide === 'right') cutoutRect = { x: W - cutW, y: cutOffset, w: cutW, h: cutH };
+    if (cutSide === 'top')   cutoutRect = { x: cutOffset, y: 0,       w: cutH, h: cutW };
+
+    // Cutout inflates the corresponding safe inset
+    const effSaL = cutSide === 'left'  ? Math.max(saL, cutW) : saL;
+    const effSaR = cutSide === 'right' ? Math.max(saR, cutW) : saR;
+    const effSaT = cutSide === 'top'   ? Math.max(saT, cutW) : saT;
+
+    // Android gesture exclusion zones
+    const gestL = n('SA_GESTURE_LEFT',   24);
+    const gestR = n('SA_GESTURE_RIGHT',  24);
+    const gestT = n('SA_GESTURE_TOP',    0);
+    const gestB = n('SA_GESTURE_BOTTOM', 24);
+
+    // Per-zone padding addons
+    const routeStartPad  = n('SA_ROUTE_START_PAD',  32);
+    const routeDrawPad   = n('SA_ROUTE_DRAW_PAD',   0);
+    const routeTargetPad = n('SA_ROUTE_TARGET_PAD', 16);
+    const contentPad     = n('SA_CONTENT_PAD',      0);
+    const interactivePad = n('SA_INTERACTIVE_PAD',  0);
+
+    const viewportRect: Rect = { x: 0, y: 0, w: W, h: H };
+
+    // contentSafeRect: viewport minus effective safe-area insets
+    const contentSafeRect: Rect = {
+      x: effSaL + contentPad, y: effSaT + contentPad,
+      w: W - effSaL - effSaR - 2 * contentPad,
+      h: H - effSaT - saB    - 2 * contentPad,
+    };
+
+    // interactiveSafeRect: safe-area AND gesture exclusion
+    const iL = Math.max(effSaL, gestL) + interactivePad;
+    const iR = Math.max(effSaR, gestR) + interactivePad;
+    const iT = Math.max(effSaT, gestT) + interactivePad;
+    const iB = Math.max(saB,   gestB)  + interactivePad;
+    const interactiveSafeRect: Rect = { x: iL, y: iT, w: W - iL - iR, h: H - iT - iB };
+
+    // routeStartAllowedRect (strictest — player must not begin drag near edges)
+    const rsL = Math.max(effSaL, gestL) + routeStartPad;
+    const rsR = Math.max(effSaR, gestR) + routeStartPad;
+    const rsT = Math.max(effSaT, gestT) + routeStartPad;
+    const rsB = Math.max(saB,   gestB)  + routeStartPad;
+    const routeStartAllowedRect: Rect = { x: rsL, y: rsT, w: W - rsL - rsR, h: H - rsT - rsB };
+
+    // routeDrawAllowedRect (looser — continuing drag can approach closer to edge)
+    const rdL = Math.max(effSaL, gestL) + routeDrawPad;
+    const rdR = Math.max(effSaR, gestR) + routeDrawPad;
+    const rdT = Math.max(effSaT, gestT) + routeDrawPad;
+    const rdB = Math.max(saB,   gestB)  + routeDrawPad;
+    const routeDrawAllowedRect: Rect = { x: rdL, y: rdT, w: W - rdL - rdR, h: H - rdT - rdB };
+
+    // routeTargetAllowedRect (snap points — runways, bays)
+    const rtL = Math.max(effSaL, gestL) + routeTargetPad;
+    const rtR = Math.max(effSaR, gestR) + routeTargetPad;
+    const rtT = Math.max(effSaT, gestT) + routeTargetPad;
+    const rtB = Math.max(saB,   gestB)  + routeTargetPad;
+    const routeTargetAllowedRect: Rect = { x: rtL, y: rtT, w: W - rtL - rtR, h: H - rtT - rtB };
+
+    const uiReservedRects: Array<Rect & { label: string }> = [
+      { label: 'HUD',       x: 0, y: 0, w: W, h: HUD_H() + Math.max(effSaT, gestT) },
+      { label: 'PauseBtn',  x: pauseBtn.x, y: pauseBtn.y, w: pauseBtn.w, h: pauseBtn.h },
+    ];
+
+    const decorativeOnlyRects: Array<Rect & { label: string }> = [];
+    if (effSaL > 0) decorativeOnlyRects.push({ label: 'safe-left',   x: 0,          y: 0,          w: effSaL, h: H      });
+    if (effSaR > 0) decorativeOnlyRects.push({ label: 'safe-right',  x: W - effSaR, y: 0,          w: effSaR, h: H      });
+    if (effSaT > 0) decorativeOnlyRects.push({ label: 'safe-top',    x: 0,          y: 0,          w: W,      h: effSaT });
+    if (saB    > 0) decorativeOnlyRects.push({ label: 'safe-bottom', x: 0,          y: H - saB,    w: W,      h: saB    });
+
+    return {
+      viewportRect,
+      safeAreaInsets:  { t: effSaT, r: effSaR, b: saB,  l: effSaL },
+      cutoutRect,
+      gestureInsets:   { t: gestT,  r: gestR,  b: gestB, l: gestL  },
+      uiReservedRects,
+      decorativeOnlyRects,
+      contentSafeRect,
+      interactiveSafeRect,
+      routeStartAllowedRect,
+      routeDrawAllowedRect,
+      routeTargetAllowedRect,
+      cssReadSafe: { t: safe.t, r: safe.r, b: safe.b, l: safe.l },
+    };
   }
 
   // ---- game state ----
