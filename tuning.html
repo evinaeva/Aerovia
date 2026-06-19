@@ -21,7 +21,14 @@
     }
 
     html, body {
-      height: 100%; overflow: hidden;
+      /* Dynamic viewport height: on iOS, height:100% / 100vh resolve against the
+         *layout* viewport (taller than the visible area when Safari's bars show),
+         which made the body exceed the screen so #groups never became a bounded
+         scroll box and content was cut off instead of scrolling. dvh tracks the
+         actually-visible height. */
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
       background: var(--bg);
       color: var(--text);
       font: 13px/1.45 system-ui, 'Segoe UI', sans-serif;
@@ -408,7 +415,8 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
       gap: 6px;
-      align-content: start;
+      align-content: start;   /* pack rows at top → overflow scrolls, not stretches */
+      align-items: start;     /* cards keep natural height (never squished to a track) */
     }
 
     #groups details {
@@ -495,10 +503,12 @@
 
     .mt-row.mt-string { grid-template-columns: minmax(80px, 140px) 1fr; gap: 6px; }
     .mt-row.mt-string .mt-text {
+      width: 100%;
       border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
       background: var(--input-bg); color: #fff;
       padding: 3px 6px; font-size: 11px; font-family: inherit;
     }
+    .mt-row.mt-string select.mt-text { cursor: pointer; height: 28px; }
 
     .mt-toggle {
       position: relative;
@@ -594,6 +604,41 @@
     }
     .lab-coming .big { font-size: 36px; }
     .lab-coming strong { font-size: 14px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px; }
+
+    /* ── Level / Difficulty lab (data-driven) ───────────────────────────── */
+    .lab-empty { color: var(--muted); font-size: 11px; }
+    .lab-section h3 .h3-sub { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+    .ed-bay-row { display: grid; grid-template-columns: 1fr 64px 64px; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--row-sep); }
+    .ed-bay-row:first-child { border-top: none; }
+    .ed-bay-row .ed-bay-lbl { font-size: 12px; color: var(--text); }
+    .mt-stepper:has(input:disabled) .mt-step { opacity: .35; pointer-events: none; }
+    .mt-stepper input:disabled { opacity: .5; }
+    .ed-bay-row input { width: 100%; border: 1px solid rgba(127,155,176,.22); border-radius: 6px; background: var(--input-bg); color: #fff; padding: 3px 5px; font-size: 11px; text-align: center; font-family: inherit; }
+    .lab-select {
+      width: 100%; border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
+      background: var(--input-bg); color: #fff; padding: 5px 7px; font-size: 12px; font-family: inherit;
+    }
+    .lab-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .lab-table th, .lab-table td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--row-sep); white-space: nowrap; }
+    .lab-table th { color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .lab-table th:nth-child(2), .lab-table td:nth-child(2) { text-align: left; }
+    .lab-table tbody tr { cursor: pointer; transition: background .12s; }
+    .lab-table tbody tr:hover { background: rgba(58,210,255,.07); }
+    .lab-table tbody tr.sel { background: rgba(34,227,198,.13); }
+    .lab-table tbody tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+    .lab-table .cell-cons { color: var(--accent2); font-weight: 700; }
+    .lab-table .diff-cell { font-weight: 700; }
+    /* pace profile sparkline */
+    .pace-chart { display: flex; align-items: flex-end; gap: 3px; height: 70px; padding-top: 4px; }
+    .pace-bar {
+      flex: 1; min-width: 0; background: linear-gradient(180deg, var(--accent2), var(--accent));
+      border-radius: 2px 2px 0 0; opacity: .8; cursor: pointer; transition: opacity .12s, outline .12s;
+      position: relative;
+    }
+    .pace-bar:hover { opacity: 1; }
+    .pace-bar.sel { opacity: 1; outline: 1px solid var(--accent); }
+    .pace-axis { display: flex; gap: 3px; margin-top: 3px; }
+    .pace-axis span { flex: 1; min-width: 0; text-align: center; font-size: 8px; color: var(--muted); }
 
     /* ── Status bar ─────────────────────────────────────────────────────── */
     #status-bar {
@@ -843,7 +888,7 @@
   <div id="phone-col">
     <div id="phone-wrapper">
       <div id="phone-shell">
-        <iframe id="game-frame" src="index.html" title="Game" allow="autoplay"></iframe>
+        <iframe id="game-frame" src="index.html?test=1" title="Game" allow="autoplay"></iframe>
         <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
              style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
       </div>
@@ -879,10 +924,10 @@
         <button class="t-tab" data-tab="safe">
           <span class="tab-icon">📐</span><span>Зоны экрана</span>
         </button>
-        <button class="t-tab stub" data-tab="level">
+        <button class="t-tab" data-tab="level">
           <span class="tab-icon">🗺</span><span>Уровни</span>
         </button>
-        <button class="t-tab stub" data-tab="difficulty">
+        <button class="t-tab" data-tab="difficulty">
           <span class="tab-icon">📊</span><span>Сложность</span>
         </button>
         <button class="t-tab stub" data-tab="assets">
@@ -948,114 +993,118 @@
   <!-- Tab 3: Level Lab ──────────────────────────────────────────────────── -->
   <div id="level-view" class="lab-view">
     <div class="lab-section">
-      <h3>Параметры уровня</h3>
+      <h3>Кривая кампании <span class="h3-sub">· клик по строке — выбрать уровень</span></h3>
+      <p class="lab-hint" style="margin-top:0">
+        Реальные уровни из <code>LEVELS</code>. Главная ось сложности — <b>темп</b> (pace): частота прилёта
+        + одновременность бортов; по кампании он не убывает. Правки идут по рабочей копии и не трогают кампанию в превью.
+      </p>
+      <div id="level-table-wrap"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+
+    <div class="lab-section" id="level-edit-sec">
+      <h3>Правка уровня <span class="h3-sub" id="ed-name">—</span></h3>
       <div class="lab-row">
-        <span class="lbl-main">Сложность <span class="lbl-sub">target difficulty · 0 = легко, 1 = невозможно</span></span>
+        <span class="lbl-main">Темп <small>pace 0…1</small></span>
         <div class="mt-stepper">
           <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
-          <input class="lab-num" type="number" inputmode="decimal" min="0" max="1" step="0.01" value="0.45">
+          <input class="lab-num" id="ed-pace" type="number" inputmode="decimal" min="0" max="1" step="0.01" value="0">
           <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
         </div>
       </div>
       <div class="lab-row">
-        <span class="lbl-main">ВПП <span class="lbl-sub">количество взлётно-посадочных полос</span></span>
+        <span class="lbl-main">ВПП <small>число полос</small></span>
         <div class="mt-stepper">
           <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
-          <input class="lab-num" type="number" inputmode="numeric" min="1" max="4" step="1" value="2">
+          <input class="lab-num" id="ed-runways" type="number" inputmode="numeric" min="1" max="5" step="1" value="3">
           <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
         </div>
       </div>
-    </div>
-    <div class="lab-section">
-      <h3>Сервисы</h3>
-      <div class="lab-chips">
-        <label class="lab-chip on" onclick="this.classList.toggle('on')"><input type="checkbox" checked> Заправка</label>
-        <label class="lab-chip on" onclick="this.classList.toggle('on')"><input type="checkbox" checked> Посадка</label>
-        <label class="lab-chip on" onclick="this.classList.toggle('on')"><input type="checkbox" checked> Ремонт</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> Карго</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> VIP-зал</label>
+      <div class="lab-row">
+        <span class="lbl-main">Старт. деньги <small>0 = дефолт</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" id="ed-money" type="number" inputmode="numeric" min="0" max="2000" step="10" value="0">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+        </div>
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">Лимит времени <small>сек, 0 = нет</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" id="ed-time" type="number" inputmode="numeric" min="0" max="3600" step="5" value="0">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию; 3★ = target)</div>
+        <div style="display:flex;gap:6px">
+          <input class="lab-num" type="number" id="ed-s1" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="ed-s2" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="ed-s3" min="1" step="1" style="flex:1;text-align:center">
+        </div>
+        <div id="ed-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div>
       </div>
     </div>
+
     <div class="lab-section">
-      <h3>События</h3>
-      <div class="lab-chips">
-        <label class="lab-chip on" onclick="this.classList.toggle('on')"><input type="checkbox" checked> VIP-борт</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> Экстренная посадка</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> Туман</label>
-        <label class="lab-chip" onclick="this.classList.toggle('on')"><input type="checkbox"> Шторм</label>
-      </div>
+      <h3>События <span class="h3-sub">· спецборты — не раньше L5</span></h3>
+      <div class="lab-chips" id="ed-events"></div>
+      <p class="lab-hint">Каждый спецборт добавляет вес в сложность (vip .5 · emergency .8 · rush 1 · medical 1).</p>
     </div>
+
+    <div class="lab-section" id="ed-bays-sec">
+      <h3>Боксы по сторонам <span class="h3-sub">· слотов / открыто на старте</span></h3>
+      <div id="ed-bays"><span class="lab-empty">—</span></div>
+    </div>
+
+    <div class="lab-section">
+      <h3>Профиль темпа <span class="h3-sub" id="ed-diff-live">сложность —</span></h3>
+      <div id="level-pace-chart" class="pace-chart"></div>
+      <div id="level-pace-axis"  class="pace-axis"></div>
+      <p class="lab-hint">Высота столбца = <code>pace</code> уровня (0…1). Кривая должна расти монотонно.</p>
+    </div>
+
     <div class="lab-section">
       <h3>Действия</h3>
       <div class="lab-btn-row">
-        <button class="p-btn" disabled>⚙ Generate</button>
-        <button class="p-btn" disabled>✓ Validate</button>
-        <button class="p-btn" disabled>▶ Playtest</button>
-        <button class="p-btn" disabled>💾 Save</button>
+        <button class="p-btn" id="lab-export">⬇ Экспорт JSON</button>
+        <button class="p-btn" id="lab-copy">📋 Копировать уровень</button>
+        <button class="p-btn" id="lab-reset">↺ Сброс правок</button>
       </div>
-      <p class="lab-hint">🚧 Level Lab в разработке — параметры кликабельны, логика генерации будет подключена позже.</p>
+      <p class="lab-hint">Экспорт скачивает правленый массив <code>LEVELS</code> как JSON — вставь значения в
+        <code>src/game/04-config-levels.ts</code>. Сама <code>tuning.html</code> в исходник не пишет.</p>
     </div>
   </div>
 
   <!-- Tab 4: Difficulty Lab ─────────────────────────────────────────────── -->
   <div id="difficulty-view" class="lab-view">
     <div class="lab-section">
-      <h3>Целевая сложность</h3>
+      <h3>Уровень</h3>
       <div class="lab-row">
-        <span class="lbl-main">Target difficulty <span class="lbl-sub">итоговый балл уровня</span></span>
-        <div class="mt-stepper">
-          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
-          <input class="lab-num" type="number" inputmode="decimal" min="0" max="1" step="0.01" value="0.60"
-                 oninput="document.getElementById('diff-target').textContent=parseFloat(this.value||0).toFixed(2)">
-          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
-        </div>
+        <span class="lbl-main">Карта кампании</span>
+        <select id="diff-level-sel" class="lab-select" style="grid-column:2 / 4"><option>Ждём запуска игры…</option></select>
       </div>
     </div>
     <div class="lab-section">
-      <h3>Расчёт (симуляция)</h3>
-      <div class="lab-stat-grid">
-        <div class="lab-stat">
-          <div class="lab-stat-label">Target</div>
-          <div class="lab-stat-val" id="diff-target">0.60</div>
-        </div>
-        <div class="lab-stat">
-          <div class="lab-stat-label">Actual</div>
-          <div class="lab-stat-val" id="diff-actual" style="color:var(--muted)">—</div>
-        </div>
-        <div class="lab-stat">
-          <div class="lab-stat-label">Δ</div>
-          <div class="lab-stat-val" id="diff-delta" style="color:var(--muted)">—</div>
-        </div>
+      <h3>Сводка</h3>
+      <div class="lab-stat-grid" id="diff-stats">
+        <div class="lab-stat"><div class="lab-stat-label">Сложность</div><div class="lab-stat-val" id="diff-total">—</div><div class="lab-stat-sub">0…1 (analyzeLevel)</div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Темп pace</div><div class="lab-stat-val" id="diff-pace">—</div><div class="lab-stat-sub" id="diff-pace-sub">—</div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Балл econ</div><div class="lab-stat-val" id="diff-econ-score">—</div><div class="lab-stat-sub">levelDifficulty · 0…<span id="diff-cap">1.2</span></div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Звёзды</div><div class="lab-stat-val" id="diff-stars" style="font-size:18px">—</div><div class="lab-stat-sub">1★ / 2★ / 3★</div></div>
       </div>
     </div>
     <div class="lab-section">
-      <h3>Факторы сложности</h3>
-      <div class="lab-bar-row">
-        <span class="lab-bar-label">Трафик</span>
-        <div class="lab-bar-track"><div class="lab-bar-fill" style="width:0%"></div></div>
-        <span class="lab-bar-val">—</span>
-      </div>
-      <div class="lab-bar-row">
-        <span class="lab-bar-label">Помощь ВПП</span>
-        <div class="lab-bar-track"><div class="lab-bar-fill" style="width:0%"></div></div>
-        <span class="lab-bar-val">—</span>
-      </div>
-      <div class="lab-bar-row">
-        <span class="lab-bar-label">Экономика</span>
-        <div class="lab-bar-track"><div class="lab-bar-fill" style="width:0%"></div></div>
-        <span class="lab-bar-val">—</span>
-      </div>
-      <div class="lab-bar-row">
-        <span class="lab-bar-label">Сложность маршрутов</span>
-        <div class="lab-bar-track"><div class="lab-bar-fill" style="width:0%"></div></div>
-        <span class="lab-bar-val">—</span>
-      </div>
+      <h3>Факторы сложности <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">· вклад в итог (вес × балл)</span></h3>
+      <div id="diff-factors"><span class="lab-empty">Ждём запуска игры…</span></div>
     </div>
     <div class="lab-section">
-      <div class="lab-btn-row">
-        <button class="p-btn" disabled>▶ Simulate</button>
-      </div>
-      <p class="lab-hint">🚧 Difficulty Lab в разработке — формула сложности будет подключена когда накопится достаточно игровых данных.</p>
+      <h3>Экономика <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">· выводится из сложности (levelEconomy)</span></h3>
+      <div id="diff-econ"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+    <div class="lab-section">
+      <h3>Предупреждения</h3>
+      <div id="diff-warnings"><span class="lab-empty">Ждём запуска игры…</span></div>
     </div>
   </div>
 
@@ -1070,8 +1119,6 @@
     </div>
   </div>
 
-  <div id="status-bar">—</div>
-
 </div>
 
 <script>
@@ -1082,7 +1129,7 @@
   const T = {
     demo:           '▶ Демо',
     demoStop:       '⏹ Стоп',
-    demoRunning:    'Демо: Forest запущен · бесконечные борта · без деайсинга.',
+    demoRunning:    'Демо: Forest запущен · бесконечные борта · без помех и деайсинга.',
     demoExit:       'Демо: вернулись в главное меню.',
     demoNotLoaded:  'Игра не загружена.',
     demoNoMenu:     'Сначала вернись в главное меню.',
@@ -1330,14 +1377,19 @@
     const topPane  = document.getElementById('top-pane');
     const splitter = document.getElementById('splitter');
 
+    // Actual visible height of the flex column (matches the body's dvh; on iOS
+    // this is the real visible area, unlike window.innerHeight which can report
+    // the taller layout viewport).
+    function viewH() { return document.body.clientHeight || window.innerHeight || 800; }
+
     // Default: 52% of viewport for top pane
-    let topH = Math.round(window.innerHeight * 0.52);
+    let topH = Math.round(viewH() * 0.52);
 
     function setTopH(h) {
       // Viewport-aware clamps: reserve at least ~28% (min 120px) for the
       // bottom pane so the divider still has travel on short landscape phones,
       // where a fixed 300px reserve would peg it and break dragging.
-      const vh        = window.innerHeight;
+      const vh        = viewH();
       const minTop    = 60;
       // ~300px floor on desktop, but only ~40% of a short landscape phone so the
       // divider keeps real travel; the bottom pane scrolls within whatever is left.
@@ -1349,8 +1401,10 @@
     }
 
     setTopH(topH);
-    // Re-clamp on rotation / viewport changes (keeps both panes on-screen).
+    // Re-clamp on rotation / viewport changes — incl. iOS showing/hiding its
+    // toolbars (visualViewport), which changes the visible height.
     window.addEventListener('resize', () => setTopH(topH));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', () => setTopH(topH));
 
     splitter.addEventListener('pointerdown', e => {
       e.preventDefault();
@@ -1422,7 +1476,7 @@
     setTimeout(pollMT, 150);
   }
 
-  gameFrame.addEventListener('load', () => setTimeout(pollMT, 80));
+  gameFrame.addEventListener('load', () => { setTimeout(pollMT, 80); setTimeout(pollGame, 80); });
 
   /* ── Sub-tabs for the Motion tab ──────────────────────────────────────────
      ~20 parameter groups in one list is unreadable, so we bucket them by domain
@@ -1435,7 +1489,7 @@
     { key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','routing'] },
     { key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones'] },
     { key:'flow',    icon:'🌊', label:'Поток',          groups:['spawn','timing'] },
-    { key:'events',  icon:'🎲', label:'События',        groups:['events','weather','forest'] },
+    { key:'events',  icon:'🎲', label:'События',        groups:['events','weather'] },
     { key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl','debug_overlays','mobile_preview'] },
     { key:'zones',   icon:'📐', label:'Зоны/жесты',     groups:['safe_areas'] },
   ];
@@ -1476,11 +1530,43 @@
     if (currentSubtab) applySubtab(currentSubtab);
   }
 
+  // Groups the tuning panel intentionally hides (kept in the game's MotionTuning
+  // for other tooling, but not surfaced here). Forest-biome knobs live here.
+  const HIDDEN_GROUPS = new Set(['forest']);
+
+  // Enum params shown as a dropdown instead of a free-text field.
+  const SELECT_OPTIONS = {
+    'MT.SCENARIO': [
+      ['complete_cycle', 'Полный цикл'],
+      ['landing',        'Посадка'],
+      ['takeoff',        'Взлёт'],
+      ['taxi',           'Руление'],
+      ['service',        'Обслуживание'],
+    ],
+    'MT.SA_CUTOUT_SIDE': [
+      ['none',  'Без выреза'],
+      ['left',  'Слева'],
+      ['right', 'Справа'],
+      ['top',   'Сверху'],
+    ],
+  };
+
+  // "Контроль событий" toggles are stored as DISABLE_* flags (on = feature off),
+  // which reads backwards. Show them as the plain feature with normal polarity:
+  // label without the "Отключить " prefix, and toggle on = feature ON.
+  function isDisableFlag(p) { return /^Отключить\s+/i.test(p.label); }
+  function posLabel(p) {
+    if (!isDisableFlag(p)) return p.label;
+    const s = p.label.replace(/^Отключить\s+/i, '');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
   function buildUI() {
     groupsEl.innerHTML = '';
     const snap = MT.snapshot();
 
     Object.keys(MT.groups).forEach(gKey => {
+      if (HIDDEN_GROUPS.has(gKey)) return;
       const params = MT.params.filter(p => p.group === gKey);
       if (!params.length) return;
 
@@ -1504,10 +1590,12 @@
           card.className = 'toggle-card';
           card.dataset.key = p.key;
           const v = snap[p.key];
+          const inv = isDisableFlag(p);
+          const on  = inv ? !v : v;          // displayed state
           card.title = p.key + (p.description ? ' — ' + p.description : '');
           card.innerHTML =
-            '<span class="lbl">' + escHtml(p.label) + '</span>' +
-            '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
+            '<span class="lbl">' + escHtml(posLabel(p)) + '</span>' +
+            '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (inv ? ' data-invert="1"' : '') + (on ? ' checked' : '') + '><span class="track"></span></span>';
           grid.appendChild(card);
         });
         det.appendChild(grid);
@@ -1538,16 +1626,27 @@
           row.title = tipParts.join(' ');
 
           const unitHtml = p.unit ? ' <small>' + escHtml(p.unit) + '</small>' : '';
-          const lblHtml = '<span class="lbl">' + escHtml(p.label) + unitHtml + '</span>';
+          const lblHtml = '<span class="lbl">' + escHtml(posLabel(p)) + unitHtml + '</span>';
 
           if (typeof p.def === 'boolean') {
+            const inv = isDisableFlag(p);
+            const on  = inv ? !v : v;
             row.className = 'mt-row mt-bool';
             row.innerHTML = lblHtml +
-              '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
+              '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (inv ? ' data-invert="1"' : '') + (on ? ' checked' : '') + '><span class="track"></span></span>';
           } else if (typeof p.def === 'string') {
             row.className = 'mt-row mt-string';
-            row.innerHTML = lblHtml +
-              '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + escHtml(String(v)) + '">';
+            const opts = SELECT_OPTIONS[p.key];
+            if (opts) {
+              const optHtml = opts.map(o =>
+                '<option value="' + escHtml(o[0]) + '"' + (String(v) === o[0] ? ' selected' : '') + '>' + escHtml(o[1]) + '</option>'
+              ).join('');
+              row.innerHTML = lblHtml +
+                '<select class="mt-text" data-key="' + p.key + '">' + optHtml + '</select>';
+            } else {
+              row.innerHTML = lblHtml +
+                '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + escHtml(String(v)) + '">';
+            }
           } else {
             row.className = 'mt-row';
             const numAttrs =
@@ -1578,9 +1677,10 @@
     groupsEl.addEventListener('input', e => {
       const key = e.target.dataset && e.target.dataset.key;
       if (!key || !MT) return;
-      if (e.target.type === 'checkbox') return;
-      const val = e.target.type === 'text' ? e.target.value : parseFloat(e.target.value);
-      if (e.target.type !== 'text' && !Number.isFinite(val)) return;
+      if (e.target.type === 'checkbox') return;            // handled in 'change'
+      const isText = e.target.type === 'text' || e.target.tagName === 'SELECT';
+      const val = isText ? e.target.value : parseFloat(e.target.value);
+      if (!isText && !Number.isFinite(val)) return;
       groupsEl.querySelectorAll('[data-key="' + key + '"]').forEach(el => {
         if (el !== e.target) el.value = val;
       });
@@ -1592,9 +1692,13 @@
       const key = e.target.dataset && e.target.dataset.key;
       if (!key || !MT) return;
       if (e.target.type === 'checkbox') {
-        const val = e.target.checked;
+        // Inverted ("Отключить …") toggles store the opposite of what's shown.
+        const val = e.target.dataset.invert ? !e.target.checked : e.target.checked;
         MT.apply({ [key]: val }, true);
         setStatus(key + '  →  ' + val);
+      } else if (e.target.type === 'text' || e.target.tagName === 'SELECT') {
+        MT.apply({ [key]: e.target.value }, true);
+        setStatus(key + '  →  ' + e.target.value);
       } else {
         MT.apply({ [key]: parseFloat(e.target.value) }, true);
       }
@@ -1632,7 +1736,7 @@
     groupsEl.querySelectorAll('[data-key]').forEach(el => {
       const v = snap[el.dataset.key];
       if (v == null) return;
-      if (el.type === 'checkbox') el.checked = !!v;
+      if (el.type === 'checkbox') el.checked = el.dataset.invert ? !v : !!v;
       else el.value = v;
     });
   }
@@ -1730,7 +1834,308 @@
       Object.keys(ps).map(n => '<option' + (n === cur ? ' selected' : '') + '>' + n + '</option>').join('');
   }
 
-  function setStatus(msg) { statusBar.textContent = msg; }
+  function setStatus(msg) { if (statusBar) statusBar.textContent = msg; }   /* status bar removed — no-op safe */
+
+  /* ── Level & Difficulty labs ──────────────────────────────────────────────
+     Editor + live analysis over the REAL campaign data. The game iframe loads
+     with ?test=1, which exposes window.__GAME (LEVELS + the pure config helpers
+     and analyzeLevel from src/game/14-level-analysis.ts) — ?test=1 only attaches
+     that hook, it does not change gameplay or visuals.
+
+     Edits go onto a deep-cloned WORKING COPY (labLevels), never the running
+     campaign in the preview, and re-run the same pure functions the game uses
+     (analyzeLevel / levelEconomy / paceInterval …). "Save" is JSON export — paste
+     the values back into LEVELS in src/game/04-config-levels.ts. The difficulty
+     model is documented in docs/design/game-design/difficulty_curve.md. */
+  let GAME = null;          // window.__GAME once the iframe is ready
+  let labLevels = [];       // editable deep clones of GAME.LEVELS
+  let labSel = 0;           // selected level index, shared by both labs
+
+  const LAB_CALM = 4;       // CALM_LEVELS — no specials before L5 (validateLevels)
+  const LAB_EVENT_LBL = { vip:'VIP', emergency:'Mayday', rush:'Час пик', medical:'Медэвак' };
+  const LAB_FACTOR_LBL = {
+    traffic:'Трафик (темп)', capacity:'Загрузка боксов', events:'Спецборты',
+    timePressure:'Время / race', economy:'Экономика', geometry:'Геометрия поля',
+  };
+  const LAB_SVC_LBL = { fuel:'🛢 Топливо', board:'🚪 Посадка', repair:'🔧 Ремонт', cargo:'📦 Карго', vip:'⭐ VIP' };
+
+  function labGame() {
+    try { const fw = gameFrame.contentWindow; return fw && fw.__GAME ? fw.__GAME : null; } catch (_) { return null; }
+  }
+  function labLevelName(i) { try { return GAME.levelName(i); } catch (_) { return 'Уровень ' + (i + 1); } }
+  function labRunways(lv)  { return lv.layout && lv.layout.runways ? lv.layout.runways.length : (lv.runways || 1); }
+  function labEventList(lv){ const ev = lv.events || {}; return Object.keys(LAB_EVENT_LBL).filter(k => ev[k]).map(k => LAB_EVENT_LBL[k]); }
+  function labFmt(n, d)    { return Number(n).toFixed(d == null ? 2 : d); }
+  function curLevel()      { return labLevels[labSel]; }
+
+  function pollGame() {
+    const g = labGame();
+    if (g && Array.isArray(g.LEVELS) && g.LEVELS.length && typeof g.analyzeLevel === 'function') {
+      GAME = g; cloneLevels(); buildLabs(); return;
+    }
+    setTimeout(pollGame, 150);
+  }
+
+  function cloneLevels() {
+    labLevels = GAME.LEVELS.map(lv => JSON.parse(JSON.stringify(lv)));   // plain data — safe to clone
+  }
+
+  function buildLabs() {
+    if (!GAME) return;
+    buildDiffSelect();
+    buildEvents();
+    wireEditor();
+    document.getElementById('lab-export').onclick = exportJSON;
+    document.getElementById('lab-copy').onclick   = copyLevel;
+    document.getElementById('lab-reset').onclick  = resetEdits;
+    const cap = document.getElementById('diff-cap');
+    if (cap && GAME.K) cap.textContent = labFmt(GAME.K.ECON_DIFF_CAP, 1);
+    labSelect(Math.min(labSel, labLevels.length - 1));
+  }
+
+  /* ---- overview table + pace sparkline (rebuilt on every edit) ---- */
+  function renderTable() {
+    const wrap = document.getElementById('level-table-wrap');
+    let h = '<table class="lab-table"><thead><tr>' +
+      '<th>#</th><th>Имя</th><th>pace</th><th>инт.</th><th>одн.</th><th>звёзды</th><th>ВПП</th><th>боксы</th><th>события</th><th>сложн.</th>' +
+      '</tr></thead><tbody>';
+    labLevels.forEach((lv, i) => {
+      const pace = GAME.levelPace(lv);
+      const rep  = GAME.analyzeLevel(lv);
+      const stars = ((lv.objective && lv.objective.stars) || []).join('/');
+      const evs   = labEventList(lv);
+      const open  = GAME.countOpenHangars(lv), tot = GAME.countTotalHangars(lv);
+      h += '<tr data-idx="' + i + '"' + (i === labSel ? ' class="sel"' : '') + '>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td>' + escHtml(labLevelName(i)) + '</td>' +
+        '<td>' + labFmt(pace) + '</td>' +
+        '<td>' + labFmt(GAME.paceInterval(pace), 1) + 's</td>' +
+        '<td>' + GAME.paceCap(pace) + '</td>' +
+        '<td>' + (stars || '—') + '</td>' +
+        '<td>' + labRunways(lv) + '</td>' +
+        '<td>' + open + '/' + tot + '</td>' +
+        '<td>' + (evs.length ? escHtml(evs.join(' · ')) : '—') + '</td>' +
+        '<td class="diff-cell">' + Math.round(rep.total * 100) + '%</td>' +
+        '</tr>';
+    });
+    h += '</tbody></table>';
+    wrap.innerHTML = h;
+    wrap.querySelectorAll('tr[data-idx]').forEach(tr =>
+      tr.addEventListener('click', () => labSelect(+tr.dataset.idx)));
+  }
+
+  function renderPaceChart() {
+    const chart = document.getElementById('level-pace-chart');
+    const axis  = document.getElementById('level-pace-axis');
+    let bars = '', ax = '';
+    labLevels.forEach((lv, i) => {
+      const pace = GAME.levelPace(lv);
+      const ht   = Math.round(8 + pace * 92);    // 8%..100% so pace 0 is still visible
+      bars += '<div class="pace-bar' + (i === labSel ? ' sel' : '') + '" data-idx="' + i + '" style="height:' + ht + '%" title="L' + (i + 1) + ' · pace ' + labFmt(pace) + '"></div>';
+      ax   += '<span>' + (i + 1) + '</span>';
+    });
+    chart.innerHTML = bars; axis.innerHTML = ax;
+    chart.querySelectorAll('.pace-bar').forEach(b =>
+      b.addEventListener('click', () => labSelect(+b.dataset.idx)));
+  }
+
+  function buildDiffSelect() {
+    const sel = document.getElementById('diff-level-sel');
+    sel.innerHTML = labLevels.map((lv, i) =>
+      '<option value="' + i + '">L' + (i + 1) + ' · ' + escHtml(labLevelName(i)) + '</option>').join('');
+    sel.onchange = () => labSelect(+sel.value);
+  }
+
+  function buildEvents() {
+    document.getElementById('ed-events').innerHTML = Object.keys(LAB_EVENT_LBL).map(k =>
+      '<label class="lab-chip" data-ev="' + k + '"><input type="checkbox" data-ev="' + k + '"> ' + escHtml(LAB_EVENT_LBL[k]) + '</label>').join('');
+    document.querySelectorAll('#ed-events input[data-ev]').forEach(el => {
+      el.addEventListener('change', () => {
+        const lv = curLevel(); lv.events = lv.events || {};
+        if (el.checked) lv.events[el.dataset.ev] = true; else delete lv.events[el.dataset.ev];
+        el.closest('.lab-chip').classList.toggle('on', el.checked);
+        recompute();
+      });
+    });
+  }
+
+  /* ---- editor wiring: each control writes the working copy, then recompute.
+     Controls are −/+ steppers (matches the Motion tab); the document-level
+     .mt-step handler nudges the number field and dispatches 'input', which is
+     the event we listen to here. ---- */
+  function bindNum(id, set) {
+    const n = document.getElementById(id);
+    n.addEventListener('input', () => { const v = parseFloat(n.value); if (!Number.isFinite(v)) return; set(v); recompute(); });
+  }
+  function wireEditor() {
+    bindNum('ed-pace', v => { curLevel().pace = Math.max(0, Math.min(1, v)); });
+    bindNum('ed-runways', v => { const lv = curLevel(); if (!lv.layout) lv.runways = Math.round(v); });
+    bindNum('ed-money', v => { const lv = curLevel(); if (v > 0) lv.startMoney = Math.round(v); else delete lv.startMoney; });
+    bindNum('ed-time', v => { const o = curLevel().objective; if (v > 0) o.time = Math.round(v); else delete o.time; });
+    ['ed-s1', 'ed-s2', 'ed-s3'].forEach((id, k) => {
+      document.getElementById(id).addEventListener('input', e => {
+        const o = curLevel().objective; o.stars = (o.stars || []).slice(0, 3);
+        o.stars[k] = Math.max(1, Math.round(parseFloat(e.target.value) || 1));
+        o.target = o.stars[2];   // 3★ = target (schema)
+        recompute();
+      });
+    });
+  }
+
+  /* ---- load the selected level's values into the editor controls ---- */
+  function loadEditor() {
+    const lv = curLevel(), o = lv.objective || {};
+    document.getElementById('ed-name').textContent = 'L' + (labSel + 1) + ' · ' + labLevelName(labSel);
+    const setNum = (id, v) => { document.getElementById(id).value = v; };
+    setNum('ed-pace', GAME.levelPace(lv));
+    const isLayout = !!lv.layout;
+    setNum('ed-runways', labRunways(lv));
+    document.getElementById('ed-runways').disabled = isLayout;   // layout maps: runways come from the editor
+    setNum('ed-money', lv.startMoney || 0);
+    setNum('ed-time', o.time || 0);
+    const st = o.stars || [];
+    document.getElementById('ed-s1').value = st[0] != null ? st[0] : '';
+    document.getElementById('ed-s2').value = st[1] != null ? st[1] : '';
+    document.getElementById('ed-s3').value = st[2] != null ? st[2] : '';
+    const ev = lv.events || {};
+    document.querySelectorAll('#ed-events input[data-ev]').forEach(cb => {
+      cb.checked = !!ev[cb.dataset.ev];
+      cb.closest('.lab-chip').classList.toggle('on', cb.checked);
+    });
+    renderBays();
+  }
+
+  function renderBays() {
+    const box = document.getElementById('ed-bays'), lv = curLevel();
+    if (lv.layout) {
+      box.innerHTML = '<span class="lab-empty">Раскладка задаётся в игровом конструкторе (явный layout). ' +
+        'Здесь правятся темп, события, звёзды, деньги и время.</span>';
+      return;
+    }
+    const sides = lv.sides || {};
+    const keys = ['top', 'left', 'bottom'].filter(s => sides[s]);
+    if (!keys.length) { box.innerHTML = '<span class="lab-empty">Нет сторон с боксами.</span>'; return; }
+    box.innerHTML = keys.map(s => {
+      const c = sides[s];
+      const name = (LAB_SVC_LBL[c.type] || c.type);
+      return '<div class="ed-bay-row">' +
+        '<span class="ed-bay-lbl">' + escHtml(s) + ' · ' + escHtml(name) + '</span>' +
+        '<input type="number" min="1" max="6" step="1" data-side="' + s + '" data-f="slots" value="' + c.slots + '" title="слотов">' +
+        '<input type="number" min="0" max="6" step="1" data-side="' + s + '" data-f="open" value="' + c.open + '" title="открыто на старте">' +
+        '</div>';
+    }).join('');
+    box.querySelectorAll('input[data-side]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const c = curLevel().sides[inp.dataset.side];
+        let v = Math.max(0, Math.round(parseFloat(inp.value) || 0));
+        if (inp.dataset.f === 'slots') { v = Math.max(1, v); c.slots = v; if (c.open > v) c.open = v; }
+        else { c.open = Math.min(v, c.slots); }
+        recompute();
+      });
+    });
+  }
+
+  /* ---- single entry point after any edit: rebuild everything from working copy ---- */
+  function recompute() {
+    renderTable();
+    renderPaceChart();
+    renderStarsWarn();
+    renderDiff();
+  }
+
+  function renderStarsWarn() {
+    const o = curLevel().objective || {}, st = o.stars || [];
+    const warn = document.getElementById('ed-stars-warn');
+    const issues = [];
+    if (st.length < 3 || st.some(x => !(x > 0))) issues.push('нужны три порога ★');
+    else if (!(st[0] < st[1] && st[1] < st[2])) issues.push('пороги должны строго возрастать (s1<s2<s3)');
+    if (labSel < LAB_CALM && labEventList(curLevel()).length) issues.push('спецборты до L5 — валидатор это запретит');
+    warn.textContent = issues.length ? '⚠ ' + issues.join(' · ') : '';
+  }
+
+  function labSelect(idx) {
+    if (!GAME) return;
+    labSel = Math.max(0, Math.min(labLevels.length - 1, idx | 0));
+    const sel = document.getElementById('diff-level-sel');
+    if (sel && +sel.value !== labSel) sel.value = String(labSel);
+    loadEditor();
+    recompute();
+  }
+
+  function labEconRow(k, v) {
+    return '<tr><td style="color:var(--muted)">' + escHtml(k) +
+      '</td><td style="text-align:right;font-weight:600;color:var(--text)">' + escHtml(String(v)) + '</td></tr>';
+  }
+
+  function renderDiff() {
+    const lv  = curLevel();
+    const rep = GAME.analyzeLevel(lv);
+    const pace = rep.pace;
+
+    document.getElementById('ed-diff-live').textContent   = 'сложность ' + Math.round(rep.total * 100) + '%';
+    document.getElementById('diff-total').textContent      = labFmt(rep.total);
+    document.getElementById('diff-pace').textContent       = labFmt(pace);
+    document.getElementById('diff-pace-sub').textContent   = labFmt(GAME.paceInterval(pace), 1) + 's · ' + GAME.paceCap(pace) + ' бортов';
+    document.getElementById('diff-econ-score').textContent = labFmt(rep.difficulty);
+    document.getElementById('diff-stars').textContent      = ((lv.objective && lv.objective.stars) || []).join(' / ') || '—';
+
+    document.getElementById('diff-factors').innerHTML = rep.components.map(c => {
+      const lbl = LAB_FACTOR_LBL[c.label] || c.label;
+      const pct = Math.round(c.score * 100);
+      return '<div class="lab-bar-row">' +
+        '<span class="lab-bar-label">' + escHtml(lbl) + ' <small style="color:var(--muted)">×' + labFmt(c.weight) + '</small></span>' +
+        '<div class="lab-bar-track"><div class="lab-bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<span class="lab-bar-val">+' + labFmt(c.contrib) + '</span>' +
+        '</div>';
+    }).join('');
+
+    const ec = rep.economy;
+    document.getElementById('diff-econ').innerHTML =
+      '<table class="f-table">' +
+      labEconRow('Стартовые деньги', ec.startMoney) +
+      labEconRow('Оплата за услугу', ec.svcReward) +
+      labEconRow('Поток за смену',   ec.flow) +
+      labEconRow('Цена набора',      Math.round(ec.kitCost)) +
+      labEconRow('Щедрость',         '×' + labFmt(ec.generosity)) +
+      labEconRow('Скилл-добор',      '×' + labFmt(ec.skillMult)) +
+      '</table>';
+
+    document.getElementById('diff-warnings').innerHTML = rep.warnings.length
+      ? rep.warnings.map(w => '<div style="font-size:11px;color:#e3c522;padding:2px 0">⚠ ' + escHtml(w) + '</div>').join('')
+      : '<span class="lab-empty">✓ Нет замечаний</span>';
+  }
+
+  /* ---- save = JSON export (tuning.html can't write source) ---- */
+  function levelsExportText() {
+    return JSON.stringify({
+      version: 1, exportedAt: new Date().toISOString(),
+      note: 'Edited campaign LEVELS from tuning.html — paste values into src/game/04-config-levels.ts',
+      levels: labLevels,
+    }, null, 2);
+  }
+  function exportJSON() {
+    const blob = new Blob([levelsExportText()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'levels-tuning.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    setStatus('Уровни экспортированы в JSON.');
+  }
+  function copyLevel() {
+    const txt = JSON.stringify(curLevel(), null, 2);
+    const done = () => setStatus('L' + (labSel + 1) + ': JSON уровня скопирован.');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => setStatus(txt));
+    else setStatus(txt);
+  }
+  function resetEdits() {
+    if (!GAME) return;
+    if (!confirm('Сбросить все правки уровней к значениям из игры?')) return;
+    cloneLevels();
+    buildDiffSelect();
+    labSelect(Math.min(labSel, labLevels.length - 1));
+    setStatus('Правки уровней сброшены.');
+  }
 
   /* ── Tab switching ────────────────────────────────────────────────────── */
   (function () {
@@ -2007,8 +2412,6 @@
         if (backBtn) backBtn.click();
         demoActive = false;
         updateDemoBtn();
-        // Re-disable forest hazards for normal tuning
-        if (MT) { MT.apply({'K.DISABLE_FOREST': true}, false); syncUI(); }
         setStatus(T.demoExit);
         return;
       }
@@ -2019,9 +2422,12 @@
         if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
       });
 
-      // Enable forest hazards (K.DISABLE_FOREST = false)
-      // K.DISABLE_DEICE stays true by default — suppresses de-icing requests
-      if (MT) { MT.apply({'K.DISABLE_FOREST': false}, false); syncUI(); }
+      // Keep the field clean for the demo: forest hazards stay off
+      // (K.DISABLE_FOREST = true → no елки/птицы/олени/снег on the runway) and
+      // de-icing stays off (K.DISABLE_DEICE = true → no de-ice requests and,
+      // see state-layout, no de-icing box on the field). Both are defaults, so
+      // we just make sure they aren't left enabled from a previous tweak.
+      if (MT) { MT.apply({'K.DISABLE_FOREST': true, 'K.DISABLE_DEICE': true}, false); syncUI(); }
 
       // Navigate to biome selection, then click the first ready biome (forest)
       const survBtn = w.document.getElementById('survivalBtn');

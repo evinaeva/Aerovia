@@ -153,8 +153,10 @@
         });
       }
       // отдельный бокс де-айсинга (инфраструктура: всегда открыт, без апгрейда) —
-      // у правого края поля, ворота в поле; нужен только в снегопад (см. spawnPlane)
-      if(LV.deice) bays.push({side:'deice', type:'deice', slot:0, deice:true,
+      // у правого края поля, ворота в поле; нужен только в снегопад (см. spawnPlane).
+      // При K.DISABLE_DEICE деайсинг не запрашивается, поэтому и бокс не ставим —
+      // иначе на поле висит неиспользуемая инфраструктура.
+      if(LV.deice && !K.DISABLE_DEICE) bays.push({side:'deice', type:'deice', slot:0, deice:true,
                               open:true, openCost:0, lvl:0, occupied:null, x:0,y:0,w:bw,h:bh});
     }
     // position bays
