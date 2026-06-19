@@ -25,26 +25,68 @@
       background: var(--bg);
       color: var(--text);
       font: 13px/1.45 system-ui, 'Segoe UI', sans-serif;
-    }
-
-    /* ── Layout ─────────────────────────────────────────────────────────── */
-    #workspace {
       display: flex;
-      height: 100vh;
+      flex-direction: column;
     }
 
-    /* ── Phone area ─────────────────────────────────────────────────────── */
-    #phone-area {
+    /* ── TOP PANE — Live Preview ─────────────────────────────────────────── */
+    #top-pane {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      padding: 14px 20px;
+      background: #020609;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
       flex: none;
+      min-height: 120px;
+      position: relative;
+    }
+
+    /* ── Device size strip (left of phone) ──────────────────────────────── */
+    #size-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: none;
+      align-self: center;
+    }
+
+    .sz-btn {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 14px;
-      padding: 24px 28px;
-      background: #020609;
-      border-right: 1px solid var(--border);
-      min-width: 0;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--btn-bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .sz-btn:hover { background: #1a2a48; }
+    .sz-btn.active {
+      border-color: var(--accent);
+      background: rgba(34,227,198,.08);
+    }
+    .sz-btn .sz-name {
+      font-size: 11px; font-weight: 700; color: var(--text);
+    }
+    .sz-btn.active .sz-name { color: var(--accent); }
+    .sz-btn .sz-dims {
+      font-size: 9px; color: var(--muted); margin-top: 2px;
+    }
+
+    /* ── Phone column ───────────────────────────────────────────────────── */
+    #phone-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      flex: none;
     }
 
     #phone-label {
@@ -55,83 +97,116 @@
       color: var(--muted);
     }
 
-    /* wrapper collapses to scaled visual size via JS zoom */
-    #phone-shell {
+    /* wrapper holds the visual (scaled) footprint */
+    #phone-wrapper {
       position: relative;
-      width: 390px;
-      height: 844px;
-      border-radius: 52px;
+      flex: none;
+    }
+
+    /* phone-shell is positioned absolute so wrapper sets visual size */
+    #phone-shell {
+      position: absolute;
+      top: 0; left: 0;
+      border-radius: 46px;
       border: 7px solid #172237;
       box-shadow:
         inset 0 0 0 1px #0c1930,
         0 0 0 1px rgba(58,210,255,.12),
         0 0 60px rgba(34,227,198,.06),
-        0 28px 90px rgba(0,0,0,.75);
+        0 20px 70px rgba(0,0,0,.7);
       overflow: hidden;
       background: #000;
-      transform-origin: top center;
+      transform-origin: top left;
     }
 
-    #phone-shell::before {           /* notch pill */
+    /* notch pill (landscape: left side) */
+    #phone-shell::before {
       content: '';
       position: absolute;
-      top: 12px; left: 50%;
-      transform: translateX(-50%);
-      width: 96px; height: 30px;
+      top: 50%; left: 10px;
+      transform: translateY(-50%);
+      width: 28px; height: 90px;
       background: #000;
-      border-radius: 20px;
+      border-radius: 18px;
       z-index: 10;
       pointer-events: none;
     }
 
-    #phone-shell.landscape {
-      width: 844px;
-      height: 390px;
+    /* ── Resize handle (bottom-right corner of phone-wrapper) ────────────── */
+    #resize-handle {
+      position: absolute;
+      bottom: -4px; right: -4px;
+      width: 28px; height: 28px;
+      cursor: se-resize;
+      z-index: 30;
+      display: flex; align-items: flex-end; justify-content: flex-end;
+      opacity: 0;
+      transition: opacity .2s;
     }
-
-    #phone-shell.landscape::before {
-      top: 50%; left: 12px;
-      transform: translateY(-50%);
-      width: 30px; height: 96px;
-    }
-
-    #phone-controls {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
+    #phone-wrapper:hover #resize-handle { opacity: 1; }
+    #resize-handle.dragging { opacity: 1; }
+    #resize-handle svg { display: block; }
 
     #game-frame {
       width: 100%; height: 100%;
       border: none; display: block;
     }
 
-    /* ── Controls panel ─────────────────────────────────────────────────── */
-    #panel {
+    #phone-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ── SPLITTER ────────────────────────────────────────────────────────── */
+    #splitter {
+      flex: none;
+      height: 7px;
+      background: rgba(58,210,255,.10);
+      cursor: ns-resize;
+      position: relative;
+      transition: background .15s;
+      user-select: none;
+    }
+    #splitter:hover, #splitter.dragging {
+      background: rgba(58,210,255,.28);
+    }
+    #splitter-grip {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex; gap: 5px;
+    }
+    #splitter-grip span {
+      display: block;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--muted);
+      opacity: .5;
+    }
+
+    /* ── BOTTOM PANE — Designer Workbench ───────────────────────────────── */
+    #bottom-pane {
       flex: 1;
-      min-width: 340px;
-      max-width: 600px;
       display: flex;
       flex-direction: column;
       background: var(--panel-bg);
       overflow: hidden;
+      min-height: 80px;
     }
 
     /* sticky header */
     #panel-head {
       flex: none;
-      padding: 18px 18px 14px;
+      padding: 14px 18px 12px;
       border-bottom: 1px solid var(--border);
       background: rgba(8,14,32,.99);
     }
 
     #panel-head h1 {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       color: var(--accent);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -161,6 +236,7 @@
       cursor: pointer;
       transition: background .15s;
       white-space: nowrap;
+      font-family: inherit;
     }
     .p-btn:hover { background: #1a2a48; }
 
@@ -171,6 +247,7 @@
       color: var(--text);
       padding: 6px 10px;
       font-size: 12px;
+      font-family: inherit;
     }
 
     #preset-sel {
@@ -181,7 +258,46 @@
       padding: 6px 8px;
       font-size: 12px;
       cursor: pointer;
+      font-family: inherit;
     }
+
+    /* ── Tabs ───────────────────────────────────────────────────────────── */
+    #tab-nav {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+    .t-tab {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--muted);
+      padding: 5px 13px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: inherit;
+    }
+    .t-tab.active  { background: rgba(34,227,198,.14); border-color: var(--accent); color: var(--accent); }
+    .t-tab:hover:not(.active) { background: #1a2a48; }
+
+    /* ── Search ─────────────────────────────────────────────────────────── */
+    #search-wrap {
+      padding: 8px 10px 4px;
+      flex: none;
+    }
+    #search {
+      width: 100%;
+      border: 1px solid rgba(127,155,176,.22);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text);
+      padding: 7px 12px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    #search::placeholder { color: var(--muted); }
 
     /* ── Groups ─────────────────────────────────────────────────────────── */
     #groups {
@@ -225,7 +341,6 @@
     .mt-row .lbl b   { display: block; font-size: 12px; font-weight: 600; }
     .mt-row .lbl em  { display: block; margin-top: 2px; font-size: 10px; color: var(--muted); font-style: normal; line-height: 1.3; }
 
-    /* Toggle switch for boolean params */
     .mt-toggle {
       position: relative;
       width: 40px; height: 22px;
@@ -262,9 +377,10 @@
       border-radius: 8px;
       background: var(--input-bg);
       color: #fff;
-      padding: 5px 5px;
+      padding: 5px;
       font-size: 12px;
       text-align: right;
+      font-family: inherit;
     }
 
     /* ── Status bar ─────────────────────────────────────────────────────── */
@@ -280,7 +396,7 @@
       text-overflow: ellipsis;
     }
 
-    /* ── Loading overlay ────────────────────────────────────────────────── */
+    /* ── Loading ─────────────────────────────────────────────────────────── */
     #loading-msg {
       display: flex;
       align-items: center;
@@ -290,43 +406,7 @@
       font-size: 13px;
     }
 
-    /* ── Search ─────────────────────────────────────────────────────────── */
-    #search-wrap {
-      padding: 8px 10px 4px;
-      flex: none;
-    }
-    #search {
-      width: 100%;
-      border: 1px solid rgba(127,155,176,.22);
-      border-radius: 10px;
-      background: var(--input-bg);
-      color: var(--text);
-      padding: 7px 12px;
-      font-size: 12px;
-    }
-    #search::placeholder { color: var(--muted); }
-
-    /* ── Tabs ────────────────────────────────────────────────────────────── */
-    #tab-nav {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 12px;
-    }
-    .t-tab {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--btn-bg);
-      color: var(--muted);
-      padding: 5px 13px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all .15s;
-    }
-    .t-tab.active  { background: rgba(34,227,198,.14); border-color: var(--accent); color: var(--accent); }
-    .t-tab:hover:not(.active) { background: #1a2a48; }
-
-    /* ── Field view (right panel for "Поле" tab) ─────────────────────── */
+    /* ── Field view ─────────────────────────────────────────────────────── */
     #field-view {
       display: none;
       flex: 1;
@@ -342,118 +422,252 @@
       padding: 10px 14px;
     }
     .f-sec h3 {
-      font-size: 10px;
-      font-weight: 800;
+      font-size: 10px; font-weight: 800;
       color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: .08em;
+      text-transform: uppercase; letter-spacing: .08em;
       margin-bottom: 8px;
     }
     .f-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; }
     .f-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
-    .f-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+    .f-dot  { width: 9px; height: 9px; border-radius: 50%; flex: none; }
     .f-line { width: 18px; height: 2px; flex: none; }
-
     .f-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .f-table th, .f-table td { padding: 3px 6px; text-align: left; border-bottom: 1px solid var(--row-sep); }
     .f-table th { color: var(--muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-    .tag-ok  { color: #22e3c6; } .tag-bad { color: #e35c22; } .tag-occ { color: #e3c522; }
+    .tag-ok  { color: #22e3c6; }
+    .tag-bad { color: #e35c22; }
+    .tag-occ { color: #e3c522; }
   </style>
 </head>
 <body>
 
-<div id="workspace">
+<!-- ── TOP PANE: Live Preview ────────────────────────────────────────────── -->
+<div id="top-pane">
 
-  <!-- ── Left: phone preview ───────────────────────────────────────────── -->
-  <div id="phone-area">
-    <div id="phone-label">Live Preview · Landscape</div>
-    <div id="phone-shell" class="landscape">
-      <iframe id="game-frame" src="index.html" title="Game" allow="autoplay"></iframe>
-      <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
-           style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
+  <div id="size-strip">
+    <button class="sz-btn" data-size="s">
+      <span class="sz-name">S</span>
+      <span class="sz-dims">Galaxy A54</span>
+      <span class="sz-dims">800 × 360</span>
+    </button>
+    <button class="sz-btn active" data-size="m">
+      <span class="sz-name">M</span>
+      <span class="sz-dims">iPhone 15</span>
+      <span class="sz-dims">852 × 393</span>
+    </button>
+    <button class="sz-btn" data-size="l">
+      <span class="sz-name">L</span>
+      <span class="sz-dims">iPhone 15 Plus</span>
+      <span class="sz-dims">932 × 430</span>
+    </button>
+  </div>
+
+  <div id="phone-col">
+    <div id="phone-label">Live Preview · iPhone 15 · 852×393</div>
+    <div id="phone-wrapper">
+      <div id="phone-shell">
+        <iframe id="game-frame" src="index.html" title="Game" allow="autoplay"></iframe>
+        <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
+             style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
+      </div>
+      <div id="resize-handle" title="Потяни чтобы выбрать размер экрана">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M6 16L16 16L16 6" stroke="rgba(58,210,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 16L16 16L16 10" stroke="rgba(58,210,255,.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
     </div>
     <div id="phone-controls">
       <button class="p-btn" id="btn-demo" title="Запустить Survival · бесконечные борта">▶ Demo</button>
     </div>
   </div>
 
-  <!-- ── Right: controls ──────────────────────────────────────────────── -->
-  <div id="panel">
+</div>
 
-    <div id="panel-head">
-      <h1>🎛 Motion Tuning <span class="sub">· Designer Workbench</span></h1>
-      <div id="tab-nav">
-        <button class="t-tab active" data-tab="params">🎛 Параметры</button>
-        <button class="t-tab" data-tab="field">✈ Поле</button>
-      </div>
-      <div class="actions" id="params-actions">
-        <button class="p-btn" id="btn-reset">↺ Reset all</button>
-        <button class="p-btn" id="btn-export">↓ Export JSON</button>
-        <button class="p-btn" id="btn-import">↑ Import JSON</button>
-        <input type="file" id="file-import" accept=".json" style="display:none">
-        <input class="p-input" id="preset-name" placeholder="Название пресета" style="width:146px">
-        <button class="p-btn" id="btn-save">💾 Save preset</button>
-        <select id="preset-sel"><option value="">Пресет…</option></select>
-        <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
-      </div>
-    </div>
-
-    <div id="search-wrap">
-      <input id="search" placeholder="Поиск параметра…" autocomplete="off" spellcheck="false">
-    </div>
-
-    <div id="groups">
-      <div id="loading-msg">Ждём запуска игры…</div>
-    </div>
-
-    <!-- ── Поле tab content ──────────────────────────────────────────── -->
-    <div id="field-view">
-
-      <div class="f-sec">
-        <h3>Легенда</h3>
-        <div class="f-legend">
-          <div class="f-legend-item"><div class="f-dot" style="background:#3ad2ff"></div>Полоса</div>
-          <div class="f-legend-item"><div class="f-line" style="background:rgba(245,200,66,.85)"></div>stopX (посадка)</div>
-          <div class="f-legend-item"><div class="f-line" style="background:rgba(240,128,48,.85)"></div>exitX (взлёт)</div>
-          <div class="f-legend-item"><div class="f-dot" style="background:#22c864"></div>Бокс (свободен)</div>
-          <div class="f-legend-item"><div class="f-dot" style="background:#b060f0"></div>Бокс (занят)</div>
-          <div class="f-legend-item"><div class="f-dot" style="background:#f5c842"></div>Борт в воздухе</div>
-          <div class="f-legend-item"><div class="f-dot" style="background:#40d0c0"></div>Борт на земле</div>
-          <div class="f-legend-item"><div class="f-line" style="background:rgba(100,100,255,.6)"></div>K.ARRIVE (захват)</div>
-        </div>
-      </div>
-
-      <div class="f-sec">
-        <h3>Полосы (live)</h3>
-        <div id="info-runways"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
-      </div>
-
-      <div class="f-sec">
-        <h3>Боксы (live)</h3>
-        <div id="info-bays"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
-      </div>
-
-      <div class="f-sec" style="font-size:11px;color:var(--muted);line-height:1.5">
-        <h3>Как пользоваться</h3>
-        Запусти игру → нажми <b>▶ Demo</b> на телефоне → наблюдай оверлей.<br>
-        Настраивай параметры во вкладке <b>🎛 Параметры</b>:<br>
-        <b>Бокс</b> — BAY_DOCK/ALIGN/HEAD_SPEED<br>
-        <b>Посадка</b> — LAND_BUMP_AMP/MS, LAND_ALIGN_SPEED<br>
-        <b>Заход</b> — APPROACH_SPEED_MULT<br>
-        <b>Взлёт</b> — TAKEOFF_HOLD/OVERSHOOT<br>
-        <b>Маршрутизация</b> — ARRIVE (радиус захвата точки пути)
-      </div>
-
-    </div>
-
-    <div id="status-bar">—</div>
-
+<!-- ── SPLITTER ──────────────────────────────────────────────────────────── -->
+<div id="splitter">
+  <div id="splitter-grip">
+    <span></span><span></span><span></span><span></span><span></span>
   </div>
+</div>
+
+<!-- ── BOTTOM PANE: Designer Workbench ───────────────────────────────────── -->
+<div id="bottom-pane">
+
+  <div id="panel-head">
+    <h1>🎛 Motion Tuning <span class="sub">· Designer Workbench</span></h1>
+    <div id="tab-nav">
+      <button class="t-tab active" data-tab="params">🎛 Параметры</button>
+      <button class="t-tab" data-tab="field">✈ Поле</button>
+    </div>
+    <div class="actions" id="params-actions">
+      <button class="p-btn" id="btn-reset">↺ Reset all</button>
+      <button class="p-btn" id="btn-export">↓ Export JSON</button>
+      <button class="p-btn" id="btn-import">↑ Import JSON</button>
+      <input type="file" id="file-import" accept=".json" style="display:none">
+      <input class="p-input" id="preset-name" placeholder="Название пресета" style="width:146px">
+      <button class="p-btn" id="btn-save">💾 Save preset</button>
+      <select id="preset-sel"><option value="">Пресет…</option></select>
+      <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
+    </div>
+  </div>
+
+  <div id="search-wrap">
+    <input id="search" placeholder="Поиск параметра…" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div id="groups">
+    <div id="loading-msg">Ждём запуска игры…</div>
+  </div>
+
+  <div id="field-view">
+    <div class="f-sec">
+      <h3>Легенда</h3>
+      <div class="f-legend">
+        <div class="f-legend-item"><div class="f-dot" style="background:#3ad2ff"></div>Полоса</div>
+        <div class="f-legend-item"><div class="f-line" style="background:rgba(245,200,66,.85)"></div>stopX (посадка)</div>
+        <div class="f-legend-item"><div class="f-line" style="background:rgba(240,128,48,.85)"></div>exitX (взлёт)</div>
+        <div class="f-legend-item"><div class="f-dot" style="background:#22c864"></div>Бокс (свободен)</div>
+        <div class="f-legend-item"><div class="f-dot" style="background:#b060f0"></div>Бокс (занят)</div>
+        <div class="f-legend-item"><div class="f-dot" style="background:#f5c842"></div>Борт в воздухе</div>
+        <div class="f-legend-item"><div class="f-dot" style="background:#40d0c0"></div>Борт на земле</div>
+        <div class="f-legend-item"><div class="f-line" style="background:rgba(100,100,255,.6)"></div>K.ARRIVE (захват)</div>
+      </div>
+    </div>
+    <div class="f-sec">
+      <h3>Полосы (live)</h3>
+      <div id="info-runways"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
+    </div>
+    <div class="f-sec">
+      <h3>Боксы (live)</h3>
+      <div id="info-bays"><span style="color:var(--muted);font-size:11px">Ждём данных…</span></div>
+    </div>
+    <div class="f-sec" style="font-size:11px;color:var(--muted);line-height:1.5">
+      <h3>Как пользоваться</h3>
+      Запусти игру → нажми <b>▶ Demo</b> → наблюдай оверлей.<br>
+      <b>Бокс</b> — BAY_DOCK/ALIGN/HEAD_SPEED · <b>Посадка</b> — LAND_BUMP_AMP/MS, LAND_ALIGN_SPEED<br>
+      <b>Заход</b> — APPROACH_SPEED_MULT · <b>Взлёт</b> — TAKEOFF_HOLD/OVERSHOOT · <b>Маршрутизация</b> — K.ARRIVE
+    </div>
+  </div>
+
+  <div id="status-bar">—</div>
+
 </div>
 
 <script>
 (function () {
   'use strict';
+
+  /* ── Phone size presets ────────────────────────────────────────────────── */
+  const PHONES = [
+    { key: 's', label: 'Galaxy A54', w: 800,  h: 360 },
+    { key: 'm', label: 'iPhone 15',  w: 852,  h: 393 },
+    { key: 'l', label: 'iPhone 15 Plus', w: 932, h: 430 },
+  ];
+  let phoneKey = 'm';
+
+  const shell   = document.getElementById('phone-shell');
+  const wrapper = document.getElementById('phone-wrapper');
+  const label   = document.getElementById('phone-label');
+
+  function getScale(key) {
+    const ph    = PHONES.find(p => p.key === key);
+    const pane  = document.getElementById('top-pane');
+    const stripW = document.getElementById('size-strip').offsetWidth;
+    const availW = pane.clientWidth  - stripW - 60;
+    const availH = pane.clientHeight - 60;  // label + controls + padding
+    return Math.min(1, availW / ph.w, availH / ph.h);
+  }
+
+  function applyPhone(key) {
+    phoneKey = key;
+    const ph    = PHONES.find(p => p.key === key);
+    const scale = getScale(key);
+
+    shell.style.width     = ph.w + 'px';
+    shell.style.height    = ph.h + 'px';
+    shell.style.transform = 'scale(' + scale + ')';
+
+    wrapper.style.width  = Math.round(ph.w * scale) + 'px';
+    wrapper.style.height = Math.round(ph.h * scale) + 'px';
+
+    label.textContent = 'Live Preview · ' + ph.label + ' · ' + ph.w + '×' + ph.h;
+
+    document.querySelectorAll('.sz-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.size === key);
+    });
+  }
+
+  // Size strip buttons
+  document.querySelectorAll('.sz-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyPhone(btn.dataset.size));
+  });
+
+  // Resize handle: drag right/down = larger, drag left/up = smaller
+  // Snaps through PHONES steps; 80px = one step
+  (function () {
+    const handle = document.getElementById('resize-handle');
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      handle.classList.add('dragging');
+      const startX    = e.clientX;
+      const startIdx  = PHONES.findIndex(p => p.key === phoneKey);
+
+      function onMove(e) {
+        const dx = e.clientX - startX;
+        const step = Math.round(dx / 80);
+        const idx = Math.max(0, Math.min(PHONES.length - 1, startIdx + step));
+        if (PHONES[idx].key !== phoneKey) applyPhone(PHONES[idx].key);
+      }
+      function onUp() {
+        handle.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  })();
+
+  window.addEventListener('resize', () => applyPhone(phoneKey));
+
+  /* ── Splitter drag ─────────────────────────────────────────────────────── */
+  (function () {
+    const topPane  = document.getElementById('top-pane');
+    const splitter = document.getElementById('splitter');
+
+    // Default: 52% of viewport for top pane
+    let topH = Math.round(window.innerHeight * 0.52);
+
+    function setTopH(h) {
+      topH = Math.max(120, Math.min(h, window.innerHeight - 100));
+      topPane.style.height = topH + 'px';
+      applyPhone(phoneKey);
+    }
+
+    setTopH(topH);
+
+    splitter.addEventListener('mousedown', e => {
+      e.preventDefault();
+      splitter.classList.add('dragging');
+      const startY = e.clientY;
+      const startH = topH;
+
+      function onMove(e) { setTopH(startH + e.clientY - startY); }
+      function onUp() {
+        splitter.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  })();
+
+  /* initial render after layout settles */
+  requestAnimationFrame(() => applyPhone(phoneKey));
+
+  /* ── Workbench logic (unchanged) ─────────────────────────────────────── */
 
   const gameFrame  = document.getElementById('game-frame');
   const groupsEl   = document.getElementById('groups');
@@ -462,7 +676,6 @@
 
   let MT = null;
 
-  /* ── 1. Wait for game to expose window.__MT ─────────────────────────── */
   function pollMT() {
     try {
       const mt = gameFrame.contentWindow && gameFrame.contentWindow.__MT;
@@ -472,13 +685,12 @@
         setStatus('Готово · ' + mt.params.length + ' параметров.');
         return;
       }
-    } catch (_) { /* cross-origin: shouldn't happen on same origin */ }
+    } catch (_) {}
     setTimeout(pollMT, 150);
   }
 
   gameFrame.addEventListener('load', () => setTimeout(pollMT, 80));
 
-  /* ── 2. Build controls ───────────────────────────────────────────────── */
   function buildUI() {
     groupsEl.innerHTML = '';
     const snap = MT.snapshot();
@@ -519,23 +731,16 @@
     refreshPresets();
   }
 
-  /* ── 3. Wire slider ↔ number + live apply ───────────────────────────── */
   function wireInputs() {
     groupsEl.addEventListener('input', e => {
       const key = e.target.dataset && e.target.dataset.key;
       if (!key || !MT) return;
-
-      if (e.target.type === 'checkbox') return; // handled by 'change'
-
+      if (e.target.type === 'checkbox') return;
       const val = parseFloat(e.target.value);
       if (!Number.isFinite(val)) return;
-
-      // Sync sibling control (slider ↔ number)
       groupsEl.querySelectorAll('[data-key="' + key + '"]').forEach(el => {
         if (el !== e.target) el.value = val;
       });
-
-      // Live apply — no persist on every keystroke
       MT.apply({ [key]: val }, false);
       setStatus(key + '  →  ' + val);
     });
@@ -553,7 +758,6 @@
     });
   }
 
-  /* ── 4. Sync values back to UI (after reset/preset) ─────────────────── */
   function syncUI() {
     if (!MT) return;
     const snap = MT.snapshot();
@@ -565,7 +769,6 @@
     });
   }
 
-  /* ── 5. Search ──────────────────────────────────────────────────────── */
   searchEl.addEventListener('input', () => {
     const q = searchEl.value.trim().toLowerCase();
     groupsEl.querySelectorAll('.mt-row').forEach(row => {
@@ -573,7 +776,6 @@
         row.querySelector('b').textContent.toLowerCase().includes(q);
       row.style.display = visible ? '' : 'none';
     });
-    // Hide empty groups
     groupsEl.querySelectorAll('details').forEach(det => {
       const hasVisible = [...det.querySelectorAll('.mt-row')].some(r => r.style.display !== 'none');
       det.style.display = hasVisible ? '' : 'none';
@@ -581,13 +783,10 @@
     });
   });
 
-  /* ── 6. Actions ─────────────────────────────────────────────────────── */
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (!MT) return;
     if (!confirm('Сбросить все параметры к значениям по умолчанию?')) return;
-    MT.reset();
-    syncUI();
-    setStatus('Все параметры сброшены.');
+    MT.reset(); syncUI(); setStatus('Все параметры сброшены.');
   });
 
   document.getElementById('btn-export').addEventListener('click', () => {
@@ -610,13 +809,8 @@
     if (!file || !MT) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      try {
-        MT.importText(ev.target.result);
-        syncUI();
-        setStatus('Импортировано: ' + file.name);
-      } catch (err) {
-        setStatus('Ошибка импорта: ' + err.message);
-      }
+      try { MT.importText(ev.target.result); syncUI(); setStatus('Импортировано: ' + file.name); }
+      catch (err) { setStatus('Ошибка импорта: ' + err.message); }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -626,16 +820,12 @@
     if (!MT) return;
     const name = document.getElementById('preset-name').value.trim();
     if (!name) { setStatus('Введи название пресета.'); return; }
-    MT.savePreset(name);
-    refreshPresets();
-    setStatus('Пресет сохранён: ' + name);
+    MT.savePreset(name); refreshPresets(); setStatus('Пресет сохранён: ' + name);
   });
 
   document.getElementById('preset-sel').addEventListener('change', e => {
     if (!MT || !e.target.value) return;
-    MT.applyPreset(e.target.value);
-    syncUI();
-    setStatus('Применён пресет: ' + e.target.value);
+    MT.applyPreset(e.target.value); syncUI(); setStatus('Применён пресет: ' + e.target.value);
   });
 
   document.getElementById('btn-del-preset').addEventListener('click', () => {
@@ -648,11 +838,9 @@
       delete ps[name];
       localStorage.setItem('pf_motion_presets_v1', JSON.stringify(ps));
     } catch (_) {}
-    refreshPresets();
-    setStatus('Пресет удалён: ' + name);
+    refreshPresets(); setStatus('Пресет удалён: ' + name);
   });
 
-  /* ── 7. Helpers ─────────────────────────────────────────────────────── */
   function refreshPresets() {
     const sel = document.getElementById('preset-sel');
     const cur = sel.value;
@@ -662,29 +850,11 @@
       Object.keys(ps).map(n => '<option' + (n === cur ? ' selected' : '') + '>' + n + '</option>').join('');
   }
 
-  function setStatus(msg) {
-    statusBar.textContent = msg;
-  }
+  function setStatus(msg) { statusBar.textContent = msg; }
 
-  /* ── 8. Scale phone to fit available space (always landscape) ────────── */
-  function scalePhone() {
-    const shell   = document.getElementById('phone-shell');
-    const area    = document.getElementById('phone-area');
-    const phoneW  = 844;
-    const phoneH  = 390;
-    const availH  = area.clientHeight - 90;   // label + controls + gaps
-    const availW  = area.clientWidth  - 56;   // padding
-    const scale   = Math.min(1, availH / phoneH, availW / phoneW);
-    shell.style.zoom = scale;
-  }
-
-  window.addEventListener('resize', scalePhone);
-  scalePhone();
-
-  /* ── 10. Tab switching ──────────────────────────────────────────────── */
+  /* ── Tab switching ────────────────────────────────────────────────────── */
   (function () {
     const searchWrap    = document.getElementById('search-wrap');
-    const groupsEl2     = document.getElementById('groups');
     const paramsActions = document.getElementById('params-actions');
     const fieldViewEl   = document.getElementById('field-view');
 
@@ -694,7 +864,7 @@
         document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b === btn));
         const isParams = tab === 'params';
         searchWrap.style.display    = isParams ? '' : 'none';
-        groupsEl2.style.display     = isParams ? '' : 'none';
+        groupsEl.style.display      = isParams ? '' : 'none';
         paramsActions.style.display = isParams ? '' : 'none';
         fieldViewEl.style.display   = isParams ? 'none' : 'flex';
         if (window._fieldActivate) window._fieldActivate(!isParams);
@@ -702,26 +872,24 @@
     });
   })();
 
-  /* ── 11. Field overlay (SVG over phone iframe) ───────────────────────── */
+  /* ── Field overlay ────────────────────────────────────────────────────── */
   (function () {
-    const overlay    = document.getElementById('field-overlay');
-    const infoRwy    = document.getElementById('info-runways');
-    const infoBays   = document.getElementById('info-bays');
-    let   fieldOn    = false;
+    const overlay  = document.getElementById('field-overlay');
+    const infoRwy  = document.getElementById('info-runways');
+    const infoBays = document.getElementById('info-bays');
+    let   fieldOn  = false;
 
     function getField() {
       try { const fw = gameFrame.contentWindow; return fw && fw.__FIELD ? fw.__FIELD : null; } catch(_) { return null; }
     }
-
     function gateEntr(b) {
       const g = b.gate;
-      if (g === 'up')    return { x: b.x + b.w * 0.5, y: b.y };
-      if (g === 'down')  return { x: b.x + b.w * 0.5, y: b.y + b.h };
-      if (g === 'left')  return { x: b.x,               y: b.y + b.h * 0.5 };
-      if (g === 'right') return { x: b.x + b.w,         y: b.y + b.h * 0.5 };
-      return { x: b.x + b.w * 0.5, y: b.y + b.h * 0.5 };
+      if (g === 'up')    return { x: b.x + b.w * .5, y: b.y };
+      if (g === 'down')  return { x: b.x + b.w * .5, y: b.y + b.h };
+      if (g === 'left')  return { x: b.x,              y: b.y + b.h * .5 };
+      if (g === 'right') return { x: b.x + b.w,        y: b.y + b.h * .5 };
+      return { x: b.x + b.w * .5, y: b.y + b.h * .5 };
     }
-
     function zoneCol(z) {
       return { air:'#f5c842', land:'#f08030', takeoff:'#60d060', bay:'#b060f0', field:'#40d0c0', runway:'#4090f0' }[z] || '#aaa';
     }
@@ -729,92 +897,68 @@
     function drawOverlay() {
       const fd = getField();
       if (!fd || !fd.W) { overlay.innerHTML = ''; return; }
-
       const W = fd.W, H = fd.H;
-      overlay.setAttribute('viewBox', `0 0 ${W} ${H}`);
-
+      overlay.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
       const snap   = MT ? MT.snapshot() : {};
       const arrive = +(snap['K.ARRIVE'] || 12);
       const GDX = { up:0, down:0, left:-1, right:1 };
       const GDY = { up:-1, down:1, left:0, right:0 };
-
       let s = '<defs><marker id="ga" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">'
             + '<path d="M0,0 L0,6 L6,3 z" fill="rgba(34,200,100,.8)"/></marker></defs>';
-
-      // ── Runways ────────────────────────────────────────────────────────
       (fd.runways || []).forEach((r, i) => {
-        s += `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="rgba(58,130,255,.05)" stroke="rgba(58,210,255,.5)" stroke-width="1.5"/>`;
-        // center line
-        s += `<line x1="${r.x}" y1="${r.cy}" x2="${r.x+r.w}" y2="${r.cy}" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="6 4"/>`;
-        // stopX (посадка — жёлтый)
-        s += `<line x1="${r.stopX}" y1="${r.y}" x2="${r.stopX}" y2="${r.y+r.h}" stroke="rgba(245,200,66,.85)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-        s += `<text x="${r.stopX+2}" y="${r.y+10}" font-size="8" fill="rgba(245,200,66,.9)">stop</text>`;
-        // exitX (взлёт — оранж)
-        s += `<line x1="${r.exitX}" y1="${r.y}" x2="${r.exitX}" y2="${r.y+r.h}" stroke="rgba(240,128,48,.85)" stroke-width="1.5" stroke-dasharray="4 3"/>`;
-        s += `<text x="${r.exitX+2}" y="${r.y+10}" font-size="8" fill="rgba(240,128,48,.9)">exit</text>`;
-        // label
-        const lbl = 'ВПП'+(i+1)+(r.closed?' ✕':'');
-        s += `<text x="${r.x+3}" y="${r.y+r.h-3}" font-size="8" fill="rgba(58,210,255,.65)">${lbl}</text>`;
+        s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="rgba(58,130,255,.05)" stroke="rgba(58,210,255,.5)" stroke-width="1.5"/>';
+        s += '<line x1="'+r.x+'" y1="'+r.cy+'" x2="'+(r.x+r.w)+'" y2="'+r.cy+'" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="6 4"/>';
+        s += '<line x1="'+r.stopX+'" y1="'+r.y+'" x2="'+r.stopX+'" y2="'+(r.y+r.h)+'" stroke="rgba(245,200,66,.85)" stroke-width="1.5" stroke-dasharray="4 3"/>';
+        s += '<text x="'+(r.stopX+2)+'" y="'+(r.y+10)+'" font-size="8" fill="rgba(245,200,66,.9)">stop</text>';
+        s += '<line x1="'+r.exitX+'" y1="'+r.y+'" x2="'+r.exitX+'" y2="'+(r.y+r.h)+'" stroke="rgba(240,128,48,.85)" stroke-width="1.5" stroke-dasharray="4 3"/>';
+        s += '<text x="'+(r.exitX+2)+'" y="'+(r.y+10)+'" font-size="8" fill="rgba(240,128,48,.9)">exit</text>';
+        s += '<text x="'+(r.x+3)+'" y="'+(r.y+r.h-3)+'" font-size="8" fill="rgba(58,210,255,.65)">ВПП'+(i+1)+(r.closed?' ✕':'')+'</text>';
       });
-
-      // ── Bays ───────────────────────────────────────────────────────────
       (fd.bays || []).forEach(b => {
         const col = b.occupied ? 'rgba(180,96,240,.7)' : (b.open ? 'rgba(34,200,100,.55)' : 'rgba(200,80,80,.5)');
-        s += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="${col}" fill-opacity=".1" stroke="${col}" stroke-width="1.5"/>`;
+        s += '<rect x="'+b.x+'" y="'+b.y+'" width="'+b.w+'" height="'+b.h+'" fill="'+col+'" fill-opacity=".1" stroke="'+col+'" stroke-width="1.5"/>';
         const ge = gateEntr(b);
-        const dx = GDX[b.gate] || 0, dy = GDY[b.gate] || 0;
-        s += `<circle cx="${ge.x}" cy="${ge.y}" r="3" fill="${col}"/>`;
-        s += `<line x1="${ge.x}" y1="${ge.y}" x2="${ge.x+dx*12}" y2="${ge.y+dy*12}" stroke="${col}" stroke-width="1.5" marker-end="url(#ga)"/>`;
-        s += `<text x="${b.x+2}" y="${b.y+9}" font-size="7" fill="${col}">${b.type||''}</text>`;
+        const dx = GDX[b.gate]||0, dy = GDY[b.gate]||0;
+        s += '<circle cx="'+ge.x+'" cy="'+ge.y+'" r="3" fill="'+col+'"/>';
+        s += '<line x1="'+ge.x+'" y1="'+ge.y+'" x2="'+(ge.x+dx*12)+'" y2="'+(ge.y+dy*12)+'" stroke="'+col+'" stroke-width="1.5" marker-end="url(#ga)"/>';
+        s += '<text x="'+(b.x+2)+'" y="'+(b.y+9)+'" font-size="7" fill="'+col+'">'+(b.type||'')+'</text>';
       });
-
-      // ── Planes ─────────────────────────────────────────────────────────
       (fd.planes || []).forEach(pl => {
         const col = zoneCol(pl.zone);
         if (pl.path && pl.path.length) {
-          const pts = `${pl.x},${pl.y} ` + pl.path.map(p => `${p.x},${p.y}`).join(' ');
-          s += `<polyline points="${pts}" fill="none" stroke="${col}" stroke-opacity=".45" stroke-width="1.2" stroke-dasharray="5 3"/>`;
+          const pts = pl.x+','+pl.y+' '+pl.path.map(p => p.x+','+p.y).join(' ');
+          s += '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-opacity=".45" stroke-width="1.2" stroke-dasharray="5 3"/>';
           const wp = pl.path[0];
-          s += `<circle cx="${wp.x}" cy="${wp.y}" r="${arrive}" fill="none" stroke="${col}" stroke-opacity=".35" stroke-width="1" stroke-dasharray="3 3"/>`;
-          s += `<circle cx="${wp.x}" cy="${wp.y}" r="2.5" fill="${col}" fill-opacity=".8"/>`;
+          s += '<circle cx="'+wp.x+'" cy="'+wp.y+'" r="'+arrive+'" fill="none" stroke="'+col+'" stroke-opacity=".35" stroke-width="1" stroke-dasharray="3 3"/>';
+          s += '<circle cx="'+wp.x+'" cy="'+wp.y+'" r="2.5" fill="'+col+'" fill-opacity=".8"/>';
         }
-        s += `<circle cx="${pl.x}" cy="${pl.y}" r="5" fill="${col}" fill-opacity=".85" stroke="rgba(0,0,0,.3)" stroke-width="1"/>`;
+        s += '<circle cx="'+pl.x+'" cy="'+pl.y+'" r="5" fill="'+col+'" fill-opacity=".85" stroke="rgba(0,0,0,.3)" stroke-width="1"/>';
       });
-
       overlay.innerHTML = s;
     }
 
     function updateInfo() {
       const fd = getField();
       if (!fd) return;
-
-      // Runways table
       let rh = '<table class="f-table"><tr><th>#</th><th>stopX</th><th>exitX</th><th>cy</th><th>статус</th></tr>';
       (fd.runways || []).forEach((r, i) => {
         const cls = r.closed ? 'tag-bad' : (r.occupied ? 'tag-occ' : 'tag-ok');
         const lbl = r.closed ? 'закрыта' : (r.occupied ? 'занята' : 'свободна');
-        rh += `<tr><td>ВПП ${i+1}</td><td>${Math.round(r.stopX)}</td><td>${Math.round(r.exitX)}</td><td>${Math.round(r.cy)}</td><td><span class="${cls}">${lbl}</span></td></tr>`;
+        rh += '<tr><td>ВПП '+(i+1)+'</td><td>'+Math.round(r.stopX)+'</td><td>'+Math.round(r.exitX)+'</td><td>'+Math.round(r.cy)+'</td><td><span class="'+cls+'">'+lbl+'</span></td></tr>';
       });
       rh += '</table>';
       if (infoRwy) infoRwy.innerHTML = rh;
-
-      // Bays table
       let bh = '<table class="f-table"><tr><th>тип</th><th>ворота</th><th>x</th><th>y</th><th>w×h</th><th>статус</th></tr>';
       (fd.bays || []).forEach(b => {
         const cls = b.occupied ? 'tag-occ' : (b.open ? 'tag-ok' : 'tag-bad');
         const lbl = b.occupied ? 'занят' : (b.open ? 'открыт' : 'закрыт');
-        bh += `<tr><td>${b.type||'?'}</td><td>${b.gate||'?'}</td><td>${Math.round(b.x)}</td><td>${Math.round(b.y)}</td><td>${Math.round(b.w)}×${Math.round(b.h)}</td><td><span class="${cls}">${lbl}</span></td></tr>`;
+        bh += '<tr><td>'+(b.type||'?')+'</td><td>'+(b.gate||'?')+'</td><td>'+Math.round(b.x)+'</td><td>'+Math.round(b.y)+'</td><td>'+Math.round(b.w)+'×'+Math.round(b.h)+'</td><td><span class="'+cls+'">'+lbl+'</span></td></tr>';
       });
       bh += '</table>';
       if (infoBays) infoBays.innerHTML = bh;
     }
 
-    function tick() {
-      if (!fieldOn) return;
-      drawOverlay();
-      updateInfo();
-      setTimeout(tick, 150);
-    }
+    function tick() { if (!fieldOn) return; drawOverlay(); updateInfo(); setTimeout(tick, 150); }
 
     window._fieldActivate = function (on) {
       fieldOn = on;
@@ -823,29 +967,18 @@
     };
   })();
 
-  /* ── 12. Demo mode: Survival + infinite lives & money ───────────────── */
+  /* ── Demo mode ────────────────────────────────────────────────────────── */
   document.getElementById('btn-demo').addEventListener('click', () => {
     try {
       const w = gameFrame.contentWindow;
       if (!w) { setStatus('Игра не загружена.'); return; }
-
-      // Enable debug options if present
       ['optLives', 'optMoney'].forEach(id => {
         const el = w.document.getElementById(id);
-        if (el && !el.checked) {
-          el.checked = true;
-          el.dispatchEvent(new Event('change', { bubbles: true }));
-        }
+        if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
       });
-
-      // Start Survival (clicks the button; works from main menu)
       const survBtn = w.document.getElementById('survivalBtn');
-      if (survBtn) {
-        survBtn.click();
-        setStatus('Demo: Survival запущен · бесконечные борта.');
-      } else {
-        setStatus('Сначала вернись в главное меню, затем нажми Demo.');
-      }
+      if (survBtn) { survBtn.click(); setStatus('Demo: Survival запущен · бесконечные борта.'); }
+      else { setStatus('Сначала вернись в главное меню, затем нажми Demo.'); }
     } catch (e) { setStatus('Demo: ' + e.message); }
   });
 
