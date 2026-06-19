@@ -4,13 +4,35 @@
 
   type MtParam = {
     key: string; group: string; label: string;
-    target: 'K' | 'FOR'; name: string; def: number | boolean | number[];
-    min?: number; max?: number; step?: number;
+    target: 'K' | 'FOR' | 'META'; name: string; def: number | boolean | number[] | string;
+    min?: number; max?: number; step?: number; unit?: string;
+    category?: string; description?: string; valueType?: 'number' | 'boolean' | 'string' | 'number[]';
+    affectsGameplay?: boolean; visualsOnly?: boolean; liveSafe?: boolean; requiresReplay?: boolean; exportable?: boolean; debugOnly?: boolean;
     note: string; impact: string;
   };
 
   const MT_STORE_KEY   = 'pf_motion_tuning_v1';
   const MT_PRESETS_KEY = 'pf_motion_presets_v1';
+
+  const MT_META_VALUES: Record<string, number | boolean | string | number[]> = {};
+
+  const MT_GROUP_CATEGORY: Record<string, string> = {
+    movement:'Движение', turns:'Повороты', routing:'Маршрутизация',
+    takeoff:'Взлёт', approach:'Заход на посадку', landing:'Посадка', timing:'Тайминги', service:'Обслуживание',
+    spawn:'Поток', collisions:'Столкновения', effects:'Эффекты', bay_nav:'Бокс: заезд/выезд',
+    events:'События', weather:'Погода', forest:'Лесной биом', ctrl:'Контроль событий',
+  };
+
+  const MT_PLANNED_PARAMS: MtParam[] = [
+    {key:'MT.ROUTE_SNAP_ENABLED', group:'snap_zones', category:'Зоны захвата', label:'Привязка маршрута', target:'META', name:'ROUTE_SNAP_ENABLED', def:false, note:'Запланированная привязка конечной точки маршрута к объектам; геймплей не затронут.', impact:'Заглушка для будущей привязки маршрута к ВПП/боксам.', affectsGameplay:true, liveSafe:false, requiresReplay:true, exportable:true},
+    {key:'MT.SNAP_RADIUS', group:'snap_zones', category:'Зоны захвата', label:'Радиус зоны захвата', target:'META', name:'SNAP_RADIUS', def:40, min:0, max:180, step:1, unit:'px', note:'Запланированный радиус зон захвата ВПП/боксов; геймплей не затронут.', impact:'Определит дистанцию захвата конечной точки маршрута.', affectsGameplay:true, liveSafe:false, requiresReplay:true, exportable:true},
+    {key:'MT.RUNWAY_HIT_PADDING', group:'runway_geometry', category:'Геометрия ВПП', label:'Поле касания ВПП', target:'META', name:'RUNWAY_HIT_PADDING', def:16, min:0, max:120, step:1, unit:'px', note:'Запланированное расширение области касания ВПП.', impact:'Сделает попадание на ВПП менее точным — удобнее управление.', affectsGameplay:true, liveSafe:false, requiresReplay:true, exportable:true},
+    {key:'MT.BAY_HIT_PADDING', group:'service_bay_geometry', category:'Геометрия боксов', label:'Поле касания бокса', target:'META', name:'BAY_HIT_PADDING', def:12, min:0, max:120, step:1, unit:'px', note:'Запланированное расширение области касания бокса.', impact:'Сделает попадание в бокс менее точным — удобнее управление.', affectsGameplay:true, liveSafe:false, requiresReplay:true, exportable:true},
+    {key:'MT.DEBUG_RUNWAY_SNAP_ZONES', group:'debug_overlays', category:'Отладочные слои', label:'Зоны захвата ВПП', target:'META', name:'DEBUG_RUNWAY_SNAP_ZONES', def:false, note:'Заглушка отладочного слоя — заработает после добавления рендера.', impact:'Не влияет на геймплей в этом патче.', visualsOnly:true, liveSafe:true, exportable:true, debugOnly:true},
+    {key:'MT.DEBUG_BAY_SNAP_ZONES', group:'debug_overlays', category:'Отладочные слои', label:'Зоны захвата боксов', target:'META', name:'DEBUG_BAY_SNAP_ZONES', def:false, note:'Заглушка отладочного слоя — заработает после добавления рендера.', impact:'Не влияет на геймплей в этом патче.', visualsOnly:true, liveSafe:true, exportable:true, debugOnly:true},
+    {key:'MT.DEBUG_RAW_ROUTE_POINTS', group:'debug_overlays', category:'Отладочные слои', label:'Точки маршрута', target:'META', name:'DEBUG_RAW_ROUTE_POINTS', def:false, note:'Заглушка отладочного слоя — заработает после добавления рендера маршрутных точек.', impact:'Не влияет на геймплей в этом патче.', visualsOnly:true, liveSafe:true, exportable:true, debugOnly:true},
+    {key:'MT.SCENARIO', group:'mobile_preview', category:'Превью', label:'Сценарий превью', target:'META', name:'SCENARIO', def:'complete_cycle', note:'Запланированный выбор сценария: посадка, взлёт, руление, цикл обслуживания.', impact:'Сохраняется и экспортируется; привязка к воспроизведению — будущая работа.', liveSafe:false, requiresReplay:true, exportable:true},
+  ];
 
   const MT_PARAMS: MtParam[] = [
     // ── движение ──────────────────────────────────────────────────────────────
@@ -23,22 +45,22 @@
     {key:'K.TAKEOFF_OVERSHOOT', group:'takeoff',  label:'Цель разгона за ВПП',     target:'K',  name:'TAKEOFF_OVERSHOOT', def:K.TAKEOFF_OVERSHOOT, min:0,   max:800, step:10,   note:'px за exitX — цель steer() при разгоне.',                    impact:'Меньше — борт чуть раньше уходит за край и вызывает depart.'},
     // ── заход на посадку ─────────────────────────────────────────────────────
     {key:'K.APPROACH_SPEED_MULT',group:'approach',label:'Скорость захода ×',        target:'K',  name:'APPROACH_SPEED_MULT',def:K.APPROACH_SPEED_MULT,min:.2,  max:1,   step:.05,  note:'Финальный заход = SPEED_AIR × этот множитель.',              impact:'Ниже — медленнее и точнее; выше — быстрее, сложнее попасть.'},
-    {key:'K.PLANE_SKY_SCALE',   group:'approach', label:'Масштаб борта в небе',     target:'K',  name:'PLANE_SKY_SCALE',   def:K.PLANE_SKY_SCALE,   min:.5,  max:3,   step:.05,  note:'Визуальный масштаб борта в воздухе.',                         impact:'Больше — заметнее самолёты; влияет только на рендер.'},
-    {key:'K.PLANE_GND_SCALE',   group:'approach', label:'Масштаб борта на земле',   target:'K',  name:'PLANE_GND_SCALE',   def:K.PLANE_GND_SCALE,   min:.3,  max:2,   step:.05,  note:'Визуальный масштаб борта на земле.',                          impact:'Больше — крупнее наземные борта.'},
+    {key:'K.PLANE_SKY_SCALE',   group:'approach', label:'Масштаб борта в небе',     target:'K',  name:'PLANE_SKY_SCALE',   def:K.PLANE_SKY_SCALE,   min:.5,  max:3,   step:.05,  visualsOnly:true, note:'Визуальный масштаб борта в воздухе.',                         impact:'Больше — заметнее самолёты; влияет только на рендер.'},
+    {key:'K.PLANE_GND_SCALE',   group:'approach', label:'Масштаб борта на земле',   target:'K',  name:'PLANE_GND_SCALE',   def:K.PLANE_GND_SCALE,   min:.3,  max:2,   step:.05,  visualsOnly:true, note:'Визуальный масштаб борта на земле.',                          impact:'Больше — крупнее наземные борта.'},
     // ── посадка ──────────────────────────────────────────────────────────────
     {key:'K.LAND_ALIGN_SPEED',  group:'landing',  label:'Скорость центровки',       target:'K',  name:'LAND_ALIGN_SPEED',  def:K.LAND_ALIGN_SPEED,  min:1,   max:30,  step:.5,   note:'lerp-скорость довыравнивания по оси ВПП при посадке/взлёте.',impact:'Выше — резче прилипание к оси; ниже — плавнее.'},
-    {key:'K.LAND_BUMP_MS',      group:'landing',  label:'Длительность толчка',      target:'K',  name:'LAND_BUMP_MS',      def:K.LAND_BUMP_MS,      min:0,   max:1000,step:10,   note:'Продолжительность визуального отскока при касании, мс.',     impact:'0 — убрать толчок; 500+ — длинный плавный отскок.'},
-    {key:'K.LAND_BUMP_AMP',     group:'landing',  label:'Амплитуда толчка',         target:'K',  name:'LAND_BUMP_AMP',     def:K.LAND_BUMP_AMP,     min:0,   max:20,  step:.5,   note:'Высота отскока корпуса при касании, ui-единиц.',              impact:'0 — без отскока; выше — заметнее «прыжок» при посадке.'},
+    {key:'K.LAND_BUMP_MS',      group:'landing',  label:'Длительность толчка',      target:'K',  name:'LAND_BUMP_MS',      def:K.LAND_BUMP_MS,      min:0,   max:1000,step:10,   visualsOnly:true, note:'Продолжительность визуального отскока при касании, мс.',     impact:'0 — убрать толчок; 500+ — длинный плавный отскок.'},
+    {key:'K.LAND_BUMP_AMP',     group:'landing',  label:'Амплитуда толчка',         target:'K',  name:'LAND_BUMP_AMP',     def:K.LAND_BUMP_AMP,     min:0,   max:20,  step:.5,   visualsOnly:true, note:'Высота отскока корпуса при касании, ui-единиц.',              impact:'0 — без отскока; выше — заметнее «прыжок» при посадке.'},
     // ── маршрутизация ─────────────────────────────────────────────────────────
     {key:'K.ARRIVE', group:'routing', label:'Захват точки маршрута',          target:'K',  name:'ARRIVE',       def:K.ARRIVE,       min:2,   max:40,  step:1,    note:'Минимальный порог достижения waypoint.',                    impact:'Больше — плавнее, но менее точное следование линии.'},
     {key:'K.GRAB',   group:'routing', label:'Радиус выбора борта',            target:'K',  name:'GRAB',         def:K.GRAB,         min:16,  max:90,  step:1,    note:'Радиус тапа/захвата.',                                      impact:'Влияет на удобство взаимодействия.'},
     // ── столкновения ──────────────────────────────────────────────────────────
     {key:'K.CRASH_DIST', group:'collisions', label:'Дистанция краша',         target:'K',  name:'CRASH_DIST',   def:K.CRASH_DIST,   min:8,   max:60,  step:1,    note:'Физический контакт наземных бортов.',                       impact:'Выше — игра строже к разъездам.'},
     // ── эффекты ───────────────────────────────────────────────────────────────
-    {key:'K.NEAR_DIST',   group:'effects', label:'Дистанция near-miss',       target:'K',  name:'NEAR_DIST',    def:K.NEAR_DIST,    min:16,  max:120, step:1,    note:'Порог эффекта «уфф».',                                      impact:'Выше — чаще визуальная реакция на опасные манёвры.'},
-    {key:'K.NEAR_COOL',   group:'effects', label:'Кулдаун near-miss',         target:'K',  name:'NEAR_COOL',    def:K.NEAR_COOL,    min:.2,  max:8,   step:.1,   note:'Антидребезг на пару бортов.',                               impact:'Меньше — чаще повторы эффекта.'},
-    {key:'K.SLOWMO_DUR',  group:'effects', label:'Длительность slowmo',       target:'K',  name:'SLOWMO_DUR',   def:K.SLOWMO_DUR,   min:0,   max:2,   step:.05,  note:'Секунды замедления при near-miss.',                          impact:'Усиливает драму опасного сближения.'},
-    {key:'K.SLOWMO_SCALE',group:'effects', label:'Масштаб slowmo',            target:'K',  name:'SLOWMO_SCALE', def:K.SLOWMO_SCALE, min:.1,  max:1,   step:.05,  note:'Множитель времени при slowmo.',                             impact:'Ниже — эффект заметнее.'},
+    {key:'K.NEAR_DIST',   group:'effects', label:'Дистанция near-miss',       target:'K',  name:'NEAR_DIST',    def:K.NEAR_DIST,    min:16,  max:120, step:1,    visualsOnly:true, note:'Порог эффекта «уфф».',                                      impact:'Выше — чаще визуальная реакция на опасные манёвры.'},
+    {key:'K.NEAR_COOL',   group:'effects', label:'Кулдаун near-miss',         target:'K',  name:'NEAR_COOL',    min:.2,  max:8,   step:.1,    visualsOnly:true, def:K.NEAR_COOL,    note:'Антидребезг на пару бортов.',                               impact:'Меньше — чаще повторы эффекта.'},
+    {key:'K.SLOWMO_DUR',  group:'effects', label:'Длительность slowmo',       target:'K',  name:'SLOWMO_DUR',   def:K.SLOWMO_DUR,   min:0,   max:2,   step:.05,  visualsOnly:true, note:'Секунды замедления при near-miss.',                          impact:'Усиливает драму опасного сближения.'},
+    {key:'K.SLOWMO_SCALE',group:'effects', label:'Масштаб slowmo',            target:'K',  name:'SLOWMO_SCALE', def:K.SLOWMO_SCALE, min:.1,  max:1,   step:.05,  visualsOnly:true, note:'Множитель времени при slowmo.',                             impact:'Ниже — эффект заметнее.'},
     // ── тайминги ──────────────────────────────────────────────────────────────
     {key:'K.AIR_BASE',    group:'timing', label:'Воздушное терпение',         target:'K',  name:'AIR_BASE',     def:K.AIR_BASE,     min:5,   max:90,  step:1,    note:'Окно посадки обычного борта.',                              impact:'Ниже — сильнее давление до посадки.'},
     {key:'K.GROUND_BASE', group:'timing', label:'Наземное терпение база',     target:'K',  name:'GROUND_BASE',  def:K.GROUND_BASE,  min:10,  max:180, step:1,    note:'Базовый таймер после посадки.',                             impact:'Ниже — меньше времени на обслуживание.'},
@@ -87,24 +109,39 @@
     {key:'K.DISABLE_BAY',       group:'ctrl', label:'Отключить боксы',        target:'K', name:'DISABLE_BAY',       def:true, note:'Пропускает все услуги в боксах — сразу к вылету.',   impact:'Чистый тест руления и взлёта без обслуживания.'},
   ];
 
+  MT_PARAMS.forEach(p => {
+    p.category = p.category || MT_GROUP_CATEGORY[p.group] || p.group;
+    p.description = p.description || p.note;
+    p.valueType = p.valueType || (Array.isArray(p.def) ? 'number[]' : typeof p.def === 'boolean' ? 'boolean' : typeof p.def === 'string' ? 'string' : 'number');
+    p.visualsOnly = p.visualsOnly ?? false;
+    p.affectsGameplay = p.affectsGameplay ?? !p.visualsOnly;
+    p.liveSafe = p.liveSafe ?? true;
+    p.requiresReplay = p.requiresReplay ?? false;
+    p.exportable = p.exportable ?? true;
+    p.debugOnly = p.debugOnly ?? false;
+  });
+  MT_PLANNED_PARAMS.forEach(p => { MT_META_VALUES[p.name] = p.def; MT_PARAMS.push(p); });
+
   const MT_GROUPS: Record<string, string> = {
+    input_touch:'Ввод и касания', route_drawing:'Маршрутизация', route_smoothing:'Сглаживание маршрута', snap_zones:'Зоны захвата', runway_geometry:'Геометрия ВПП',
     movement:'Движение', turns:'Повороты', routing:'Маршрутизация',
-    takeoff:'Взлёт',     approach:'Заход на посадку', landing:'Посадка',
-    timing:'Тайминги',   service:'Обслуживание',
-    spawn:'Поток',       collisions:'Столкновения', effects:'Эффекты',
-    bay_nav:'Бокс: заезд/выезд',
-    events:'События',    weather:'Погода',  forest:'Лесной биом',
-    ctrl:'⚙ Контроль событий',
+    takeoff:'Взлёт', approach:'Заход на посадку', landing:'Посадка', rollout_stop:'Пробег и остановка',
+    timing:'Тайминги', service:'Обслуживание', spawn:'Поток', collisions:'Столкновения', effects:'Эффекты',
+    bay_nav:'Бокс: заезд/выезд', service_bay_geometry:'Геометрия боксов', service_bay_exit:'Выезд из бокса', aircraft_state:'Состояние борта', aircraft_scale:'Масштаб борта',
+    events:'События', weather:'Погода', sound_haptics:'Звук и вибрация', debug_overlays:'Отладочные слои', presets_persistence:'Пресеты',
+    forest:'Лесной биом', ctrl:'⚙ Контроль событий', mobile_preview:'Превью',
   };
 
-  function mtTarget(p: MtParam): any { return p.target === 'FOR' ? FOR as any : K as any; }
+  function mtTarget(p: MtParam): any { return p.target === 'META' ? MT_META_VALUES : p.target === 'FOR' ? FOR as any : K as any; }
   function mtGet(p: MtParam): any    { return mtTarget(p)[p.name]; }
 
   function mtSet(key: string, value: any): boolean {
     const p = MT_PARAMS.find(x => x.key === key);
     if (!p) return false;
     const t = mtTarget(p);
-    if (Array.isArray(p.def)) {
+    if (typeof p.def === 'string') {
+      t[p.name] = String(value);
+    } else if (Array.isArray(p.def)) {
       t[p.name] = String(value).split(',').map((x: string) => +x.trim()).filter((x: number) => Number.isFinite(x));
     } else if (typeof p.def === 'boolean') {
       t[p.name] = !!value;
@@ -155,11 +192,13 @@
   }
 
   function mtExport(): string {
-    return JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), values: mtSnapshot() }, null, 2);
+    return JSON.stringify({ schemaVersion: 2, version: 1, exportedAt: new Date().toISOString(), values: mtSnapshot() }, null, 2);
   }
 
   function mtImportText(text: string): void {
     const o = JSON.parse(text);
+    const schemaVer: number = o.schemaVersion || o.version || 1;
+    if (schemaVer > 2) console.warn('[MT] импорт JSON схемы v' + schemaVer + '; поддерживается v2 — возможна потеря данных');
     mtApply(o.values || o);
   }
 
@@ -170,17 +209,30 @@
     savePreset: mtSavePreset, applyPreset: mtApplyPreset,
   };
 
+  function escHtml(s: string): string {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   function mtBuildHTML(ps: Record<string, any>): string {
-    const presetOpts = Object.keys(ps).map(n => '<option>' + n + '</option>').join('');
+    const presetOpts = Object.keys(ps).map(n => '<option>' + escHtml(n) + '</option>').join('');
     const groups = Object.keys(MT_GROUPS).map(g => {
-      const rows = MT_PARAMS.filter(p => p.group === g).map(p =>
-        '<label class="mt-row">' +
-          '<span><b>' + p.label + '</b><em>' + p.key + ' · ' + p.impact + '</em></span>' +
+      const rows = MT_PARAMS.filter(p => p.group === g).map(p => {
+        const unit = p.unit ? ' (' + escHtml(p.unit) + ')' : '';
+        const desc = p.description || p.note || '';
+        const meta = '<span><b>' + escHtml(p.label) + unit + '</b><em>' + escHtml(p.key + (p.category ? ' · ' + p.category : '')) + (desc ? ' — ' + escHtml(desc) : '') + '</em></span>';
+        if (typeof p.def === 'boolean') {
+          return '<label class="mt-row mt-bool">' + meta + '<input type="checkbox" data-mt="' + p.key + '" ' + (mtGet(p) ? 'checked' : '') + '></label>';
+        }
+        if (typeof p.def === 'string') {
+          return '<label class="mt-row">' + meta + '<input class="mt-num" data-mt="' + p.key + '" type="text" value="' + escHtml(String(mtGet(p))) + '"></label>';
+        }
+        return '<label class="mt-row">' + meta +
           '<input type="range" data-mt="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + mtGet(p) + '">' +
           '<input class="mt-num" data-mt="' + p.key + '" type="number" step="' + p.step + '" value="' + mtGet(p) + '">' +
-        '</label>'
-      ).join('');
-      return '<details open><summary>' + MT_GROUPS[g] + '</summary>' + rows + '</details>';
+        '</label>';
+      }).join('');
+      if (!rows) return '';
+      return '<details open><summary>' + escHtml(MT_GROUPS[g]) + '</summary>' + rows + '</details>';
     }).join('');
     return (
       '<div class="mt-head"><b>Motion Tuning</b><button id="mtClose">×</button></div>' +
@@ -235,7 +287,7 @@
     });
 
     root.querySelectorAll('[data-mt]').forEach((el: any) => el.addEventListener('input', (e: any) => {
-      mtSet(e.target.dataset.mt, e.target.value);
+      mtSet(e.target.dataset.mt, e.target.type === 'checkbox' ? e.target.checked : e.target.value);
       try { localStorage.setItem(MT_STORE_KEY, JSON.stringify(mtSnapshot())); } catch (_) {}
       // синхронизировать slider ↔ number для того же параметра
       root.querySelectorAll('[data-mt="' + e.target.dataset.mt + '"]').forEach((x: any) => {
