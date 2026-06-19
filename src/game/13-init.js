@@ -50,11 +50,13 @@
   window.__MT = MT;   // доступен из родительского tuning.html (same-origin iframe)
   // Живые данные поля — для оверлея в tuning.html (same-origin)
   window.__FIELD = {
-    get planes()  { return planes;  },
-    get runways() { return runways; },
-    get bays()    { return bays;    },
-    get W()       { return W;       },
-    get H()       { return H;       },
+    get planes()       { return planes;            },
+    get runways()      { return runways;           },
+    get bays()         { return bays;              },
+    get W()            { return W;                 },
+    get H()            { return H;                 },
+    get safetyRects()  { return calcSafetyRects(); },
+    get safe()         { return safe;              },
   };
   resize();
   requestAnimationFrame(frame);

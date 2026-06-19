@@ -21,6 +21,7 @@
     takeoff:'Взлёт', approach:'Заход на посадку', landing:'Посадка', timing:'Тайминги', service:'Обслуживание',
     spawn:'Поток', collisions:'Столкновения', effects:'Эффекты', bay_nav:'Бокс: заезд/выезд',
     events:'События', weather:'Погода', forest:'Лесной биом', ctrl:'Контроль событий',
+    safe_areas:'Безопасные зоны и жесты',
   };
 
   const MT_PLANNED_PARAMS: MtParam[] = [
@@ -32,6 +33,42 @@
     {key:'MT.DEBUG_BAY_SNAP_ZONES', group:'debug_overlays', category:'Отладочные слои', label:'Зоны захвата боксов', target:'META', name:'DEBUG_BAY_SNAP_ZONES', def:false, note:'Заглушка отладочного слоя — заработает после добавления рендера.', impact:'Не влияет на геймплей в этом патче.', visualsOnly:true, liveSafe:true, exportable:true, debugOnly:true},
     {key:'MT.DEBUG_RAW_ROUTE_POINTS', group:'debug_overlays', category:'Отладочные слои', label:'Точки маршрута', target:'META', name:'DEBUG_RAW_ROUTE_POINTS', def:false, note:'Заглушка отладочного слоя — заработает после добавления рендера маршрутных точек.', impact:'Не влияет на геймплей в этом патче.', visualsOnly:true, liveSafe:true, exportable:true, debugOnly:true},
     {key:'MT.SCENARIO', group:'mobile_preview', category:'Превью', label:'Сценарий превью', target:'META', name:'SCENARIO', def:'complete_cycle', note:'Запланированный выбор сценария: посадка, взлёт, руление, цикл обслуживания.', impact:'Сохраняется и экспортируется; привязка к воспроизведению — будущая работа.', liveSafe:false, requiresReplay:true, exportable:true},
+
+    // ── Безопасные зоны: ручной override safe-area insets (Workbench) ────────
+    {key:'MT.SA_INSET_TOP',    group:'safe_areas', category:'Safe insets', label:'Safe inset сверху',    target:'META', name:'SA_INSET_TOP',    def:0,   min:0, max:120, step:1, unit:'px', note:'Ручной override safe-area-inset-top. 0 = читать из env(). Применяется для симуляции в Workbench.',        impact:'Смещает верхний край contentSafeRect.', liveSafe:true, exportable:true },
+    {key:'MT.SA_INSET_RIGHT',  group:'safe_areas', category:'Safe insets', label:'Safe inset справа',    target:'META', name:'SA_INSET_RIGHT',  def:0,   min:0, max:120, step:1, unit:'px', note:'Ручной override safe-area-inset-right. 0 = читать из env().',                                            impact:'Смещает правый край contentSafeRect.', liveSafe:true, exportable:true },
+    {key:'MT.SA_INSET_BOTTOM', group:'safe_areas', category:'Safe insets', label:'Safe inset снизу',     target:'META', name:'SA_INSET_BOTTOM', def:0,   min:0, max:120, step:1, unit:'px', note:'Ручной override safe-area-inset-bottom. 0 = читать из env().',                                            impact:'Смещает нижний край contentSafeRect.', liveSafe:true, exportable:true },
+    {key:'MT.SA_INSET_LEFT',   group:'safe_areas', category:'Safe insets', label:'Safe inset слева',     target:'META', name:'SA_INSET_LEFT',   def:0,   min:0, max:120, step:1, unit:'px', note:'Ручной override safe-area-inset-left. 0 = читать из env().',                                             impact:'Смещает левый край contentSafeRect.', liveSafe:true, exportable:true },
+
+    // ── Вырез камеры ─────────────────────────────────────────────────────────
+    {key:'MT.SA_CUTOUT_SIDE',   group:'safe_areas', category:'Вырез камеры', label:'Сторона выреза',      target:'META', name:'SA_CUTOUT_SIDE',   def:'none', note:"Сторона выреза камеры для симуляции: 'none', 'left', 'right', 'top'.", impact:'Определяет, где находится вырез. Смещает соответствующий safe inset.', liveSafe:true, exportable:true },
+    {key:'MT.SA_CUTOUT_W',      group:'safe_areas', category:'Вырез камеры', label:'Ширина выреза',       target:'META', name:'SA_CUTOUT_W',      def:28,  min:0, max:80,  step:1, unit:'px', note:'Ширина (толщина) выреза камеры в px.',                                    impact:'Увеличивает effective safe inset на стороне выреза.', liveSafe:true, exportable:true },
+    {key:'MT.SA_CUTOUT_H',      group:'safe_areas', category:'Вырез камеры', label:'Длина выреза',        target:'META', name:'SA_CUTOUT_H',      def:90,  min:0, max:200, step:1, unit:'px', note:'Высота (длина вдоль края) выреза камеры в px.',                           impact:'Определяет протяжённость зоны выреза.', liveSafe:true, exportable:true },
+    {key:'MT.SA_CUTOUT_OFFSET', group:'safe_areas', category:'Вырез камеры', label:'Смещение выреза',     target:'META', name:'SA_CUTOUT_OFFSET', def:0,   min:0, max:400, step:1, unit:'px', note:'Смещение выреза от верхнего края (в ландшафте — от левого/правого торца).', impact:'Позиция выреза вдоль стороны экрана.', liveSafe:true, exportable:true },
+
+    // ── Жесты Android ────────────────────────────────────────────────────────
+    {key:'MT.SA_GESTURE_LEFT',   group:'safe_areas', category:'Жесты Android', label:'Жест «назад» (лево)',   target:'META', name:'SA_GESTURE_LEFT',   def:24, min:0, max:60, step:1, unit:'px', note:'Ширина зоны жеста «назад» у левого края. По умолчанию 24 dp (gesture nav).', impact:'Запрещает старт маршрута у левого края.', liveSafe:true, exportable:true },
+    {key:'MT.SA_GESTURE_RIGHT',  group:'safe_areas', category:'Жесты Android', label:'Жест «назад» (право)',  target:'META', name:'SA_GESTURE_RIGHT',  def:24, min:0, max:60, step:1, unit:'px', note:'Ширина зоны жеста «назад» у правого края.',                                  impact:'Запрещает старт маршрута у правого края.', liveSafe:true, exportable:true },
+    {key:'MT.SA_GESTURE_TOP',    group:'safe_areas', category:'Жесты Android', label:'Жест шторки (верх)',    target:'META', name:'SA_GESTURE_TOP',    def:0,  min:0, max:60, step:1, unit:'px', note:'Высота зоны жеста шторки у верхнего края (обычно 0 в игре).',               impact:'Запрещает старт маршрута у верхнего края.', liveSafe:true, exportable:true },
+    {key:'MT.SA_GESTURE_BOTTOM', group:'safe_areas', category:'Жесты Android', label:'Жест «домой» (низ)',    target:'META', name:'SA_GESTURE_BOTTOM', def:24, min:0, max:60, step:1, unit:'px', note:'Высота зоны жеста «домой/свернуть» у нижнего края.',                          impact:'Запрещает старт маршрута у нижнего края.', liveSafe:true, exportable:true },
+
+    // ── Отступы зон ──────────────────────────────────────────────────────────
+    {key:'MT.SA_ROUTE_START_PAD',  group:'safe_areas', category:'Отступы', label:'Отступ начала маршрута',     target:'META', name:'SA_ROUTE_START_PAD',  def:32, min:0, max:80, step:1, unit:'px', note:'Дополнительный отступ от внешнего края жест-зоны для начала маршрута.',  impact:'Размер routeStartAllowedRect от краёв.', liveSafe:true, exportable:true },
+    {key:'MT.SA_ROUTE_DRAW_PAD',   group:'safe_areas', category:'Отступы', label:'Отступ рисования маршрута',  target:'META', name:'SA_ROUTE_DRAW_PAD',   def:0,  min:0, max:80, step:1, unit:'px', note:'Отступ routeDrawAllowedRect. 0 = маршрут может подходить к самому краю жест-зоны.', impact:'Ограничивает область рисования.', liveSafe:true, exportable:true },
+    {key:'MT.SA_ROUTE_TARGET_PAD', group:'safe_areas', category:'Отступы', label:'Отступ цели маршрута',       target:'META', name:'SA_ROUTE_TARGET_PAD', def:16, min:0, max:80, step:1, unit:'px', note:'Отступ routeTargetAllowedRect для ВПП/боксов.',                            impact:'Snap-точки не должны быть у самого края.', liveSafe:true, exportable:true },
+    {key:'MT.SA_CONTENT_PAD',      group:'safe_areas', category:'Отступы', label:'Отступ контентной зоны',     target:'META', name:'SA_CONTENT_PAD',      def:0,  min:0, max:40, step:1, unit:'px', note:'Дополнительный запас contentSafeRect от safeAreaInsets.',                 impact:'Консервативный отступ для контента.', liveSafe:true, exportable:true },
+    {key:'MT.SA_INTERACTIVE_PAD',  group:'safe_areas', category:'Отступы', label:'Отступ интерактивной зоны',  target:'META', name:'SA_INTERACTIVE_PAD',  def:0,  min:0, max:40, step:1, unit:'px', note:'Дополнительный запас interactiveSafeRect от жест-зон.',                   impact:'Консервативный отступ для кнопок и объектов.', liveSafe:true, exportable:true },
+    {key:'MT.SA_HUD_PAD',          group:'safe_areas', category:'Отступы', label:'Отступ HUD',                 target:'META', name:'SA_HUD_PAD',          def:0,  min:0, max:40, step:1, unit:'px', note:'Дополнительный отступ HUD от safeAreaInsets.',                            impact:'HUD отступает дальше от вырезов.', liveSafe:true, exportable:true },
+    {key:'MT.SA_BUTTON_PAD',       group:'safe_areas', category:'Отступы', label:'Отступ кнопок',              target:'META', name:'SA_BUTTON_PAD',       def:0,  min:0, max:40, step:1, unit:'px', note:'Дополнительный отступ критичных кнопок (пауза) от жест-зон.',            impact:'Кнопки отступают дальше от краёв.', liveSafe:true, exportable:true },
+
+    // ── Поведение (флаги — не влияют на геймплей до следующего ревью) ────────
+    {key:'MT.SA_BLOCK_ROUTE_START',     group:'safe_areas', category:'Поведение', label:'Блок старта в жест-зоне',    target:'META', name:'SA_BLOCK_ROUTE_START',     def:true,  note:'Флаг: блокировать начало маршрута в зоне системных жестов (реализация — в след. PR).', impact:'Предотвратит конфликт drag-start с жестами Android.', liveSafe:true, exportable:true },
+    {key:'MT.SA_ALLOW_ROUTE_GESTURE',   group:'safe_areas', category:'Поведение', label:'Продолжение через жест-зону', target:'META', name:'SA_ALLOW_ROUTE_GESTURE',   def:true,  note:'Флаг: разрешить продолжение маршрута через жест-зону после старта.',                  impact:'При false — маршрут обрезается у границы жест-зоны.', liveSafe:true, exportable:true },
+    {key:'MT.SA_BLOCK_TARGETS_GESTURE', group:'safe_areas', category:'Поведение', label:'Блок целей в жест-зоне',     target:'META', name:'SA_BLOCK_TARGETS_GESTURE', def:true,  note:'Флаг: snap-точки ВПП/боксов не должны попадать в жест-зону.',                         impact:'Валидация предупреждений в Workbench.', liveSafe:true, exportable:true },
+    {key:'MT.SA_BLOCK_OBJ_CUTOUT',      group:'safe_areas', category:'Поведение', label:'Блок объектов в вырезе',     target:'META', name:'SA_BLOCK_OBJ_CUTOUT',      def:true,  note:'Флаг: игровые объекты не должны перекрываться с зоной выреза камеры.',               impact:'Валидация предупреждений в Workbench.', liveSafe:true, exportable:true },
+
+    // ── Отладка ───────────────────────────────────────────────────────────────
+    {key:'MT.SA_DEBUG_OVERLAY', group:'safe_areas', category:'Отладка', label:'Debug overlay на канвасе', target:'META', name:'SA_DEBUG_OVERLAY', def:false, note:'Показывать зоны безопасности поверх игры на канвасе (для отладки на устройстве).', impact:'Не влияет на геймплей.', visualsOnly:true, liveSafe:true, exportable:true, debugOnly:true },
   ];
 
   const MT_PARAMS: MtParam[] = [
@@ -130,6 +167,7 @@
     bay_nav:'Бокс: заезд/выезд', service_bay_geometry:'Геометрия боксов', service_bay_exit:'Выезд из бокса', aircraft_state:'Состояние борта', aircraft_scale:'Масштаб борта',
     events:'События', weather:'Погода', sound_haptics:'Звук и вибрация', debug_overlays:'Отладочные слои', presets_persistence:'Пресеты',
     forest:'Лесной биом', ctrl:'⚙ Контроль событий', mobile_preview:'Превью',
+    safe_areas:'📐 Безопасные зоны и жесты',
   };
 
   function mtTarget(p: MtParam): any { return p.target === 'META' ? MT_META_VALUES : p.target === 'FOR' ? FOR as any : K as any; }
