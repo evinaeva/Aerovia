@@ -81,10 +81,11 @@ its first commit. This is the preferred method — it needs no per-machine log s
 
 - **Work in your own feature branch — never commit straight to `main`.** Branch off the
   latest `origin/main`, do the work there, push the branch and open a PR.
-- **Do NOT merge into `main` yourself — leave the PR ready and let the owner merge it.**
-  The owner often runs **several Claude conversations in parallel** against this repo, and
-  auto-merging to `main` disrupts the other conversations' in-flight work. Don't merge even
-  when it's mergeable and CI is green, and don't wait around for a "мержи" / "merge" reply —
-  just leave the branch/PR ready and move on.
+- **Don't merge into `main` on your own initiative — but DO merge when I ask in chat.**
+  The owner often runs **several Claude conversations in parallel** against this repo, so don't
+  auto-merge just because a PR is mergeable and CI is green — by default leave the branch/PR ready
+  and move on. **However, if I explicitly tell you to merge in chat (e.g. «смержи» / «мержи» /
+  "merge"), that is the signal to merge** — do it (resolve conflicts with `main` and wait for green
+  CI first; if it can't be done cleanly, say so instead of forcing it).
 - Before starting and before pushing: `git fetch`; base your branch on `origin/main`; never
   `--force`, and never rewrite someone else's commits.
