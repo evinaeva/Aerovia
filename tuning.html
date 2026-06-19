@@ -448,7 +448,7 @@
 
     .mt-row {
       display: grid;
-      grid-template-columns: minmax(90px, 150px) 1fr 56px;
+      grid-template-columns: 1fr auto;   /* label · number-stepper (sliders removed) */
       align-items: center;
       gap: 6px;
       padding: 0 10px;
@@ -464,15 +464,31 @@
     }
     .mt-row .lbl small { color: var(--muted); font-size: 10px; font-weight: 400; margin-left: 2px; }
 
-    .mt-row input[type=range] {
-      min-width: 0; width: 100%; cursor: pointer; accent-color: var(--accent2);
+    /* ── Number stepper: −  [ value ]  +  (replaces the range sliders).
+       Native spin buttons are hidden so the custom −/+ buttons show
+       identically on desktop and iOS (where native spinners don't render). */
+    .mt-stepper { display: flex; align-items: center; gap: 4px; flex: none; }
+    .mt-step {
+      flex: none; width: 30px; height: 30px;
+      display: grid; place-items: center;
+      border: 1px solid var(--border); border-radius: 7px;
+      background: var(--btn-bg); color: var(--text);
+      font-size: 18px; line-height: 1; font-family: inherit;
+      cursor: pointer; user-select: none; padding: 0;
+      transition: background .12s, border-color .12s;
     }
+    .mt-step:hover  { background: #1a2a48; border-color: var(--accent); }
+    .mt-step:active { background: rgba(34,227,198,.16); }
     .mt-row .mt-num {
-      width: 54px;
+      width: 64px;
       border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
       background: var(--input-bg); color: #fff;
-      padding: 3px 4px; font-size: 11px; text-align: right; font-family: inherit;
+      padding: 4px 6px; font-size: 12px; text-align: center; font-family: inherit;
     }
+    .mt-stepper input[type=number]::-webkit-outer-spin-button,
+    .mt-stepper input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .mt-stepper input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+    .mt-stepper .lab-num { flex: none; }
 
     .mt-row.mt-bool { grid-template-columns: 1fr auto; gap: 8px; }
     .mt-row.mt-bool .lbl { white-space: normal; font-size: 11px; line-height: 1.3; overflow: visible; }
@@ -531,22 +547,21 @@
     }
     .lab-row {
       display: grid;
-      grid-template-columns: minmax(80px, 150px) 1fr 60px;
+      grid-template-columns: 1fr auto;   /* label · number-stepper (slider removed) */
       align-items: center;
       gap: 6px;
       padding: 4px 0;
-      height: 32px;
+      min-height: 32px;
       border-top: 1px solid var(--row-sep);
     }
     .lab-row:first-of-type { border-top: none; }
     .lab-row .lbl-main { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lab-row .lbl-sub  { display: none; }
-    .lab-row input[type=range] { min-width: 0; width: 100%; cursor: pointer; accent-color: var(--accent2); }
     .lab-row .lab-num {
-      width: 60px;
+      width: 64px;
       border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
       background: var(--input-bg); color: #fff;
-      padding: 3px 5px; font-size: 11px; text-align: right; font-family: inherit;
+      padding: 4px 6px; font-size: 12px; text-align: center; font-family: inherit;
     }
     .lab-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0 2px; }
     .lab-chip {
@@ -722,7 +737,6 @@
       #toolbar { flex-wrap: wrap; }
       #search { width: 90px; }
       #search:focus { width: 130px; }
-      .mt-row { grid-template-columns: minmax(70px, 120px) 1fr 50px; }
     }
 
     /* Short / landscape-phone viewports: the fixed 300px bottom-pane minimum
@@ -739,11 +753,13 @@
       #splitter { height: 18px; }
       .t-tab    { padding: 12px 16px; font-size: 14px; }
       #groups summary { padding: 12px 12px; }
+      .mt-step  { width: 36px; height: 36px; font-size: 20px; }   /* finger-sized −/+ */
+      .mt-row .mt-num, .lab-row .lab-num { width: 70px; }
     }
 
     /* Snappier taps on iOS — no 300ms delay, no grey flash.
        (#splitter / #resize-handle keep touch-action:none for dragging.) */
-    .tb-btn, .p-btn, .co-btn, .sz-btn, .t-tab, .s-tab, #groups summary,
+    .tb-btn, .p-btn, .co-btn, .sz-btn, .t-tab, .s-tab, .mt-step, #groups summary,
     .toggle-card, .lab-chip {
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
@@ -944,17 +960,19 @@
       <h3>Параметры уровня</h3>
       <div class="lab-row">
         <span class="lbl-main">Сложность <span class="lbl-sub">target difficulty · 0 = легко, 1 = невозможно</span></span>
-        <input type="range" min="0" max="1" step="0.01" value="0.45"
-               oninput="this.nextElementSibling.value=parseFloat(this.value).toFixed(2)">
-        <input class="lab-num" type="number" min="0" max="1" step="0.01" value="0.45"
-               oninput="this.previousElementSibling.value=this.value">
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" type="number" inputmode="decimal" min="0" max="1" step="0.01" value="0.45">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+        </div>
       </div>
       <div class="lab-row">
         <span class="lbl-main">ВПП <span class="lbl-sub">количество взлётно-посадочных полос</span></span>
-        <input type="range" min="1" max="4" step="1" value="2"
-               oninput="this.nextElementSibling.value=this.value">
-        <input class="lab-num" type="number" min="1" max="4" step="1" value="2"
-               oninput="this.previousElementSibling.value=this.value">
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" type="number" inputmode="numeric" min="1" max="4" step="1" value="2">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+        </div>
       </div>
     </div>
     <div class="lab-section">
@@ -994,10 +1012,12 @@
       <h3>Целевая сложность</h3>
       <div class="lab-row">
         <span class="lbl-main">Target difficulty <span class="lbl-sub">итоговый балл уровня</span></span>
-        <input type="range" min="0" max="1" step="0.01" value="0.6"
-               oninput="this.nextElementSibling.value=parseFloat(this.value).toFixed(2);document.getElementById('diff-target').textContent=parseFloat(this.value).toFixed(2)">
-        <input class="lab-num" type="number" min="0" max="1" step="0.01" value="0.60"
-               oninput="this.previousElementSibling.value=this.value">
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" type="number" inputmode="decimal" min="0" max="1" step="0.01" value="0.60"
+                 oninput="document.getElementById('diff-target').textContent=parseFloat(this.value||0).toFixed(2)">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+        </div>
       </div>
     </div>
     <div class="lab-section">
@@ -1461,7 +1481,10 @@
         grid.className = 'mt-params-grid';
 
         params.forEach(p => {
-          const row = document.createElement('label');
+          const isNum = typeof p.def !== 'boolean' && typeof p.def !== 'string';
+          // Numeric rows are <div> (not <label>): a <label> would forward
+          // clicks on the −/+ buttons to the number input.
+          const row = document.createElement(isNum ? 'div' : 'label');
           const v = snap[p.key];
           row.dataset.key = p.key;
 
@@ -1491,9 +1514,16 @@
               '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + escHtml(String(v)) + '">';
           } else {
             row.className = 'mt-row';
+            const numAttrs =
+              (p.min  != null ? ' min="'  + p.min  + '"' : '') +
+              (p.max  != null ? ' max="'  + p.max  + '"' : '') +
+              (p.step != null ? ' step="' + p.step + '"' : '');
             row.innerHTML = lblHtml +
-              '<input type="range"   data-key="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + v + '">' +
-              '<input class="mt-num" data-key="' + p.key + '" type="number" step="' + p.step + '" value="' + v + '">';
+              '<div class="mt-stepper">' +
+                '<button type="button" class="mt-step" data-key="' + p.key + '" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>' +
+                '<input class="mt-num" data-key="' + p.key + '" type="number" inputmode="decimal"' + numAttrs + ' value="' + v + '">' +
+                '<button type="button" class="mt-step" data-key="' + p.key + '" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>' +
+              '</div>';
           }
           grid.appendChild(row);
         });
@@ -1533,7 +1563,32 @@
         MT.apply({ [key]: parseFloat(e.target.value) }, true);
       }
     });
+
   }
+
+  // −/+ stepper buttons (Motion params + lab stubs): nudge the number field in
+  // the same .mt-stepper by its step, then dispatch input/change so the
+  // relevant listeners (delegated MT handlers, or inline lab oninput) apply it.
+  // Document-level + container-relative so it works for every stepper anywhere.
+  document.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('.mt-step');
+    if (!btn) return;
+    e.preventDefault();
+    const wrap  = btn.closest('.mt-stepper');
+    const input = wrap && wrap.querySelector('input[type=number]');
+    if (!input) return;
+    const dir  = parseFloat(btn.dataset.dir) || 1;
+    const step = parseFloat(input.step) || 1;
+    const dec  = (String(input.step).split('.')[1] || '').length;   // step decimals → avoid float drift
+    let val = parseFloat(input.value);
+    if (!Number.isFinite(val)) val = 0;
+    val = +(val + dir * step).toFixed(dec);
+    if (input.min !== '' && val < +input.min) val = +input.min;
+    if (input.max !== '' && val > +input.max) val = +input.max;
+    input.value = val;
+    input.dispatchEvent(new Event('input',  { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
 
   function syncUI() {
     if (!MT) return;
