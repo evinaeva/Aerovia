@@ -31,66 +31,61 @@
 
     /* ── TOP PANE — Live Preview ─────────────────────────────────────────── */
     #top-pane {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      grid-template-areas: "left preview tools";
-      align-items: start;
-      gap: 12px;
-      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      padding: 8px 10px;
       background: #020609;
       border-bottom: 1px solid var(--border);
-      overflow: hidden;
+      overflow: visible;
       flex: none;
-      min-height: 120px;
+      min-height: 80px;
       position: relative;
     }
 
-    /* ── Left panel: size strip + demo/cutout column ──────────────────── */
-    #left-panel {
-      grid-area: left;
+    /* ── Toolbar: horizontal icon row above phone ─────────────────────────── */
+    #toolbar-wrap { position: relative; flex: none; }
+
+    #toolbar {
       display: flex;
-      gap: 8px;
-      align-self: start;
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: nowrap;
     }
 
-    /* ── Device size strip (left of phone) ──────────────────────────────── */
-    #size-strip {
+    .tb-btn {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-      flex: none;
-    }
-
-    /* ── Demo + Cutout column (right of size strip) ──────────────────── */
-    #demo-cut {
-      display: flex;
-      flex-direction: column;
+      align-items: center;
       gap: 5px;
-      flex: none;
-      min-width: 100px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: inherit;
     }
+    .tb-btn:hover { background: #1a2a48; }
+    .tb-btn.tb-active { border-color: var(--accent); background: rgba(34,227,198,.08); color: var(--accent); }
+    .tb-icon { font-size: 15px; line-height: 1; flex: none; }
+    #btn-demo { color: var(--accent); border-color: rgba(34,227,198,.45); background: rgba(34,227,198,.06); }
+    #btn-demo:hover { background: rgba(34,227,198,.14); }
+    #btn-demo.demo-active { color: #ff8080; border-color: rgba(255,80,80,.5); background: rgba(255,80,80,.06); }
+    #btn-demo.demo-active:hover { background: rgba(255,80,80,.14); }
 
-    #btn-demo {
-      background: rgba(34,227,198,.08);
-      border-color: rgba(34,227,198,.45);
-      color: var(--accent);
-      text-align: center;
-    }
-    #btn-demo:hover { background: rgba(34,227,198,.16); }
-    #btn-demo.demo-active {
-      background: rgba(255,80,80,.08);
-      border-color: rgba(255,80,80,.5);
-      color: #ff8080;
-    }
-    #btn-demo.demo-active:hover { background: rgba(255,80,80,.15); }
-
+    /* Size button inside popup */
     .sz-btn {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8px 14px;
+      padding: 6px 10px;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       background: var(--btn-bg);
       color: var(--text);
       cursor: pointer;
@@ -99,26 +94,54 @@
       font-family: inherit;
     }
     .sz-btn:hover { background: #1a2a48; }
-    .sz-btn.active {
-      border-color: var(--accent);
-      background: rgba(34,227,198,.08);
-    }
-    .sz-btn .sz-name {
-      font-size: 11px; font-weight: 700; color: var(--text);
-    }
+    .sz-btn.active { border-color: var(--accent); background: rgba(34,227,198,.08); }
+    .sz-btn .sz-name { font-size: 11px; font-weight: 700; }
     .sz-btn.active .sz-name { color: var(--accent); }
-    .sz-btn .sz-dims {
-      font-size: 9px; color: var(--muted); margin-top: 2px;
+    .sz-btn .sz-dims { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Floating popups (centered in viewport) ─────────────────────────── */
+    #popup-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 199;
     }
+    .tb-popup {
+      display: none;
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(6,11,26,.98);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      z-index: 200;
+      min-width: 160px;
+      max-width: min(300px, 90vw);
+      box-shadow: 0 8px 32px rgba(0,0,0,.8);
+    }
+    .tb-popup.open { display: block; }
+
+    #popup-size { min-width: 240px; }
+    #size-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+
+    .popup-body { display: flex; flex-direction: column; gap: 6px; }
+    .popup-body .p-btn, .popup-body .p-input, .popup-body select { width: 100%; text-align: left; }
+    .popup-body .btn-row { display: flex; gap: 4px; }
+    .popup-body .btn-row .p-btn { flex: 1; }
+
+    #popup-cutout #cutout-strip { display: flex; flex-direction: column; gap: 4px; }
+    #popup-cutout .co-btn { width: 100%; text-align: left; }
 
     /* ── Phone column ───────────────────────────────────────────────────── */
     #phone-col {
-      grid-area: preview;
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      justify-self: center;
+      gap: 6px;
+      min-height: 0;
     }
 
     #phone-label {
@@ -184,42 +207,7 @@
       border: none; display: block;
     }
 
-    /* ── Preview tools dock (right of phone) ───────────────────────────── */
-    #preview-tools {
-      grid-area: tools;
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      width: clamp(180px, 20vw, 240px);
-      align-self: start;
-      padding-top: 2px;
-    }
-
-    .pt-section {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      padding: 8px 10px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: rgba(14,22,48,.5);
-    }
-
-    .pt-label {
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 2px;
-    }
-
-    .pt-section .p-btn { width: 100%; text-align: left; }
-    .pt-section .p-input { width: 100%; }
-    .pt-section select { width: 100%; }
-
-    .pt-section .btn-row { display: flex; gap: 4px; }
-    .pt-section .btn-row .p-btn { flex: 1; }
+    /* (pt-panel/preview-tools removed — now using toolbar popups) */
 
     /* ── SPLITTER ────────────────────────────────────────────────────────── */
     #splitter {
@@ -255,31 +243,14 @@
       flex-direction: column;
       background: var(--panel-bg);
       overflow: hidden;
-      min-height: 80px;
+      min-height: 220px;
     }
 
     /* sticky header */
     #panel-head {
       flex: none;
-      padding: 14px 18px 0;
+      padding: 0;
       background: rgba(8,14,32,.99);
-    }
-
-    #panel-head h1 {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--accent);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #panel-head h1 span.sub {
-      font-size: 11px;
-      font-weight: 400;
-      color: var(--muted);
-      letter-spacing: .04em;
     }
 
     .actions {
@@ -324,28 +295,33 @@
       font-family: inherit;
     }
 
-    /* ── Lab Tabs ──────────────────────────────────────────────────────── */
+    /* ── Tab bar: tabs + inline search ─────────────────────────────────── */
+    #tab-bar {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid var(--border);
+    }
     #tab-nav {
+      flex: 1;
       display: flex;
       gap: 0;
       overflow-x: auto;
       scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
-      border-bottom: 1px solid var(--border);
     }
     #tab-nav::-webkit-scrollbar { display: none; }
 
     .t-tab {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       border: none;
       border-bottom: 2px solid transparent;
       border-radius: 0;
       background: transparent;
       color: var(--muted);
-      padding: 10px 16px 9px;
-      font-size: 12px;
+      padding: 9px 14px 8px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       transition: color .15s, border-color .15s;
@@ -355,138 +331,144 @@
       margin-bottom: -1px;
     }
     .t-tab .tab-icon { font-size: 14px; line-height: 1; }
-    .t-tab .tab-num  { font-size: 9px; font-weight: 800; opacity: .4; }
     .t-tab:hover:not(.active) { color: var(--text); }
     .t-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .t-tab.active .tab-num { opacity: .65; }
     .t-tab.stub { opacity: .55; }
     .t-tab.stub:hover:not(.active) { opacity: .8; }
 
-    /* ── Search ─────────────────────────────────────────────────────────── */
+    /* Inline search (right of tab bar) */
     #search-wrap {
-      padding: 8px 10px 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
       flex: none;
+      border-left: 1px solid var(--border);
     }
     #search {
-      width: 100%;
       border: 1px solid rgba(127,155,176,.22);
-      border-radius: 10px;
+      border-radius: 8px;
       background: var(--input-bg);
       color: var(--text);
-      padding: 7px 12px;
+      padding: 5px 10px;
       font-size: 12px;
       font-family: inherit;
+      width: 120px;
+      transition: width .2s;
     }
+    #search:focus { width: 180px; outline: none; border-color: var(--accent2); }
     #search::placeholder { color: var(--muted); }
 
-    /* ── Groups ─────────────────────────────────────────────────────────── */
+    /* ── Groups: 2-col card grid ─────────────────────────────────────────── */
     #groups {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
-      padding: 8px 10px;
+      overflow-x: hidden;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+      gap: 6px;
+      align-content: start;
     }
 
     #groups details {
-      margin: 6px 0;
       border: 1px solid rgba(127,155,176,.14);
-      border-radius: 12px;
+      border-radius: 10px;
       background: rgba(14,22,48,.5);
+      overflow: hidden;
     }
 
+    /* Full-width card for large or boolean groups */
+    #groups details.wide { grid-column: 1 / -1; }
+
     #groups summary {
-      padding: 10px 14px;
+      padding: 8px 10px;
       cursor: pointer;
       font-weight: 800;
-      font-size: 12px;
+      font-size: 13px;
       color: var(--accent);
       user-select: none;
       letter-spacing: .02em;
+      background: rgba(8,14,32,.35);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      list-style: none;
+    }
+    #groups summary::-webkit-details-marker { display: none; }
+    .sum-arrow { font-size: 9px; opacity: .5; display: inline-block; transition: transform .15s; }
+    #groups details[open] .sum-arrow { transform: rotate(90deg); }
+    .sum-count { margin-left: auto; font-size: 9px; font-weight: 400; color: var(--muted); }
+
+    /* ── Param rows grid inside a card ──────────────────────────────────── */
+    .mt-params-grid {
+      display: grid;
+      grid-template-columns: 1fr;
     }
 
     .mt-row {
       display: grid;
-      grid-template-columns: 1fr 72px;
-      grid-template-rows: auto auto;
-      grid-template-areas: "lbl lbl" "rng num";
-      gap: 5px 10px;
-      padding: 10px 14px;
+      grid-template-columns: minmax(90px, 150px) 1fr 56px;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+      height: 36px;
       border-top: 1px solid var(--row-sep);
       cursor: default;
     }
-    .mt-row:hover { background: rgba(58,210,255,.03); }
-    .mt-row .lbl { grid-area: lbl; }
+    .mt-row:hover { background: rgba(58,210,255,.04); }
+
+    .mt-row .lbl {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .mt-row .lbl small { color: var(--muted); font-size: 10px; font-weight: 400; margin-left: 2px; }
+
     .mt-row input[type=range] {
-      grid-area: rng; min-width: 0;
-      cursor: pointer; accent-color: var(--accent2); align-self: center;
+      min-width: 0; width: 100%; cursor: pointer; accent-color: var(--accent2);
     }
-    .mt-row .mt-num { grid-area: num; width: 72px; }
-
-    .mt-row.mt-bool {
-      grid-template-columns: 1fr 44px;
-      grid-template-rows: auto;
-      grid-template-areas: "lbl tog";
-      align-items: start;
-      min-height: 40px;
+    .mt-row .mt-num {
+      width: 54px;
+      border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
+      background: var(--input-bg); color: #fff;
+      padding: 3px 4px; font-size: 11px; text-align: right; font-family: inherit;
     }
-    .mt-row.mt-bool .mt-toggle { grid-area: tog; justify-self: end; margin-top: 2px; }
 
-    .mt-row.mt-string {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto;
-      grid-template-areas: "lbl" "inp";
+    .mt-row.mt-bool { grid-template-columns: 1fr auto; gap: 8px; }
+    .mt-row.mt-bool .lbl { white-space: normal; font-size: 11px; line-height: 1.3; overflow: visible; }
+
+    .mt-row.mt-string { grid-template-columns: minmax(80px, 140px) 1fr; gap: 6px; }
+    .mt-row.mt-string .mt-text {
+      border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
+      background: var(--input-bg); color: #fff;
+      padding: 3px 6px; font-size: 11px; font-family: inherit;
     }
-    .mt-row.mt-string .mt-text { grid-area: inp; width: 100%; }
-
-    .mt-row .lbl b   { display: block; font-size: 14px; font-weight: 700; color: var(--text); }
-    .mt-row .lbl em  { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); font-style: normal; line-height: 1.3; }
-    .mt-desc { display:block; margin-top:3px; color:#9bb8c8; font-size:10px; line-height:1.3; }
-    .mt-badges { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
-    .mt-badge { padding:1px 5px; border-radius:999px; border:1px solid rgba(127,155,176,.20); color:#9fb9c9; font-size:9px; text-transform:uppercase; letter-spacing:.04em; }
-    .mt-badge.live { color:#20f0c8; border-color:rgba(32,240,200,.35); }
-    .mt-badge.replay { color:#ffd166; border-color:rgba(255,209,102,.35); }
-    .mt-badge.debug { color:#ff7bd5; border-color:rgba(255,123,213,.35); }
-    .mt-badge.visual { color:#7cc7ff; border-color:rgba(124,199,255,.35); }
-    .mt-badge.gameplay { color:#ffad7c; border-color:rgba(255,173,124,.35); }
 
     .mt-toggle {
       position: relative;
-      width: 40px; height: 22px;
+      width: 36px; height: 20px;
       flex: none;
     }
     .mt-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
     .mt-toggle .track {
       position: absolute; inset: 0;
-      border-radius: 11px;
+      border-radius: 10px;
       background: #1a2a48;
       border: 1px solid var(--border);
       cursor: pointer;
-      transition: background .2s;
+      transition: background .18s;
     }
     .mt-toggle input:checked + .track { background: var(--accent); border-color: var(--accent); }
     .mt-toggle .track::after {
       content: '';
       position: absolute;
       top: 2px; left: 2px;
-      width: 16px; height: 16px;
+      width: 14px; height: 14px;
       border-radius: 50%;
       background: #fff;
-      transition: transform .2s;
+      transition: transform .18s;
     }
-    .mt-toggle input:checked + .track::after { transform: translateX(18px); }
-
-    .mt-text,
-    .mt-num {
-      width: 70px;
-      border: 1px solid rgba(127,155,176,.22);
-      border-radius: 8px;
-      background: var(--input-bg);
-      color: #fff;
-      padding: 5px;
-      font-size: 12px;
-      text-align: right;
-      font-family: inherit;
-    }
-    .mt-text { width: 190px; text-align: left; }
+    .mt-toggle input:checked + .track::after { transform: translateX(16px); }
 
     /* ── Placeholder labs ───────────────────────────────────────────────── */
     .lab-view {
@@ -509,22 +491,22 @@
     }
     .lab-row {
       display: grid;
-      grid-template-columns: 1fr 72px;
-      grid-template-rows: auto auto;
-      grid-template-areas: "lbl lbl" "rng num";
-      gap: 5px 10px;
-      padding: 10px 0;
+      grid-template-columns: minmax(80px, 150px) 1fr 60px;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      height: 32px;
       border-top: 1px solid var(--row-sep);
     }
-    .lab-row:first-of-type { border-top: none; padding-top: 0; }
-    .lab-row .lbl-main { grid-area: lbl; font-size: 14px; font-weight: 700; color: var(--text); }
-    .lab-row .lbl-sub  { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 400; }
-    .lab-row input[type=range] { grid-area: rng; cursor: pointer; accent-color: var(--accent2); min-width: 0; align-self: center; }
+    .lab-row:first-of-type { border-top: none; }
+    .lab-row .lbl-main { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lab-row .lbl-sub  { display: none; }
+    .lab-row input[type=range] { min-width: 0; width: 100%; cursor: pointer; accent-color: var(--accent2); }
     .lab-row .lab-num {
-      grid-area: num; width: 72px;
-      border: 1px solid rgba(127,155,176,.22); border-radius: 8px;
+      width: 60px;
+      border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
       background: var(--input-bg); color: #fff;
-      padding: 5px; font-size: 12px; text-align: right; font-family: inherit;
+      padding: 3px 5px; font-size: 11px; text-align: right; font-family: inherit;
     }
     .lab-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0 2px; }
     .lab-chip {
@@ -579,6 +561,7 @@
       height: 120px;
       color: var(--muted);
       font-size: 13px;
+      grid-column: 1 / -1;
     }
 
     /* ── Field view ─────────────────────────────────────────────────────── */
@@ -668,75 +651,38 @@
     .z-sw { width: 18px; height: 3px; flex: none; border-radius: 2px; }
     .z-sw.fill { height: 10px; border-radius: 3px; }
 
-    /* co-btn in demo-cut column: full-width */
-    #demo-cut .co-btn { width: 100%; text-align: left; }
-    #demo-cut #cutout-strip { display: flex; flex-direction: column; gap: 4px; }
+    /* co-btn inside pt-body: full-width */
+    .pt-body .co-btn { width: 100%; text-align: left; }
 
-    /* ── Toggle-grid (for all-boolean groups like ctrl) ─────────────────── */
+    /* ── Toggle-grid for all-bool groups ─────────────────────────────────── */
     .toggle-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 5px;
-      padding: 6px 10px 10px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 3px;
+      padding: 5px 8px 8px;
     }
 
     .toggle-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      padding: 7px 10px;
-      border-radius: 8px;
+      gap: 8px;
+      padding: 5px 9px;
+      border-radius: 6px;
       background: rgba(14,22,48,.6);
       border: 1px solid var(--border);
       cursor: pointer;
-      transition: background .15s;
+      transition: background .12s;
     }
     .toggle-card:hover { background: rgba(22,34,68,.8); }
-    .toggle-card .lbl { font-size: 12px; flex: 1; font-weight: 600; }
+    .toggle-card .lbl { font-size: 11px; flex: 1; font-weight: 600; line-height: 1.2; }
 
-    /* ── Responsive: medium screens ─────────────────────────────────────── */
-    @media (max-width: 1100px) {
-      #preview-tools { width: auto; min-width: 160px; }
-    }
-
-    /* ── Responsive: tablet portrait / small screens ────────────────────── */
-    @media (max-width: 900px) {
-      #top-pane {
-        grid-template-columns: 1fr;
-        grid-template-areas: "left" "preview" "tools";
-        align-items: center;
-        min-height: unset;
-        overflow-y: auto;
-      }
-
-      #left-panel {
-        flex-wrap: wrap;
-        width: 100%;
-      }
-
-      #size-strip {
-        flex-direction: row;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-
-      #demo-cut { flex-direction: row; flex-wrap: wrap; }
-
-      #phone-col { width: 100%; }
-
-      #preview-tools {
-        width: 100%;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: 6px;
-      }
-
-      .pt-section { flex: none; min-width: 160px; }
-
-      .mt-num { width: 64px; }
-      .mt-row.mt-bool { grid-template-columns: 1fr 44px; }
+    /* ── Responsive: small screens ──────────────────────────────────────── */
+    @media (max-width: 600px) {
+      #toolbar { flex-wrap: wrap; }
+      #search { width: 90px; }
+      #search:focus { width: 130px; }
+      .mt-row { grid-template-columns: minmax(70px, 120px) 1fr 50px; }
     }
   </style>
 </head>
@@ -745,50 +691,75 @@
 <!-- ── TOP PANE: Live Preview ────────────────────────────────────────────── -->
 <div id="top-pane">
 
-  <!-- Left panel: size strip + demo/cutout column -->
-  <div id="left-panel">
-
-    <div id="size-strip">
-      <button class="sz-btn" data-size="st">
-        <span class="sz-name">Stress</span>
-        <span class="sz-dims">720 × 320</span>
+  <!-- Toolbar: icon row above phone -->
+  <div id="toolbar-wrap">
+    <div id="toolbar">
+      <!-- Size picker -->
+      <button class="tb-btn" id="btn-size-toggle" title="Выбрать размер экрана">
+        <span class="tb-icon">📱</span><span id="tb-size-label">S</span>
       </button>
-      <button class="sz-btn active" data-size="s">
-        <span class="sz-name">S</span>
-        <span class="sz-dims">800 × 360</span>
-      </button>
-      <button class="sz-btn" data-size="m">
-        <span class="sz-name">M</span>
-        <span class="sz-dims">832 × 384</span>
-      </button>
-      <button class="sz-btn" data-size="l">
-        <span class="sz-name">L</span>
-        <span class="sz-dims">873 × 393</span>
-      </button>
-      <button class="sz-btn" data-size="xl">
-        <span class="sz-name">XL</span>
-        <span class="sz-dims">915 × 412</span>
-      </button>
-      <button class="sz-btn" data-size="xxl">
-        <span class="sz-name">XXL</span>
-        <span class="sz-dims">960 × 432</span>
-      </button>
+      <!-- Demo -->
+      <button class="tb-btn" id="btn-demo" title="Forest Survival · бесконечные борта">▶ Демо</button>
+      <!-- Spacer -->
+      <div style="flex:1"></div>
+      <!-- Preset -->
+      <button class="tb-btn" id="btn-preset-toggle" title="Пресет">💾</button>
+      <!-- File -->
+      <button class="tb-btn" id="btn-file-toggle" title="Файл">📂</button>
+      <!-- Cutout -->
+      <button class="tb-btn" id="btn-cutout-toggle" title="Вырез экрана">✂️</button>
     </div>
 
-    <div id="demo-cut">
-      <button class="p-btn" id="btn-demo" title="Forest Survival · бесконечные борта">▶ Demo</button>
-      <div id="cutout-strip">
-        <div class="pt-label">Cutout</div>
-        <button class="co-btn active" data-co="none">No cut</button>
-        <button class="co-btn" data-co="left">◀ Left cam</button>
-        <button class="co-btn" data-co="right">Right cam ▶</button>
-        <button class="co-btn" data-co="round">⌒ Rounded</button>
-        <button class="co-btn" data-co="3btn">3-btn nav</button>
+    <!-- Popup backdrop -->
+    <div id="popup-backdrop"></div>
+
+    <!-- Size popup -->
+    <div class="tb-popup" id="popup-size">
+      <div id="size-strip">
+        <button class="sz-btn" data-size="st"><span class="sz-name">XS</span><span class="sz-dims">720×320</span></button>
+        <button class="sz-btn active" data-size="s"><span class="sz-name">S</span><span class="sz-dims">800×360</span></button>
+        <button class="sz-btn" data-size="m"><span class="sz-name">M</span><span class="sz-dims">832×384</span></button>
+        <button class="sz-btn" data-size="l"><span class="sz-name">L</span><span class="sz-dims">873×393</span></button>
+        <button class="sz-btn" data-size="xl"><span class="sz-name">XL</span><span class="sz-dims">915×412</span></button>
+        <button class="sz-btn" data-size="xxl"><span class="sz-name">XXL</span><span class="sz-dims">960×432</span></button>
       </div>
     </div>
 
+    <!-- Preset popup -->
+    <div class="tb-popup" id="popup-preset">
+      <div class="popup-body">
+        <select id="preset-sel"><option value="">Пресет…</option></select>
+        <input class="p-input" id="preset-name" placeholder="Название пресета">
+        <div class="btn-row">
+          <button class="p-btn" id="btn-save">Сохранить</button>
+          <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- File popup -->
+    <div class="tb-popup" id="popup-file">
+      <div class="popup-body">
+        <button class="p-btn" id="btn-export">↓ Экспорт JSON</button>
+        <button class="p-btn" id="btn-import">↑ Импорт JSON</button>
+        <input type="file" id="file-import" accept=".json" style="display:none">
+        <button class="p-btn" id="btn-reset">↺ Сбросить всё</button>
+      </div>
+    </div>
+
+    <!-- Cutout popup -->
+    <div class="tb-popup" id="popup-cutout">
+      <div id="cutout-strip">
+        <button class="co-btn active" data-co="none">Без выреза</button>
+        <button class="co-btn" data-co="left">◀ Лев. камера</button>
+        <button class="co-btn" data-co="right">Прав. камера ▶</button>
+        <button class="co-btn" data-co="round">⌒ Скруглённые</button>
+        <button class="co-btn" data-co="3btn">3 кнопки</button>
+      </div>
+    </div>
   </div>
 
+  <!-- Phone preview -->
   <div id="phone-col">
     <div id="phone-wrapper">
       <div id="phone-shell">
@@ -796,7 +767,6 @@
         <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
              style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
       </div>
-      <!-- cutout-sim is outside phone-shell to render above the iframe -->
       <div id="cutout-sim"></div>
       <div id="resize-handle" title="Потяни чтобы выбрать размер экрана">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -805,27 +775,8 @@
         </svg>
       </div>
     </div>
-    <div id="phone-label">Live Preview · S Android Common · 800×360</div>
+    <div id="phone-label">Превью · S Android Common · 800×360</div>
   </div>
-
-  <aside id="preview-tools">
-    <div class="pt-section">
-      <div class="pt-label">Пресет</div>
-      <select id="preset-sel"><option value="">Пресет…</option></select>
-      <input class="p-input" id="preset-name" placeholder="Название пресета">
-      <div class="btn-row">
-        <button class="p-btn" id="btn-save">💾 Save</button>
-        <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
-      </div>
-    </div>
-    <div class="pt-section">
-      <div class="pt-label">Файл</div>
-      <button class="p-btn" id="btn-export">↓ Export JSON</button>
-      <button class="p-btn" id="btn-import">↑ Import JSON</button>
-      <input type="file" id="file-import" accept=".json" style="display:none">
-      <button class="p-btn" id="btn-reset">↺ Reset all</button>
-    </div>
-  </aside>
 
 </div>
 
@@ -840,29 +791,28 @@
 <div id="bottom-pane">
 
   <div id="panel-head">
-    <h1>🎛 Designer Workbench <span class="sub">· Aerovia</span></h1>
-    <div id="tab-nav">
-      <button class="t-tab active" data-tab="motion">
-        <span class="tab-icon">⚡</span><span>Motion Lab</span><span class="tab-num">1</span>
-      </button>
-      <button class="t-tab" data-tab="safe">
-        <span class="tab-icon">📐</span><span>Safe Areas</span><span class="tab-num">2</span>
-      </button>
-      <button class="t-tab stub" data-tab="level">
-        <span class="tab-icon">🗺</span><span>Level Lab</span><span class="tab-num">3</span>
-      </button>
-      <button class="t-tab stub" data-tab="difficulty">
-        <span class="tab-icon">📊</span><span>Difficulty</span><span class="tab-num">4</span>
-      </button>
-      <button class="t-tab stub" data-tab="assets">
-        <span class="tab-icon">🎨</span><span>Assets</span><span class="tab-num">5</span>
-      </button>
+    <div id="tab-bar">
+      <div id="tab-nav">
+        <button class="t-tab active" data-tab="motion">
+          <span class="tab-icon">⚡</span><span>Движение</span>
+        </button>
+        <button class="t-tab" data-tab="safe">
+          <span class="tab-icon">📐</span><span>Зоны экрана</span>
+        </button>
+        <button class="t-tab stub" data-tab="level">
+          <span class="tab-icon">🗺</span><span>Уровни</span>
+        </button>
+        <button class="t-tab stub" data-tab="difficulty">
+          <span class="tab-icon">📊</span><span>Сложность</span>
+        </button>
+        <button class="t-tab stub" data-tab="assets">
+          <span class="tab-icon">🎨</span><span>Ресурсы</span>
+        </button>
+      </div>
+      <div id="search-wrap">
+        <input id="search" placeholder="Поиск…" autocomplete="off" spellcheck="false">
+      </div>
     </div>
-  </div>
-
-  <!-- Tab 1: Motion Lab ─────────────────────────────────────────────────── -->
-  <div id="search-wrap">
-    <input id="search" placeholder="Поиск параметра…" autocomplete="off" spellcheck="false">
   </div>
   <div id="groups">
     <div id="loading-msg">Ждём запуска игры…</div>
@@ -1052,9 +1002,36 @@
 (function () {
   'use strict';
 
+  /* ── i18n ─────────────────────────────────────────────────────────────── */
+  const T = {
+    demo:           '▶ Демо',
+    demoStop:       '⏹ Стоп',
+    demoRunning:    'Демо: Forest запущен · бесконечные борта · без деайсинга.',
+    demoExit:       'Демо: вернулись в главное меню.',
+    demoNotLoaded:  'Игра не загружена.',
+    demoNoMenu:     'Сначала вернись в главное меню.',
+    demoBiomeNone:  'Биом не найден — попробуй ещё раз.',
+    ready:          'Готово',
+    loading:        'Ждём запуска игры…',
+    paramsReady:    (n) => 'Готово · ' + n + ' параметров.',
+    cutoutPreset:   (k) => 'Вырез: ' + k,
+    presetSaved:    (n) => 'Пресет сохранён: ' + n,
+    presetDeleted:  (n) => 'Пресет удалён: ' + n,
+    presetApplied:  (n) => 'Применён пресет: ' + n,
+    exportDone:     'JSON экспортирован.',
+    importDone:     (f) => 'Импортировано: ' + f,
+    importError:    (e) => 'Ошибка импорта: ' + e,
+    enterPreset:    'Введи название пресета.',
+    confirmReset:   'Сбросить все параметры к значениям по умолчанию?',
+    confirmDel:     (n) => 'Удалить пресет «' + n + '»?',
+    paramsReset:    'Все параметры сброшены.',
+    choosePreset:   'Выбери пресет для удаления.',
+    livePreview:    'Превью',
+  };
+
   /* ── Phone size presets ────────────────────────────────────────────────── */
   const PHONES = [
-    { key: 'st',  label: 'Stress Test',       w: 720, h: 320 },
+    { key: 'st',  label: 'XS стресс-тест',    w: 720, h: 320 },
     { key: 's',   label: 'S Android Common',   w: 800, h: 360 },
     { key: 'm',   label: 'M Android Common+',  w: 832, h: 384 },
     { key: 'l',   label: 'L Android Tall',     w: 873, h: 393 },
@@ -1068,12 +1045,12 @@
   const label   = document.getElementById('phone-label');
 
   function getScale(key) {
-    const ph     = PHONES.find(p => p.key === key);
-    const pane   = document.getElementById('top-pane');
-    const leftW  = (document.getElementById('left-panel') || { offsetWidth: 0 }).offsetWidth;
-    const toolsW = (document.getElementById('preview-tools') || { offsetWidth: 0 }).offsetWidth;
-    const availW = pane.clientWidth  - leftW - toolsW - 48;
-    const availH = pane.clientHeight - 36;
+    const ph      = PHONES.find(p => p.key === key);
+    const pane    = document.getElementById('top-pane');
+    const toolbar = document.getElementById('toolbar-wrap');
+    const toolH   = toolbar ? toolbar.offsetHeight + 6 : 0;
+    const availW  = pane.clientWidth  - 20;
+    const availH  = pane.clientHeight - toolH - 30;
     return Math.min(1, availW / ph.w, availH / ph.h);
   }
 
@@ -1089,17 +1066,24 @@
     wrapper.style.width  = Math.round(ph.w * scale) + 'px';
     wrapper.style.height = Math.round(ph.h * scale) + 'px';
 
-    label.textContent = 'Live Preview · ' + ph.label + ' · ' + ph.w + '×' + ph.h;
+    label.textContent = T.livePreview + ' · ' + ph.label + ' · ' + ph.w + '×' + ph.h;
 
     document.querySelectorAll('.sz-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.size === key);
     });
+    // Update size button label in toolbar
+    const tbLbl = document.getElementById('tb-size-label');
+    if (tbLbl) tbLbl.textContent = ph.key === 'st' ? 'XS' : ph.key.toUpperCase();
+
     applyCutout(cutoutKey);
   }
 
-  // Size strip buttons
+  // Size strip buttons (inside popup)
   document.querySelectorAll('.sz-btn').forEach(btn => {
-    btn.addEventListener('click', () => applyPhone(btn.dataset.size));
+    btn.addEventListener('click', () => {
+      applyPhone(btn.dataset.size);
+      closeAllPopups();
+    });
   });
 
   // Resize handle: drag right/down = larger, drag left/up = smaller
@@ -1129,6 +1113,44 @@
   })();
 
   window.addEventListener('resize', () => applyPhone(phoneKey));
+
+  /* ── Popup system ──────────────────────────────────────────────────────── */
+  const allPopups  = document.querySelectorAll('.tb-popup');
+  const backdrop   = document.getElementById('popup-backdrop');
+
+  function openPopup(id) {
+    const toolbar = document.getElementById('toolbar-wrap');
+    const tRect   = toolbar.getBoundingClientRect();
+    const top     = tRect.bottom + 6;
+    allPopups.forEach(p => {
+      p.classList.remove('open');
+      p.style.top = top + 'px';
+    });
+    const popup = document.getElementById(id);
+    if (popup) {
+      popup.style.top = top + 'px';
+      popup.classList.add('open');
+      backdrop.style.display = '';
+    }
+  }
+
+  function closeAllPopups() {
+    allPopups.forEach(p => p.classList.remove('open'));
+    backdrop.style.display = 'none';
+  }
+
+  function togglePopup(id) {
+    const popup = document.getElementById(id);
+    const wasOpen = popup && popup.classList.contains('open');
+    closeAllPopups();
+    if (!wasOpen) openPopup(id);
+  }
+
+  backdrop.addEventListener('click', closeAllPopups);
+  document.getElementById('btn-size-toggle').addEventListener('click',   () => togglePopup('popup-size'));
+  document.getElementById('btn-preset-toggle').addEventListener('click', () => togglePopup('popup-preset'));
+  document.getElementById('btn-file-toggle').addEventListener('click',   () => togglePopup('popup-file'));
+  document.getElementById('btn-cutout-toggle').addEventListener('click', () => togglePopup('popup-cutout'));
 
   /* ── Cutout presets ────────────────────────────────────────────────────── */
   // side: 'none'|'left'|'right'  — matches MT.SA_CUTOUT_SIDE values
@@ -1190,7 +1212,7 @@
       // Trigger game resize so calcSafetyRects() re-reads updated MT values.
       try { gameFrame.contentWindow.dispatchEvent(new Event('resize')); } catch(_) {}
       if (MT) syncUI();
-      setStatus('Cutout preset: ' + key);
+      setStatus(T.cutoutPreset(key));
     } catch (e) { /* iframe not ready yet */ }
   }
 
@@ -1207,7 +1229,7 @@
     let topH = Math.round(window.innerHeight * 0.52);
 
     function setTopH(h) {
-      topH = Math.max(120, Math.min(h, window.innerHeight - 100));
+      topH = Math.max(120, Math.min(h, window.innerHeight - 220));
       topPane.style.height = topH + 'px';
       applyPhone(phoneKey);
     }
@@ -1253,7 +1275,7 @@
       if (mt && Array.isArray(mt.params) && mt.params.length) {
         MT = mt;
         buildUI();
-        setStatus('Готово · ' + mt.params.length + ' параметров.');
+        setStatus(T.paramsReady(mt.params.length));
         return;
       }
     } catch (_) {}
@@ -1271,11 +1293,16 @@
       if (!params.length) return;
 
       const det = document.createElement('details');
-      det.open = true;
       det.dataset.group = gKey;
-      det.innerHTML = '<summary>' + MT.groups[gKey] + '</summary>';
 
+      // Wide card for groups with many params or boolean-only groups
       const allBool = params.every(p => typeof p.def === 'boolean');
+      if (params.length > 5 || allBool) det.classList.add('wide');
+
+      det.innerHTML = '<summary><span class="sum-arrow">▸</span>' +
+        escHtml(MT.groups[gKey]) +
+        '<span class="sum-count">' + params.length + '</span></summary>';
+
       if (allBool) {
         const grid = document.createElement('div');
         grid.className = 'toggle-grid';
@@ -1284,43 +1311,56 @@
           card.className = 'toggle-card';
           card.dataset.key = p.key;
           const v = snap[p.key];
+          card.title = p.key + (p.description ? ' — ' + p.description : '');
           card.innerHTML =
             '<span class="lbl">' + escHtml(p.label) + '</span>' +
             '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
           grid.appendChild(card);
         });
         det.appendChild(grid);
+
       } else {
+        const grid = document.createElement('div');
+        grid.className = 'mt-params-grid';
+
         params.forEach(p => {
           const row = document.createElement('label');
           const v = snap[p.key];
           row.dataset.key = p.key;
 
-          const desc = p.description || p.note || '';
-          const badges = '<span class="mt-badges">' +
-            (p.liveSafe ? '<i class="mt-badge live">live</i>' : '') +
-            (p.requiresReplay ? '<i class="mt-badge replay">replay</i>' : '') +
-            (p.debugOnly ? '<i class="mt-badge debug">debug</i>' : '') +
-            (p.visualsOnly ? '<i class="mt-badge visual">visual</i>' : '') +
-            (p.affectsGameplay ? '<i class="mt-badge gameplay">gameplay</i>' : '') +
-            '</span>';
-          const label = '<span class="lbl"><b>' + escHtml(p.label) + (p.unit ? ' <small>(' + escHtml(p.unit) + ')</small>' : '') + '</b><em>' + escHtml(p.key + (p.category ? ' · ' + p.category : '')) + '</em><span class="mt-desc">' + escHtml(desc) + '</span>' + badges + '</span>';
+          // Full info in tooltip; visible label stays short
+          const tipParts = [p.key];
+          if (p.unit) tipParts.push('(' + p.unit + ')');
+          if (p.category) tipParts.push('· ' + p.category);
+          if (p.description) tipParts.push('— ' + p.description);
+          const badges = [];
+          if (p.liveSafe) badges.push('live');
+          if (p.requiresReplay) badges.push('replay');
+          if (p.visualsOnly) badges.push('visual');
+          if (p.affectsGameplay && !p.visualsOnly) badges.push('gameplay');
+          if (badges.length) tipParts.push('[' + badges.join(', ') + ']');
+          row.title = tipParts.join(' ');
+
+          const unitHtml = p.unit ? ' <small>' + escHtml(p.unit) + '</small>' : '';
+          const lblHtml = '<span class="lbl">' + escHtml(p.label) + unitHtml + '</span>';
 
           if (typeof p.def === 'boolean') {
             row.className = 'mt-row mt-bool';
-            row.innerHTML = label +
+            row.innerHTML = lblHtml +
               '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
           } else if (typeof p.def === 'string') {
             row.className = 'mt-row mt-string';
-            row.innerHTML = label + '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + v + '">';
+            row.innerHTML = lblHtml +
+              '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + escHtml(String(v)) + '">';
           } else {
             row.className = 'mt-row';
-            row.innerHTML = label +
+            row.innerHTML = lblHtml +
               '<input type="range"   data-key="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + v + '">' +
               '<input class="mt-num" data-key="' + p.key + '" type="number" step="' + p.step + '" value="' + v + '">';
           }
-          det.appendChild(row);
+          grid.appendChild(row);
         });
+        det.appendChild(grid);
       }
 
       groupsEl.appendChild(det);
@@ -1389,8 +1429,8 @@
 
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (!MT) return;
-    if (!confirm('Сбросить все параметры к значениям по умолчанию?')) return;
-    MT.reset(); syncUI(); applyCutout('none'); setStatus('Все параметры сброшены.');
+    if (!confirm(T.confirmReset)) return;
+    MT.reset(); syncUI(); applyCutout('none'); setStatus(T.paramsReset);
   });
 
   document.getElementById('btn-export').addEventListener('click', () => {
@@ -1401,7 +1441,7 @@
     a.download = 'motion-tuning.json';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    setStatus('JSON экспортирован.');
+    setStatus(T.exportDone);
   });
 
   document.getElementById('btn-import').addEventListener('click', () => {
@@ -1413,8 +1453,8 @@
     if (!file || !MT) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      try { MT.importText(ev.target.result); syncUI(); setStatus('Импортировано: ' + file.name); }
-      catch (err) { setStatus('Ошибка импорта: ' + err.message); }
+      try { MT.importText(ev.target.result); syncUI(); setStatus(T.importDone(file.name)); }
+      catch (err) { setStatus(T.importError(err.message)); }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -1423,26 +1463,26 @@
   document.getElementById('btn-save').addEventListener('click', () => {
     if (!MT) return;
     const name = document.getElementById('preset-name').value.trim();
-    if (!name) { setStatus('Введи название пресета.'); return; }
-    MT.savePreset(name); refreshPresets(); setStatus('Пресет сохранён: ' + name);
+    if (!name) { setStatus(T.enterPreset); return; }
+    MT.savePreset(name); refreshPresets(); setStatus(T.presetSaved(name));
   });
 
   document.getElementById('preset-sel').addEventListener('change', e => {
     if (!MT || !e.target.value) return;
-    MT.applyPreset(e.target.value); syncUI(); setStatus('Применён пресет: ' + e.target.value);
+    MT.applyPreset(e.target.value); syncUI(); setStatus(T.presetApplied(e.target.value));
   });
 
   document.getElementById('btn-del-preset').addEventListener('click', () => {
     const sel = document.getElementById('preset-sel');
     const name = sel.value;
-    if (!name) { setStatus('Выбери пресет для удаления.'); return; }
-    if (!confirm('Удалить пресет «' + name + '»?')) return;
+    if (!name) { setStatus(T.choosePreset); return; }
+    if (!confirm(T.confirmDel(name))) return;
     try {
       const ps = JSON.parse(localStorage.getItem('pf_motion_presets_v1') || '{}');
       delete ps[name];
       localStorage.setItem('pf_motion_presets_v1', JSON.stringify(ps));
     } catch (_) {}
-    refreshPresets(); setStatus('Пресет удалён: ' + name);
+    refreshPresets(); setStatus(T.presetDeleted(name));
   });
 
   function refreshPresets() {
@@ -1470,7 +1510,7 @@
         document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b === btn));
         const isMotion = tab === 'motion';
         const isSafe   = tab === 'safe';
-        searchWrap.style.display  = isMotion ? '' : 'none';
+        searchWrap.style.visibility = isMotion ? 'visible' : 'hidden';
         groupsEl.style.display    = isMotion ? '' : 'none';
         safeViewEl.style.display  = isSafe          ? 'flex' : 'none';
         levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
@@ -1711,10 +1751,10 @@
   function updateDemoBtn() {
     const btn = document.getElementById('btn-demo');
     if (demoActive) {
-      btn.textContent = '⏹ Exit Demo';
+      btn.textContent = T.demoStop;
       btn.classList.add('demo-active');
     } else {
-      btn.textContent = '▶ Demo';
+      btn.textContent = T.demo;
       btn.classList.remove('demo-active');
     }
   }
@@ -1722,7 +1762,7 @@
   document.getElementById('btn-demo').addEventListener('click', () => {
     try {
       const w = gameFrame.contentWindow;
-      if (!w) { setStatus('Игра не загружена.'); return; }
+      if (!w) { setStatus(T.demoNotLoaded); return; }
 
       if (demoActive) {
         // Second click: return to main screen
@@ -1732,7 +1772,7 @@
         updateDemoBtn();
         // Re-disable forest hazards for normal tuning
         if (MT) { MT.apply({'K.DISABLE_FOREST': true}, false); syncUI(); }
-        setStatus('Demo: вернулись в главное меню.');
+        setStatus(T.demoExit);
         return;
       }
 
@@ -1748,7 +1788,7 @@
 
       // Navigate to biome selection, then click the first ready biome (forest)
       const survBtn = w.document.getElementById('survivalBtn');
-      if (!survBtn) { setStatus('Сначала вернись в главное меню.'); return; }
+      if (!survBtn) { setStatus(T.demoNoMenu); return; }
       survBtn.click();
 
       setTimeout(() => {
@@ -1758,9 +1798,9 @@
             card.click();
             demoActive = true;
             updateDemoBtn();
-            setStatus('Demo: Forest запущен · бесконечные борта · без деайсинга.');
+            setStatus(T.demoRunning);
           } else {
-            setStatus('Биом не найден — попробуй ещё раз.');
+            setStatus(T.demoBiomeNone);
           }
         } catch (e2) { setStatus('Demo: ' + e2.message); }
       }, 150);
