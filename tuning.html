@@ -686,6 +686,10 @@
 
   let MT = null;
 
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   function pollMT() {
     try {
       const mt = gameFrame.contentWindow && gameFrame.contentWindow.__MT;
@@ -727,7 +731,7 @@
           (p.visualsOnly ? '<i class="mt-badge visual">visual</i>' : '') +
           (p.affectsGameplay ? '<i class="mt-badge gameplay">gameplay</i>' : '') +
           '</span>';
-        const label = '<span class="lbl"><b>' + p.label + (p.unit ? ' <small>(' + p.unit + ')</small>' : '') + '</b><em>' + p.key + ' · ' + (p.category || '') + '</em><span class="mt-desc">' + desc + '</span>' + badges + '</span>';
+        const label = '<span class="lbl"><b>' + escHtml(p.label) + (p.unit ? ' <small>(' + escHtml(p.unit) + ')</small>' : '') + '</b><em>' + escHtml(p.key + (p.category ? ' · ' + p.category : '')) + '</em><span class="mt-desc">' + escHtml(desc) + '</span>' + badges + '</span>';
 
         if (typeof p.def === 'boolean') {
           row.className = 'mt-row mt-bool';
@@ -793,8 +797,11 @@
   searchEl.addEventListener('input', () => {
     const q = searchEl.value.trim().toLowerCase();
     groupsEl.querySelectorAll('.mt-row').forEach(row => {
+      const p = MT && MT.params.find(x => x.key === row.dataset.key);
       const visible = !q || row.dataset.key.toLowerCase().includes(q) ||
-        row.querySelector('b').textContent.toLowerCase().includes(q);
+        row.querySelector('b').textContent.toLowerCase().includes(q) ||
+        (p && p.description && p.description.toLowerCase().includes(q)) ||
+        (p && p.category && p.category.toLowerCase().includes(q));
       row.style.display = visible ? '' : 'none';
     });
     groupsEl.querySelectorAll('details').forEach(det => {
