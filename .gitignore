@@ -35,3 +35,8 @@ tools/style-lora/output/
 # local preview tooling (Claude Code preview server — not part of the game)
 .claude/launch.json
 scripts/static-server.mjs
+
+# local design explorations & presentation (kept on disk, not tracked)
+.tmp_design/
+scripts/build-presentation.mjs
+PlaneFlow — история версий.pdf
