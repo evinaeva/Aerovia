@@ -31,11 +31,12 @@
 
     /* ── TOP PANE — Live Preview ─────────────────────────────────────────── */
     #top-pane {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 18px;
-      padding: 14px 20px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-areas: "sizes preview tools";
+      align-items: start;
+      gap: 12px;
+      padding: 12px 16px;
       background: #020609;
       border-bottom: 1px solid var(--border);
       overflow: hidden;
@@ -46,6 +47,7 @@
 
     /* ── Device size strip (left of phone) ──────────────────────────────── */
     #size-strip {
+      grid-area: sizes;
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -82,11 +84,12 @@
 
     /* ── Phone column ───────────────────────────────────────────────────── */
     #phone-col {
+      grid-area: preview;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
-      flex: none;
+      gap: 8px;
+      justify-self: center;
     }
 
     #phone-label {
@@ -152,10 +155,42 @@
       border: none; display: block;
     }
 
-    #phone-controls {
+    /* ── Preview tools dock (right of phone) ───────────────────────────── */
+    #preview-tools {
+      grid-area: tools;
       display: flex;
-      gap: 8px;
+      flex-direction: column;
+      gap: 7px;
+      width: clamp(180px, 20vw, 240px);
+      align-self: start;
+      padding-top: 2px;
     }
+
+    .pt-section {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(14,22,48,.5);
+    }
+
+    .pt-label {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .pt-section .p-btn { width: 100%; text-align: left; }
+    .pt-section .p-input { width: 100%; }
+    .pt-section select { width: 100%; }
+
+    .pt-section .btn-row { display: flex; gap: 4px; }
+    .pt-section .btn-row .p-btn { flex: 1; }
 
     /* ── SPLITTER ────────────────────────────────────────────────────────── */
     #splitter {
@@ -266,6 +301,8 @@
       display: flex;
       gap: 4px;
       margin-bottom: 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
     .t-tab {
       border: 1px solid var(--border);
@@ -325,17 +362,27 @@
 
     .mt-row {
       display: grid;
-      grid-template-columns: minmax(180px,1.2fr) minmax(90px,1fr) 70px;
-      gap: 8px;
+      grid-template-columns: minmax(200px, 1fr) clamp(140px, 17vw, 220px) 64px;
+      gap: 10px;
       align-items: center;
-      padding: 7px 14px;
+      padding: 8px 14px;
+      min-height: 44px;
       border-top: 1px solid var(--row-sep);
       cursor: default;
     }
     .mt-row:hover { background: rgba(58,210,255,.03); }
 
-    .mt-row.mt-bool, .mt-row.mt-string {
-      grid-template-columns: 1fr auto;
+    .mt-row.mt-bool {
+      display: inline-grid;
+      width: 100%;
+      grid-template-columns: minmax(200px, 360px) 44px;
+      column-gap: 12px;
+      justify-content: start;
+      min-height: 40px;
+    }
+
+    .mt-row.mt-string {
+      grid-template-columns: minmax(200px, 1fr) minmax(140px, 200px);
     }
 
     .mt-row .lbl b   { display: block; font-size: 12px; font-weight: 600; }
@@ -376,7 +423,7 @@
     .mt-toggle input:checked + .track::after { transform: translateX(18px); }
 
     .mt-row input[type=range] {
-      width: 100%; cursor: pointer; accent-color: var(--accent2);
+      cursor: pointer; accent-color: var(--accent2);
     }
 
     .mt-text,
@@ -465,21 +512,11 @@
       border-bottom: 1px solid var(--row-sep);
     }
 
-    /* ── Cutout strip ────────────────────────────────────────────────────── */
+    /* ── Cutout strip (inside preview-tools dock) ───────────────────────── */
     #cutout-strip {
       display: flex;
-      gap: 5px;
-      align-items: center;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 2px;
-    }
-
-    #cutout-strip > span {
-      font-size: 10px;
-      color: var(--muted);
-      font-weight: 600;
-      letter-spacing: .04em;
+      flex-direction: column;
+      gap: 4px;
     }
 
     .co-btn {
@@ -512,6 +549,80 @@
     .zone-legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
     .z-sw { width: 18px; height: 3px; flex: none; border-radius: 2px; }
     .z-sw.fill { height: 10px; border-radius: 3px; }
+
+    /* co-btn in dock: full-width */
+    #cutout-strip .co-btn { width: 100%; text-align: left; }
+
+    /* ── Toggle-grid (for all-boolean groups like ctrl) ─────────────────── */
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 5px;
+      padding: 6px 10px 10px;
+    }
+
+    .toggle-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: rgba(14,22,48,.6);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .toggle-card:hover { background: rgba(22,34,68,.8); }
+    .toggle-card .lbl { font-size: 12px; flex: 1; font-weight: 600; }
+
+    /* ── Responsive: medium screens ─────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      #preview-tools { width: auto; min-width: 160px; }
+    }
+
+    /* ── Responsive: tablet portrait / small screens ────────────────────── */
+    @media (max-width: 900px) {
+      #top-pane {
+        grid-template-columns: 1fr;
+        grid-template-areas: "sizes" "preview" "tools";
+        align-items: center;
+        min-height: unset;
+        overflow-y: auto;
+      }
+
+      #size-strip {
+        flex-direction: row;
+        overflow-x: auto;
+        scrollbar-width: none;
+        width: 100%;
+      }
+
+      #phone-col { width: 100%; }
+
+      #preview-tools {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+
+      .pt-section { flex: none; min-width: 160px; }
+
+      .mt-row {
+        grid-template-columns: 1fr;
+        gap: 5px;
+      }
+      .mt-row input[type="range"] { width: 100%; }
+      .mt-num { width: 72px; justify-self: end; }
+
+      .mt-row.mt-bool {
+        display: grid;
+        grid-template-columns: 1fr 44px;
+        justify-content: unset;
+      }
+    }
   </style>
 </head>
 <body>
@@ -562,18 +673,39 @@
         </svg>
       </div>
     </div>
-    <div id="phone-controls">
+  </div>
+
+  <aside id="preview-tools">
+    <div class="pt-section">
       <button class="p-btn" id="btn-demo" title="Запустить Survival · бесконечные борта">▶ Demo</button>
     </div>
-    <div id="cutout-strip">
-      <span>Cutout:</span>
-      <button class="co-btn active" data-co="none">No cut</button>
-      <button class="co-btn" data-co="left">◀ Left cam</button>
-      <button class="co-btn" data-co="right">Right cam ▶</button>
-      <button class="co-btn" data-co="round">⌒ Rounded</button>
-      <button class="co-btn" data-co="3btn">3-btn nav</button>
+    <div class="pt-section">
+      <div class="pt-label">Пресет</div>
+      <select id="preset-sel"><option value="">Пресет…</option></select>
+      <input class="p-input" id="preset-name" placeholder="Название пресета">
+      <div class="btn-row">
+        <button class="p-btn" id="btn-save">💾 Save</button>
+        <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
+      </div>
     </div>
-  </div>
+    <div class="pt-section">
+      <div class="pt-label">Файл</div>
+      <button class="p-btn" id="btn-export">↓ Export JSON</button>
+      <button class="p-btn" id="btn-import">↑ Import JSON</button>
+      <input type="file" id="file-import" accept=".json" style="display:none">
+      <button class="p-btn" id="btn-reset">↺ Reset all</button>
+    </div>
+    <div class="pt-section">
+      <div id="cutout-strip">
+        <div class="pt-label">Cutout</div>
+        <button class="co-btn active" data-co="none">No cut</button>
+        <button class="co-btn" data-co="left">◀ Left cam</button>
+        <button class="co-btn" data-co="right">Right cam ▶</button>
+        <button class="co-btn" data-co="round">⌒ Rounded</button>
+        <button class="co-btn" data-co="3btn">3-btn nav</button>
+      </div>
+    </div>
+  </aside>
 
 </div>
 
@@ -593,16 +725,6 @@
       <button class="t-tab active" data-tab="params">🎛 Параметры</button>
       <button class="t-tab" data-tab="field">✈ Поле</button>
       <button class="t-tab" data-tab="safe">📐 Зоны</button>
-    </div>
-    <div class="actions" id="params-actions">
-      <button class="p-btn" id="btn-reset">↺ Reset all</button>
-      <button class="p-btn" id="btn-export">↓ Export JSON</button>
-      <button class="p-btn" id="btn-import">↑ Import JSON</button>
-      <input type="file" id="file-import" accept=".json" style="display:none">
-      <input class="p-input" id="preset-name" placeholder="Название пресета" style="width:146px">
-      <button class="p-btn" id="btn-save">💾 Save preset</button>
-      <select id="preset-sel"><option value="">Пресет…</option></select>
-      <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
     </div>
   </div>
 
@@ -699,11 +821,12 @@
   const label   = document.getElementById('phone-label');
 
   function getScale(key) {
-    const ph    = PHONES.find(p => p.key === key);
-    const pane  = document.getElementById('top-pane');
+    const ph     = PHONES.find(p => p.key === key);
+    const pane   = document.getElementById('top-pane');
     const stripW = document.getElementById('size-strip').offsetWidth;
-    const availW = pane.clientWidth  - stripW - 60;
-    const availH = pane.clientHeight - 60;  // label + controls + padding
+    const toolsW = (document.getElementById('preview-tools') || { offsetWidth: 0 }).offsetWidth;
+    const availW = pane.clientWidth  - stripW - toolsW - 48; // gaps + padding
+    const availH = pane.clientHeight - 48;  // label + padding
     return Math.min(1, availW / ph.w, availH / ph.h);
   }
 
@@ -900,36 +1023,53 @@
       det.dataset.group = gKey;
       det.innerHTML = '<summary>' + MT.groups[gKey] + '</summary>';
 
-      params.forEach(p => {
-        const row = document.createElement('label');
-        const v = snap[p.key];
-        row.dataset.key = p.key;
-
-        const desc = p.description || p.note || '';
-        const badges = '<span class="mt-badges">' +
-          (p.liveSafe ? '<i class="mt-badge live">live</i>' : '') +
-          (p.requiresReplay ? '<i class="mt-badge replay">replay</i>' : '') +
-          (p.debugOnly ? '<i class="mt-badge debug">debug</i>' : '') +
-          (p.visualsOnly ? '<i class="mt-badge visual">visual</i>' : '') +
-          (p.affectsGameplay ? '<i class="mt-badge gameplay">gameplay</i>' : '') +
-          '</span>';
-        const label = '<span class="lbl"><b>' + escHtml(p.label) + (p.unit ? ' <small>(' + escHtml(p.unit) + ')</small>' : '') + '</b><em>' + escHtml(p.key + (p.category ? ' · ' + p.category : '')) + '</em><span class="mt-desc">' + escHtml(desc) + '</span>' + badges + '</span>';
-
-        if (typeof p.def === 'boolean') {
-          row.className = 'mt-row mt-bool';
-          row.innerHTML = label +
+      const allBool = params.every(p => typeof p.def === 'boolean');
+      if (allBool) {
+        const grid = document.createElement('div');
+        grid.className = 'toggle-grid';
+        params.forEach(p => {
+          const card = document.createElement('label');
+          card.className = 'toggle-card';
+          card.dataset.key = p.key;
+          const v = snap[p.key];
+          card.innerHTML =
+            '<span class="lbl">' + escHtml(p.label) + '</span>' +
             '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
-        } else if (typeof p.def === 'string') {
-          row.className = 'mt-row mt-string';
-          row.innerHTML = label + '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + v + '">';
-        } else {
-          row.className = 'mt-row';
-          row.innerHTML = label +
-            '<input type="range"   data-key="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + v + '">' +
-            '<input class="mt-num" data-key="' + p.key + '" type="number" step="' + p.step + '" value="' + v + '">';
-        }
-        det.appendChild(row);
-      });
+          grid.appendChild(card);
+        });
+        det.appendChild(grid);
+      } else {
+        params.forEach(p => {
+          const row = document.createElement('label');
+          const v = snap[p.key];
+          row.dataset.key = p.key;
+
+          const desc = p.description || p.note || '';
+          const badges = '<span class="mt-badges">' +
+            (p.liveSafe ? '<i class="mt-badge live">live</i>' : '') +
+            (p.requiresReplay ? '<i class="mt-badge replay">replay</i>' : '') +
+            (p.debugOnly ? '<i class="mt-badge debug">debug</i>' : '') +
+            (p.visualsOnly ? '<i class="mt-badge visual">visual</i>' : '') +
+            (p.affectsGameplay ? '<i class="mt-badge gameplay">gameplay</i>' : '') +
+            '</span>';
+          const label = '<span class="lbl"><b>' + escHtml(p.label) + (p.unit ? ' <small>(' + escHtml(p.unit) + ')</small>' : '') + '</b><em>' + escHtml(p.key + (p.category ? ' · ' + p.category : '')) + '</em><span class="mt-desc">' + escHtml(desc) + '</span>' + badges + '</span>';
+
+          if (typeof p.def === 'boolean') {
+            row.className = 'mt-row mt-bool';
+            row.innerHTML = label +
+              '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
+          } else if (typeof p.def === 'string') {
+            row.className = 'mt-row mt-string';
+            row.innerHTML = label + '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + v + '">';
+          } else {
+            row.className = 'mt-row';
+            row.innerHTML = label +
+              '<input type="range"   data-key="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + v + '">' +
+              '<input class="mt-num" data-key="' + p.key + '" type="number" step="' + p.step + '" value="' + v + '">';
+          }
+          det.appendChild(row);
+        });
+      }
 
       groupsEl.appendChild(det);
     });
@@ -978,16 +1118,18 @@
 
   searchEl.addEventListener('input', () => {
     const q = searchEl.value.trim().toLowerCase();
-    groupsEl.querySelectorAll('.mt-row').forEach(row => {
+    groupsEl.querySelectorAll('.mt-row, .toggle-card').forEach(row => {
       const p = MT && MT.params.find(x => x.key === row.dataset.key);
-      const visible = !q || row.dataset.key.toLowerCase().includes(q) ||
-        row.querySelector('b').textContent.toLowerCase().includes(q) ||
+      const labelEl = row.querySelector('b') || row.querySelector('.lbl');
+      const visible = !q ||
+        (row.dataset.key && row.dataset.key.toLowerCase().includes(q)) ||
+        (labelEl && labelEl.textContent.toLowerCase().includes(q)) ||
         (p && p.description && p.description.toLowerCase().includes(q)) ||
         (p && p.category && p.category.toLowerCase().includes(q));
       row.style.display = visible ? '' : 'none';
     });
     groupsEl.querySelectorAll('details').forEach(det => {
-      const hasVisible = [...det.querySelectorAll('.mt-row')].some(r => r.style.display !== 'none');
+      const hasVisible = [...det.querySelectorAll('.mt-row, .toggle-card')].some(r => r.style.display !== 'none');
       det.style.display = hasVisible ? '' : 'none';
       if (q) det.open = true;
     });
@@ -1064,10 +1206,9 @@
 
   /* ── Tab switching ────────────────────────────────────────────────────── */
   (function () {
-    const searchWrap    = document.getElementById('search-wrap');
-    const paramsActions = document.getElementById('params-actions');
-    const fieldViewEl   = document.getElementById('field-view');
-    const safeViewEl    = document.getElementById('safe-view');
+    const searchWrap  = document.getElementById('search-wrap');
+    const fieldViewEl = document.getElementById('field-view');
+    const safeViewEl  = document.getElementById('safe-view');
 
     document.querySelectorAll('.t-tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1076,11 +1217,10 @@
         const isParams = tab === 'params';
         const isField  = tab === 'field';
         const isSafe   = tab === 'safe';
-        searchWrap.style.display    = isParams ? '' : 'none';
-        groupsEl.style.display      = isParams ? '' : 'none';
-        paramsActions.style.display = isParams ? '' : 'none';
-        fieldViewEl.style.display   = isField  ? 'flex' : 'none';
-        safeViewEl.style.display    = isSafe   ? 'flex' : 'none';
+        searchWrap.style.display  = isParams ? '' : 'none';
+        groupsEl.style.display    = isParams ? '' : 'none';
+        fieldViewEl.style.display = isField  ? 'flex' : 'none';
+        safeViewEl.style.display  = isSafe   ? 'flex' : 'none';
         if (window._fieldActivate) window._fieldActivate(isField || isSafe, tab);
       });
     });
