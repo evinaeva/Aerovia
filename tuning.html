@@ -949,17 +949,8 @@
 
     <div class="f-sec">
       <h3>Зоны — легенда</h3>
-      <div class="zone-legend">
-        <div class="zone-legend-item"><div class="z-sw fill" style="background:rgba(255,60,60,.4);border:1px solid rgba(255,60,60,.7)"></div>Жест-зоны Android</div>
-        <div class="zone-legend-item"><div class="z-sw fill" style="background:rgba(255,160,60,.3);border:1px solid rgba(255,160,60,.6)"></div>Safe-area insets</div>
-        <div class="zone-legend-item"><div class="z-sw fill" style="background:rgba(0,0,0,.5);border:1px solid rgba(255,60,60,.8)"></div>Вырез камеры</div>
-        <div class="zone-legend-item"><div class="z-sw" style="background:rgba(34,210,255,.9)"></div>contentSafeRect</div>
-        <div class="zone-legend-item"><div class="z-sw" style="background:rgba(34,240,100,.9)"></div>interactiveSafeRect</div>
-        <div class="zone-legend-item"><div class="z-sw" style="background:rgba(50,255,50,1)"></div>routeStartAllowedRect</div>
-        <div class="zone-legend-item"><div class="z-sw" style="background:rgba(60,180,255,.9)"></div>routeDrawAllowedRect</div>
-        <div class="zone-legend-item"><div class="z-sw" style="background:rgba(180,80,255,.9)"></div>routeTargetAllowedRect</div>
-        <div class="zone-legend-item"><div class="z-sw" style="background:rgba(255,220,0,.6)"></div>UI reserved (HUD/btn)</div>
-      </div>
+      <!-- подписи берутся из i18n (T.zone*), рендерятся в renderZoneLegend() -->
+      <div class="zone-legend" id="zone-legend"></div>
     </div>
     <div class="f-sec">
       <h3>Размеры зон (live)</h3>
@@ -993,9 +984,9 @@
     </div>
     <div class="f-sec" style="font-size:11px;color:var(--muted);line-height:1.6">
       <h3>Как читать</h3>
-      <b>Красный</b> — жест-зоны: нельзя начинать маршрут (back/home gesture).<br>
-      <b>Зелёный</b> — routeStartAllowedRect: здесь старт маршрута безопасен.<br>
-      Запусти игру → <b>▶ Demo</b> → наблюдай оверлей. Переключай Cutout в боковой панели.
+      <b>Красный</b> — жест-зоны: нельзя начинать маршрут (жест «назад/домой»).<br>
+      <b>Зелёный</b> — зона старта маршрута: здесь начинать маршрут безопасно.<br>
+      Запусти игру → <b>▶ Демо</b> → наблюдай оверлей. Переключай вырез камеры в боковой панели.
     </div>
   </div>
 
@@ -1159,6 +1150,31 @@
     paramsReset:    'Все параметры сброшены.',
     choosePreset:   'Выбери пресет для удаления.',
     livePreview:    'Превью',
+
+    /* ── Таб «Зоны экрана» (легенда / таблица / оверлей / предупреждения) ── */
+    zoneContent:        'Контент-зона',
+    zoneInteractive:    'Интерактивная зона',
+    zoneRouteStart:     'Зона старта маршрута',
+    zoneRouteDraw:      'Зона рисования маршрута',
+    zoneRouteTarget:    'Зона цели маршрута',
+    zoneViewport:       'Вьюпорт',
+    zoneGesture:        'Жест-зоны Android',
+    zoneGestureInsets:  'Жест-отступы',
+    zoneSafeInsets:     'Системные отступы',
+    zoneCutout:         'Вырез камеры',
+    zoneUiReserved:     'Зарезервировано под UI (HUD/кнопки)',
+    // короткие подписи поверх превью (мелкий шрифт)
+    zoneOvContent:      'контент',
+    zoneOvInteractive:  'интеракт.',
+    zoneOvRouteStart:   'старт',
+    zoneOvRouteDraw:    'рисование',
+    zoneOvRouteTarget:  'цель',
+    zoneOvCutout:       'вырез',
+    // предупреждения проверки зон
+    warnNone:           '✓ Нет предупреждений',
+    warnHitCutout:      (lbl)  => lbl + ': зона нажатия перекрывается с вырезом камеры',
+    warnStopOutside:    (lbl)  => lbl + ': stopX вне зоны цели маршрута',
+    warnBayCutout:      (type) => 'Бокс ' + type + ': перекрывается с вырезом камеры',
   };
 
   /* ── Phone size presets ────────────────────────────────────────────────── */
@@ -1413,6 +1429,26 @@
 
   /* initial render after layout settles */
   requestAnimationFrame(() => applyPhone(phoneKey));
+
+  /* zone legend — подписи берутся из i18n (T.zone*), а не зашиты в разметку */
+  (function renderZoneLegend() {
+    const host = document.getElementById('zone-legend');
+    if (!host) return;
+    const items = [
+      ['z-sw fill', 'background:rgba(255,60,60,.4);border:1px solid rgba(255,60,60,.7)', T.zoneGesture],
+      ['z-sw fill', 'background:rgba(255,160,60,.3);border:1px solid rgba(255,160,60,.6)', T.zoneSafeInsets],
+      ['z-sw fill', 'background:rgba(0,0,0,.5);border:1px solid rgba(255,60,60,.8)', T.zoneCutout],
+      ['z-sw', 'background:rgba(34,210,255,.9)', T.zoneContent],
+      ['z-sw', 'background:rgba(34,240,100,.9)', T.zoneInteractive],
+      ['z-sw', 'background:rgba(50,255,50,1)', T.zoneRouteStart],
+      ['z-sw', 'background:rgba(60,180,255,.9)', T.zoneRouteDraw],
+      ['z-sw', 'background:rgba(180,80,255,.9)', T.zoneRouteTarget],
+      ['z-sw', 'background:rgba(255,220,0,.6)', T.zoneUiReserved],
+    ];
+    host.innerHTML = items.map(it =>
+      '<div class="zone-legend-item"><div class="' + it[0] + '" style="' + it[1] + '"></div>' + it[2] + '</div>'
+    ).join('');
+  })();
 
   /* ── Workbench logic (unchanged) ─────────────────────────────────────── */
 
@@ -2228,16 +2264,16 @@
         var cr = sr.cutoutRect;
         if (cr && cr.w > 0 && cr.h > 0) {
           s += '<rect x="'+cr.x+'" y="'+cr.y+'" width="'+cr.w+'" height="'+cr.h+'" fill="rgba(0,0,0,.55)" stroke="rgba(255,60,60,.85)" stroke-width="2"/>';
-          s += '<text x="'+(cr.x+2)+'" y="'+(cr.y+9)+'" font-size="7" fill="rgba(255,80,80,.9)">cutout</text>';
+          s += '<text x="'+(cr.x+2)+'" y="'+(cr.y+9)+'" font-size="7" fill="rgba(255,80,80,.9)">'+T.zoneOvCutout+'</text>';
         }
 
         // named safe rects (outlines only — drawn on top so they're always visible)
         [
-          { r: sr.contentSafeRect,        col: 'rgba(34,210,255,.75)', da: '6 3', lbl: 'content'      },
-          { r: sr.interactiveSafeRect,    col: 'rgba(34,240,100,.75)', da: '5 4', lbl: 'interactive'  },
-          { r: sr.routeStartAllowedRect,  col: 'rgba(50,255,50,1)',    da: '',    lbl: 'route-start'   },
-          { r: sr.routeDrawAllowedRect,   col: 'rgba(60,180,255,.9)',  da: '8 3', lbl: 'route-draw'   },
-          { r: sr.routeTargetAllowedRect, col: 'rgba(180,80,255,.9)',  da: '5 4', lbl: 'route-target' },
+          { r: sr.contentSafeRect,        col: 'rgba(34,210,255,.75)', da: '6 3', lbl: T.zoneOvContent     },
+          { r: sr.interactiveSafeRect,    col: 'rgba(34,240,100,.75)', da: '5 4', lbl: T.zoneOvInteractive },
+          { r: sr.routeStartAllowedRect,  col: 'rgba(50,255,50,1)',    da: '',    lbl: T.zoneOvRouteStart  },
+          { r: sr.routeDrawAllowedRect,   col: 'rgba(60,180,255,.9)',  da: '8 3', lbl: T.zoneOvRouteDraw   },
+          { r: sr.routeTargetAllowedRect, col: 'rgba(180,80,255,.9)',  da: '5 4', lbl: T.zoneOvRouteTarget },
         ].forEach(function(item) {
           var r=item.r, col=item.col, da=item.da, lbl=item.lbl;
           if (!r || r.w <= 0 || r.h <= 0) return;
@@ -2292,17 +2328,17 @@
       // live rect table
       function fmtR(r) { return !r ? '—' : Math.round(r.x)+'·'+Math.round(r.y)+' '+Math.round(r.w)+'×'+Math.round(r.h); }
       var rh = '<table class="f-table"><tr><th>Зона</th><th>x·y w×h</th></tr>';
-      rh += '<tr><td>viewport</td><td>'          + fmtR(sr.viewportRect)           + '</td></tr>';
-      rh += '<tr><td>contentSafe</td><td>'        + fmtR(sr.contentSafeRect)        + '</td></tr>';
-      rh += '<tr><td>interactiveSafe</td><td>'    + fmtR(sr.interactiveSafeRect)    + '</td></tr>';
-      rh += '<tr><td>routeStart</td><td>'         + fmtR(sr.routeStartAllowedRect)  + '</td></tr>';
-      rh += '<tr><td>routeDraw</td><td>'          + fmtR(sr.routeDrawAllowedRect)   + '</td></tr>';
-      rh += '<tr><td>routeTarget</td><td>'        + fmtR(sr.routeTargetAllowedRect) + '</td></tr>';
+      rh += '<tr><td>'+T.zoneViewport+'</td><td>'       + fmtR(sr.viewportRect)           + '</td></tr>';
+      rh += '<tr><td>'+T.zoneContent+'</td><td>'        + fmtR(sr.contentSafeRect)        + '</td></tr>';
+      rh += '<tr><td>'+T.zoneInteractive+'</td><td>'    + fmtR(sr.interactiveSafeRect)    + '</td></tr>';
+      rh += '<tr><td>'+T.zoneRouteStart+'</td><td>'     + fmtR(sr.routeStartAllowedRect)  + '</td></tr>';
+      rh += '<tr><td>'+T.zoneRouteDraw+'</td><td>'      + fmtR(sr.routeDrawAllowedRect)   + '</td></tr>';
+      rh += '<tr><td>'+T.zoneRouteTarget+'</td><td>'    + fmtR(sr.routeTargetAllowedRect) + '</td></tr>';
       var gi = sr.gestureInsets, sa = sr.safeAreaInsets, css = sr.cssReadSafe;
-      rh += '<tr><td>gestureInsets</td><td>t:'+gi.t+' r:'+gi.r+' b:'+gi.b+' l:'+gi.l+'</td></tr>';
-      rh += '<tr><td>safeAreaInsets</td><td>t:'+sa.t+' r:'+sa.r+' b:'+sa.b+' l:'+sa.l+'</td></tr>';
+      rh += '<tr><td>'+T.zoneGestureInsets+'</td><td>t:'+gi.t+' r:'+gi.r+' b:'+gi.b+' l:'+gi.l+'</td></tr>';
+      rh += '<tr><td>'+T.zoneSafeInsets+'</td><td>t:'+sa.t+' r:'+sa.r+' b:'+sa.b+' l:'+sa.l+'</td></tr>';
       if (sr.cutoutRect && sr.cutoutRect.w > 0)
-        rh += '<tr><td>cutout</td><td>' + fmtR(sr.cutoutRect) + '</td></tr>';
+        rh += '<tr><td>'+T.zoneCutout+'</td><td>' + fmtR(sr.cutoutRect) + '</td></tr>';
       rh += '<tr><td style="color:var(--muted)">CSS env()</td><td style="color:var(--muted)">t:'+css.t+' r:'+css.r+' b:'+css.b+' l:'+css.l+'</td></tr>';
       rh += '</table>';
       infoRects.innerHTML = rh;
@@ -2321,17 +2357,17 @@
       (fd.runways || []).forEach(function(r, i) {
         var lbl = 'ВПП '+(i+1);
         if (cr.w > 0 && rectsOverlap(r, cr))
-          warnings.push(lbl+': hit area перекрывается с вырезом камеры');
+          warnings.push(T.warnHitCutout(lbl));
         if (!inRect(r.stopX, r.cy, rt))
-          warnings.push(lbl+': stopX вне routeTargetAllowedRect');
+          warnings.push(T.warnStopOutside(lbl));
       });
       (fd.bays || []).forEach(function(b) {
         if (cr.w > 0 && rectsOverlap(b, cr))
-          warnings.push('Бокс '+(b.type||'?')+': перекрывается с вырезом камеры');
+          warnings.push(T.warnBayCutout(b.type || '?'));
       });
 
       warnEl.innerHTML = warnings.length === 0
-        ? '<span style="color:var(--accent)">✓ Нет предупреждений</span>'
+        ? '<span style="color:var(--accent)">'+T.warnNone+'</span>'
         : warnings.map(function(w){ return '<div class="sa-warn">⚠ '+escHtml(w)+'</div>'; }).join('');
     }
 
