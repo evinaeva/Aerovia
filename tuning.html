@@ -31,58 +31,61 @@
 
     /* ── TOP PANE — Live Preview ─────────────────────────────────────────── */
     #top-pane {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      grid-template-areas: "left preview tools";
-      align-items: start;
-      gap: 12px;
-      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      padding: 8px 10px;
       background: #020609;
       border-bottom: 1px solid var(--border);
-      overflow: hidden;
+      overflow: visible;
       flex: none;
-      min-height: 120px;
+      min-height: 80px;
       position: relative;
     }
 
-    /* ── Left panel: size strip + demo button ─────────────────────────── */
-    #left-panel {
-      grid-area: left;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-self: start;
-    }
+    /* ── Toolbar: horizontal icon row above phone ─────────────────────────── */
+    #toolbar-wrap { position: relative; flex: none; }
 
-    /* ── Device size strip ───────────────────────────────────────────────── */
-    #size-strip {
+    #toolbar {
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
+      align-items: center;
       gap: 4px;
-      flex: none;
+      flex-wrap: nowrap;
     }
 
-    #btn-demo {
-      background: rgba(34,227,198,.08);
-      border-color: rgba(34,227,198,.45);
-      color: var(--accent);
-      text-align: center;
+    .tb-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: inherit;
     }
-    #btn-demo:hover { background: rgba(34,227,198,.16); }
-    #btn-demo.demo-active {
-      background: rgba(255,80,80,.08);
-      border-color: rgba(255,80,80,.5);
-      color: #ff8080;
-    }
-    #btn-demo.demo-active:hover { background: rgba(255,80,80,.15); }
+    .tb-btn:hover { background: #1a2a48; }
+    .tb-btn.tb-active { border-color: var(--accent); background: rgba(34,227,198,.08); color: var(--accent); }
+    .tb-icon { font-size: 15px; line-height: 1; flex: none; }
+    #btn-demo { color: var(--accent); border-color: rgba(34,227,198,.45); background: rgba(34,227,198,.06); }
+    #btn-demo:hover { background: rgba(34,227,198,.14); }
+    #btn-demo.demo-active { color: #ff8080; border-color: rgba(255,80,80,.5); background: rgba(255,80,80,.06); }
+    #btn-demo.demo-active:hover { background: rgba(255,80,80,.14); }
 
+    /* Size button inside popup */
     .sz-btn {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8px 14px;
+      padding: 6px 10px;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       background: var(--btn-bg);
       color: var(--text);
       cursor: pointer;
@@ -91,26 +94,54 @@
       font-family: inherit;
     }
     .sz-btn:hover { background: #1a2a48; }
-    .sz-btn.active {
-      border-color: var(--accent);
-      background: rgba(34,227,198,.08);
-    }
-    .sz-btn .sz-name {
-      font-size: 11px; font-weight: 700; color: var(--text);
-    }
+    .sz-btn.active { border-color: var(--accent); background: rgba(34,227,198,.08); }
+    .sz-btn .sz-name { font-size: 11px; font-weight: 700; }
     .sz-btn.active .sz-name { color: var(--accent); }
-    .sz-btn .sz-dims {
-      font-size: 9px; color: var(--muted); margin-top: 2px;
+    .sz-btn .sz-dims { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Floating popups (centered in viewport) ─────────────────────────── */
+    #popup-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 199;
     }
+    .tb-popup {
+      display: none;
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(6,11,26,.98);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      z-index: 200;
+      min-width: 160px;
+      max-width: min(300px, 90vw);
+      box-shadow: 0 8px 32px rgba(0,0,0,.8);
+    }
+    .tb-popup.open { display: block; }
+
+    #popup-size { min-width: 240px; }
+    #size-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+
+    .popup-body { display: flex; flex-direction: column; gap: 6px; }
+    .popup-body .p-btn, .popup-body .p-input, .popup-body select { width: 100%; text-align: left; }
+    .popup-body .btn-row { display: flex; gap: 4px; }
+    .popup-body .btn-row .p-btn { flex: 1; }
+
+    #popup-cutout #cutout-strip { display: flex; flex-direction: column; gap: 4px; }
+    #popup-cutout .co-btn { width: 100%; text-align: left; }
 
     /* ── Phone column ───────────────────────────────────────────────────── */
     #phone-col {
-      grid-area: preview;
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      justify-self: center;
+      gap: 6px;
+      min-height: 0;
     }
 
     #phone-label {
@@ -176,60 +207,7 @@
       border: none; display: block;
     }
 
-    /* ── Preview tools dock (right of phone) ───────────────────────────── */
-    #preview-tools {
-      grid-area: tools;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      align-self: start;
-      padding-top: 2px;
-      width: auto;
-      min-width: 36px;
-    }
-
-    /* Collapsible icon panels */
-    .pt-panel {
-      border-radius: 10px;
-      overflow: visible;
-    }
-    .pt-panel[open] {
-      border: 1px solid var(--border);
-      background: rgba(14,22,48,.5);
-    }
-    .pt-panel > summary {
-      list-style: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 7px;
-      border-radius: 10px;
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-    }
-    .pt-panel > summary::-webkit-details-marker { display: none; }
-    .pt-panel > summary .pt-icon { font-size: 16px; line-height: 1; flex: none; }
-    .pt-panel > summary .pt-lbl {
-      font-size: 9px; font-weight: 800; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--muted); display: none;
-    }
-    .pt-panel[open] > summary .pt-lbl { display: block; }
-    .pt-panel > summary:hover { background: rgba(58,210,255,.08); }
-    .pt-panel[open] > summary:hover { background: transparent; }
-
-    .pt-body {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      padding: 0 10px 10px;
-      min-width: 168px;
-    }
-    .pt-body .p-btn { width: 100%; text-align: left; }
-    .pt-body .p-input { width: 100%; }
-    .pt-body select { width: 100%; }
-    .pt-body .btn-row { display: flex; gap: 4px; }
-    .pt-body .btn-row .p-btn { flex: 1; }
+    /* (pt-panel/preview-tools removed — now using toolbar popups) */
 
     /* ── SPLITTER ────────────────────────────────────────────────────────── */
     #splitter {
@@ -317,28 +295,33 @@
       font-family: inherit;
     }
 
-    /* ── Lab Tabs ──────────────────────────────────────────────────────── */
+    /* ── Tab bar: tabs + inline search ─────────────────────────────────── */
+    #tab-bar {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid var(--border);
+    }
     #tab-nav {
+      flex: 1;
       display: flex;
       gap: 0;
       overflow-x: auto;
       scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
-      border-bottom: 1px solid var(--border);
     }
     #tab-nav::-webkit-scrollbar { display: none; }
 
     .t-tab {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       border: none;
       border-bottom: 2px solid transparent;
       border-radius: 0;
       background: transparent;
       color: var(--muted);
-      padding: 10px 16px 9px;
-      font-size: 12px;
+      padding: 9px 14px 8px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       transition: color .15s, border-color .15s;
@@ -348,28 +331,31 @@
       margin-bottom: -1px;
     }
     .t-tab .tab-icon { font-size: 14px; line-height: 1; }
-    .t-tab .tab-num  { font-size: 9px; font-weight: 800; opacity: .4; }
     .t-tab:hover:not(.active) { color: var(--text); }
     .t-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .t-tab.active .tab-num { opacity: .65; }
     .t-tab.stub { opacity: .55; }
     .t-tab.stub:hover:not(.active) { opacity: .8; }
 
-    /* ── Search ─────────────────────────────────────────────────────────── */
+    /* Inline search (right of tab bar) */
     #search-wrap {
-      padding: 8px 10px 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
       flex: none;
+      border-left: 1px solid var(--border);
     }
     #search {
-      width: 100%;
       border: 1px solid rgba(127,155,176,.22);
-      border-radius: 10px;
+      border-radius: 8px;
       background: var(--input-bg);
       color: var(--text);
-      padding: 7px 12px;
+      padding: 5px 10px;
       font-size: 12px;
       font-family: inherit;
+      width: 120px;
+      transition: width .2s;
     }
+    #search:focus { width: 180px; outline: none; border-color: var(--accent2); }
     #search::placeholder { color: var(--muted); }
 
     /* ── Groups: 2-col card grid ─────────────────────────────────────────── */
@@ -394,10 +380,10 @@
     #groups details.wide { grid-column: 1 / -1; }
 
     #groups summary {
-      padding: 6px 10px;
+      padding: 8px 10px;
       cursor: pointer;
       font-weight: 800;
-      font-size: 11px;
+      font-size: 13px;
       color: var(--accent);
       user-select: none;
       letter-spacing: .02em;
@@ -420,21 +406,21 @@
 
     .mt-row {
       display: grid;
-      grid-template-columns: minmax(80px, 145px) 1fr 54px;
+      grid-template-columns: minmax(90px, 150px) 1fr 56px;
       align-items: center;
       gap: 6px;
       padding: 0 10px;
-      height: 34px;
+      height: 36px;
       border-top: 1px solid var(--row-sep);
       cursor: default;
     }
     .mt-row:hover { background: rgba(58,210,255,.04); }
 
     .mt-row .lbl {
-      font-size: 12px; font-weight: 600; color: var(--text);
+      font-size: 13px; font-weight: 600; color: var(--text);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .mt-row .lbl small { color: var(--muted); font-size: 9.5px; font-weight: 400; margin-left: 2px; }
+    .mt-row .lbl small { color: var(--muted); font-size: 10px; font-weight: 400; margin-left: 2px; }
 
     .mt-row input[type=range] {
       min-width: 0; width: 100%; cursor: pointer; accent-color: var(--accent2);
@@ -689,39 +675,11 @@
     .toggle-card:hover { background: rgba(22,34,68,.8); }
     .toggle-card .lbl { font-size: 11px; flex: 1; font-weight: 600; line-height: 1.2; }
 
-    /* ── Responsive: tablet portrait / small screens ────────────────────── */
-    @media (max-width: 900px) {
-      #top-pane {
-        grid-template-columns: 1fr;
-        grid-template-areas: "left" "preview" "tools";
-        align-items: center;
-        min-height: unset;
-        overflow-y: auto;
-      }
-
-      #left-panel {
-        flex-direction: row;
-        flex-wrap: wrap;
-        width: 100%;
-        align-items: center;
-      }
-
-      #size-strip {
-        flex-direction: row;
-        overflow-x: auto;
-        scrollbar-width: none;
-      }
-
-      #phone-col { width: 100%; }
-
-      #preview-tools {
-        width: 100%;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: 4px;
-      }
-
+    /* ── Responsive: small screens ──────────────────────────────────────── */
+    @media (max-width: 600px) {
+      #toolbar { flex-wrap: wrap; }
+      #search { width: 90px; }
+      #search:focus { width: 130px; }
       .mt-row { grid-template-columns: minmax(70px, 120px) 1fr 50px; }
     }
   </style>
@@ -731,40 +689,75 @@
 <!-- ── TOP PANE: Live Preview ────────────────────────────────────────────── -->
 <div id="top-pane">
 
-  <!-- Left panel: size strip + demo/cutout column -->
-  <div id="left-panel">
-
-    <div id="size-strip">
-      <button class="sz-btn" data-size="st">
-        <span class="sz-name">XS</span>
-        <span class="sz-dims">720 × 320</span>
+  <!-- Toolbar: icon row above phone -->
+  <div id="toolbar-wrap">
+    <div id="toolbar">
+      <!-- Size picker -->
+      <button class="tb-btn" id="btn-size-toggle" title="Выбрать размер экрана">
+        <span class="tb-icon">📱</span><span id="tb-size-label">S</span>
       </button>
-      <button class="sz-btn active" data-size="s">
-        <span class="sz-name">S</span>
-        <span class="sz-dims">800 × 360</span>
-      </button>
-      <button class="sz-btn" data-size="m">
-        <span class="sz-name">M</span>
-        <span class="sz-dims">832 × 384</span>
-      </button>
-      <button class="sz-btn" data-size="l">
-        <span class="sz-name">L</span>
-        <span class="sz-dims">873 × 393</span>
-      </button>
-      <button class="sz-btn" data-size="xl">
-        <span class="sz-name">XL</span>
-        <span class="sz-dims">915 × 412</span>
-      </button>
-      <button class="sz-btn" data-size="xxl">
-        <span class="sz-name">XXL</span>
-        <span class="sz-dims">960 × 432</span>
-      </button>
+      <!-- Demo -->
+      <button class="tb-btn" id="btn-demo" title="Forest Survival · бесконечные борта">▶ Демо</button>
+      <!-- Spacer -->
+      <div style="flex:1"></div>
+      <!-- Preset -->
+      <button class="tb-btn" id="btn-preset-toggle" title="Пресет">💾</button>
+      <!-- File -->
+      <button class="tb-btn" id="btn-file-toggle" title="Файл">📂</button>
+      <!-- Cutout -->
+      <button class="tb-btn" id="btn-cutout-toggle" title="Вырез экрана">✂️</button>
     </div>
 
-    <button class="p-btn" id="btn-demo" title="Forest Survival · бесконечные борта">▶ Демо</button>
+    <!-- Popup backdrop -->
+    <div id="popup-backdrop"></div>
 
+    <!-- Size popup -->
+    <div class="tb-popup" id="popup-size">
+      <div id="size-strip">
+        <button class="sz-btn" data-size="st"><span class="sz-name">XS</span><span class="sz-dims">720×320</span></button>
+        <button class="sz-btn active" data-size="s"><span class="sz-name">S</span><span class="sz-dims">800×360</span></button>
+        <button class="sz-btn" data-size="m"><span class="sz-name">M</span><span class="sz-dims">832×384</span></button>
+        <button class="sz-btn" data-size="l"><span class="sz-name">L</span><span class="sz-dims">873×393</span></button>
+        <button class="sz-btn" data-size="xl"><span class="sz-name">XL</span><span class="sz-dims">915×412</span></button>
+        <button class="sz-btn" data-size="xxl"><span class="sz-name">XXL</span><span class="sz-dims">960×432</span></button>
+      </div>
+    </div>
+
+    <!-- Preset popup -->
+    <div class="tb-popup" id="popup-preset">
+      <div class="popup-body">
+        <select id="preset-sel"><option value="">Пресет…</option></select>
+        <input class="p-input" id="preset-name" placeholder="Название пресета">
+        <div class="btn-row">
+          <button class="p-btn" id="btn-save">Сохранить</button>
+          <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- File popup -->
+    <div class="tb-popup" id="popup-file">
+      <div class="popup-body">
+        <button class="p-btn" id="btn-export">↓ Экспорт JSON</button>
+        <button class="p-btn" id="btn-import">↑ Импорт JSON</button>
+        <input type="file" id="file-import" accept=".json" style="display:none">
+        <button class="p-btn" id="btn-reset">↺ Сбросить всё</button>
+      </div>
+    </div>
+
+    <!-- Cutout popup -->
+    <div class="tb-popup" id="popup-cutout">
+      <div id="cutout-strip">
+        <button class="co-btn active" data-co="none">Без выреза</button>
+        <button class="co-btn" data-co="left">◀ Лев. камера</button>
+        <button class="co-btn" data-co="right">Прав. камера ▶</button>
+        <button class="co-btn" data-co="round">⌒ Скруглённые</button>
+        <button class="co-btn" data-co="3btn">3 кнопки</button>
+      </div>
+    </div>
   </div>
 
+  <!-- Phone preview -->
   <div id="phone-col">
     <div id="phone-wrapper">
       <div id="phone-shell">
@@ -772,7 +765,6 @@
         <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
              style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
       </div>
-      <!-- cutout-sim is outside phone-shell to render above the iframe -->
       <div id="cutout-sim"></div>
       <div id="resize-handle" title="Потяни чтобы выбрать размер экрана">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -781,41 +773,8 @@
         </svg>
       </div>
     </div>
-    <div id="phone-label">Live Preview · S Android Common · 800×360</div>
+    <div id="phone-label">Превью · S Android Common · 800×360</div>
   </div>
-
-  <aside id="preview-tools">
-    <details class="pt-panel">
-      <summary><span class="pt-icon">💾</span><span class="pt-lbl">Пресет</span></summary>
-      <div class="pt-body">
-        <select id="preset-sel"><option value="">Пресет…</option></select>
-        <input class="p-input" id="preset-name" placeholder="Название пресета">
-        <div class="btn-row">
-          <button class="p-btn" id="btn-save">Сохранить</button>
-          <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
-        </div>
-      </div>
-    </details>
-    <details class="pt-panel">
-      <summary><span class="pt-icon">📂</span><span class="pt-lbl">Файл</span></summary>
-      <div class="pt-body">
-        <button class="p-btn" id="btn-export">↓ Экспорт JSON</button>
-        <button class="p-btn" id="btn-import">↑ Импорт JSON</button>
-        <input type="file" id="file-import" accept=".json" style="display:none">
-        <button class="p-btn" id="btn-reset">↺ Сбросить всё</button>
-      </div>
-    </details>
-    <details class="pt-panel">
-      <summary><span class="pt-icon">✂️</span><span class="pt-lbl">Вырез</span></summary>
-      <div class="pt-body" id="cutout-strip">
-        <button class="co-btn active" data-co="none">Без выреза</button>
-        <button class="co-btn" data-co="left">◀ Лев. камера</button>
-        <button class="co-btn" data-co="right">Прав. камера ▶</button>
-        <button class="co-btn" data-co="round">⌒ Скруглённые</button>
-        <button class="co-btn" data-co="3btn">3 кнопки</button>
-      </div>
-    </details>
-  </aside>
 
 </div>
 
@@ -830,28 +789,28 @@
 <div id="bottom-pane">
 
   <div id="panel-head">
-    <div id="tab-nav">
-      <button class="t-tab active" data-tab="motion">
-        <span class="tab-icon">⚡</span><span>Движение</span><span class="tab-num">1</span>
-      </button>
-      <button class="t-tab" data-tab="safe">
-        <span class="tab-icon">📐</span><span>Зоны экрана</span><span class="tab-num">2</span>
-      </button>
-      <button class="t-tab stub" data-tab="level">
-        <span class="tab-icon">🗺</span><span>Уровни</span><span class="tab-num">3</span>
-      </button>
-      <button class="t-tab stub" data-tab="difficulty">
-        <span class="tab-icon">📊</span><span>Сложность</span><span class="tab-num">4</span>
-      </button>
-      <button class="t-tab stub" data-tab="assets">
-        <span class="tab-icon">🎨</span><span>Ресурсы</span><span class="tab-num">5</span>
-      </button>
+    <div id="tab-bar">
+      <div id="tab-nav">
+        <button class="t-tab active" data-tab="motion">
+          <span class="tab-icon">⚡</span><span>Движение</span>
+        </button>
+        <button class="t-tab" data-tab="safe">
+          <span class="tab-icon">📐</span><span>Зоны экрана</span>
+        </button>
+        <button class="t-tab stub" data-tab="level">
+          <span class="tab-icon">🗺</span><span>Уровни</span>
+        </button>
+        <button class="t-tab stub" data-tab="difficulty">
+          <span class="tab-icon">📊</span><span>Сложность</span>
+        </button>
+        <button class="t-tab stub" data-tab="assets">
+          <span class="tab-icon">🎨</span><span>Ресурсы</span>
+        </button>
+      </div>
+      <div id="search-wrap">
+        <input id="search" placeholder="Поиск…" autocomplete="off" spellcheck="false">
+      </div>
     </div>
-  </div>
-
-  <!-- Tab 1: Motion Lab ─────────────────────────────────────────────────── -->
-  <div id="search-wrap">
-    <input id="search" placeholder="Поиск параметра…" autocomplete="off" spellcheck="false">
   </div>
   <div id="groups">
     <div id="loading-msg">Ждём запуска игры…</div>
@@ -1084,12 +1043,12 @@
   const label   = document.getElementById('phone-label');
 
   function getScale(key) {
-    const ph     = PHONES.find(p => p.key === key);
-    const pane   = document.getElementById('top-pane');
-    const leftW  = (document.getElementById('left-panel') || { offsetWidth: 0 }).offsetWidth;
-    const toolsW = (document.getElementById('preview-tools') || { offsetWidth: 0 }).offsetWidth;
-    const availW = pane.clientWidth  - leftW - toolsW - 48;
-    const availH = pane.clientHeight - 36;
+    const ph      = PHONES.find(p => p.key === key);
+    const pane    = document.getElementById('top-pane');
+    const toolbar = document.getElementById('toolbar-wrap');
+    const toolH   = toolbar ? toolbar.offsetHeight + 6 : 0;
+    const availW  = pane.clientWidth  - 20;
+    const availH  = pane.clientHeight - toolH - 30;
     return Math.min(1, availW / ph.w, availH / ph.h);
   }
 
@@ -1110,12 +1069,19 @@
     document.querySelectorAll('.sz-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.size === key);
     });
+    // Update size button label in toolbar
+    const tbLbl = document.getElementById('tb-size-label');
+    if (tbLbl) tbLbl.textContent = ph.key === 'st' ? 'XS' : ph.key.toUpperCase();
+
     applyCutout(cutoutKey);
   }
 
-  // Size strip buttons
+  // Size strip buttons (inside popup)
   document.querySelectorAll('.sz-btn').forEach(btn => {
-    btn.addEventListener('click', () => applyPhone(btn.dataset.size));
+    btn.addEventListener('click', () => {
+      applyPhone(btn.dataset.size);
+      closeAllPopups();
+    });
   });
 
   // Resize handle: drag right/down = larger, drag left/up = smaller
@@ -1146,10 +1112,43 @@
 
   window.addEventListener('resize', () => applyPhone(phoneKey));
 
-  // Recalculate phone size when right-panel sections expand/collapse
-  document.querySelectorAll('#preview-tools details').forEach(det => {
-    det.addEventListener('toggle', () => requestAnimationFrame(() => applyPhone(phoneKey)));
-  });
+  /* ── Popup system ──────────────────────────────────────────────────────── */
+  const allPopups  = document.querySelectorAll('.tb-popup');
+  const backdrop   = document.getElementById('popup-backdrop');
+
+  function openPopup(id) {
+    const toolbar = document.getElementById('toolbar-wrap');
+    const tRect   = toolbar.getBoundingClientRect();
+    const top     = tRect.bottom + 6;
+    allPopups.forEach(p => {
+      p.classList.remove('open');
+      p.style.top = top + 'px';
+    });
+    const popup = document.getElementById(id);
+    if (popup) {
+      popup.style.top = top + 'px';
+      popup.classList.add('open');
+      backdrop.style.display = '';
+    }
+  }
+
+  function closeAllPopups() {
+    allPopups.forEach(p => p.classList.remove('open'));
+    backdrop.style.display = 'none';
+  }
+
+  function togglePopup(id) {
+    const popup = document.getElementById(id);
+    const wasOpen = popup && popup.classList.contains('open');
+    closeAllPopups();
+    if (!wasOpen) openPopup(id);
+  }
+
+  backdrop.addEventListener('click', closeAllPopups);
+  document.getElementById('btn-size-toggle').addEventListener('click',   () => togglePopup('popup-size'));
+  document.getElementById('btn-preset-toggle').addEventListener('click', () => togglePopup('popup-preset'));
+  document.getElementById('btn-file-toggle').addEventListener('click',   () => togglePopup('popup-file'));
+  document.getElementById('btn-cutout-toggle').addEventListener('click', () => togglePopup('popup-cutout'));
 
   /* ── Cutout presets ────────────────────────────────────────────────────── */
   // side: 'none'|'left'|'right'  — matches MT.SA_CUTOUT_SIDE values
@@ -1292,7 +1291,6 @@
       if (!params.length) return;
 
       const det = document.createElement('details');
-      det.open = true;
       det.dataset.group = gKey;
 
       // Wide card for groups with many params or boolean-only groups
@@ -1510,7 +1508,7 @@
         document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b === btn));
         const isMotion = tab === 'motion';
         const isSafe   = tab === 'safe';
-        searchWrap.style.display  = isMotion ? '' : 'none';
+        searchWrap.style.visibility = isMotion ? 'visible' : 'hidden';
         groupsEl.style.display    = isMotion ? '' : 'none';
         safeViewEl.style.display  = isSafe          ? 'flex' : 'none';
         levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
