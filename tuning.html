@@ -379,114 +379,115 @@
     }
     #search::placeholder { color: var(--muted); }
 
-    /* ── Groups ─────────────────────────────────────────────────────────── */
+    /* ── Groups: 2-col card grid ─────────────────────────────────────────── */
     #groups {
       flex: 1;
       overflow-y: auto;
-      padding: 8px 10px;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 6px;
+      align-content: start;
     }
 
     #groups details {
-      margin: 6px 0;
       border: 1px solid rgba(127,155,176,.14);
-      border-radius: 12px;
+      border-radius: 10px;
       background: rgba(14,22,48,.5);
+      overflow: hidden;
     }
 
+    /* Full-width card for large or boolean groups */
+    #groups details.wide { grid-column: 1 / -1; }
+
     #groups summary {
-      padding: 10px 14px;
+      padding: 6px 10px;
       cursor: pointer;
       font-weight: 800;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--accent);
       user-select: none;
       letter-spacing: .02em;
+      background: rgba(8,14,32,.35);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      list-style: none;
+    }
+    #groups summary::-webkit-details-marker { display: none; }
+    .sum-arrow { font-size: 9px; opacity: .5; display: inline-block; transition: transform .15s; }
+    #groups details[open] .sum-arrow { transform: rotate(90deg); }
+    .sum-count { margin-left: auto; font-size: 9px; font-weight: 400; color: var(--muted); }
+
+    /* ── Param rows grid inside a card ──────────────────────────────────── */
+    .mt-params-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
 
     .mt-row {
       display: grid;
-      grid-template-columns: 1fr 72px;
-      grid-template-rows: auto auto;
-      grid-template-areas: "lbl lbl" "rng num";
-      gap: 5px 10px;
-      padding: 10px 14px;
+      grid-template-columns: minmax(80px, 145px) 1fr 54px;
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+      height: 34px;
       border-top: 1px solid var(--row-sep);
       cursor: default;
     }
-    .mt-row:hover { background: rgba(58,210,255,.03); }
-    .mt-row .lbl { grid-area: lbl; }
+    .mt-row:hover { background: rgba(58,210,255,.04); }
+
+    .mt-row .lbl {
+      font-size: 12px; font-weight: 600; color: var(--text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .mt-row .lbl small { color: var(--muted); font-size: 9.5px; font-weight: 400; margin-left: 2px; }
+
     .mt-row input[type=range] {
-      grid-area: rng; min-width: 0;
-      cursor: pointer; accent-color: var(--accent2); align-self: center;
+      min-width: 0; width: 100%; cursor: pointer; accent-color: var(--accent2);
     }
-    .mt-row .mt-num { grid-area: num; width: 72px; }
-
-    .mt-row.mt-bool {
-      grid-template-columns: 1fr 44px;
-      grid-template-rows: auto;
-      grid-template-areas: "lbl tog";
-      align-items: start;
-      min-height: 40px;
+    .mt-row .mt-num {
+      width: 54px;
+      border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
+      background: var(--input-bg); color: #fff;
+      padding: 3px 4px; font-size: 11px; text-align: right; font-family: inherit;
     }
-    .mt-row.mt-bool .mt-toggle { grid-area: tog; justify-self: end; margin-top: 2px; }
 
-    .mt-row.mt-string {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto;
-      grid-template-areas: "lbl" "inp";
+    .mt-row.mt-bool { grid-template-columns: 1fr auto; gap: 8px; }
+    .mt-row.mt-bool .lbl { white-space: normal; font-size: 11px; line-height: 1.3; overflow: visible; }
+
+    .mt-row.mt-string { grid-template-columns: minmax(80px, 140px) 1fr; gap: 6px; }
+    .mt-row.mt-string .mt-text {
+      border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
+      background: var(--input-bg); color: #fff;
+      padding: 3px 6px; font-size: 11px; font-family: inherit;
     }
-    .mt-row.mt-string .mt-text { grid-area: inp; width: 100%; }
-
-    .mt-row .lbl b   { display: block; font-size: 14px; font-weight: 700; color: var(--text); }
-    .mt-row .lbl em  { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); font-style: normal; line-height: 1.3; }
-    .mt-desc { display:block; margin-top:3px; color:#9bb8c8; font-size:10px; line-height:1.3; }
-    .mt-badges { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
-    .mt-badge { padding:1px 5px; border-radius:999px; border:1px solid rgba(127,155,176,.20); color:#9fb9c9; font-size:9px; text-transform:uppercase; letter-spacing:.04em; }
-    .mt-badge.live { color:#20f0c8; border-color:rgba(32,240,200,.35); }
-    .mt-badge.replay { color:#ffd166; border-color:rgba(255,209,102,.35); }
-    .mt-badge.debug { color:#ff7bd5; border-color:rgba(255,123,213,.35); }
-    .mt-badge.visual { color:#7cc7ff; border-color:rgba(124,199,255,.35); }
-    .mt-badge.gameplay { color:#ffad7c; border-color:rgba(255,173,124,.35); }
 
     .mt-toggle {
       position: relative;
-      width: 40px; height: 22px;
+      width: 36px; height: 20px;
       flex: none;
     }
     .mt-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
     .mt-toggle .track {
       position: absolute; inset: 0;
-      border-radius: 11px;
+      border-radius: 10px;
       background: #1a2a48;
       border: 1px solid var(--border);
       cursor: pointer;
-      transition: background .2s;
+      transition: background .18s;
     }
     .mt-toggle input:checked + .track { background: var(--accent); border-color: var(--accent); }
     .mt-toggle .track::after {
       content: '';
       position: absolute;
       top: 2px; left: 2px;
-      width: 16px; height: 16px;
+      width: 14px; height: 14px;
       border-radius: 50%;
       background: #fff;
-      transition: transform .2s;
+      transition: transform .18s;
     }
-    .mt-toggle input:checked + .track::after { transform: translateX(18px); }
-
-    .mt-text,
-    .mt-num {
-      width: 70px;
-      border: 1px solid rgba(127,155,176,.22);
-      border-radius: 8px;
-      background: var(--input-bg);
-      color: #fff;
-      padding: 5px;
-      font-size: 12px;
-      text-align: right;
-      font-family: inherit;
-    }
-    .mt-text { width: 190px; text-align: left; }
+    .mt-toggle input:checked + .track::after { transform: translateX(16px); }
 
     /* ── Placeholder labs ───────────────────────────────────────────────── */
     .lab-view {
@@ -579,6 +580,7 @@
       height: 120px;
       color: var(--muted);
       font-size: 13px;
+      grid-column: 1 / -1;
     }
 
     /* ── Field view ─────────────────────────────────────────────────────── */
@@ -672,28 +674,28 @@
     #demo-cut .co-btn { width: 100%; text-align: left; }
     #demo-cut #cutout-strip { display: flex; flex-direction: column; gap: 4px; }
 
-    /* ── Toggle-grid (for all-boolean groups like ctrl) ─────────────────── */
+    /* ── Toggle-grid for all-bool groups ─────────────────────────────────── */
     .toggle-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 5px;
-      padding: 6px 10px 10px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 3px;
+      padding: 5px 8px 8px;
     }
 
     .toggle-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      padding: 7px 10px;
-      border-radius: 8px;
+      gap: 8px;
+      padding: 5px 9px;
+      border-radius: 6px;
       background: rgba(14,22,48,.6);
       border: 1px solid var(--border);
       cursor: pointer;
-      transition: background .15s;
+      transition: background .12s;
     }
     .toggle-card:hover { background: rgba(22,34,68,.8); }
-    .toggle-card .lbl { font-size: 12px; flex: 1; font-weight: 600; }
+    .toggle-card .lbl { font-size: 11px; flex: 1; font-weight: 600; line-height: 1.2; }
 
     /* ── Responsive: medium screens ─────────────────────────────────────── */
     @media (max-width: 1100px) {
@@ -735,8 +737,7 @@
 
       .pt-section { flex: none; min-width: 160px; }
 
-      .mt-num { width: 64px; }
-      .mt-row.mt-bool { grid-template-columns: 1fr 44px; }
+      .mt-row { grid-template-columns: minmax(70px, 120px) 1fr 50px; }
     }
   </style>
 </head>
@@ -1273,9 +1274,15 @@
       const det = document.createElement('details');
       det.open = true;
       det.dataset.group = gKey;
-      det.innerHTML = '<summary>' + MT.groups[gKey] + '</summary>';
 
+      // Wide card for groups with many params or boolean-only groups
       const allBool = params.every(p => typeof p.def === 'boolean');
+      if (params.length > 5 || allBool) det.classList.add('wide');
+
+      det.innerHTML = '<summary><span class="sum-arrow">▸</span>' +
+        escHtml(MT.groups[gKey]) +
+        '<span class="sum-count">' + params.length + '</span></summary>';
+
       if (allBool) {
         const grid = document.createElement('div');
         grid.className = 'toggle-grid';
@@ -1284,43 +1291,56 @@
           card.className = 'toggle-card';
           card.dataset.key = p.key;
           const v = snap[p.key];
+          card.title = p.key + (p.description ? ' — ' + p.description : '');
           card.innerHTML =
             '<span class="lbl">' + escHtml(p.label) + '</span>' +
             '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
           grid.appendChild(card);
         });
         det.appendChild(grid);
+
       } else {
+        const grid = document.createElement('div');
+        grid.className = 'mt-params-grid';
+
         params.forEach(p => {
           const row = document.createElement('label');
           const v = snap[p.key];
           row.dataset.key = p.key;
 
-          const desc = p.description || p.note || '';
-          const badges = '<span class="mt-badges">' +
-            (p.liveSafe ? '<i class="mt-badge live">live</i>' : '') +
-            (p.requiresReplay ? '<i class="mt-badge replay">replay</i>' : '') +
-            (p.debugOnly ? '<i class="mt-badge debug">debug</i>' : '') +
-            (p.visualsOnly ? '<i class="mt-badge visual">visual</i>' : '') +
-            (p.affectsGameplay ? '<i class="mt-badge gameplay">gameplay</i>' : '') +
-            '</span>';
-          const label = '<span class="lbl"><b>' + escHtml(p.label) + (p.unit ? ' <small>(' + escHtml(p.unit) + ')</small>' : '') + '</b><em>' + escHtml(p.key + (p.category ? ' · ' + p.category : '')) + '</em><span class="mt-desc">' + escHtml(desc) + '</span>' + badges + '</span>';
+          // Full info in tooltip; visible label stays short
+          const tipParts = [p.key];
+          if (p.unit) tipParts.push('(' + p.unit + ')');
+          if (p.category) tipParts.push('· ' + p.category);
+          if (p.description) tipParts.push('— ' + p.description);
+          const badges = [];
+          if (p.liveSafe) badges.push('live');
+          if (p.requiresReplay) badges.push('replay');
+          if (p.visualsOnly) badges.push('visual');
+          if (p.affectsGameplay && !p.visualsOnly) badges.push('gameplay');
+          if (badges.length) tipParts.push('[' + badges.join(', ') + ']');
+          row.title = tipParts.join(' ');
+
+          const unitHtml = p.unit ? ' <small>' + escHtml(p.unit) + '</small>' : '';
+          const lblHtml = '<span class="lbl">' + escHtml(p.label) + unitHtml + '</span>';
 
           if (typeof p.def === 'boolean') {
             row.className = 'mt-row mt-bool';
-            row.innerHTML = label +
+            row.innerHTML = lblHtml +
               '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (v ? ' checked' : '') + '><span class="track"></span></span>';
           } else if (typeof p.def === 'string') {
             row.className = 'mt-row mt-string';
-            row.innerHTML = label + '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + v + '">';
+            row.innerHTML = lblHtml +
+              '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + escHtml(String(v)) + '">';
           } else {
             row.className = 'mt-row';
-            row.innerHTML = label +
+            row.innerHTML = lblHtml +
               '<input type="range"   data-key="' + p.key + '" min="' + p.min + '" max="' + p.max + '" step="' + p.step + '" value="' + v + '">' +
               '<input class="mt-num" data-key="' + p.key + '" type="number" step="' + p.step + '" value="' + v + '">';
           }
-          det.appendChild(row);
+          grid.appendChild(row);
         });
+        det.appendChild(grid);
       }
 
       groupsEl.appendChild(det);
