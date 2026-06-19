@@ -445,25 +445,34 @@
 <div id="top-pane">
 
   <div id="size-strip">
-    <button class="sz-btn" data-size="s">
+    <button class="sz-btn" data-size="st">
+      <span class="sz-name">Stress</span>
+      <span class="sz-dims">720 × 320</span>
+    </button>
+    <button class="sz-btn active" data-size="s">
       <span class="sz-name">S</span>
-      <span class="sz-dims">Galaxy A54</span>
       <span class="sz-dims">800 × 360</span>
     </button>
-    <button class="sz-btn active" data-size="m">
+    <button class="sz-btn" data-size="m">
       <span class="sz-name">M</span>
-      <span class="sz-dims">iPhone 15</span>
-      <span class="sz-dims">852 × 393</span>
+      <span class="sz-dims">832 × 384</span>
     </button>
     <button class="sz-btn" data-size="l">
       <span class="sz-name">L</span>
-      <span class="sz-dims">iPhone 15 Plus</span>
-      <span class="sz-dims">932 × 430</span>
+      <span class="sz-dims">873 × 393</span>
+    </button>
+    <button class="sz-btn" data-size="xl">
+      <span class="sz-name">XL</span>
+      <span class="sz-dims">915 × 412</span>
+    </button>
+    <button class="sz-btn" data-size="xxl">
+      <span class="sz-name">XXL</span>
+      <span class="sz-dims">960 × 432</span>
     </button>
   </div>
 
   <div id="phone-col">
-    <div id="phone-label">Live Preview · iPhone 15 · 852×393</div>
+    <div id="phone-label">Live Preview · S Android Common · 800×360</div>
     <div id="phone-wrapper">
       <div id="phone-shell">
         <iframe id="game-frame" src="index.html" title="Game" allow="autoplay"></iframe>
@@ -560,11 +569,14 @@
 
   /* ── Phone size presets ────────────────────────────────────────────────── */
   const PHONES = [
-    { key: 's', label: 'Galaxy A54', w: 800,  h: 360 },
-    { key: 'm', label: 'iPhone 15',  w: 852,  h: 393 },
-    { key: 'l', label: 'iPhone 15 Plus', w: 932, h: 430 },
+    { key: 'st',  label: 'Stress Test',       w: 720, h: 320 },
+    { key: 's',   label: 'S Android Common',   w: 800, h: 360 },
+    { key: 'm',   label: 'M Android Common+',  w: 832, h: 384 },
+    { key: 'l',   label: 'L Android Tall',     w: 873, h: 393 },
+    { key: 'xl',  label: 'XL Android Large',   w: 915, h: 412 },
+    { key: 'xxl', label: 'XXL Android Wide',   w: 960, h: 432 },
   ];
-  let phoneKey = 'm';
+  let phoneKey = 's';
 
   const shell   = document.getElementById('phone-shell');
   const wrapper = document.getElementById('phone-wrapper');
