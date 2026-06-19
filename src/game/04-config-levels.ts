@@ -13,7 +13,13 @@
   // только вертикальная позиция y (0..1) и их число; len зарезервирован под будущую длину.
   interface HangarDef { type: string; x: number; y: number; open?: boolean; up?: boolean; gate?: 'up'|'down'|'left'|'right'; openCost?: number; upgCost?: number; }
   interface RunwayDef { y: number; len?: number; landingOpen?: boolean; takeoffOpen?: boolean; landingCost?: number; takeoffCost?: number; }
-  interface LevelLayout { hangars: HangarDef[]; runways: RunwayDef[]; }
+  // Прямоугольник в нормированных 0..1 координатах ЭКРАНА (не апрона).
+  interface ZoneRect { x: number; y: number; w: number; h: number; }
+  // apron — границы зоны руления (умолч. вычисляется движком ~63% ширины);
+  // zones.arrival/waiting — зоны прилёта/ожидания бортов. Их пишет визуальный
+  // редактор разметки (tuning.html → таб «Разметка»); движок пока их игнорирует
+  // (геометрия апрона процедурная) — поля задают замысел до доработки рендера.
+  interface LevelLayout { hangars: HangarDef[]; runways: RunwayDef[]; apron?: ZoneRect; zones?: { arrival?: ZoneRect; waiting?: ZoneRect }; }
   interface Events { vip?: boolean; emergency?: boolean; medical?: boolean; rush?: boolean; fog?: boolean; wind?: boolean; [k: string]: boolean | undefined; }
   interface Objective { metric: 'served' | 'upgrades'; stars: number[]; target?: number; time?: number; race?: boolean; upg?: number[]; }
   interface Level {
