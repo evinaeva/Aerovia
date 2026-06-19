@@ -197,9 +197,12 @@
       display: flex; align-items: flex-end; justify-content: flex-end;
       opacity: 0;
       transition: opacity .2s;
+      touch-action: none;
     }
     #phone-wrapper:hover #resize-handle { opacity: 1; }
     #resize-handle.dragging { opacity: 1; }
+    /* Touch devices have no hover — keep the resize handle visible */
+    @media (hover: none) { #resize-handle { opacity: 1; } }
     #resize-handle svg { display: block; }
 
     #game-frame {
@@ -218,6 +221,7 @@
       position: relative;
       transition: background .15s;
       user-select: none;
+      touch-action: none;            /* let pointer-drag work on touch (no scroll hijack) */
     }
     #splitter:hover, #splitter.dragging {
       background: rgba(58,210,255,.28);
@@ -684,6 +688,31 @@
       #search:focus { width: 130px; }
       .mt-row { grid-template-columns: minmax(70px, 120px) 1fr 50px; }
     }
+
+    /* Short / landscape-phone viewports: the fixed 300px bottom-pane minimum
+       (tuned for desktop) overflows the screen and pushes the workbench out of
+       view. Relax the minimums so the splitter has real travel and the tab
+       bar + rows stay on-screen and tappable. */
+    @media (max-height: 560px) {
+      #bottom-pane { min-height: 120px; }
+      #top-pane    { min-height: 60px; }
+    }
+
+    /* Touch devices: fatten the splitter into a real finger-sized grab target
+       and enlarge the tab tap targets. */
+    @media (hover: none) {
+      #splitter { height: 18px; }
+      .t-tab    { padding: 12px 16px; font-size: 14px; }
+      #groups summary { padding: 12px 12px; }
+    }
+
+    /* Snappier taps on iOS — no 300ms delay, no grey flash.
+       (#splitter / #resize-handle keep touch-action:none for dragging.) */
+    .tb-btn, .p-btn, .co-btn, .sz-btn, .t-tab, #groups summary,
+    .toggle-card, .lab-chip {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
 <body>
@@ -1090,25 +1119,29 @@
   // Snaps through PHONES steps; 80px = one step
   (function () {
     const handle = document.getElementById('resize-handle');
-    handle.addEventListener('mousedown', e => {
+    handle.addEventListener('pointerdown', e => {
       e.preventDefault();
       handle.classList.add('dragging');
       const startX    = e.clientX;
       const startIdx  = PHONES.findIndex(p => p.key === phoneKey);
+      try { handle.setPointerCapture(e.pointerId); } catch (_) {}
 
-      function onMove(e) {
-        const dx = e.clientX - startX;
+      function onMove(ev) {
+        const dx = ev.clientX - startX;
         const step = Math.round(dx / 80);
         const idx = Math.max(0, Math.min(PHONES.length - 1, startIdx + step));
         if (PHONES[idx].key !== phoneKey) applyPhone(PHONES[idx].key);
       }
-      function onUp() {
+      function onUp(ev) {
         handle.classList.remove('dragging');
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+        try { handle.releasePointerCapture(ev.pointerId); } catch (_) {}
       }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
     });
   })();
 
@@ -1220,7 +1253,7 @@
     btn.addEventListener('click', () => applyCutout(btn.dataset.co));
   });
 
-  /* ── Splitter drag ─────────────────────────────────────────────────────── */
+  /* ── Splitter drag (pointer events → works for mouse, touch & pen) ──────── */
   (function () {
     const topPane  = document.getElementById('top-pane');
     const splitter = document.getElementById('splitter');
@@ -1229,27 +1262,40 @@
     let topH = Math.round(window.innerHeight * 0.52);
 
     function setTopH(h) {
-      topH = Math.max(120, Math.min(h, window.innerHeight - 300));
+      // Viewport-aware clamps: reserve at least ~28% (min 120px) for the
+      // bottom pane so the divider still has travel on short landscape phones,
+      // where a fixed 300px reserve would peg it and break dragging.
+      const vh        = window.innerHeight;
+      const minTop    = 60;
+      const minBottom = Math.max(120, Math.round(vh * 0.28));
+      const maxTop    = Math.max(minTop, vh - minBottom);
+      topH = Math.max(minTop, Math.min(h, maxTop));
       topPane.style.height = topH + 'px';
       applyPhone(phoneKey);
     }
 
     setTopH(topH);
+    // Re-clamp on rotation / viewport changes (keeps both panes on-screen).
+    window.addEventListener('resize', () => setTopH(topH));
 
-    splitter.addEventListener('mousedown', e => {
+    splitter.addEventListener('pointerdown', e => {
       e.preventDefault();
       splitter.classList.add('dragging');
       const startY = e.clientY;
       const startH = topH;
+      try { splitter.setPointerCapture(e.pointerId); } catch (_) {}
 
-      function onMove(e) { setTopH(startH + e.clientY - startY); }
-      function onUp() {
+      function onMove(ev) { setTopH(startH + ev.clientY - startY); }
+      function onUp(ev) {
         splitter.classList.remove('dragging');
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
+        splitter.removeEventListener('pointermove', onMove);
+        splitter.removeEventListener('pointerup', onUp);
+        splitter.removeEventListener('pointercancel', onUp);
+        try { splitter.releasePointerCapture(ev.pointerId); } catch (_) {}
       }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      splitter.addEventListener('pointermove', onMove);
+      splitter.addEventListener('pointerup', onUp);
+      splitter.addEventListener('pointercancel', onUp);
     });
   })();
 
