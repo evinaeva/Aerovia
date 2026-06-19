@@ -37,8 +37,10 @@ public class MainActivity extends BridgeActivity {
     // Fullscreen (immersive): hide status + nav bars; they return transiently on edge-swipe.
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // Регистрируем плагин Saved Games (Snapshots) ДО super.onCreate — требование Capacitor.
+        // Регистрируем плагины ДО super.onCreate — требование Capacitor.
         registerPlugin(SnapshotsPlugin.class);
+        registerPlugin(InstallReferrerPlugin.class);
+        registerPlugin(FirebaseAnalyticsPlugin.class);
         super.onCreate(savedInstanceState);
         hideSystemBars();
     }
@@ -135,6 +137,108 @@ public class SnapshotsPlugin extends Plugin {
 }
 `;
 
+// Тонкий мост к Google Play Install Referrer API.
+// JS видит его как window.Capacitor.Plugins.InstallReferrer (метод get).
+// Возвращает {referrer: string} — UTM/referrer-строка из магазина, либо пустая строка.
+// Захватывается один раз при первом запуске после установки (src/game/12d-consent.ts).
+const INSTALL_REFERRER_PLUGIN = `package com.planeflow.game;
+
+import android.content.Context;
+import com.android.installreferrer.api.InstallReferrerClient;
+import com.android.installreferrer.api.InstallReferrerStateListener;
+import com.android.installreferrer.api.ReferrerDetails;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+
+@CapacitorPlugin(name = "InstallReferrer")
+public class InstallReferrerPlugin extends Plugin {
+
+    @PluginMethod
+    public void get(final PluginCall call) {
+        Context ctx = getContext();
+        InstallReferrerClient client = InstallReferrerClient.newBuilder(ctx).build();
+        client.startConnection(new InstallReferrerStateListener() {
+            @Override
+            public void onInstallReferrerSetupFinished(int responseCode) {
+                JSObject ret = new JSObject();
+                if (responseCode == InstallReferrerClient.InstallReferrerResponse.OK) {
+                    try {
+                        ReferrerDetails details = client.getInstallReferrer();
+                        ret.put("referrer", details.getInstallReferrer());
+                    } catch (Exception e) {
+                        ret.put("referrer", "");
+                    }
+                } else {
+                    ret.put("referrer", "");
+                }
+                client.endConnection();
+                call.resolve(ret);
+            }
+
+            @Override
+            public void onInstallReferrerServiceDisconnected() {
+                JSObject ret = new JSObject();
+                ret.put("referrer", "");
+                call.resolve(ret);
+            }
+        });
+    }
+}
+`;
+
+// Тонкий мост к Firebase Analytics SDK.
+// JS видит его как window.Capacitor.Plugins.FirebaseAnalytics (метод logEvent).
+// Автоматически инициализируется из google-services.json при старте приложения.
+// Используется в src/game/12e-firebase-sink.ts как замена console-sink для PFAnalytics.
+const FIREBASE_ANALYTICS_PLUGIN = `package com.planeflow.game;
+
+import android.os.Bundle;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.firebase.analytics.FirebaseAnalytics;
+
+@CapacitorPlugin(name = "FirebaseAnalytics")
+public class FirebaseAnalyticsPlugin extends Plugin {
+
+    private FirebaseAnalytics fa;
+
+    @Override
+    public void load() {
+        fa = FirebaseAnalytics.getInstance(getContext());
+    }
+
+    @PluginMethod
+    public void logEvent(final PluginCall call) {
+        String name = call.getString("name");
+        if (name == null || name.isEmpty()) { call.reject("missing name"); return; }
+
+        JSObject paramsObj = call.getObject("params");
+        Bundle bundle = new Bundle();
+        if (paramsObj != null) {
+            java.util.Iterator<String> keys = paramsObj.keys();
+            while (keys.hasNext()) {
+                String k = keys.next();
+                try {
+                    Object v = paramsObj.get(k);
+                    if (v instanceof String)  bundle.putString(k, (String) v);
+                    else if (v instanceof Number) bundle.putDouble(k, ((Number) v).doubleValue());
+                    else if (v instanceof Boolean) bundle.putBoolean(k, (Boolean) v);
+                } catch (org.json.JSONException ignored) {}
+            }
+        }
+        fa.logEvent(name, bundle);
+        JSObject ret = new JSObject(); ret.put("ok", true);
+        call.resolve(ret);
+    }
+}
+`;
+
 if (!existsSync(A)) {
   console.error('android/ not found — run `npx cap add android` first.');
   process.exit(1);
@@ -197,6 +301,33 @@ patch('app/build.gradle', (s) =>
   s.includes('play-services-games-v2') ? s
     : s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "com.google.android.gms:play-services-games-v2:+"'));
 
+// Install Referrer: нужен чтобы знать источник трафика при установке из Play Store (attribution).
+// Stable 2.2 — последняя на момент написания; pin к конкретной версии (не +), т.к. API стабильный.
+patch('app/build.gradle', (s) =>
+  s.includes('installreferrer') ? s
+    : s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "com.android.installreferrer:installreferrer:2.2"'));
+
+// Firebase Analytics: Google Services plugin (root build.gradle classpath)
+patch('build.gradle', (s) =>
+  s.includes('google-services') ? s
+    : s.replace(
+        /classpath 'com\.android\.tools\.build:gradle:[^']+'/,
+        (m) => m + "\n        classpath 'com.google.gms:google-services:4.5.0'"));
+
+// Firebase Analytics: apply plugin + BOM + analytics dependency (app/build.gradle)
+patch('app/build.gradle', (s) => {
+  let out = s;
+  // apply plugin — after 'com.android.application'
+  if (!out.includes('com.google.gms.google-services'))
+    out = out.replace("apply plugin: 'com.android.application'",
+      "apply plugin: 'com.android.application'\napply plugin: 'com.google.gms.google-services'");
+  // Firebase BOM + analytics in dependencies block
+  if (!out.includes('firebase-analytics'))
+    out = out.replace(/dependencies\s*\{/,
+      "dependencies {\n    implementation platform('com.google.firebase:firebase-bom:34.15.0')\n    implementation 'com.google.firebase:firebase-analytics'");
+  return out;
+});
+
 // 2) local.properties (machine-specific SDK path; never committed)
 {
   const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
@@ -249,5 +380,24 @@ log('wrote: MainActivity.java (immersive)');
 // 7) Saved Games (Snapshots) плагин — рядом с MainActivity (тот же пакет com.planeflow.game)
 writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/SnapshotsPlugin.java'), SNAPSHOTS_PLUGIN);
 log('wrote: SnapshotsPlugin.java (Saved Games / Snapshots)');
+
+// 8) Install Referrer плагин — attribution (UTM/referrer из Play Store, один раз при установке)
+writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/InstallReferrerPlugin.java'), INSTALL_REFERRER_PLUGIN);
+log('wrote: InstallReferrerPlugin.java (Install Referrer attribution)');
+
+// 9) Firebase Analytics плагин
+writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/FirebaseAnalyticsPlugin.java'), FIREBASE_ANALYTICS_PLUGIN);
+log('wrote: FirebaseAnalyticsPlugin.java (Firebase Analytics sink)');
+
+// 10) google-services.json → android/app/ (нужен Google Services Gradle plugin)
+{
+  const gservices = join(ROOT, 'google-services.json');
+  if (existsSync(gservices)) {
+    copyFileSync(gservices, join(A, 'app/google-services.json'));
+    log('copied: google-services.json → android/app/');
+  } else {
+    console.warn('  WARNING: google-services.json not found at repo root — Firebase Analytics won\'t build');
+  }
+}
 
 console.log('setup-android: done.');

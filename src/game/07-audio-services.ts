@@ -102,7 +102,7 @@
     const BUF_MAX=500;              // кольцевой буфер: не растём бесконечно в localStorage
     const SESSION_GAP=30*60*1000;   // >30 мин без активности — это уже новая сессия
     let userId: string|null=null, sessionId: string|null=null, seq=0, sessionStartedAt=0, lastEventAt=0;
-    let consent=true;               // до согласия события буферизуются, но sink молчит (задел под ATT/GDPR в сторах)
+    let consent=false;              // false до явного согласия (GDPR/ATT); ConsentBanner.init() в 12d выставляет true
     let buffer: any[]=[], started=false, sink=defaultSink;
 
     const ls = {

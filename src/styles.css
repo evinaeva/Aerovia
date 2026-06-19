@@ -1180,6 +1180,17 @@
   min-width: 0; border: 1px solid rgba(127,155,176,.35); border-radius: 10px;
   background: #070e22; color: #eaf7ff; padding: 6px;
 }
+/* ---- consent banner (12d-consent) ---- */
+#consent-overlay { z-index: 100; }
+.consent-panel { --panel-w: 360px; }
+.consent-title { font-size: 15px; font-weight: 700; color: var(--m-text-strong); margin: 0 0 14px; letter-spacing: .04em; }
+.consent-body { font-size: 12px; line-height: 1.75; color: var(--m-text-body); margin: 0 0 10px; }
+.consent-body em { color: var(--m-text-muted); font-style: normal; }
+.consent-privacy { font-size: 11px; margin: 0 0 20px; }
+.consent-privacy a { color: var(--m-accent); text-decoration: none; }
+.consent-privacy a:hover { text-decoration: underline; }
+.consent-btns { display: flex; gap: 10px; justify-content: center; }
+
 .motion-tuning details {
   margin: 8px 0; border: 1px solid rgba(127,155,176,.18);
   border-radius: 12px; background: rgba(16,26,54,.45);
