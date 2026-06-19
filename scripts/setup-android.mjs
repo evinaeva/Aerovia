@@ -357,8 +357,8 @@ patch('app/src/main/AndroidManifest.xml', (s) => {
   const files = {
     'ic_launcher_foreground.png': 'icon-adaptive-fg.png',
     'ic_launcher_background.png': 'icon-adaptive-bg.png',
-    'ic_launcher.png': 'icon-512.png',
-    'ic_launcher_round.png': 'icon-maskable-512.png',
+    'ic_launcher.png': 'icon-1024.png',        // was icon-512.png; 1024² = sharper on xxxhdpi
+    'ic_launcher_round.png': 'icon-1024.png',  // maskable-1024 not yet; 1024² covers all densities
   };
   let n = 0;
   for (const d of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
