@@ -50,17 +50,6 @@
         <button class="icon-btn" id="playGamesBtn" aria-label="Play Games" style="display:none"><span style="font:800 17px/1 system-ui,Roboto,sans-serif">G</span></button>
         <button class="icon-btn" id="langFlagBtn" data-i18n-aria="settings.language"><span class="mic" data-mic="globe"></span></button>
       </div>
-      <!-- dev debug (bottom-left, self-positioned) -->
-      <div class="corner-debug">
-        <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-haspopup="true" aria-expanded="false" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
-        <div class="corner-debug-pop hidden" id="debugPop">
-          <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
-          <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
-          <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
-          <button class="m-btn m-btn--ghost m-btn--sm" id="edOpenBtn" style="width:100%;margin-top:8px">🏗 Конструктор уровня</button>
-          <button class="m-btn m-btn--ghost m-btn--sm" id="motionTuningBtn" style="width:100%;margin-top:8px">🎛 Motion Tuning</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -114,25 +103,28 @@
     <div class="screen screen--center">
       <div class="panel panel--wide2" style="position:relative">
         <div class="m-head"><h1 class="m-title m-title--md" data-i18n="settings.title"></h1></div>
-        <div class="h-split" style="margin-top:8px">
-          <div>
-            <div class="set-row">
-              <div class="set-row__label" data-i18n="settings.sound"></div>
-              <div class="switch" id="optSound2" role="switch" tabindex="0" aria-label="sound"><span class="knob"></span></div>
-            </div>
-            <div class="set-row">
-              <div class="set-row__label" data-i18n="settings.vibro"></div>
-              <div class="switch" id="optVibro2" role="switch" tabindex="0" aria-label="vibro"><span class="knob"></span></div>
-            </div>
+        <div style="margin-top:8px">
+          <div class="set-row">
+            <div class="set-row__label" data-i18n="settings.sound"></div>
+            <div class="switch" id="optSound2" role="switch" tabindex="0" aria-label="sound"><span class="knob"></span></div>
           </div>
-          <div>
-            <div class="set-row">
-              <div style="min-width:0">
-                <div class="set-row__label" data-i18n="settings.updates"></div>
-                <div class="set-row__hint" id="updStatus" role="status" aria-live="polite"></div>
-              </div>
-              <button class="m-btn m-btn--ghost m-btn--sm" id="checkUpdatesBtn"><span class="mic" data-mic="refresh"></span><span class="m-btn__t" data-i18n="settings.checkUpdates"></span></button>
-            </div>
+          <div class="set-row">
+            <div class="set-row__label" data-i18n="settings.vibro"></div>
+            <div class="switch" id="optVibro2" role="switch" tabindex="0" aria-label="vibro"><span class="knob"></span></div>
+          </div>
+          <div class="set-row">
+            <button class="m-btn m-btn--ghost m-btn--sm" id="checkUpdatesBtn"><span class="mic" data-mic="refresh"></span><span class="m-btn__t" data-i18n="settings.checkUpdates"></span></button>
+            <span class="set-row__hint" id="appVersion" style="opacity:.65"></span>
+          </div>
+          <div class="set-row">
+            <div class="set-row__label" data-i18n="settings.debug"></div>
+            <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-haspopup="true" aria-expanded="false" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
+          </div>
+          <div class="debug-inline hidden" id="debugPop">
+            <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
+            <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
+            <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
+            <button class="m-btn m-btn--ghost m-btn--sm" id="motionTuningBtn" style="width:100%;margin-top:8px">🎛 Motion Tuning</button>
           </div>
         </div>
         <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="settingsBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="settings.back"></span></button></div>
@@ -149,6 +141,37 @@
           <button class="m-btn m-btn--ghost" id="resetCancelBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="reset.no"></span></button>
           <button class="m-btn m-btn--danger" id="resetConfirmBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="reset.yes"></span></button>
         </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка «актуальная версия / нет сети» -->
+  <div class="overlay hidden" id="updToDateModal">
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:340px;text-align:center">
+        <p class="m-subtitle" id="updToDateMsg" style="margin:18px 0 14px;font-size:16px"></p>
+        <div class="m-actions__row">
+          <button class="m-btn m-btn--primary" id="updToDateOk" style="min-width:110px"><span class="m-btn__t" data-i18n="goals.ok"></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка обновления с прогресс-баром и самолётиком -->
+  <div class="overlay hidden" id="updProgressModal">
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:400px;text-align:center">
+        <div class="m-head"><h1 class="m-title m-title--md" data-i18n="pwa.updateTitle"></h1></div>
+        <div class="upd-track">
+          <div class="upd-track__labels">
+            <span id="updVerFrom" class="upd-ver"></span>
+            <span id="updVerTo" class="upd-ver"></span>
+          </div>
+          <div class="upd-bar" id="updBar">
+            <div class="upd-bar__fill" id="updBarFill"></div>
+            <span class="upd-bar__plane" id="updPlane">✈</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -214,30 +237,6 @@
         <div id="lbFoot"></div>
         <p class="muted" data-i18n="lb.mock" style="font-size:11px;margin-top:8px;text-align:center;opacity:.6"></p>
         <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="leaderboardBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="lb.back"></span></button></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== level constructor (dev tool, opened from debug popup) ===== -->
-  <div class="overlay hidden" id="editorScreen">
-    <div class="ed-wrap">
-      <div class="ed-bar">
-        <span class="ed-title">🏗 Конструктор уровня</span>
-        <span class="ed-status" id="edStatus"></span>
-        <div class="ed-sizes">
-          <button class="m-btn m-btn--ghost m-btn--sm ed-sz" id="edSzS">S</button>
-          <button class="m-btn m-btn--ghost m-btn--sm ed-sz ed-on" id="edSzM">M</button>
-          <button class="m-btn m-btn--ghost m-btn--sm ed-sz" id="edSzL">L</button>
-        </div>
-        <span class="ed-bar__sp"></span>
-        <button class="m-btn m-btn--ghost m-btn--sm" id="edNewBtn">✦ Новая</button>
-        <button class="m-btn m-btn--ghost m-btn--sm m-btn--icon" id="edExportBtn" aria-label="Экспорт"><span class="mic" data-mic="share"></span></button>
-        <button class="m-btn m-btn--ghost m-btn--sm" id="edTestBtn">▶ Тест</button>
-        <button class="m-btn m-btn--danger m-btn--sm m-btn--icon" id="edCloseBtn" aria-label="Выход"><span class="mic" data-mic="door"></span></button>
-      </div>
-      <div class="ed-body">
-        <div class="ed-canvas-wrap"><canvas id="edCanvas"></canvas></div>
-        <div class="ed-side" id="edSide"></div>
       </div>
     </div>
   </div>

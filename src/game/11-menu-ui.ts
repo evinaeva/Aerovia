@@ -336,15 +336,13 @@
   document.getElementById('optLives')!.onchange=e=>{ debug.infiniteLives=(e.target as HTMLInputElement).checked; saveDebug(); };
   document.getElementById('optMoney')!.onchange=e=>{ debug.richStart=(e.target as HTMLInputElement).checked; if(debug.richStart) money=BIG_MONEY; saveDebug(); };
   document.getElementById('optUnlockAll')!.onchange=e=>{ debug.unlockAll=(e.target as HTMLInputElement).checked; saveDebug(); renderLevels(); };
-  // попап отладки в левом нижнем углу главного экрана
+  // отладочная панель в настройках (раскрывается под строкой «Debug»)
   (function(){
-    const wrap=document.querySelector('.corner-debug');
     const btn=document.getElementById('debugToggleBtn');
     const pop=document.getElementById('debugPop');
-    if(!btn||!pop||!wrap) return;
+    if(!btn||!pop) return;
     function setOpen(open: boolean){ pop!.classList.toggle('hidden', !open); btn!.setAttribute('aria-expanded', open?'true':'false'); if(open) syncDebugUI(); }
-    btn.onclick=(e)=>{ e.stopPropagation(); setOpen(pop.classList.contains('hidden')); };
-    document.addEventListener('click',(e)=>{ if(!pop.classList.contains('hidden') && !wrap.contains(e.target as Node)) setOpen(false); });
+    btn.onclick=()=>{ setOpen(pop!.classList.contains('hidden')); };
   })();
   document.getElementById('langFlagBtn')!.onclick=()=>{
     const codes=Object.keys(I18N); const i=codes.indexOf(lang);
@@ -363,29 +361,68 @@
   })();
 
   // настройки из стартового меню (звук / язык / сброс прогресса)
-  function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns(); hideAllScreens();
+  function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns();
+    const vEl=document.getElementById('appVersion'); if(vEl) vEl.textContent='v'+VERSION;
+    hideAllScreens();
     document.getElementById('settingsScreen')!.classList.remove('hidden'); }
   document.getElementById('settingsMenuBtn')!.onclick=openSettings;
   document.getElementById('settingsBackBtn')!.onclick=()=>{ showStart(); };
 
-  // «Проверить обновления»: дёргаем service worker по запросу (помимо
-  // авто-проверки раз в 30 мин). Подтягивает новую версию приложения и
-  // освежает закэшированные PNG скинов; статус показываем под кнопкой.
+  // «Проверить обновления»: модалки вместо статуса под кнопкой.
+  // Нет обновлений → маленькая модалка с OK (настройки остаются открытыми).
+  // Есть обновление → прогресс-бар с самолётиком; страница перезагрузится сама через controllerchange.
   (function(){
-    const btn=document.getElementById('checkUpdatesBtn') as HTMLButtonElement|null; const out=document.getElementById('updStatus');
+    const btn=document.getElementById('checkUpdatesBtn') as HTMLButtonElement|null;
+    const toDateModal=document.getElementById('updToDateModal');
+    const progressModal=document.getElementById('updProgressModal');
+    const toDateMsg=document.getElementById('updToDateMsg');
+    const barFill=document.getElementById('updBarFill') as HTMLElement|null;
+    const planeEl=document.getElementById('updPlane') as HTMLElement|null;
+    const barEl=document.getElementById('updBar') as HTMLElement|null;
+    const verFrom=document.getElementById('updVerFrom');
+    const verTo=document.getElementById('updVerTo');
     if(!btn) return;
+
+    function closeUpdModals(){ if(toDateModal) toDateModal.classList.add('hidden'); if(progressModal) progressModal.classList.add('hidden'); }
+
+    const ok=document.getElementById('updToDateOk');
+    if(ok) ok.onclick=closeUpdModals;
+
+    let planeTimer: ReturnType<typeof setInterval>|null=null;
+    function startPlaneAnim(){
+      let pct=0;
+      if(barFill) barFill.style.width='0%';
+      if(planeEl) planeEl.style.left='6px';
+      if(planeTimer) clearInterval(planeTimer);
+      planeTimer=setInterval(()=>{
+        pct=Math.min(pct+1.8, 86);
+        if(barFill) barFill.style.width=pct+'%';
+        if(planeEl && barEl){
+          const w=barEl.offsetWidth||320;
+          planeEl.style.left=Math.round((pct/100)*(w-44)+6)+'px';
+        }
+        if(pct>=86 && planeTimer){ clearInterval(planeTimer); planeTimer=null; }
+      }, 220);
+    }
+
     btn.onclick=async()=>{
       if(btn.disabled) return;
-      btn.disabled=true; if(out) out.textContent=t('settings.updChecking');
+      btn.disabled=true;
+      closeUpdModals();
       let status='offline';
-      try{ status = ((window as any).pwaCheckForUpdates ? await (window as any).pwaCheckForUpdates() : 'offline'); }
+      try{ status=((window as any).pwaCheckForUpdates ? await (window as any).pwaCheckForUpdates() : 'offline'); }
       catch(e){ status='offline'; }
-      // при 'updating'/'refreshed' страница перезагрузится сама; текст — на случай, если нет
-      const key = status==='updating' ? 'settings.updUpdating'
-                : status==='refreshed' ? 'settings.updRefreshed'
-                : 'settings.updOffline';
-      if(out) out.textContent=t(key);
       btn.disabled=false;
+      if(status==='updating'){
+        if(verFrom) verFrom.textContent='v'+VERSION;
+        if(verTo) verTo.textContent=t('pwa.updateTitle');
+        if(progressModal) progressModal.classList.remove('hidden');
+        startPlaneAnim();
+      } else {
+        const msg=status==='offline' ? t('settings.updOffline') : t('settings.updUpToDate');
+        if(toDateMsg) toDateMsg.textContent=msg;
+        if(toDateModal) toDateModal.classList.remove('hidden');
+      }
     };
   })();
   function askReset(){ document.getElementById('confirmScreen')!.classList.remove('hidden'); }
