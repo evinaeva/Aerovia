@@ -105,30 +105,33 @@
         <div class="m-head"><h1 class="m-title m-title--md" data-i18n="settings.title"></h1></div>
         <div style="margin-top:8px">
           <div class="set-row">
-            <div class="set-row__label" data-i18n="settings.sound"></div>
-            <div class="switch" id="optSound2" role="switch" tabindex="0" aria-label="sound"><span class="knob"></span></div>
-          </div>
-          <div class="set-row">
-            <div class="set-row__label" data-i18n="settings.vibro"></div>
-            <div class="switch" id="optVibro2" role="switch" tabindex="0" aria-label="vibro"><span class="knob"></span></div>
+            <div style="display:flex;gap:8px">
+              <button class="icon-btn" id="optSoundBtn" aria-label="Sound"><span class="mic" data-mic="sound"></span></button>
+              <button class="icon-btn" id="optVibroBtn" aria-label="Vibration"><span class="mic" data-mic="vibro"></span></button>
+            </div>
+            <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
           </div>
           <div class="set-row">
             <button class="m-btn m-btn--ghost m-btn--sm" id="checkUpdatesBtn"><span class="mic" data-mic="refresh"></span><span class="m-btn__t" data-i18n="settings.checkUpdates"></span></button>
             <span class="set-row__hint" id="appVersion" style="opacity:.65"></span>
           </div>
-          <div class="set-row">
-            <div class="set-row__label" data-i18n="settings.debug"></div>
-            <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-haspopup="true" aria-expanded="false" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
-          </div>
-          <div class="debug-inline hidden" id="debugPop">
-            <label class="opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
-            <label class="opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
-            <label class="opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
-            <button class="m-btn m-btn--ghost m-btn--sm" id="motionTuningBtn" style="width:100%;margin-top:8px">🎛 Motion Tuning</button>
-          </div>
         </div>
         <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="settingsBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="settings.back"></span></button></div>
         <button class="m-text-btn" id="resetProgBtn2" style="position:absolute;left:20px;bottom:22px"><span class="mic" data-mic="again"></span> <span data-i18n="levels.reset"></span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="debugScreen">
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:320px">
+        <div class="m-head"><h1 class="m-title m-title--md" data-i18n="settings.debug"></h1></div>
+        <div style="padding:2px 0 8px">
+          <label class="debug-opt"><input type="checkbox" id="optLives"> <span data-i18n="settings.optLives"></span></label>
+          <label class="debug-opt"><input type="checkbox" id="optMoney"> <span data-i18n="settings.optMoney"></span></label>
+          <label class="debug-opt"><input type="checkbox" id="optUnlockAll"> <span data-i18n="settings.optUnlockAll"></span></label>
+        </div>
+        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="debugBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="settings.back"></span></button></div>
       </div>
     </div>
   </div>

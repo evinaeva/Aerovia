@@ -39,6 +39,10 @@
     expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
     globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
     door:'<path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+    sound:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/>',
+    mute:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
+    vibro:'<rect x="9" y="7" width="6" height="10" rx="1.5"/><path d="M5 9.5 3 12l2 2.5M19 9.5l2 2.5-2 2.5"/>',
+    'vibro-off':'<rect x="9" y="7" width="6" height="10" rx="1.5"/>',
   };
   const _ICO_FILL: Record<string, string> = {
     play:'<path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z"/>',
@@ -114,7 +118,7 @@
     }
   }
 
-  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen','editorScreen'].forEach(s=>{ const el=document.getElementById(s); if(el) el.classList.add('hidden'); }); }
+  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','debugScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen','editorScreen'].forEach(s=>{ const el=document.getElementById(s); if(el) el.classList.add('hidden'); }); }
   // главный экран: чип звёзд = сумма заработанных / максимум по основным уровням
   function updateStartChips(){
     let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;
@@ -336,29 +340,30 @@
   document.getElementById('optLives')!.onchange=e=>{ debug.infiniteLives=(e.target as HTMLInputElement).checked; saveDebug(); };
   document.getElementById('optMoney')!.onchange=e=>{ debug.richStart=(e.target as HTMLInputElement).checked; if(debug.richStart) money=BIG_MONEY; saveDebug(); };
   document.getElementById('optUnlockAll')!.onchange=e=>{ debug.unlockAll=(e.target as HTMLInputElement).checked; saveDebug(); renderLevels(); };
-  // отладочная панель в настройках (раскрывается под строкой «Debug»)
-  (function(){
-    const btn=document.getElementById('debugToggleBtn');
-    const pop=document.getElementById('debugPop');
-    if(!btn||!pop) return;
-    function setOpen(open: boolean){ pop!.classList.toggle('hidden', !open); btn!.setAttribute('aria-expanded', open?'true':'false'); if(open) syncDebugUI(); }
-    btn.onclick=()=>{ setOpen(pop!.classList.contains('hidden')); };
-  })();
+  // иконка Debug в настройках открывает отдельный экран отладки
+  { const btn=document.getElementById('debugToggleBtn');
+    if(btn) btn.onclick=()=>{ syncDebugUI(); hideAllScreens(); document.getElementById('debugScreen')?.classList.remove('hidden'); }; }
+  { const btn=document.getElementById('debugBackBtn');
+    if(btn) btn.onclick=()=>{ document.getElementById('debugScreen')?.classList.add('hidden'); openSettings(); }; }
   document.getElementById('langFlagBtn')!.onclick=()=>{
     const codes=Object.keys(I18N); const i=codes.indexOf(lang);
     setLang(codes[(i+1)%codes.length]);
   };
-  // звук/вибро — переключатели-тоглы (.switch) в экране «Настройки» главного меню
+  // звук/вибро — иконки-кнопки в экране «Настройки», меняют SVG и класс при переключении
   function syncSettingsUI(){
-    const s=document.getElementById('optSound2'); if(s){ s.classList.toggle('on', save.sound!==false); s.setAttribute('aria-checked', String(save.sound!==false)); }
-    const v=document.getElementById('optVibro2'); if(v){ v.classList.toggle('on', save.vibro!==false); v.setAttribute('aria-checked', String(save.vibro!==false)); }
+    function applyIconBtn(id: string, on: boolean, iconOn: string, iconOff: string){
+      const btn=document.getElementById(id); if(!btn) return;
+      const ic=btn.querySelector<HTMLElement>('.mic'); if(!ic) return;
+      const key=on?iconOn:iconOff; ic.dataset.mic=key; ic.innerHTML=SVGIC(key);
+      btn.classList.toggle('icon-btn--off', !on);
+    }
+    applyIconBtn('optSoundBtn', save.sound!==false, 'sound', 'mute');
+    applyIconBtn('optVibroBtn', save.vibro!==false, 'vibro', 'vibro-off');
   }
   function setSound(on: boolean){ save.sound=on; saveGame(); SND.setEnabled(on); syncSettingsUI(); Analytics.track('setting_changed', {key:'sound', value:!!on}); }
   function setVibro(on: boolean){ save.vibro=on; saveGame(); HAP.on=on; syncSettingsUI(); Analytics.track('setting_changed', {key:'vibro', value:!!on}); }
-  (function(){
-    const s=document.getElementById('optSound2'); if(s) s.onclick=()=>setSound(!(save.sound!==false));
-    const v=document.getElementById('optVibro2'); if(v) v.onclick=()=>setVibro(!(save.vibro!==false));
-  })();
+  { const b=document.getElementById('optSoundBtn'); if(b) b.onclick=()=>setSound(!(save.sound!==false)); }
+  { const b=document.getElementById('optVibroBtn'); if(b) b.onclick=()=>setVibro(!(save.vibro!==false)); }
 
   // настройки из стартового меню (звук / язык / сброс прогресса)
   function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns();
