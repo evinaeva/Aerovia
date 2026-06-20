@@ -38,6 +38,15 @@
   applyI18n();
   applyMenuIcons();                   // заполнить статические иконки меню (data-mic)
   updateStartChips();                 // чип звёзд на главном экране
+  // Кнопка «Свой уровень» на старте: видна только если конструктор положил уровень
+  // в localStorage (обычный игрок её не видит). Клик — играем сохранённый уровень.
+  function refreshCustomLevelBtn(){
+    const btn=document.getElementById('customLevelBtn'); if(!btn) return;
+    const lv=readStoredCustomLevel();
+    if(lv){ btn.classList.remove('hidden'); btn.onclick=()=>startCustomLevel(lv); }
+    else  { btn.classList.add('hidden'); btn.onclick=null; }
+  }
+  refreshCustomLevelBtn();
   ConsentBanner.init();               // GDPR/ATT: применяем хранённое согласие или показываем баннер (первый запуск)
   Analytics.init();                   // шина метрик: userId/сессия/first_open + ловля крашей
   // мягкая самопроверка конфига при загрузке: в dev сразу видно в консоли, если
@@ -48,6 +57,13 @@
   { const _v=document.getElementById('ver'); if(_v) _v.textContent=VERSION; }  // #ver убран из neon-бренда — guard
   { const _mt=document.getElementById('motionTuningBtn'); if(_mt) _mt.onclick=()=>mtOpenPanel(); }
   window.__MT = MT;   // доступен из родительского tuning.html (same-origin iframe)
+  // Конструктор уровней (tuning.html): сыграть произвольный уровень сразу (custom),
+  // либо положить его в localStorage, чтобы стартовый экран предложил «Свой уровень».
+  window.__PLAY = {
+    custom(obj){ try{ startCustomLevel(obj); return true; }catch(e){ return false; } },
+    store(obj){ try{ localStorage.setItem('aerovia:customLevel', JSON.stringify(obj)); refreshCustomLevelBtn(); return true; }catch(e){ return false; } },
+    clear(){ try{ localStorage.removeItem('aerovia:customLevel'); refreshCustomLevelBtn(); }catch(e){} },
+  };
   // Живые данные поля — для оверлея в tuning.html (same-origin)
   window.__FIELD = {
     get planes()       { return planes;            },

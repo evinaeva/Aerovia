@@ -175,6 +175,7 @@
       // --- Survival + лидерборды + ранг-медали (каркас) ---
       'mode.survival':'Survival',
       'start.survival':'Survival',
+      'start.custom':'Custom level',
       'goals.survival':'Survival — endless run. Serve as many planes as you can before you run out of lives. Your best run is ranked globally.',
       'toast.survivalStart':'Survival: serve as many planes as you can',
       'ach.rank_top100.t':'On the board', 'ach.rank_top100.d':'Reach the global top 100 (any period).',
@@ -361,6 +362,7 @@
       // --- Survival + лидерборды + ранг-медали (каркас) ---
       'mode.survival':'Survival',
       'start.survival':'Survival',
+      'start.custom':'Свой уровень',
       'goals.survival':'Survival — бесконечный заход. Обслужи как можно больше бортов, пока не кончились жизни. Лучший заход попадает в глобальный рейтинг.',
       'toast.survivalStart':'Survival: обслужи как можно больше бортов',
       'ach.rank_top100.t':'На табло', 'ach.rank_top100.d':'Попади в мировой топ-100 (за любой период).',
