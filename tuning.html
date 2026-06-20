@@ -1222,6 +1222,50 @@
       <p class="lab-hint">Экспорт скачивает правленый массив <code>LEVELS</code> как JSON — вставь значения в
         <code>src/game/04-config-levels.ts</code>. Сама <code>tuning.html</code> в исходник не пишет.</p>
     </div>
+
+    <!-- level params (moved out of «Разметка») -->
+    <div class="lab-section">
+      <h3>Параметры уровня <span class="h3-sub">· шаблон поля из «Разметки»</span></h3>
+      <div class="lab-params-grid">
+      <div class="lab-row">
+        <span class="lbl-main">Темп <small style="color:var(--muted)">pace 0…1</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-ly-step="pace" data-dir="-1" tabindex="-1">−</button>
+          <input class="lab-num" id="ly-pace" type="number" inputmode="decimal" min="0" max="1" step="0.05" value="0.4">
+          <button type="button" class="mt-step" data-ly-step="pace" data-dir="1" tabindex="-1">+</button>
+        </div>
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">Старт. деньги <small id="ly-money-hint" style="color:var(--muted)">0 = дефолт (0)</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-ly-step="money" data-dir="-1" tabindex="-1">−</button>
+          <input class="lab-num" id="ly-money" type="number" inputmode="numeric" min="0" max="2000" step="10" value="0">
+          <button type="button" class="mt-step" data-ly-step="money" data-dir="1" tabindex="-1">+</button>
+        </div>
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">Глубина апгрейда <small style="color:var(--muted)">maxUp 0…5</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-ly-step="maxup" data-dir="-1" tabindex="-1">−</button>
+          <input class="lab-num" id="ly-maxup" type="number" inputmode="numeric" min="0" max="5" step="1" value="3">
+          <button type="button" class="mt-step" data-ly-step="maxup" data-dir="1" tabindex="-1">+</button>
+        </div>
+      </div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию)</div>
+        <div style="display:flex;gap:6px">
+          <input class="lab-num" type="number" id="ly-s1" min="1" step="1" style="flex:1;text-align:center" value="6">
+          <input class="lab-num" type="number" id="ly-s2" min="1" step="1" style="flex:1;text-align:center" value="8">
+          <input class="lab-num" type="number" id="ly-s3" min="1" step="1" style="flex:1;text-align:center" value="10">
+        </div>
+        <div id="ly-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">События (спецборты)</div>
+        <div class="lab-chips" id="ly-events"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Tab 4: Difficulty Lab ─────────────────────────────────────────────── -->
@@ -1310,50 +1354,6 @@
     <div class="lab-section">
       <h3>Зоны <span class="h3-sub">· границы, % экрана</span></h3>
       <div id="ly-zones" class="lab-params-grid"></div>
-    </div>
-
-    <!-- level params -->
-    <div class="lab-section">
-      <h3>Параметры уровня</h3>
-      <div class="lab-params-grid">
-      <div class="lab-row">
-        <span class="lbl-main">Темп <small style="color:var(--muted)">pace 0…1</small></span>
-        <div class="mt-stepper">
-          <button type="button" class="mt-step" data-ly-step="pace" data-dir="-1" tabindex="-1">−</button>
-          <input class="lab-num" id="ly-pace" type="number" inputmode="decimal" min="0" max="1" step="0.05" value="0.4">
-          <button type="button" class="mt-step" data-ly-step="pace" data-dir="1" tabindex="-1">+</button>
-        </div>
-      </div>
-      <div class="lab-row">
-        <span class="lbl-main">Старт. деньги <small id="ly-money-hint" style="color:var(--muted)">0 = дефолт (0)</small></span>
-        <div class="mt-stepper">
-          <button type="button" class="mt-step" data-ly-step="money" data-dir="-1" tabindex="-1">−</button>
-          <input class="lab-num" id="ly-money" type="number" inputmode="numeric" min="0" max="2000" step="10" value="0">
-          <button type="button" class="mt-step" data-ly-step="money" data-dir="1" tabindex="-1">+</button>
-        </div>
-      </div>
-      <div class="lab-row">
-        <span class="lbl-main">Глубина апгрейда <small style="color:var(--muted)">maxUp 0…5</small></span>
-        <div class="mt-stepper">
-          <button type="button" class="mt-step" data-ly-step="maxup" data-dir="-1" tabindex="-1">−</button>
-          <input class="lab-num" id="ly-maxup" type="number" inputmode="numeric" min="0" max="5" step="1" value="3">
-          <button type="button" class="mt-step" data-ly-step="maxup" data-dir="1" tabindex="-1">+</button>
-        </div>
-      </div>
-      </div>
-      <div style="margin-top:10px">
-        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию)</div>
-        <div style="display:flex;gap:6px">
-          <input class="lab-num" type="number" id="ly-s1" min="1" step="1" style="flex:1;text-align:center" value="6">
-          <input class="lab-num" type="number" id="ly-s2" min="1" step="1" style="flex:1;text-align:center" value="8">
-          <input class="lab-num" type="number" id="ly-s3" min="1" step="1" style="flex:1;text-align:center" value="10">
-        </div>
-        <div id="ly-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div>
-      </div>
-      <div style="margin-top:10px">
-        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">События (спецборты)</div>
-        <div class="lab-chips" id="ly-events"></div>
-      </div>
     </div>
 
     <!-- actions -->
