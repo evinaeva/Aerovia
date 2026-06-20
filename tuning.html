@@ -451,7 +451,12 @@
     .sum-count { margin-left: auto; font-size: 9px; font-weight: 400; color: var(--muted); }
 
     /* ── Param rows grid inside a card ──────────────────────────────────── */
-    .mt-params-grid {
+    /* .mt-params-grid is the generated motion/demo tabs; .lab-params-grid is the
+       same flow for the hand-built «lab» tabs (Уровни / Разметка / Сложность),
+       whose .lab-row / .ly-prop-row / .ed-bay-row used to stretch one row across
+       the whole card just like the motion rows once did. */
+    .mt-params-grid,
+    .lab-params-grid {
       display: grid;
       /* Flow rows into as many ~300px columns as fit. On a narrow card this is a
          single column; on a wide card (full-width «.wide» group, or a big desktop
@@ -461,6 +466,9 @@
       grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
       column-gap: 18px;
     }
+    /* placeholders / hints inside a flow grid span the full width, not one cell */
+    .lab-params-grid > .lab-empty,
+    .lab-params-grid > .grid-note { grid-column: 1 / -1; }
 
     .mt-row {
       display: grid;
@@ -1140,6 +1148,7 @@
 
     <div class="lab-section" id="level-edit-sec">
       <h3>Правка уровня <span class="h3-sub" id="ed-name">—</span></h3>
+      <div class="lab-params-grid">
       <div class="lab-row">
         <span class="lbl-main">Темп <small>pace 0…1</small></span>
         <div class="mt-stepper">
@@ -1172,6 +1181,7 @@
           <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
         </div>
       </div>
+      </div>
       <div style="margin-top:10px">
         <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию; 3★ = target)</div>
         <div style="display:flex;gap:6px">
@@ -1191,7 +1201,7 @@
 
     <div class="lab-section" id="ed-bays-sec">
       <h3>Боксы по сторонам <span class="h3-sub">· слотов / открыто на старте</span></h3>
-      <div id="ed-bays"><span class="lab-empty">—</span></div>
+      <div id="ed-bays" class="lab-params-grid"><span class="lab-empty">—</span></div>
     </div>
 
     <div class="lab-section">
@@ -1217,9 +1227,11 @@
   <div id="difficulty-view" class="lab-view">
     <div class="lab-section">
       <h3>Уровень</h3>
+      <div class="lab-params-grid">
       <div class="lab-row">
         <span class="lbl-main">Карта кампании</span>
         <select id="diff-level-sel" class="lab-select" style="grid-column:2 / 4"><option>Ждём запуска игры…</option></select>
+      </div>
       </div>
     </div>
     <div class="lab-section">
@@ -1290,18 +1302,19 @@
     <!-- selected object props -->
     <div class="lab-section" id="ly-sel-sec">
       <h3>Выбранный объект <span class="h3-sub" id="ly-sel-name">—</span></h3>
-      <div id="ly-sel-body"><span class="lab-empty">Кликни объект на холсте.</span></div>
+      <div id="ly-sel-body" class="lab-params-grid"><span class="lab-empty">Кликни объект на холсте.</span></div>
     </div>
 
     <!-- zones (numeric) -->
     <div class="lab-section">
       <h3>Зоны <span class="h3-sub">· границы, % экрана</span></h3>
-      <div id="ly-zones"></div>
+      <div id="ly-zones" class="lab-params-grid"></div>
     </div>
 
     <!-- level params -->
     <div class="lab-section">
       <h3>Параметры уровня</h3>
+      <div class="lab-params-grid">
       <div class="lab-row">
         <span class="lbl-main">Темп <small style="color:var(--muted)">pace 0…1</small></span>
         <div class="mt-stepper">
@@ -1325,6 +1338,7 @@
           <input class="lab-num" id="ly-maxup" type="number" inputmode="numeric" min="0" max="5" step="1" value="3">
           <button type="button" class="mt-step" data-ly-step="maxup" data-dir="1" tabindex="-1">+</button>
         </div>
+      </div>
       </div>
       <div style="margin-top:10px">
         <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию)</div>
@@ -2972,6 +2986,7 @@
     function renderZones() {
       const host = $('ly-zones'); host.innerHTML = '';
       const hint = document.createElement('div');
+      hint.className = 'grid-note';
       hint.style.cssText = 'font-size:10px;color:var(--muted);margin-bottom:4px';
       hint.textContent = 'x · y · ширина · высота (в % экрана)';
       host.appendChild(hint);
