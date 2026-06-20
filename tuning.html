@@ -348,6 +348,43 @@
     .t-tab.stub { opacity: .55; }
     .t-tab.stub:hover:not(.active) { opacity: .8; }
 
+    /* ── Wizard bar (guided level-build flow over the tabs) ────────────────── */
+    #wizard-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 6px 10px; border-bottom: 1px solid var(--row-sep);
+      background: rgba(34,227,198,.04); flex-wrap: wrap;
+    }
+    #wizard-steps { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+    .wz-step {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border: 1px solid transparent; border-radius: 999px;
+      background: none; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+    }
+    .wz-step:hover:not(.active) { color: var(--text); background: #1a2a48; }
+    .wz-step.active { color: var(--accent); border-color: var(--accent); background: rgba(34,227,198,.1); }
+    .wz-step .wz-n {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 800;
+      background: var(--row-sep); color: var(--text);
+    }
+    .wz-step.active .wz-n { background: var(--accent); color: #04212b; }
+    .wz-step.done .wz-n { background: var(--accent2); color: #04212b; }
+    .wz-sep { color: var(--muted); opacity: .5; font-size: 13px; }
+    #wizard-nav { display: flex; align-items: center; gap: 8px; }
+    #wizard-saved { font-size: 10px; color: var(--accent2); opacity: .8; white-space: nowrap; }
+    .wz-btn {
+      padding: 5px 12px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--panel); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .wz-btn:hover { background: #1a2a48; }
+    .wz-btn:disabled { opacity: .4; cursor: default; }
+    .wz-btn--primary { color: var(--accent); border-color: rgba(34,227,198,.45); background: rgba(34,227,198,.06); }
+    .wz-btn--primary:hover { background: rgba(34,227,198,.14); }
+    @media (max-width: 560px) { .wz-step .wz-t { display: none; } #wizard-saved { display: none; } }
+    @keyframes wzFlash { 0%,100% { box-shadow: 0 0 0 0 rgba(34,227,198,0); } 50% { box-shadow: 0 0 0 3px rgba(34,227,198,.55); } }
+    .wz-flash { animation: wzFlash .8s ease-in-out 3; border-color: var(--accent) !important; }
+
     /* ── Sub-tab bar (inside the Motion tab — splits ~20 groups by domain) ── */
     #subtab-bar {
       display: none;                 /* shown once buildSubtabs() populates it */
@@ -1104,6 +1141,23 @@
 <div id="bottom-pane">
 
   <div id="panel-head">
+    <!-- Мастер создания уровня: ведёт по этапам поверх обычных вкладок -->
+    <div id="wizard-bar">
+      <div id="wizard-steps">
+        <button class="wz-step" data-step="layout"><span class="wz-n">1</span><span class="wz-t">Разметка</span></button>
+        <span class="wz-sep">›</span>
+        <button class="wz-step" data-step="difficulty"><span class="wz-n">2</span><span class="wz-t">Сложность</span></button>
+        <span class="wz-sep">›</span>
+        <button class="wz-step" data-step="test"><span class="wz-n">3</span><span class="wz-t">Тест</span></button>
+        <span class="wz-sep">›</span>
+        <button class="wz-step" data-step="assets"><span class="wz-n">4</span><span class="wz-t">Ресурсы</span></button>
+      </div>
+      <div id="wizard-nav">
+        <span id="wizard-saved" title="Черновик автосохраняется в браузере">💾 автосохранение</span>
+        <button id="wizard-prev" class="wz-btn" type="button">← Назад</button>
+        <button id="wizard-next" class="wz-btn wz-btn--primary" type="button">Далее →</button>
+      </div>
+    </div>
     <div id="tab-bar">
       <div id="tab-nav">
         <button class="t-tab active" data-tab="motion">
@@ -1121,7 +1175,10 @@
         <button class="t-tab" data-tab="difficulty">
           <span class="tab-icon">📊</span><span>Сложность</span>
         </button>
-        <button class="t-tab stub" data-tab="assets">
+        <button class="t-tab" data-tab="test">
+          <span class="tab-icon">▶</span><span>Тест</span>
+        </button>
+        <button class="t-tab" data-tab="assets">
           <span class="tab-icon">🎨</span><span>Ресурсы</span>
         </button>
       </div>
@@ -1271,13 +1328,18 @@
   <!-- Tab 4: Difficulty Lab ─────────────────────────────────────────────── -->
   <div id="difficulty-view" class="lab-view">
     <div class="lab-section">
-      <h3>Уровень</h3>
-      <div class="lab-params-grid">
+      <h3>Источник анализа</h3>
+      <div class="lab-chips" id="diff-source" style="margin-bottom:8px">
+        <label class="lab-chip on" data-src="draft"><input type="radio" name="diffsrc" value="draft" checked> ✏ Черновик (Разметка)</label>
+        <label class="lab-chip" data-src="campaign"><input type="radio" name="diffsrc" value="campaign"> 🗺 Уровень кампании</label>
+      </div>
+      <div class="lab-params-grid" id="diff-level-row" style="display:none">
       <div class="lab-row">
         <span class="lbl-main">Карта кампании</span>
         <select id="diff-level-sel" class="lab-select" style="grid-column:2 / 4"><option>Ждём запуска игры…</option></select>
       </div>
       </div>
+      <p class="lab-hint" id="diff-src-hint" style="margin-top:0">Анализируется твой черновик из «Разметки». Меняй поле/темп там — здесь обновится.</p>
     </div>
     <div class="lab-section">
       <h3>Сводка</h3>
@@ -1382,14 +1444,38 @@
     </div>
   </div>
 
-  <!-- Tab 5: Asset / Theme Lab ──────────────────────────────────────────── -->
+  <!-- Tab: Тест-драйв черновика ─────────────────────────────────────────── -->
+  <div id="test-view" class="lab-view">
+    <div class="lab-section">
+      <h3>Тест-драйв <span class="h3-sub" id="test-draft-name">черновик</span></h3>
+      <p class="lab-hint" style="margin-top:0">Запусти черновик в игре (вверху) и поиграй сам — проверь проходимость и баланс.
+        Авто-бота нет: это ручной тест-драйв.</p>
+      <div class="lab-btn-row">
+        <button class="p-btn" id="test-play" style="flex:1;color:var(--accent);border-color:rgba(34,227,198,.45);background:rgba(34,227,198,.06)">▶ Сыграть черновик</button>
+        <button class="p-btn" id="test-stop">⏹ В меню</button>
+      </div>
+      <div id="test-status" style="margin-top:6px;font-size:11px;color:var(--muted)"></div>
+    </div>
+    <div class="lab-section">
+      <h3>Готовность <span class="h3-sub">· предполётная проверка</span></h3>
+      <div id="test-checklist"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+  </div>
+
+  <!-- Tab: Ресурсы (оформление уровня) ───────────────────────────────────── -->
   <div id="asset-view" class="lab-view">
-    <div class="lab-coming">
-      <span class="big">🎨</span>
-      <strong>Asset / Theme Lab</strong>
-      <span>Скины самолётов · ВПП · Ангаров<br>
-      Темы · Биомы · День/ночь · Дождь/снег/туман<br>
-      Проверка читаемости · Preview тем на одном уровне</span>
+    <div class="lab-section">
+      <p class="lab-hint" style="margin-top:0">🎨 Примерь оформление к уровню. Скины ангаров и фона <b>появятся позже</b> —
+        сейчас выбор просто сохраняется в черновике (поле <code>skins</code> в JSON) и поедет в экспорт.
+        Движок их пока не отрисовывает.</p>
+    </div>
+    <div class="lab-section">
+      <h3>Скин ангаров <span class="h3-sub" id="skin-hangar-cur">default</span></h3>
+      <div class="lab-chips" id="skin-hangar"></div>
+    </div>
+    <div class="lab-section">
+      <h3>Фон поля <span class="h3-sub" id="skin-bg-cur">default</span></h3>
+      <div class="lab-chips" id="skin-bg"></div>
     </div>
   </div>
 
@@ -2272,6 +2358,7 @@
   let GAME = null;          // window.__GAME once the iframe is ready
   let labLevels = [];       // editable deep clones of GAME.LEVELS
   let labSel = 0;           // selected level index, shared by both labs
+  let diffSource = 'draft'; // вкладка «Сложность»: анализировать черновик «Разметки» или уровень кампании
 
   const LAB_CALM = 4;       // CALM_LEVELS — no specials before L5 (validateLevels)
   const LAB_EVENT_LBL = { vip:'VIP', emergency:'Mayday', rush:'Час пик', medical:'Медэвак' };
@@ -2305,6 +2392,7 @@
   function buildLabs() {
     if (!GAME) return;
     buildDiffSelect();
+    wireDiffSource();
     buildEvents();
     wireEditor();
     document.getElementById('lab-export').onclick = exportJSON;
@@ -2374,6 +2462,23 @@
     sel.innerHTML = labLevels.map((lv, i) =>
       '<option value="' + i + '">L' + (i + 1) + ' · ' + escHtml(labLevelName(i)) + '</option>').join('');
     sel.onchange = () => labSelect(+sel.value);
+  }
+
+  function wireDiffSource() {
+    const wrap = document.getElementById('diff-source');
+    if (!wrap) return;
+    wrap.querySelectorAll('input[name="diffsrc"]').forEach(r => {
+      r.addEventListener('change', () => {
+        diffSource = r.value;
+        wrap.querySelectorAll('.lab-chip').forEach(c => c.classList.toggle('on', c.dataset.src === diffSource));
+        const camp = diffSource === 'campaign';
+        document.getElementById('diff-level-row').style.display = camp ? '' : 'none';
+        document.getElementById('diff-src-hint').textContent = camp
+          ? 'Анализируется выбранный уровень кампании (правки идут по рабочей копии вкладки «Уровни»).'
+          : 'Анализируется твой черновик из «Разметки». Меняй поле/темп там — здесь обновится при возврате.';
+        renderDiff();
+      });
+    });
   }
 
   function buildEvents() {
@@ -2497,12 +2602,20 @@
       '</td><td style="text-align:right;font-weight:600;color:var(--text)">' + escHtml(String(v)) + '</td></tr>';
   }
 
+  // какой уровень анализирует вкладка «Сложность»: черновик «Разметки» или выбранный уровень кампании
+  function diffSourceLevel() {
+    if (diffSource === 'draft' && window.Draft) {
+      try { return window.Draft.export(); } catch (_) {}
+    }
+    return curLevel();
+  }
   function renderDiff() {
-    const lv  = curLevel();
+    // «Уровни» → живой ярлык сложности всегда считаем по редактируемому уровню кампании
+    try { document.getElementById('ed-diff-live').textContent = 'сложность ' + Math.round(GAME.analyzeLevel(curLevel()).total * 100) + '%'; } catch (_) {}
+    const lv  = diffSourceLevel();
     const rep = GAME.analyzeLevel(lv);
     const pace = rep.pace;
 
-    document.getElementById('ed-diff-live').textContent   = 'сложность ' + Math.round(rep.total * 100) + '%';
     document.getElementById('diff-total').textContent      = labFmt(rep.total);
     document.getElementById('diff-pace').textContent       = labFmt(pace);
     document.getElementById('diff-pace-sub').textContent   = labFmt(GAME.paceInterval(pace), 1) + 's · ' + GAME.paceCap(pace) + ' бортов';
@@ -2602,25 +2715,33 @@
     const layoutViewEl = document.getElementById('layout-view');
     const diffViewEl   = document.getElementById('difficulty-view');
     const assetViewEl  = document.getElementById('asset-view');
+    const testViewEl   = document.getElementById('test-view');
 
+    function activateTab(tab) {
+      document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      const isLayout   = tab === 'layout';
+      const hasSubtabs = SUBTAB_TABS.has(tab);   // «Движение» & «Настройки демо экрана»
+      searchWrap.style.visibility = hasSubtabs ? 'visible' : 'hidden';
+      groupsEl.style.display    = hasSubtabs ? '' : 'none';
+      levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
+      layoutViewEl.style.display = isLayout        ? 'flex' : 'none';
+      diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
+      assetViewEl.style.display = tab === 'assets'     ? 'flex' : 'none';
+      if (testViewEl) testViewEl.style.display = tab === 'test' ? 'flex' : 'none';
+      // #groups and the sub-tab bar are shared by both sub-tabbed tops — rebuild the
+      // bar for whichever is now active and reveal its (remembered) sub-tab.
+      if (hasSubtabs) buildSubtabs();
+      else subtabBar.style.display = 'none';
+      if (window._layoutActivate) window._layoutActivate(isLayout);
+      // освежаем вкладки, которые читают черновик (он мог измениться в «Разметке»)
+      if (tab === 'difficulty' && GAME) renderDiff();
+      if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
+      if (tab === 'test'    && window._testSync)      window._testSync();
+      if (window._wizardSync) window._wizardSync(tab);
+    }
+    window._activateTab = activateTab;
     document.querySelectorAll('.t-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
-        document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b === btn));
-        const isLayout   = tab === 'layout';
-        const hasSubtabs = SUBTAB_TABS.has(tab);   // «Движение» & «Настройки демо экрана»
-        searchWrap.style.visibility = hasSubtabs ? 'visible' : 'hidden';
-        groupsEl.style.display    = hasSubtabs ? '' : 'none';
-        levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
-        layoutViewEl.style.display = isLayout        ? 'flex' : 'none';
-        diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
-        assetViewEl.style.display = tab === 'assets'     ? 'flex' : 'none';
-        // #groups and the sub-tab bar are shared by both sub-tabbed tops — rebuild the
-        // bar for whichever is now active and reveal its (remembered) sub-tab.
-        if (hasSubtabs) buildSubtabs();
-        else subtabBar.style.display = 'none';
-        if (window._layoutActivate) window._layoutActivate(isLayout);
-      });
+      btn.addEventListener('click', () => activateTab(btn.dataset.tab));
     });
   })();
 
@@ -2664,6 +2785,8 @@
       ],
       pace: 0.4, startMoney: 0, maxUp: 3, stars: [6, 8, 10],
       events: { vip: false, emergency: false, medical: false, rush: false },
+      // оформление (таб «Ресурсы»): движок пока скины не рисует — выбор едет в JSON
+      skins: { hangar: 'default', background: 'default' },
     });
 
     const BLANK = () => { const d = DEFAULTS(); d.hangars = []; d.runways = []; return d; };
@@ -3139,6 +3262,12 @@
       if (LE.startMoney > 0) o.startMoney = LE.startMoney;
       const ev = {}; EVENTS.forEach(([k]) => { if (LE.events[k]) ev[k] = true; });
       if (Object.keys(ev).length) o.events = ev;
+      // оформление: пишем только не-дефолтные выборы (движок пока их игнорирует)
+      const sk = LE.skins || {};
+      const skOut = {};
+      if (sk.hangar && sk.hangar !== 'default') skOut.hangar = sk.hangar;
+      if (sk.background && sk.background !== 'default') skOut.background = sk.background;
+      if (Object.keys(skOut).length) o.skins = skOut;
       return o;
     }
     /* Validator — splits issues into blocking errors and non-blocking warnings.
@@ -3197,7 +3326,7 @@
     }
     function doExport() {
       const v = validate();
-      if (v.errors.length) { showValidateModal(v, () => writeExport(v)); return; }
+      if (v.errors.length) { showValidateModal(v, () => writeExport(v), 'Экспортировать всё равно', 'Экспортировать всё равно?'); return; }
       writeExport(v);
     }
     function doCopy() {
@@ -3219,18 +3348,21 @@
         w.__PLAY.store(obj);
         const ok = w.__PLAY.custom(obj);
         if (!ok) { $('ly-warn').textContent = 'движок не смог запустить уровень'; return; }
-        const motionTab = document.querySelector('.t-tab[data-tab="motion"]');
-        if (motionTab) motionTab.click();   // снять оверлей «Разметки» → показать игру
+        // холст «Разметки» накрывает игру — если играем из неё, уходим на «Тест»
+        // (там оверлей снят → игра видна, и шаг мастера остаётся осмысленным).
+        // Из самого «Теста» (active=false) игра уже видна — вкладку не дёргаем.
+        if (active) { const testTab = document.querySelector('.t-tab[data-tab="test"]'); if (testTab) testTab.click(); }
         $('ly-warn').textContent = '▶ уровень запущен в игре выше';
       } catch (e) { $('ly-warn').textContent = 'не удалось запустить: ' + e.message; }
     }
     function doPlay() {
       const v = validate();
-      if (v.errors.length) { showValidateModal(v, playDraft); return; }
+      if (v.errors.length) { showValidateModal(v, playDraft, 'Сыграть всё равно', 'Запустить уровень всё равно?'); return; }
       playDraft();
     }
-    /* Blocking pre-export validator modal (errors → confirm before exporting). */
-    function showValidateModal(v, onProceed) {
+    /* Blocking pre-action validator modal (errors → confirm before export/play).
+       goLabel/subText подставляются на каждый вызов — модалка общая для «Экспорт» и «Сыграть». */
+    function showValidateModal(v, onProceed, goLabel, subText) {
       let back = document.getElementById('ly-validate-modal');
       if (!back) {
         back = document.createElement('div');
@@ -3238,11 +3370,11 @@
         back.innerHTML =
           '<div class="zwm-box">' +
             '<div class="zwm-title">⛔ Уровень непроходим</div>' +
-            '<div class="zwm-sub">Проверка нашла блокирующие проблемы. Экспортировать всё равно?</div>' +
+            '<div class="zwm-sub"></div>' +
             '<div class="zwm-list"></div>' +
             '<div class="zwm-btns">' +
               '<button class="p-btn" id="lyv-cancel" type="button">Отмена</button>' +
-              '<button class="p-btn zwm-go" id="lyv-go" type="button">Экспортировать всё равно</button>' +
+              '<button class="p-btn zwm-go" id="lyv-go" type="button"></button>' +
             '</div>' +
           '</div>';
         document.body.appendChild(back);
@@ -3251,6 +3383,8 @@
         back.querySelector('#lyv-go').addEventListener('click', () => { const fn = back._go; close(); if (fn) fn(); });
         back.addEventListener('click', e => { if (e.target === back) close(); });
       }
+      back.querySelector('.zwm-sub').textContent = 'Проверка нашла блокирующие проблемы. ' + (subText || 'Продолжить всё равно?');
+      back.querySelector('#lyv-go').textContent = goLabel || 'Продолжить всё равно';
       back.querySelector('.zwm-list').innerHTML =
         v.errors.map(w => '<div class="zwm-item err">⛔ ' + escHtml(w) + '</div>').join('') +
         v.warns.map(w => '<div class="zwm-item warn">⚠ ' + escHtml(w) + '</div>').join('');
@@ -3270,9 +3404,23 @@
         if (o.maxUp != null) next.maxUp = +o.maxUp;
         if (o.objective && Array.isArray(o.objective.stars)) next.stars = o.objective.stars.slice(0, 3);
         if (o.events) EVENTS.forEach(([k]) => { next.events[k] = !!o.events[k]; });
+        if (o.skins) { if (o.skins.hangar) next.skins.hangar = o.skins.hangar; if (o.skins.background) next.skins.background = o.skins.background; }
         LE = next; sel = null; save(); syncParams(); renderEvents(); renderSide(); draw();
+        if (window._resourcesSync) window._resourcesSync();
       } catch (err) { $('ly-warn').textContent = 'не удалось импортировать JSON'; }
     }
+
+    /* ---- единый доступ к черновику для других вкладок (Сложность / Ресурсы / Тест / мастер).
+       Черновик = текущий шаблон «Разметки» (LE), он же автосохраняется в localStorage. ---- */
+    function ensureSkins() { if (!LE.skins) LE.skins = { hangar: 'default', background: 'default' }; return LE.skins; }
+    window.Draft = {
+      export:   () => exportObj(),
+      validate: () => validate(),
+      play:     () => doPlay(),
+      name:     () => curTpl || 'черновик',
+      getSkins: () => Object.assign({ hangar: 'default', background: 'default' }, LE.skins || {}),
+      setSkins: (patch) => { Object.assign(ensureSkins(), patch || {}); save(); if (window._wizardSaved) window._wizardSaved(); },
+    };
 
     /* ---- param controls ---- */
     function clampParams() {
@@ -3689,6 +3837,103 @@
 
     } catch (e) { setStatus('Demo: ' + e.message); }
   });
+
+  /* ── Ресурсы: примерка скинов (плейсхолдеры) — выбор сохраняется в черновике ─ */
+  (function () {
+    const HANGAR_SKINS = [['default','⬜ Базовый'],['neon','🟦 Неон'],['industrial','🏭 Индастриал'],['wood','🟫 Дерево']];
+    const BG_SKINS     = [['default','🌃 Ночь-радар'],['desert','🏜 Пустыня'],['snow','❄ Снег'],['ocean','🌊 Океан']];
+    function buildGroup(elId, items, key) {
+      const el = document.getElementById(elId); if (!el) return;
+      el.innerHTML = items.map(([v, lbl]) =>
+        '<label class="lab-chip" data-skin="' + v + '"><input type="radio" name="skin-' + key + '" value="' + v + '"> ' + lbl + '</label>').join('');
+      el.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', () => {
+        if (!window.Draft) return;
+        const patch = {}; patch[key] = r.value; window.Draft.setSkins(patch); syncResources();
+      }));
+    }
+    function syncResources() {
+      if (!window.Draft) return;
+      const sk = window.Draft.getSkins();
+      [['hangar','skin-hangar','skin-hangar-cur'],['background','skin-bg','skin-bg-cur']].forEach(([key, gid, curId]) => {
+        const cur = sk[key] || 'default';
+        const g = document.getElementById(gid);
+        if (g) g.querySelectorAll('label[data-skin]').forEach(l => {
+          const on = l.dataset.skin === cur;
+          l.classList.toggle('on', on);
+          const inp = l.querySelector('input'); if (inp) inp.checked = on;
+        });
+        const c = document.getElementById(curId); if (c) c.textContent = cur;
+      });
+    }
+    buildGroup('skin-hangar', HANGAR_SKINS, 'hangar');
+    buildGroup('skin-bg', BG_SKINS, 'background');
+    window._resourcesSync = syncResources;
+  })();
+
+  /* ── Тест: предполётная проверка + запуск черновика ──────────────────────── */
+  (function () {
+    function syncTest() {
+      const nameEl = document.getElementById('test-draft-name');
+      if (nameEl && window.Draft) nameEl.textContent = window.Draft.name();
+      const cl = document.getElementById('test-checklist'); if (!cl) return;
+      if (!window.Draft) { cl.innerHTML = '<span class="lab-empty">Ждём запуска игры…</span>'; return; }
+      const v = window.Draft.validate();
+      cl.innerHTML = (!v.errors.length && !v.warns.length)
+        ? '<div style="font-size:12px;color:var(--accent2)">✓ Всё готово — уровень проходим.</div>'
+        : v.errors.map(e => '<div style="font-size:11px;color:#ff8080;padding:2px 0">⛔ ' + escHtml(e) + '</div>').join('')
+          + v.warns.map(w => '<div style="font-size:11px;color:#e3c522;padding:2px 0">⚠ ' + escHtml(w) + '</div>').join('');
+    }
+    const play = document.getElementById('test-play');
+    if (play) play.addEventListener('click', () => { if (window.Draft) window.Draft.play(); setTimeout(syncTest, 60); });
+    const stop = document.getElementById('test-stop');
+    if (stop) stop.addEventListener('click', () => {
+      try { const w = gameFrame.contentWindow; const b = w && w.document.getElementById('backBtn'); if (b) b.click(); } catch (_) {}
+      const st = document.getElementById('test-status'); if (st) st.textContent = 'вернулись в меню игры';
+    });
+    window._testSync = syncTest;
+  })();
+
+  /* ── Мастер создания уровня: ведёт по этапам, маппит шаги на вкладки ──────── */
+  (function () {
+    const STEPS = ['layout', 'difficulty', 'test', 'assets'];
+    function go(tab) { if (window._activateTab) window._activateTab(tab); }
+    function curIdx() { const a = document.querySelector('.t-tab.active'); return a ? STEPS.indexOf(a.dataset.tab) : -1; }
+    function sync(tab) {
+      const idx = STEPS.indexOf(tab);
+      document.querySelectorAll('.wz-step').forEach(s => {
+        const si = STEPS.indexOf(s.dataset.step);
+        s.classList.toggle('active', s.dataset.step === tab);
+        s.classList.toggle('done', idx >= 0 && si < idx);
+      });
+      const prev = document.getElementById('wizard-prev'), next = document.getElementById('wizard-next');
+      if (idx < 0) { prev.disabled = false; next.disabled = false; next.textContent = 'К мастеру →'; return; }
+      prev.disabled = idx <= 0;
+      next.disabled = false;
+      next.textContent = idx >= STEPS.length - 1 ? '✓ Готово' : 'Далее →';
+    }
+    document.querySelectorAll('.wz-step').forEach(s => s.addEventListener('click', () => go(s.dataset.step)));
+    document.getElementById('wizard-prev').addEventListener('click', () => { const i = curIdx(); go(STEPS[i > 0 ? i - 1 : 0]); });
+    document.getElementById('wizard-next').addEventListener('click', () => {
+      const i = curIdx();
+      if (i < 0) { go(STEPS[0]); return; }
+      if (i < STEPS.length - 1) { go(STEPS[i + 1]); return; }
+      // последний шаг → финал пайплайна: ведём к экспорту в «Разметке» и подсвечиваем кнопку
+      go('layout');
+      const exp = document.getElementById('ly-export');
+      const warn = document.getElementById('ly-warn');
+      if (warn) warn.textContent = '✓ уровень готов — жми «⬇ Экспорт JSON», чтобы скачать';
+      if (exp) { exp.classList.add('wz-flash'); clearTimeout(exp._wzf); exp._wzf = setTimeout(() => exp.classList.remove('wz-flash'), 2400); }
+    });
+    window._wizardSync = sync;
+    window._wizardSaved = function () {
+      const el = document.getElementById('wizard-saved'); if (!el) return;
+      el.textContent = '💾 сохранено ✓'; clearTimeout(el._t);
+      el._t = setTimeout(() => { el.textContent = '💾 автосохранение'; }, 1500);
+    };
+    // отразить стартовую вкладку в полосе мастера (без принудительного перехода)
+    const a0 = document.querySelector('.t-tab.active');
+    sync(a0 ? a0.dataset.tab : 'motion');
+  })();
 
 })();
 </script>
