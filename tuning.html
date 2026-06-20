@@ -623,9 +623,11 @@
       background: #020609; overflow: hidden; touch-action: none;
     }
     #ly-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-    /* Stage hoisted into the top pane (layout tab active): fill the width, drop the
-       in-tab bottom margin, and allow a taller surface since it's the main canvas. */
-    #top-pane.ly-stage-top .ly-stage-wrap { margin-bottom: 0; max-height: 56vh; }
+    /* «Разметка» editing: the canvas is moved into the phone shell, so the in-tab
+       stage box is empty — hide it. The canvas (and its hint) fill the shell, with
+       crosshair cursor to signal it's a drawing surface. */
+    .ly-stage-wrap { display: none; }
+    #phone-shell.ly-editing #ly-canvas { cursor: crosshair; }
     .ly-stage-hint {
       position: absolute; left: 8px; bottom: 6px; font-size: 10px; color: var(--muted);
       pointer-events: none; background: rgba(2,6,9,.65); padding: 2px 6px; border-radius: 6px;
@@ -1439,6 +1441,7 @@
     if (tbLbl) tbLbl.textContent = ph.key === 'st' ? 'XS' : ph.key.toUpperCase();
 
     applyCutout(cutoutKey);
+    if (window._layoutResize) window._layoutResize();   // editor canvas follows the shell size
   }
 
   // Size strip buttons (inside popup)
@@ -2700,7 +2703,16 @@
       if (ptIn(rectPx(LE.apron), x, y)) return { kind: 'apron' };
       return null;
     }
-    function evPos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    // Map client coords into the canvas's own logical space. When the canvas sits
+    // inside the CSS-scaled phone shell, its on-screen rect is smaller than its
+    // logical (clientWidth) size, so divide out that scale — otherwise drags land
+    // off-target. Outside the shell the ratio is 1, so this is a no-op there.
+    function evPos(e) {
+      const r = cv.getBoundingClientRect();
+      const sx = (cv.clientWidth  || r.width)  / (r.width  || 1);
+      const sy = (cv.clientHeight || r.height) / (r.height || 1);
+      return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+    }
 
     cv.addEventListener('pointerdown', e => {
       const p = evPos(e), hit = pick(p.x, p.y);
@@ -3111,31 +3123,43 @@
     $('ly-tpl-del').addEventListener('click', delTpl);
 
     /* ---- activation ---- */
-    // While the «Разметка» tab is open, hoist the editor stage out of the
-    // scrolling tab body and into the top pane (where the phone preview sits),
-    // so the canvas is big and pinned to the top of the screen — the controls
-    // (templates, objects, zones, level params) keep scrolling below it.
+    // The point of «Разметка» is to lay out the field directly on the phone
+    // mock-up — drop the apron, runways and hangars onto the real device shape
+    // and instantly see them against the dangerous zones (cutout, gesture insets,
+    // safe-area, HUD). So while the tab is open we move the editor canvas INTO
+    // the phone shell (covering the live game, which keeps running underneath to
+    // supply those zones) and overlay only the safety frames on top. There is no
+    // canvas in the scrolling tab body any more — just the controls.
     const stageWrap = document.querySelector('.ly-stage-wrap');
-    const topPane   = document.getElementById('top-pane');
-    const phoneCol  = document.getElementById('phone-col');
-    let   stageHome = null;   // { parent, next } — where the stage lives in the tab
+    const hint      = document.getElementById('ly-hint');
+    const shellEl   = document.getElementById('phone-shell');
+    const gameFrm   = document.getElementById('game-frame');
+    const fieldOv   = document.getElementById('field-overlay');
+    let   canvasHome = null;   // { parent, next } — the canvas's parking spot in the tab
 
     window._layoutActivate = function (show) {
       active = !!show;
-      if (stageWrap && topPane && phoneCol) {
+      if (cv && shellEl && fieldOv) {
         if (active) {
-          if (!stageHome) stageHome = { parent: stageWrap.parentNode, next: stageWrap.nextSibling };
-          phoneCol.style.display = 'none';      // hide the game preview while editing
-          topPane.classList.add('ly-stage-top');
-          topPane.appendChild(stageWrap);       // … and show the stage in its place
-        } else if (stageHome) {
-          phoneCol.style.display = '';
-          topPane.classList.remove('ly-stage-top');
-          stageHome.parent.insertBefore(stageWrap, stageHome.next);   // back into the tab
+          if (!canvasHome) canvasHome = { parent: cv.parentNode, next: cv.nextSibling };
+          shellEl.classList.add('ly-editing');
+          if (gameFrm) gameFrm.style.visibility = 'hidden';   // game runs on, just hidden
+          shellEl.insertBefore(cv, fieldOv);                  // canvas under the zone overlay
+          if (hint) shellEl.insertBefore(hint, fieldOv);
+          if (window._fieldEditorZones) window._fieldEditorZones(true);   // show danger zones
+          resize();   // canvas is now in the visible shell — fit it immediately
+        } else if (canvasHome) {
+          if (window._fieldEditorZones) window._fieldEditorZones(false);
+          if (gameFrm) gameFrm.style.visibility = '';
+          shellEl.classList.remove('ly-editing');
+          canvasHome.parent.insertBefore(cv, canvasHome.next);
+          if (hint && stageWrap) stageWrap.appendChild(hint);
         }
       }
-      if (active) { requestAnimationFrame(() => { resize(); }); }
+      if (active) { resize(); requestAnimationFrame(() => { resize(); }); }
     };
+    // Re-fit when the phone size picker changes the shell dimensions.
+    window._layoutResize = function () { if (active) resize(); };
     window.addEventListener('resize', () => { if (active) resize(); });
 
     // boot
@@ -3194,6 +3218,7 @@
     const overlay  = document.getElementById('field-overlay');
     let   fieldOn  = false;
     let   overlayTab = '';
+    let   editorOnly = false;   // «Разметка» mode: draw only the danger zones, not the live game's field
 
     function getField() {
       try { const fw = gameFrame.contentWindow; return fw && fw.__FIELD ? fw.__FIELD : null; } catch(_) { return null; }
@@ -3221,6 +3246,9 @@
       const GDY = { up:-1, down:1, left:0, right:0 };
       let s = '<defs><marker id="ga" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">'
             + '<path d="M0,0 L0,6 L6,3 z" fill="rgba(34,200,100,.8)"/></marker></defs>';
+      // In «Разметка» editor mode the canvas already draws the field being designed,
+      // so skip the live game's runways/bays/planes — keep only the danger zones below.
+      if (!editorOnly) {
       (fd.runways || []).forEach((r, i) => {
         s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="rgba(58,130,255,.05)" stroke="rgba(58,210,255,.5)" stroke-width="1.5"/>';
         s += '<line x1="'+r.x+'" y1="'+r.cy+'" x2="'+(r.x+r.w)+'" y2="'+r.cy+'" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="6 4"/>';
@@ -3250,9 +3278,10 @@
         }
         s += '<circle cx="'+pl.x+'" cy="'+pl.y+'" r="5" fill="'+col+'" fill-opacity=".85" stroke="rgba(0,0,0,.3)" stroke-width="1"/>';
       });
+      } // !editorOnly
 
       // ── Safety zones overlay (shown in "Зоны" tab or when SA_DEBUG_OVERLAY is on) ──
-      const showSafe = overlayTab === 'safe' || !!snap['MT.SA_DEBUG_OVERLAY'];
+      const showSafe = editorOnly || overlayTab === 'safe' || !!snap['MT.SA_DEBUG_OVERLAY'];
       if (showSafe && fd.safetyRects) {
         const sr = fd.safetyRects;
         const gi = sr.gestureInsets;
@@ -3350,10 +3379,13 @@
     }
     window._zoneWarnings = zoneWarnings;
 
+    let ticking = false;
     function tick() {
-      if (!fieldOn) return;
+      if (!fieldOn) { ticking = false; return; }
+      if (ticking && arguments[0] !== true) return;   // already looping — don't start a second
+      ticking = true;
       drawOverlay();
-      setTimeout(tick, 150);
+      setTimeout(() => tick(true), 150);
     }
 
     window._fieldActivate = function (on, tab) {
@@ -3364,6 +3396,25 @@
     };
     // immediate redraw (used by the «Зоны» legend toggles for snappy feedback)
     window._fieldRedraw = function () { if (fieldOn) drawOverlay(); };
+    // «Разметка» tab drives the overlay itself: danger zones only, on top of the
+    // editor canvas. Saves/restores the «Зоны» toolbar state so leaving the tab
+    // doesn't strand the overlay on.
+    let savedField = null;
+    window._fieldEditorZones = function (on) {
+      if (on) {
+        if (savedField == null) savedField = { fieldOn: fieldOn, overlayTab: overlayTab };
+        editorOnly = true; fieldOn = true; overlayTab = 'safe';
+        overlay.style.display = '';
+        tick();
+      } else {
+        editorOnly = false;
+        const prev = savedField || { fieldOn: false, overlayTab: '' };
+        savedField = null;
+        fieldOn = prev.fieldOn; overlayTab = prev.overlayTab;
+        overlay.style.display = fieldOn ? '' : 'none';
+        if (fieldOn) tick();
+      }
+    };
   })();
 
   /* ── Demo mode (toggle: first click = start forest, second = main screen) */
