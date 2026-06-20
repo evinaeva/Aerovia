@@ -382,6 +382,8 @@
     .wz-btn--primary { color: var(--accent); border-color: rgba(34,227,198,.45); background: rgba(34,227,198,.06); }
     .wz-btn--primary:hover { background: rgba(34,227,198,.14); }
     @media (max-width: 560px) { .wz-step .wz-t { display: none; } #wizard-saved { display: none; } }
+    @keyframes wzFlash { 0%,100% { box-shadow: 0 0 0 0 rgba(34,227,198,0); } 50% { box-shadow: 0 0 0 3px rgba(34,227,198,.55); } }
+    .wz-flash { animation: wzFlash .8s ease-in-out 3; border-color: var(--accent) !important; }
 
     /* ── Sub-tab bar (inside the Motion tab — splits ~20 groups by domain) ── */
     #subtab-bar {
@@ -3324,7 +3326,7 @@
     }
     function doExport() {
       const v = validate();
-      if (v.errors.length) { showValidateModal(v, () => writeExport(v)); return; }
+      if (v.errors.length) { showValidateModal(v, () => writeExport(v), 'Экспортировать всё равно', 'Экспортировать всё равно?'); return; }
       writeExport(v);
     }
     function doCopy() {
@@ -3346,19 +3348,21 @@
         w.__PLAY.store(obj);
         const ok = w.__PLAY.custom(obj);
         if (!ok) { $('ly-warn').textContent = 'движок не смог запустить уровень'; return; }
-        // холст «Разметки» накрывает игру — если играем из неё, уходим на «Движение»,
-        // чтобы увидеть игру. Из «Теста» (active=false) игра и так видна — не дёргаем вкладку.
-        if (active) { const motionTab = document.querySelector('.t-tab[data-tab="motion"]'); if (motionTab) motionTab.click(); }
+        // холст «Разметки» накрывает игру — если играем из неё, уходим на «Тест»
+        // (там оверлей снят → игра видна, и шаг мастера остаётся осмысленным).
+        // Из самого «Теста» (active=false) игра уже видна — вкладку не дёргаем.
+        if (active) { const testTab = document.querySelector('.t-tab[data-tab="test"]'); if (testTab) testTab.click(); }
         $('ly-warn').textContent = '▶ уровень запущен в игре выше';
       } catch (e) { $('ly-warn').textContent = 'не удалось запустить: ' + e.message; }
     }
     function doPlay() {
       const v = validate();
-      if (v.errors.length) { showValidateModal(v, playDraft); return; }
+      if (v.errors.length) { showValidateModal(v, playDraft, 'Сыграть всё равно', 'Запустить уровень всё равно?'); return; }
       playDraft();
     }
-    /* Blocking pre-export validator modal (errors → confirm before exporting). */
-    function showValidateModal(v, onProceed) {
+    /* Blocking pre-action validator modal (errors → confirm before export/play).
+       goLabel/subText подставляются на каждый вызов — модалка общая для «Экспорт» и «Сыграть». */
+    function showValidateModal(v, onProceed, goLabel, subText) {
       let back = document.getElementById('ly-validate-modal');
       if (!back) {
         back = document.createElement('div');
@@ -3366,11 +3370,11 @@
         back.innerHTML =
           '<div class="zwm-box">' +
             '<div class="zwm-title">⛔ Уровень непроходим</div>' +
-            '<div class="zwm-sub">Проверка нашла блокирующие проблемы. Экспортировать всё равно?</div>' +
+            '<div class="zwm-sub"></div>' +
             '<div class="zwm-list"></div>' +
             '<div class="zwm-btns">' +
               '<button class="p-btn" id="lyv-cancel" type="button">Отмена</button>' +
-              '<button class="p-btn zwm-go" id="lyv-go" type="button">Экспортировать всё равно</button>' +
+              '<button class="p-btn zwm-go" id="lyv-go" type="button"></button>' +
             '</div>' +
           '</div>';
         document.body.appendChild(back);
@@ -3379,6 +3383,8 @@
         back.querySelector('#lyv-go').addEventListener('click', () => { const fn = back._go; close(); if (fn) fn(); });
         back.addEventListener('click', e => { if (e.target === back) close(); });
       }
+      back.querySelector('.zwm-sub').textContent = 'Проверка нашла блокирующие проблемы. ' + (subText || 'Продолжить всё равно?');
+      back.querySelector('#lyv-go').textContent = goLabel || 'Продолжить всё равно';
       back.querySelector('.zwm-list').innerHTML =
         v.errors.map(w => '<div class="zwm-item err">⛔ ' + escHtml(w) + '</div>').join('') +
         v.warns.map(w => '<div class="zwm-item warn">⚠ ' + escHtml(w) + '</div>').join('');
@@ -3910,8 +3916,13 @@
     document.getElementById('wizard-next').addEventListener('click', () => {
       const i = curIdx();
       if (i < 0) { go(STEPS[0]); return; }
-      if (i < STEPS.length - 1) go(STEPS[i + 1]);
-      else setStatus('Уровень готов — экспортируй его в «Разметке» (⬇ Экспорт JSON) или сыграй из «Теста».');
+      if (i < STEPS.length - 1) { go(STEPS[i + 1]); return; }
+      // последний шаг → финал пайплайна: ведём к экспорту в «Разметке» и подсвечиваем кнопку
+      go('layout');
+      const exp = document.getElementById('ly-export');
+      const warn = document.getElementById('ly-warn');
+      if (warn) warn.textContent = '✓ уровень готов — жми «⬇ Экспорт JSON», чтобы скачать';
+      if (exp) { exp.classList.add('wz-flash'); clearTimeout(exp._wzf); exp._wzf = setTimeout(() => exp.classList.remove('wz-flash'), 2400); }
     });
     window._wizardSync = sync;
     window._wizardSaved = function () {
