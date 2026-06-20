@@ -138,8 +138,6 @@
     .popup-body .btn-row { display: flex; gap: 4px; }
     .popup-body .btn-row .p-btn { flex: 1; }
 
-    #popup-cutout #cutout-strip { display: flex; flex-direction: column; gap: 4px; }
-    #popup-cutout .co-btn { width: 100%; text-align: left; }
 
     /* ── Phone column ───────────────────────────────────────────────────── */
     #phone-col {
@@ -757,6 +755,9 @@
       border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0,0,0,.6);
       padding: 8px;
+      max-height: calc(100dvh - 120px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     #zones-panel.open { display: block; }
     .zp-head {
@@ -793,7 +794,52 @@
     }
     .zp-master .zp-label { font-weight: 700; color: var(--text); font-size: 12px; }
     /* dim per-zone rows while the master overlay is off */
-    #zones-panel.zones-off .zp-list { opacity: .45; }
+    #zones-panel.zones-off #zones-list { opacity: .45; }
+
+    /* sub-section header inside the panel (e.g. «Вырез / навигация») */
+    .zp-sub {
+      font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); padding: 2px 4px 3px;
+    }
+
+    /* row wrapper holds the row + its collapsible hint */
+    .zp-row-wrap { }
+    .zp-list .zp-row-wrap:first-child > .zp-row { border-top: none; }
+
+    /* «?» info button — click/tap toggles the inline hint (touch-friendly) */
+    .zp-info {
+      flex: none; width: 18px; height: 18px; line-height: 1; padding: 0;
+      border: 1px solid var(--border); border-radius: 50%;
+      background: var(--btn-bg); color: var(--muted);
+      font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: color .12s, border-color .12s, background .12s;
+    }
+    .zp-info:hover { color: var(--text); border-color: var(--accent); }
+    .zp-info[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); background: rgba(34,227,198,.12); }
+
+    /* collapsible Russian explanation */
+    .zp-hint {
+      display: none;
+      font-size: 10px; line-height: 1.45; color: var(--muted);
+      padding: 0 6px 7px 8px;
+    }
+    .zp-hint.open { display: block; }
+
+    /* cutout/navigation presets rendered as panel rows (reuse .zp-row layout, drop
+       the old button-strip look) */
+    #zones-panel .co-btn {
+      border: none; border-radius: 0; background: none;
+      padding: 5px 4px; font-size: 11px; white-space: normal; color: var(--muted);
+    }
+    #zones-panel .co-btn:hover { background: rgba(58,210,255,.05); }
+    #zones-panel .co-btn.active { background: rgba(34,227,198,.06); color: var(--accent); }
+    .co-dot {
+      flex: none; width: 11px; height: 11px; border-radius: 50%;
+      border: 1px solid var(--border); background: transparent;
+    }
+    .co-btn.active .co-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px rgba(34,227,198,.5); }
+    .co-btn .zp-label { flex: 1; }
+    .co-btn.active .zp-label { color: var(--accent); font-weight: 700; }
 
     /* ── Safe-zone warning modal (shown on map export) ───────────────────── */
     #zone-warn-modal {
@@ -954,10 +1000,8 @@
       <button class="tb-btn" id="btn-preset-toggle" title="Пресет">💾</button>
       <!-- File -->
       <button class="tb-btn" id="btn-file-toggle" title="Файл">📂</button>
-      <!-- Cutout -->
-      <button class="tb-btn" id="btn-cutout-toggle" title="Вырез экрана">✂️</button>
-      <!-- Safe-zone frames overlay -->
-      <button class="tb-btn" id="btn-frames-toggle" title="Зоны экрана — рамки поверх превью">
+      <!-- Safe-zone frames overlay + cutout/navigation presets -->
+      <button class="tb-btn" id="btn-frames-toggle" title="Зоны и вырез экрана — рамки поверх превью + пресеты выреза/навигации">
         <span class="tb-icon">📐</span><span>Зоны</span>
       </button>
     </div>
@@ -999,25 +1043,18 @@
       </div>
     </div>
 
-    <!-- Cutout popup -->
-    <div class="tb-popup" id="popup-cutout">
-      <div id="cutout-strip">
-        <button class="co-btn active" data-co="none">Без выреза</button>
-        <button class="co-btn" data-co="left">◀ Лев. камера</button>
-        <button class="co-btn" data-co="right">Прав. камера ▶</button>
-        <button class="co-btn" data-co="round">⌒ Скруглённые</button>
-        <button class="co-btn" data-co="3btn">3 кнопки</button>
-      </div>
-    </div>
-
-    <!-- Safe-zone legend panel — docked under the top-right buttons, toggled by «Зоны».
-         Header × hides the legend (zones stay on); per-row toggles show/hide each zone.
-         Rows are populated from i18n by renderZoneLegend() (targets #zones-list). -->
+    <!-- Safe-zone legend + cutout/navigation panel — docked under the top-right buttons,
+         toggled by «Зоны». Header × hides the panel (zones stay on); per-row toggles
+         show/hide each zone. The cutout/navigation presets (formerly a separate ✂️
+         popup) now live at the top of this panel. Rows are populated from i18n by
+         buildCutoutList() (#cutout-list) and renderZoneLegend() (#zones-list). -->
     <div id="zones-panel">
       <div class="zp-head">
-        <span class="zp-title">📐 Зоны экрана</span>
-        <button class="zp-close" id="zones-panel-close" title="Скрыть легенду (зоны останутся)">✕</button>
+        <span class="zp-title">📐 Зоны и вырез</span>
+        <button class="zp-close" id="zones-panel-close" title="Скрыть панель (зоны останутся)">✕</button>
       </div>
+      <div class="zp-sub">Вырез / навигация</div>
+      <div class="zp-list" id="cutout-list"></div>
       <label class="zp-row zp-master">
         <span class="zp-label">Показывать зоны</span>
         <span class="mt-toggle"><input type="checkbox" id="zones-master"><span class="track"></span></span>
@@ -1387,6 +1424,33 @@
     zoneOvRouteDraw:    'рисование',
     zoneOvRouteTarget:  'цель',
     zoneOvCutout:       'вырез',
+    // вырез / навигация — подписи и пояснения (перенесены в панель «Зоны»)
+    cutoutLabels: {
+      none:  'Без выреза',
+      left:  '◀ Лев. камера',
+      right: 'Прав. камера ▶',
+      round: '⌒ Скруглённые углы',
+      '3btn':'3 кнопки (старая навигация)',
+    },
+    cutoutHints: {
+      none:  'Экран без выреза, жест-навигация. Базовый случай: доступен весь экран, по краям только жест-отступы.',
+      left:  'Камера-вырез у левого края (ландшафт). Слева добавляется запретная зона под камеру.',
+      right: 'Камера-вырез у правого края (ландшафт). Справа добавляется запретная зона под камеру.',
+      round: 'Скруглённые углы экрана: добавляет системные отступы слева и справа, чтобы контент не уезжал под скругление.',
+      '3btn':'Старая 3-кнопочная навигация: жест-зон у краёв нет, нижний край свободен.',
+    },
+    // пояснения к зонам — показываются по клику/тапу на «?» в строке зоны
+    zoneHints: {
+      gesture:     'Полосы у краёв, где Android перехватывает свайпы (назад/домой/недавние). Тапаемые элементы сюда ставить нельзя — система перехватит касание.',
+      safe:        'Системная safe-area сверх жест-зон: отступы под скругления и вырез. Контент может заходить, но впритык к краю рискованно.',
+      cutout:      'Прямоугольник физического выреза камеры. Под ним картинка перекрыта — ничего важного туда не помещай.',
+      content:     'Зона, внутри которой безопасно показывать любой контент с учётом всех отступов.',
+      interactive: 'Зона, где безопасно ставить кнопки и тапаемые элементы — не перекрывается жестами и вырезом.',
+      routeStart:  'Откуда игрок может начинать вести маршрут пальцем.',
+      routeDraw:   'В пределах которой можно вести линию маршрута.',
+      routeTarget: 'Куда маршрут может приходить — точки назначения (ВПП, боксы) должны попадать сюда.',
+      uiReserved:  'Места под игровой интерфейс (деньги, жизни, пауза, HUD). Игровые объекты сюда не ставь — перекроются интерфейсом.',
+    },
     // предупреждения проверки зон
     warnNone:           '✓ Нет предупреждений',
     warnHitCutout:      (lbl)  => lbl + ': зона нажатия перекрывается с вырезом камеры',
@@ -1520,7 +1584,6 @@
   document.getElementById('btn-size-toggle').addEventListener('click',   () => togglePopup('popup-size'));
   document.getElementById('btn-preset-toggle').addEventListener('click', () => togglePopup('popup-preset'));
   document.getElementById('btn-file-toggle').addEventListener('click',   () => togglePopup('popup-file'));
-  document.getElementById('btn-cutout-toggle').addEventListener('click', () => togglePopup('popup-cutout'));
 
   /* ── Cutout presets ────────────────────────────────────────────────────── */
   // side: 'none'|'left'|'right'  — matches MT.SA_CUTOUT_SIDE values
@@ -1553,9 +1616,14 @@
     //   wrapper_pos = (BORDER + cx) * scale
     const BORDER = 7;
     if (co.side !== 'none' && ph) {
+      // cx/cy are in the shell's CONTENT coordinates (inside the 7px bezel) — the same
+      // space the game measures for safetyRects. Use the shell's real content width
+      // (clientWidth) for the right edge, NOT ph.w (the label size incl. the bezel),
+      // so the right-side cutout lines up with the game's computed cutoutRect.
+      const contentW = shell.clientWidth || (ph.w - 2 * BORDER);
       let cx = 0, cy = co.offset;
-      if (co.side === 'right') cx = ph.w - co.w;
-      cutoutSim.style.display = '';
+      if (co.side === 'right') cx = contentW - co.w;
+      cutoutSim.style.display = 'block';   // explicit — CSS default is display:none, so '' would stay hidden
       cutoutSim.style.left    = Math.round((BORDER + cx) * scale) + 'px';
       cutoutSim.style.top     = Math.round((BORDER + cy) * scale) + 'px';
       cutoutSim.style.width   = Math.round(co.w * scale) + 'px';
@@ -1586,9 +1654,47 @@
     } catch (e) { /* iframe not ready yet */ }
   }
 
-  document.querySelectorAll('.co-btn').forEach(btn => {
-    btn.addEventListener('click', () => applyCutout(btn.dataset.co));
-  });
+  // Click/tap a row's «?» to toggle its inline Russian explanation. Works on touch
+  // (unlike title= tooltips). Each «?» lives in a .zp-row; the hint is the .zp-hint
+  // sibling inside the shared .zp-row-wrap.
+  function wireHints(container) {
+    container.querySelectorAll('.zp-info').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        const wrap = btn.closest('.zp-row-wrap');
+        const hint = wrap && wrap.querySelector('.zp-hint');
+        if (!hint) return;
+        const open = hint.classList.toggle('open');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
+  }
+
+  // Cutout/navigation presets live as rows inside the «Зоны» panel. Each row applies
+  // a preset on click; its «?» toggles an inline Russian explanation (click/tap — so
+  // it works on touch, where title= tooltips never show).
+  (function buildCutoutList() {
+    const host = document.getElementById('cutout-list');
+    if (!host) return;
+    const order = ['none', 'left', 'right', 'round', '3btn'];
+    host.innerHTML = order.map(k =>
+      '<div class="zp-row-wrap">' +
+        '<div class="zp-row co-btn' + (k === cutoutKey ? ' active' : '') + '" data-co="' + k + '">' +
+          '<span class="co-dot"></span>' +
+          '<span class="zp-label">' + escHtml(T.cutoutLabels[k]) + '</span>' +
+          '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false">?</button>' +
+        '</div>' +
+        '<div class="zp-hint">' + escHtml(T.cutoutHints[k]) + '</div>' +
+      '</div>'
+    ).join('');
+    host.querySelectorAll('.co-btn').forEach(row => {
+      row.addEventListener('click', e => {
+        if (e.target.closest('.zp-info')) return;   // «?» handled separately
+        applyCutout(row.dataset.co);
+      });
+    });
+    wireHints(host);
+  })();
 
   /* ── Splitter drag (pointer events → works for mouse, touch & pen) ──────── */
   (function () {
@@ -1673,12 +1779,16 @@
       ['uiReserved',  'z-sw', 'background:rgba(255,220,0,.6)', T.zoneUiReserved],
     ];
     host.innerHTML = items.map(it =>
-      '<label class="zp-row">' +
-        '<span class="' + it[1] + '" style="' + it[2] + '"></span>' +
-        '<span class="zp-label">' + it[3] + '</span>' +
-        '<span class="mt-toggle"><input type="checkbox" data-zone="' + it[0] + '"' +
-          (window._zoneVis[it[0]] !== false ? ' checked' : '') + '><span class="track"></span></span>' +
-      '</label>'
+      '<div class="zp-row-wrap">' +
+        '<label class="zp-row">' +
+          '<span class="' + it[1] + '" style="' + it[2] + '"></span>' +
+          '<span class="zp-label">' + it[3] + '</span>' +
+          '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false">?</button>' +
+          '<span class="mt-toggle"><input type="checkbox" data-zone="' + it[0] + '"' +
+            (window._zoneVis[it[0]] !== false ? ' checked' : '') + '><span class="track"></span></span>' +
+        '</label>' +
+        '<div class="zp-hint">' + escHtml(T.zoneHints[it[0]] || '') + '</div>' +
+      '</div>'
     ).join('');
     host.querySelectorAll('input[data-zone]').forEach(inp => {
       inp.addEventListener('change', () => {
@@ -1686,6 +1796,7 @@
         if (window._fieldRedraw) window._fieldRedraw();
       });
     });
+    wireHints(host);
   })();
 
   /* ── Workbench logic (unchanged) ─────────────────────────────────────── */
