@@ -1523,6 +1523,7 @@
     zoneSafeInsets:     'Системные отступы',
     zoneCutout:         'Вырез камеры',
     zoneUiReserved:     'Зарезервировано под UI (HUD/кнопки)',
+    zoneToast:          'Тост достижения (макс.)',
     // короткие подписи поверх превью (мелкий шрифт)
     zoneOvContent:      'контент',
     zoneOvInteractive:  'интеракт.',
@@ -1530,6 +1531,7 @@
     zoneOvRouteDraw:    'рисование',
     zoneOvRouteTarget:  'цель',
     zoneOvCutout:       'вырез',
+    zoneOvToast:        'тост',
     // вырез / навигация — подписи и пояснения (перенесены в панель «Зоны»)
     cutoutLabels: {
       none:  'Без выреза',
@@ -1556,6 +1558,7 @@
       routeDraw:   'В пределах которой можно вести линию маршрута.',
       routeTarget: 'Куда маршрут может приходить — точки назначения (ВПП, боксы) должны попадать сюда.',
       uiReserved:  'Места под игровой интерфейс (деньги, жизни, пауза, HUD). Игровые объекты сюда не ставь — перекроются интерфейсом.',
+      toast:       'Зона, которую может занять всплывашка достижения (#achToast): по центру сверху (top 13%), ширина до 86% экрана, высота под значок + заголовок + описание (до 2 строк). Если сюда попадают важные игровые объекты — широкий тост их перекроет.',
     },
     // предупреждения проверки зон
     warnNone:           '✓ Нет предупреждений',
@@ -1875,6 +1878,7 @@
   window._zoneVis = window._zoneVis || {
     gesture: true, safe: true, cutout: true, content: true, interactive: true,
     routeStart: true, routeDraw: true, routeTarget: true, uiReserved: true,
+    toast: true,
   };
 
   /* zone legend — подписи берутся из i18n (T.zone*), а не зашиты в разметку.
@@ -1893,6 +1897,7 @@
       ['routeDraw',   'z-sw', 'background:rgba(60,180,255,.9)', T.zoneRouteDraw],
       ['routeTarget', 'z-sw', 'background:rgba(180,80,255,.9)', T.zoneRouteTarget],
       ['uiReserved',  'z-sw', 'background:rgba(255,220,0,.6)', T.zoneUiReserved],
+      ['toast',       'z-sw fill', 'background:rgba(244,207,94,.22);border:1px solid rgba(244,207,94,.85)', T.zoneToast],
     ];
     // The row is a <div>, NOT a <label>: a <label> wrapping both the «?» <button>
     // and the checkbox would associate with the FIRST labelable descendant — the
@@ -3712,6 +3717,24 @@
           s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="rgba(255,220,0,.04)" stroke="rgba(255,220,0,.28)" stroke-width="1" stroke-dasharray="3 4"/>';
           s += '<text x="'+(r.x+2)+'" y="'+(r.y+8)+'" font-size="6" fill="rgba(255,220,0,.6)">'+r.label+'</text>';
         });
+
+        // Achievement toast (#achToast) — the worst-case area it can cover. The
+        // toast isn't in safetyRects (it's a DOM overlay, not a game rect); its
+        // box comes straight from the CSS in src/styles.css (#achToast):
+        //   top:13%  ·  left:50% + translateX(-50%)  ·  max-width:86%
+        //   padding:12px 20px  ·  icon 28px / title 14px / desc 10.5px(×≤2 lines)
+        // W/H here are the iframe's innerWidth/innerHeight in CSS px (06-state-layout
+        // sets W=window.innerWidth, H=window.innerHeight), the same units the CSS
+        // %/px values resolve against — so the mapping is 1:1, no scaling needed.
+        if (zv('toast')) {
+          var tW = W * 0.86;                 // CSS max-width:86% (widest a toast can get)
+          var tH = 88;                       // padding 24 + icon/text column (desc up to 2 lines)
+          var tX = (W - tW) / 2;             // centred (left:50% + translateX(-50%))
+          var tY = H * 0.13;                 // CSS top:13%
+          s += '<rect x="'+tX+'" y="'+tY+'" width="'+tW+'" height="'+tH+'" rx="6" '
+             + 'fill="rgba(244,207,94,.10)" stroke="rgba(244,207,94,.85)" stroke-width="1.5" stroke-dasharray="6 4"/>';
+          s += '<text x="'+(tX+4)+'" y="'+(tY+10)+'" font-size="7" fill="rgba(244,207,94,.95)">'+T.zoneOvToast+'</text>';
+        }
       }
 
       overlay.innerHTML = s;
