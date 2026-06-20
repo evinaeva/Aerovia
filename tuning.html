@@ -801,8 +801,9 @@
       border-top: none; border-bottom: 1px solid var(--row-sep);
     }
     .zp-master .zp-label { font-weight: 700; color: var(--text); font-size: 12px; }
-    /* dim per-zone rows while the master overlay is off */
-    #zones-panel.zones-off #zones-list { opacity: .45; }
+    /* dim per-zone rows while the master overlay is off — and make them
+       non-interactive so toggles don't silently change a hidden overlay */
+    #zones-panel.zones-off #zones-list { opacity: .45; pointer-events: none; }
 
     /* sub-section header inside the panel (e.g. «Вырез / навигация») */
     .zp-sub {
@@ -1567,6 +1568,7 @@
   const backdrop   = document.getElementById('popup-backdrop');
 
   function openPopup(id) {
+    if (window._closeZonesPanel) window._closeZonesPanel();   // don't overlap the «Зоны» panel
     const toolbar = document.getElementById('toolbar-wrap');
     const tRect   = toolbar.getBoundingClientRect();
     const top     = tRect.bottom + 6;
@@ -1614,6 +1616,17 @@
   let cutoutKey = 'none';
   const cutoutSim = document.getElementById('cutout-sim');
 
+  // The red-dashed cutout preview (#cutout-sim) shows ONLY when a side-cutout preset
+  // is active AND the safe-zones overlay is off. When zones are on, drawOverlay()
+  // renders the cutout itself (gated by the legend's «Вырез камеры» toggle), so
+  // showing both would double-draw the cutout with two switches that disagree.
+  function refreshCutoutSim() {
+    const co = CUTOUT_PRESETS[cutoutKey];
+    const show = !!co && co.side !== 'none' && !window._zonesOn;
+    cutoutSim.style.display = show ? 'block' : 'none';
+  }
+  window._refreshCutoutSim = refreshCutoutSim;
+
   function applyCutout(key) {
     if (!CUTOUT_PRESETS[key]) return;
     cutoutKey = key;
@@ -1637,14 +1650,12 @@
       const contentW = shell.clientWidth || (ph.w - 2 * BORDER);
       let cx = 0, cy = co.offset;
       if (co.side === 'right') cx = contentW - co.w;
-      cutoutSim.style.display = 'block';   // explicit — CSS default is display:none, so '' would stay hidden
       cutoutSim.style.left    = Math.round((BORDER + cx) * scale) + 'px';
       cutoutSim.style.top     = Math.round((BORDER + cy) * scale) + 'px';
       cutoutSim.style.width   = Math.round(co.w * scale) + 'px';
       cutoutSim.style.height  = Math.round(co.h * scale) + 'px';
-    } else {
-      cutoutSim.style.display = 'none';
     }
+    refreshCutoutSim();   // visibility depends on the preset + the zones-overlay state
 
     // Push new values into the game iframe's MT and trigger recalculation.
     try {
@@ -1792,15 +1803,20 @@
       ['routeTarget', 'z-sw', 'background:rgba(180,80,255,.9)', T.zoneRouteTarget],
       ['uiReserved',  'z-sw', 'background:rgba(255,220,0,.6)', T.zoneUiReserved],
     ];
+    // The row is a <div>, NOT a <label>: a <label> wrapping both the «?» <button>
+    // and the checkbox would associate with the FIRST labelable descendant — the
+    // button — so every row click opened the hint instead of toggling the zone.
+    // The toggle is its own <label> (its only labelable child is the checkbox), and
+    // a row-level handler toggles the zone when you click the swatch/text.
     host.innerHTML = items.map(it =>
       '<div class="zp-row-wrap">' +
-        '<label class="zp-row">' +
+        '<div class="zp-row">' +
           '<span class="' + it[1] + '" style="' + it[2] + '"></span>' +
           '<span class="zp-label">' + it[3] + '</span>' +
           '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false">?</button>' +
-          '<span class="mt-toggle"><input type="checkbox" data-zone="' + it[0] + '"' +
-            (window._zoneVis[it[0]] !== false ? ' checked' : '') + '><span class="track"></span></span>' +
-        '</label>' +
+          '<label class="mt-toggle"><input type="checkbox" data-zone="' + it[0] + '"' +
+            (window._zoneVis[it[0]] !== false ? ' checked' : '') + '><span class="track"></span></label>' +
+        '</div>' +
         '<div class="zp-hint">' + escHtml(T.zoneHints[it[0]] || '') + '</div>' +
       '</div>'
     ).join('');
@@ -1808,6 +1824,15 @@
       inp.addEventListener('change', () => {
         window._zoneVis[inp.dataset.zone] = inp.checked;
         if (window._fieldRedraw) window._fieldRedraw();
+      });
+    });
+    // Click anywhere on the row (except the «?» or the toggle, which handle
+    // themselves) toggles the zone — keeps the old "tap the row" affordance.
+    host.querySelectorAll('.zp-row').forEach(row => {
+      row.addEventListener('click', e => {
+        if (e.target.closest('.zp-info') || e.target.closest('.mt-toggle')) return;
+        const cb = row.querySelector('input[data-zone]');
+        if (cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change', { bubbles: true })); }
       });
     });
     wireHints(host);
@@ -2156,7 +2181,13 @@
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (!MT) return;
     if (!confirm(T.confirmReset)) return;
-    MT.reset(); syncUI(); applyCutout('none'); setStatus(T.paramsReset);
+    MT.reset(); syncUI(); applyCutout('none');
+    // Reset the safe-zone overlay state too, so «Сбросить всё» really resets all.
+    document.querySelectorAll('#zones-list input[data-zone]').forEach(i => { i.checked = true; });
+    if (window._zoneVis) Object.keys(window._zoneVis).forEach(k => { window._zoneVis[k] = true; });
+    if (window._setZones)        window._setZones(false);    // overlay off
+    if (window._closeZonesPanel) window._closeZonesPanel();  // legend hidden
+    setStatus(T.paramsReset);
   });
 
   document.getElementById('btn-export').addEventListener('click', () => {
@@ -3264,18 +3295,19 @@
     let   canvasHome = null;   // { parent, next } — the canvas's parking spot in the tab
 
     window._layoutActivate = function (show) {
+      const wasActive = active;
       active = !!show;
       if (cv && shellEl && fieldOv) {
-        if (active) {
+        if (active && !wasActive) {            // entering «Разметка»
           if (!canvasHome) canvasHome = { parent: cv.parentNode, next: cv.nextSibling };
           shellEl.classList.add('ly-editing');
           if (gameFrm) gameFrm.style.visibility = 'hidden';   // game runs on, just hidden
           shellEl.insertBefore(cv, fieldOv);                  // canvas under the zone overlay
           if (hint) shellEl.insertBefore(hint, fieldOv);
-          if (window._fieldEditorZones) window._fieldEditorZones(true);   // show danger zones
+          if (window._enterEditorZones) window._enterEditorZones();   // zones on, editor mode
           resize();   // canvas is now in the visible shell — fit it immediately
-        } else if (canvasHome) {
-          if (window._fieldEditorZones) window._fieldEditorZones(false);
+        } else if (!active && wasActive && canvasHome) {   // leaving «Разметка»
+          if (window._exitEditorZones) window._exitEditorZones();
           if (gameFrm) gameFrm.style.visibility = '';
           shellEl.classList.remove('ly-editing');
           canvasHome.parent.insertBefore(cv, canvasHome.next);
@@ -3312,13 +3344,15 @@
 
     function setZones(on) {
       zonesOn = on;
+      window._zonesOn = on;            // read by refreshCutoutSim()
       if (master) master.checked = on;
       panel.classList.toggle('zones-off', !on);
       if (window._fieldActivate) window._fieldActivate(on, on ? 'safe' : '');
-      if (on && window._fieldRedraw) window._fieldRedraw();
+      if (window._refreshCutoutSim) window._refreshCutoutSim();
       syncBtn();
     }
     function openPanel() {
+      if (typeof closeAllPopups === 'function') closeAllPopups();  // don't overlap toolbar popups
       panelOpen = true;
       panel.classList.add('open');
       if (!zonesOn) setZones(true);   // opening the legend reveals the zones
@@ -3329,14 +3363,46 @@
       panel.classList.remove('open');
       syncBtn();
     }
+    window._setZones        = setZones;
+    window._closeZonesPanel = closePanel;
+
+    // «Разметка» integration (#9): entering the layout editor turns the zones overlay
+    // on in editor-only mode and lights this button + legend (so the per-zone toggles
+    // and cutout presets all work while editing); leaving restores the overlay to
+    // whatever it was before. The toolbar state stays the single source of truth.
+    let savedZones = null;
+    window._enterEditorZones = function () {
+      if (savedZones == null) savedZones = zonesOn;
+      if (window._fieldSetEditorOnly) window._fieldSetEditorOnly(true);
+      setZones(true);
+    };
+    window._exitEditorZones = function () {
+      if (window._fieldSetEditorOnly) window._fieldSetEditorOnly(false);
+      const restore = savedZones == null ? false : savedZones;
+      savedZones = null;
+      setZones(restore);
+      if (!restore) closePanel();   // don't strand the legend open over the live game
+    };
 
     setZones(false);                   // initial: overlay off, panel closed
     btn.addEventListener('click', () => {
-      if (panelOpen) { closePanel(); setZones(false); }  // legend open → power everything off
-      else openPanel();                                   // closed → open legend (+ zones if off)
+      // The button toggles the legend panel; zones follow the panel. When the panel
+      // is hidden but zones are still on (after the × or while in «Разметка»), a click
+      // re-opens the legend so you can reach the per-zone toggles — turning the overlay
+      // fully off is then the panel's master toggle (or a second click).
+      if (panelOpen) { closePanel(); setZones(false); }   // panel open → power everything off
+      else openPanel();                                    // panel closed → open legend (+ zones)
     });
     if (close)  close.addEventListener('click', closePanel);  // hide legend, keep zones
     if (master) master.addEventListener('change', () => setZones(master.checked));
+
+    // Click outside the panel (and not on the «Зоны» button) hides the legend,
+    // leaving the zones as-is — same as the × button.
+    document.addEventListener('click', (e) => {
+      if (!panelOpen) return;
+      if (panel.contains(e.target) || btn.contains(e.target)) return;
+      closePanel();
+    });
   })();
 
   /* ── Field overlay ────────────────────────────────────────────────────── */
@@ -3522,24 +3588,13 @@
     };
     // immediate redraw (used by the «Зоны» legend toggles for snappy feedback)
     window._fieldRedraw = function () { if (fieldOn) drawOverlay(); };
-    // «Разметка» tab drives the overlay itself: danger zones only, on top of the
-    // editor canvas. Saves/restores the «Зоны» toolbar state so leaving the tab
-    // doesn't strand the overlay on.
-    let savedField = null;
-    window._fieldEditorZones = function (on) {
-      if (on) {
-        if (savedField == null) savedField = { fieldOn: fieldOn, overlayTab: overlayTab };
-        editorOnly = true; fieldOn = true; overlayTab = 'safe';
-        overlay.style.display = '';
-        tick();
-      } else {
-        editorOnly = false;
-        const prev = savedField || { fieldOn: false, overlayTab: '' };
-        savedField = null;
-        fieldOn = prev.fieldOn; overlayTab = prev.overlayTab;
-        overlay.style.display = fieldOn ? '' : 'none';
-        if (fieldOn) tick();
-      }
+    // «Разметка» editor mode: draw ONLY the danger zones (skip the live game's
+    // runways/bays/planes) on top of the editor canvas. This just flips the flag —
+    // whether the overlay is visible at all is owned by the toolbar «Зоны» state
+    // (setZones), so the two no longer fight over fieldOn/display (see #9).
+    window._fieldSetEditorOnly = function (on) {
+      editorOnly = !!on;
+      if (fieldOn) drawOverlay();
     };
   })();
 
