@@ -118,6 +118,27 @@
     }
   }
 
+  // «твоё место» на экране Итогов захода Survival. Зовётся из endLevel после submitRun:
+  // res = {score, ranks:{alltime,month,week}} (или null, если отправка не удалась). Показывает
+  // ранг в каждом срезе медалью/№; если ранга нет (офлайн / нативный Play Games / вне топ-100) —
+  // падает на личный рекорд. Тап по виджету открывает полную таблицу.
+  function refreshOverLeaderboard(res: any){
+    const box=document.getElementById('overRank'); if(!box) return;
+    const ranks = res && res.ranks;
+    const medal=(r: any)=> r==null ? '—' : (r===1?'🥇':r===2?'🥈':r===3?'🥉':('#'+r));
+    const chips = PERIODS.map(p=>{ const r = ranks ? ranks[p] : null;
+      return '<span class="over-rank__chip'+(r!=null&&r<=3?' is-top':'')+'">'+
+        '<span class="over-rank__k">'+lbEsc(t('lb.tab.'+p))+'</span>'+
+        '<span class="over-rank__v">'+medal(r)+'</span></span>'; }).join('');
+    const anyRank = !!ranks && PERIODS.some(p=>ranks[p]!=null);
+    const best = Leaderboard.bestScore('survival');
+    box.classList.remove('hidden');
+    box.innerHTML='<div class="over-rank__cap">'+lbEsc(t('over.rankTitle'))+'</div>'+
+      '<div class="over-rank__row">'+chips+'</div>'+
+      (anyRank ? '' : '<div class="over-rank__note">'+lbEsc(t('lb.yourbest'))+': <b>'+(best?fmtNum(best):lbEsc(t('lb.unranked')))+'</b></div>');
+    box.onclick=showLeaderboard;
+  }
+
   function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','debugScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen'].forEach(s=>{ const el=document.getElementById(s); if(el) el.classList.add('hidden'); }); }
   // главный экран: чип звёзд = сумма заработанных / максимум по основным уровням
   function updateStartChips(){

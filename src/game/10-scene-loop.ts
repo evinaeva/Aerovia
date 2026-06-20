@@ -159,8 +159,8 @@ function drawMenuScene(tm: number){
       Leaderboard.submitRun({mode:'survival', score:runScore}).then(res=>{
         lastShift.survivalScore = runScore;
         if(res){ lastShift.ranks = res.ranks; ACH.onRank(res.ranks); }
-        if(typeof refreshOverLeaderboard==='function') refreshOverLeaderboard(res);
-      }).catch(()=>{});
+        refreshOverLeaderboard(res);                 // «твоё место» — место в мире
+      }).catch(()=>{ refreshOverLeaderboard(null); }); // submit упал → виджет показывает личный рекорд, не зависает на «…»
     }
     document.getElementById('overKicker')!.textContent = survival ? t('over.survival') : t(passed?'over.passed':'over.failed');
     document.getElementById('finalStars')!.innerHTML = survival
@@ -171,6 +171,12 @@ function drawMenuScene(tm: number){
     document.getElementById('overMsg')!.textContent = survival
       ? t(served>prevBest ? 'over.survRecord' : 'over.survResult', {n:fmtNum(served), best:fmtNum(Math.max(served,prevBest)), money:fmtMoney(money)})
       : t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
+    // «твоё место» — глобальный ранг (только Survival). Место приходит асинхронно из submitRun →
+    // показываем заглушку-ожидание, refreshOverLeaderboard() её заменит (или покажет личный рекорд).
+    const rankBox=document.getElementById('overRank')!;
+    rankBox.classList.toggle('hidden', !survival);
+    if(survival) rankBox.innerHTML='<div class="over-rank__cap">'+t('over.rankTitle')+'</div><div class="over-rank__row"><span class="muted">…</span></div>';
+    else { rankBox.innerHTML=''; rankBox.onclick=null; }
     // снимок смены — для карточки статистики, графика и шеринга
     lastShift = {
       passed, stars, surv:survival, metric:LV.objective.metric, v, target:survival?null:LV.objective.target,
@@ -253,6 +259,11 @@ function drawMenuScene(tm: number){
     g.fillStyle=COL.phosphor; g.font=`700 64px ${MONO}`; g.fillText(t('app.name'), S/2, 130);
     g.fillStyle=hexa(COL.muted,.9); g.font=`24px ${MONO}`;
     g.fillText((shift.surv?t('over.survival'):(shift.passed?t('over.passed'):t('over.failed')))+' · '+shift.levelName, S/2, 178);
+    // «твоё место» в мире — лучший ранг из всех срезов (только Survival, если рейтинг успел прийти)
+    if(shift.surv && shift.ranks){
+      const r=['alltime','month','week'].map(p=>shift.ranks[p]).filter((x: any)=>x!=null).sort((a: number,b: number)=>a-b)[0];
+      if(r!=null){ g.fillStyle=COL.gold; g.font=`700 30px ${MONO}`; g.fillText(t('over.shareRank',{rank:r}), S/2, 222); }
+    }
     // звёзды
     g.fillStyle=COL.gold; g.font=`80px ${MONO}`; g.shadowColor=hexa(COL.gold,.5); g.shadowBlur=24;
     g.fillText(shift.surv?('✈ '+fmtNum(shift.v)):('★'.repeat(shift.stars)+'☆'.repeat(3-shift.stars)), S/2, 290); g.shadowBlur=0;
