@@ -68,10 +68,10 @@
   if(typeof location!=='undefined' && /[?&]test=1(?:&|$)/.test(location.search)){
     window.__GAME = {
       VERSION, LEVELS, BIOMES, BONUS, K, MT, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
-      t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, goalRowsHTML, bayUpCost, bayMaxLvl,
+      t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, recordResult, goalRowsHTML, bayUpCost, bayMaxLvl,
       levelEconomy, levelEffects, levelDifficulty, levelPace, paceInterval, paceCap, airPatience, levelServices, levelMaxUp, sidesToLayout, levelToEditorObj,
       analyzeLevel, countOpenHangars, countTotalHangars, countOpenRunwayDirections,
-      dayCycle, weatherTaxiMult, neededCrew,
+      dayCycle, weatherTaxiMult, neededCrew, planePrimaryState, fmtNum, fmtMoney,
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
       validateGame, validateLevels, validateBonus, validateI18n, validateConfig, validateAch,
@@ -79,6 +79,7 @@
       get save(){ return save; },     set save(v){ save=v; },
       get lang(){ return lang; },
       get levelIdx(){ return levelIdx; },
+      get levelKey(){ return levelKey; },
       get survival(){ return survival; }, set survival(v){ survival=v; },
       currentMode, periodBucket, Leaderboard, ACH, validateLeaderboard,
       get served(){ return served; }, set served(v){ served=v; },
