@@ -151,6 +151,34 @@
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen')!.classList.remove('hidden'); }
   function startLevel(idx: number){ survival=false; buildLevel(idx); hideAllScreens(); reset(); }
   function startBonus(b: Bonus){ if(!bonusUnlocked(b)) return; survival=false; buildBonus(b); hideAllScreens(); reset(); }
+  // КАСТОМНЫЙ уровень из конструктора (tuning.html → «Разметка»). Играется инлайново,
+  // как бонус: строковый ключ 'custom' → recordResult не двигает прогресс кампании
+  // (см. recordResult: unlocked растёт лишь при числовом levelKey). Так «Сыграть черновик»
+  // и загрузка экспортированного JSON в игру не портят сейв.
+  const CUSTOM_LEVEL_KEY = 'aerovia:customLevel';
+  // привести произвольный JSON (экспорт конструктора) к форме Level с безопасными умолчаниями
+  function normalizeCustomLevel(o: any): Level {
+    o = (o && typeof o === 'object') ? o : {};
+    const obj = (o.objective && Array.isArray(o.objective.stars) && o.objective.stars.length === 3)
+      ? { metric: (o.objective.metric === 'upgrades' ? 'upgrades' : 'served') as Objective['metric'],
+          stars: o.objective.stars.map((n: any) => Math.max(1, +n || 1)) }
+      : { metric: 'served' as Objective['metric'], stars: [6, 8, 10] };
+    const lv: Level = { objective: obj };
+    if (typeof o.pace === 'number') lv.pace = Math.max(0, Math.min(1, o.pace));
+    if (Array.isArray(o.services)) lv.services = o.services.slice();
+    if (typeof o.maxUp === 'number') lv.maxUp = o.maxUp;
+    if (o.layout && typeof o.layout === 'object') lv.layout = o.layout;
+    else if (o.sides) lv.sides = o.sides;
+    if (typeof o.runways === 'number') lv.runways = o.runways;
+    if (o.events && typeof o.events === 'object') lv.events = o.events;
+    if (typeof o.startMoney === 'number') lv.startMoney = o.startMoney;
+    if (typeof o.crashPenalty === 'number') lv.crashPenalty = o.crashPenalty;
+    if (typeof o.latePenalty === 'number') lv.latePenalty = o.latePenalty;
+    return lv;
+  }
+  function startCustomLevel(o: any){ survival=false; curBiome=null; curBonus=null; levelIdx=-1; levelKey='custom'; LV=normalizeCustomLevel(o); bays=[]; runways=[]; layout(); hideAllScreens(); reset(); }
+  // прочитать сохранённый кастомный уровень (его пишет конструктор «Отправить в игру»)
+  function readStoredCustomLevel(): any { try{ const s=localStorage.getItem(CUSTOM_LEVEL_KEY); return s ? JSON.parse(s) : null; }catch(e){ return null; } }
   // карты-биомы = режим SURVIVAL: отдельный экран выбора (из главного меню). Survival живёт
   // ИМЕННО на картах — бесконечный заход с жизнями, счёт = обслуженные борта; на конце (потеря
   // всех жизней) счёт уходит в глобальный рейтинг (см. endLevel → Leaderboard). Интенсивность

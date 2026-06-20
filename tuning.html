@@ -1362,6 +1362,9 @@
       <div class="lab-btn-row" style="margin-bottom:6px">
         <input class="p-input" id="ly-filename" placeholder="имя файла" style="flex:1;min-width:140px" spellcheck="false" autocomplete="off">
       </div>
+      <div class="lab-btn-row" style="margin-bottom:6px">
+        <button class="p-btn" id="ly-play" style="flex:1;color:var(--accent);border-color:rgba(34,227,198,.45);background:rgba(34,227,198,.06)">▶ Сыграть черновик</button>
+      </div>
       <div class="lab-btn-row">
         <button class="p-btn" id="ly-export">⬇ Экспорт JSON</button>
         <button class="p-btn" id="ly-copy">📋 Копировать</button>
@@ -1369,9 +1372,11 @@
         <input type="file" id="ly-file" accept=".json" style="display:none">
         <button class="p-btn" id="ly-reset">↺ Сброс</button>
       </div>
-      <p class="lab-hint">Экспорт собирает <code>layout</code> (апрон, зоны, ангары, ВПП) + параметры уровня в JSON —
-        вставь его в массив <code>LEVELS</code> в <code>src/game/04-config-levels.ts</code>.
-        Поля <code>apron</code>/<code>zones</code> движок пока не отрисовывает (геометрия апрона процедурная) — это замысел разметки.</p>
+      <p class="lab-hint"><b>Сыграть черновик</b> — загружает уровень в игру (вверху) и стартует его сразу; заодно кладёт его
+        в игру, так что на стартовом экране появляется кнопка «Свой уровень». <b>Экспорт</b> скачивает <code>layout</code>
+        + параметры уровня в JSON — его же можно импортировать обратно или вставить в массив <code>LEVELS</code>
+        (<code>src/game/04-config-levels.ts</code>). Поля <code>apron</code>/<code>zones</code> движок пока не отрисовывает
+        (геометрия апрона процедурная) — это замысел разметки.</p>
       <textarea id="ly-json" readonly spellcheck="false" placeholder="JSON появится после «Экспорт»"></textarea>
       <div id="ly-warn" style="margin-top:6px;font-size:11px;color:#e3c522"></div>
     </div>
@@ -3202,6 +3207,28 @@
       $('ly-warn').textContent = 'скопировано в буфер';
       setTimeout(() => { $('ly-warn').textContent = warnLine(validate()); }, 1400);
     }
+    // «Сыграть черновик»: грузим уровень в игровой iframe и стартуем его сразу.
+    // Через __PLAY.store он же ложится в localStorage игры → на стартовом экране
+    // появляется кнопка «Свой уровень». Раз холст «Разметки» накрывает игру в
+    // макете телефона — переключаемся на «Движение», чтобы увидеть, как идёт игра.
+    function playDraft() {
+      const obj = exportObj();
+      try {
+        const w = gameFrame.contentWindow;
+        if (!w || !w.__PLAY) { $('ly-warn').textContent = 'игра ещё не загрузилась — подожди и повтори'; return; }
+        w.__PLAY.store(obj);
+        const ok = w.__PLAY.custom(obj);
+        if (!ok) { $('ly-warn').textContent = 'движок не смог запустить уровень'; return; }
+        const motionTab = document.querySelector('.t-tab[data-tab="motion"]');
+        if (motionTab) motionTab.click();   // снять оверлей «Разметки» → показать игру
+        $('ly-warn').textContent = '▶ уровень запущен в игре выше';
+      } catch (e) { $('ly-warn').textContent = 'не удалось запустить: ' + e.message; }
+    }
+    function doPlay() {
+      const v = validate();
+      if (v.errors.length) { showValidateModal(v, playDraft); return; }
+      playDraft();
+    }
     /* Blocking pre-export validator modal (errors → confirm before exporting). */
     function showValidateModal(v, onProceed) {
       let back = document.getElementById('ly-validate-modal');
@@ -3263,6 +3290,7 @@
     document.querySelectorAll('[data-add-hangar]').forEach(b => b.addEventListener('click', () => addHangar(b.dataset.addHangar)));
     $('ly-add-runway').addEventListener('click', addRunway);
     $('ly-del').addEventListener('click', delSelected);
+    $('ly-play').addEventListener('click', doPlay);
     $('ly-export').addEventListener('click', doExport);
     $('ly-copy').addEventListener('click', doCopy);
     $('ly-import-btn').addEventListener('click', () => $('ly-file').click());
