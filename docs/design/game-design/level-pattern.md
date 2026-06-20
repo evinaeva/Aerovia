@@ -29,7 +29,7 @@ built by `goalRowsHTML()` and reads from config + the `level.t/d/h.<n>` strings.
   },
   sides   : { top:{type,slots,open}, left:{…}, bottom:{…} },  // service bays per side
   runways : 3,
-  startMoney : 90,                    // optional, default K.START_MONEY (100) — a tightening lever
+  startMoney : 90,                    // optional, default K.START_MONEY (0) — a tightening lever
   events  : { vip, emergency, rush, medical, … },  // special flights — only from L5 (see below)
   combo   : false,                    // optional, default true — disable the combo money bonus
   express : false,                    // optional, default true — disable the express money bonus

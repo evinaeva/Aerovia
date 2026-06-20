@@ -417,6 +417,10 @@
       gap: 6px;
       align-content: start;   /* pack rows at top → overflow scrolls, not stretches */
       align-items: start;     /* cards keep natural height (never squished to a track) */
+      /* Size each implicit row to its content. Without this the auto tracks come
+         out equal-height, so a tall card (e.g. «События») overflows its track and
+         the next card («Погода») is drawn on top of it. */
+      grid-auto-rows: min-content;
     }
 
     #groups details {
@@ -451,7 +455,13 @@
     /* ── Param rows grid inside a card ──────────────────────────────────── */
     .mt-params-grid {
       display: grid;
-      grid-template-columns: 1fr;
+      /* Flow rows into as many ~300px columns as fit. On a narrow card this is a
+         single column; on a wide card (full-width «.wide» group, or a big desktop
+         window) the rows split into 2+ columns instead of stretching one row
+         across the whole screen — which is what pushed the value miles away from
+         its label. column-gap keeps a sane, scalable distance between the two. */
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+      column-gap: 18px;
     }
 
     .mt-row {
@@ -613,6 +623,9 @@
       background: #020609; overflow: hidden; touch-action: none;
     }
     #ly-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    /* Stage hoisted into the top pane (layout tab active): fill the width, drop the
+       in-tab bottom margin, and allow a taller surface since it's the main canvas. */
+    #top-pane.ly-stage-top .ly-stage-wrap { margin-bottom: 0; max-height: 56vh; }
     .ly-stage-hint {
       position: absolute; left: 8px; bottom: 6px; font-size: 10px; color: var(--muted);
       pointer-events: none; background: rgba(2,6,9,.65); padding: 2px 6px; border-radius: 6px;
@@ -1105,7 +1118,7 @@
         </div>
       </div>
       <div class="lab-row">
-        <span class="lbl-main">Старт. деньги <small>0 = дефолт</small></span>
+        <span class="lbl-main">Старт. деньги <small id="ed-money-hint">0 = дефолт (0)</small></span>
         <div class="mt-stepper">
           <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
           <input class="lab-num" id="ed-money" type="number" inputmode="numeric" min="0" max="2000" step="10" value="0">
@@ -1259,7 +1272,7 @@
         </div>
       </div>
       <div class="lab-row">
-        <span class="lbl-main">Старт. деньги <small style="color:var(--muted)">0 = дефолт</small></span>
+        <span class="lbl-main">Старт. деньги <small id="ly-money-hint" style="color:var(--muted)">0 = дефолт (0)</small></span>
         <div class="mt-stepper">
           <button type="button" class="mt-step" data-ly-step="money" data-dir="-1" tabindex="-1">−</button>
           <input class="lab-num" id="ly-money" type="number" inputmode="numeric" min="0" max="2000" step="10" value="0">
@@ -2135,6 +2148,14 @@
     document.getElementById('lab-reset').onclick  = resetEdits;
     const cap = document.getElementById('diff-cap');
     if (cap && GAME.K) cap.textContent = labFmt(GAME.K.ECON_DIFF_CAP, 1);
+    // «Старт. деньги 0 = дефолт» — spell out what the default actually is
+    // (K.START_MONEY), so the editor doesn't have to guess. Two identical hints:
+    // the level editor («Правка уровня») and the layout designer.
+    const defMoney = (GAME.K && GAME.K.START_MONEY != null) ? GAME.K.START_MONEY : 0;
+    ['ed-money-hint', 'ly-money-hint'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '0 = дефолт (' + defMoney + ')';
+    });
     labSelect(Math.min(labSel, labLevels.length - 1));
   }
 
@@ -3090,8 +3111,29 @@
     $('ly-tpl-del').addEventListener('click', delTpl);
 
     /* ---- activation ---- */
+    // While the «Разметка» tab is open, hoist the editor stage out of the
+    // scrolling tab body and into the top pane (where the phone preview sits),
+    // so the canvas is big and pinned to the top of the screen — the controls
+    // (templates, objects, zones, level params) keep scrolling below it.
+    const stageWrap = document.querySelector('.ly-stage-wrap');
+    const topPane   = document.getElementById('top-pane');
+    const phoneCol  = document.getElementById('phone-col');
+    let   stageHome = null;   // { parent, next } — where the stage lives in the tab
+
     window._layoutActivate = function (show) {
       active = !!show;
+      if (stageWrap && topPane && phoneCol) {
+        if (active) {
+          if (!stageHome) stageHome = { parent: stageWrap.parentNode, next: stageWrap.nextSibling };
+          phoneCol.style.display = 'none';      // hide the game preview while editing
+          topPane.classList.add('ly-stage-top');
+          topPane.appendChild(stageWrap);       // … and show the stage in its place
+        } else if (stageHome) {
+          phoneCol.style.display = '';
+          topPane.classList.remove('ly-stage-top');
+          stageHome.parent.insertBefore(stageWrap, stageHome.next);   // back into the tab
+        }
+      }
       if (active) { requestAnimationFrame(() => { resize(); }); }
     };
     window.addEventListener('resize', () => { if (active) resize(); });

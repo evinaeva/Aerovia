@@ -129,7 +129,7 @@ tiny maps getting rich (`SVC_MAX`) and starving long ones (`SVC_MIN`).
 | `ECON_FLOW_SECS` | 6 | timed maps: estimate one paid plane every N seconds |
 | `TWO_SVC_CHANCE` | 0.45 | chance a plane has 2 tasks (shared by spawn **and** the model) |
 
-Prices (`START_MONEY` 100, `BAY_OPEN_COST` 100, `BAY_UP_COST` 80/160/320) are the **shop** —
+Prices (`START_MONEY` 0, `BAY_OPEN_COST` 100, `BAY_UP_COST` 80/160/320) are the **shop** —
 the same everywhere so the player learns them once. Only the **earn-side** is derived.
 
 ### Derived economy across the campaign (sanity check)
