@@ -281,6 +281,7 @@
 
       const el=document.createElement('div');
       el.className=`lvlcard lvlcard--${st}${!unlocked?' lvlcard--lk-body':''}`;
+      el.dataset.lvl=String(i+1);   // для индикатора «ур.N» в скроллбаре
       el.innerHTML=`<div class="lvlcard__inner">
         <div class="lvlcard__top">
           <div class="lvlcard__left">
@@ -338,34 +339,48 @@
   let lvScrollUpd:(()=>void)|null=null;
   function initLvScrollbar(){
     const mg=document.getElementById('levelList'),
-          ind=document.getElementById('lvScrollInd'),
-          thumb=document.getElementById('lvScrollThumb');
-    if(!mg||!ind||!thumb) return;
+          track=document.getElementById('lvScrollTrack'),
+          thumb=document.getElementById('lvScrollThumb'),
+          totEl=document.getElementById('lvScrollTot'),
+          posEl=document.getElementById('lvScrollPos');
+    if(!mg||!track||!thumb) return;
+    if(totEl) totEl.textContent=String(LEVELS.length);   // всего уровней (динамически)
     const upd=()=>{
       const{scrollTop:st,scrollHeight:sh,clientHeight:ch}=mg;
-      if(sh<=ch){ thumb.style.opacity='0'; return; }
-      thumb.style.opacity='1';
-      const tH=ind.offsetHeight, thH=Math.max(20,ch/sh*tH), max=sh-ch;
-      thumb.style.height=thH+'px';
-      thumb.style.top=(max>0?st/max*(tH-thH):0)+'px';
+      const trackH=track.offsetHeight, max=sh-ch;
+      if(sh<=ch){ thumb.style.opacity='0'; }
+      else {
+        thumb.style.opacity='1';
+        const thH=Math.max(18, ch/sh*trackH);
+        thumb.style.height=thH+'px';
+        thumb.style.top=(max>0? st/max*(trackH-thH) : 0)+'px';
+      }
+      // «ур.N» — первый (хотя бы частично) видимый уровень по data-lvl карточек
+      if(posEl){
+        const listTop=mg.getBoundingClientRect().top; let cur=1;
+        const cards=mg.querySelectorAll('.lvlcard[data-lvl]');
+        for(let i=0;i<cards.length;i++){ const c=cards[i] as HTMLElement;
+          if(c.getBoundingClientRect().bottom>listTop+2){ cur=+(c.dataset.lvl||'1'); break; } }
+        posEl.textContent='ур.'+cur;
+      }
     };
     lvScrollUpd=upd;
     mg.addEventListener('scroll',upd);
-    ind.addEventListener('pointerdown',e=>{
+    track.addEventListener('pointerdown',e=>{
       if(e.target===thumb){ // перетаскивание ползунка
         e.preventDefault();
         try{ thumb.setPointerCapture(e.pointerId); }catch{}
         const y0=e.clientY, s0=mg.scrollTop, max=mg.scrollHeight-mg.clientHeight;
-        const k=(ind.offsetHeight-thumb.offsetHeight)/max;
-        const mv=(ev:PointerEvent)=>{ mg.scrollTop=Math.max(0,Math.min(max,s0+(ev.clientY-y0)/k)); upd(); };
+        const k=(track.offsetHeight-thumb.offsetHeight)/(max||1);
+        const mv=(ev:PointerEvent)=>{ mg.scrollTop=Math.max(0,Math.min(max,s0+(ev.clientY-y0)/(k||1))); upd(); };
         const up=()=>{ thumb.removeEventListener('pointermove',mv); thumb.removeEventListener('pointerup',up); };
         thumb.addEventListener('pointermove',mv);
         thumb.addEventListener('pointerup',up);
         return;
       }
       // тап по треку — прыжок к позиции
-      const r=ind.getBoundingClientRect();
-      mg.scrollTop=((e.clientY-r.top)/ind.offsetHeight)*(mg.scrollHeight-mg.clientHeight);
+      const r=track.getBoundingClientRect(), max=mg.scrollHeight-mg.clientHeight;
+      mg.scrollTop=Math.max(0,Math.min(max,((e.clientY-r.top)/r.height)*max));
       upd();
     });
     setTimeout(upd,80);

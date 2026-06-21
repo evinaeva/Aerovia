@@ -856,24 +856,19 @@
       rgba(6,11,18,.36), rgba(6,11,18,.62));
     backdrop-filter:blur(1px);
   }
-  /* экран уровней не заходит в «красные зоны»: вырез камеры/скругления берём из
-     env() (на вебе = 0, поведение не меняется), а боковые жест-зоны Android (24px)
-     добавляем только в нативном приложении (html.is-native). Инсетит всю .screen,
-     поэтому шапка, карточки, fade и скроллбар автоматически уходят из зон. */
-  #levelScreen .screen{
-    padding:
-      max(12px, env(safe-area-inset-top))
-      max(16px, env(safe-area-inset-right))
-      10px
-      max(16px, env(safe-area-inset-left));
-  }
-  html.is-native #levelScreen .screen{
-    padding-right: max(24px, env(safe-area-inset-right));
-    padding-left:  max(24px, env(safe-area-inset-left));
-  }
-  /* .screen__col уже position:relative (выше) — контейнер для fade-strip/scrollbar.
-     Скрываем нативный scrollbar #levelList, рисуем свой (.lv-scroll-*). */
-  #levelList{display:flex;flex-direction:column;flex:1;min-height:0;background:none;overflow-y:auto;overflow-x:hidden;margin:0;padding:0 0 38px;scrollbar-width:none}
+  /* ── Вариант Б «Блюр-полоса»: всё содержимое экрана уровней — вне «красных зон».
+     Инсеты в px «от края экрана»: жест-зоны 24px (края/низ) + нотч камеры 28px слева
+     (ландшафт). .screen без боковых паддингов — шапка и список инсетятся сами, так что
+     числа = расстояние до края экрана (без двойного отступа из хэндофа). */
+  #levelScreen .screen{padding:12px 0 0}
+  /* шапка: backBtn слева от 56px (жест24+нотч28+4), starCount справа от 28px (жест24+4) */
+  #levelScreen .lvl-head-row{padding:0 28px 0 56px}
+  /* обёртка прокрутки ниже шапки — точка отсчёта для fade-полосы и скроллбара */
+  #levelScreen .vc-wrap{flex:1;min-height:0;position:relative;overflow:hidden}
+  /* список: нативный scrollbar скрыт; padding = инсеты от края экрана
+     (left56 = жест+нотч+буфер · right44 = жест+скролл+буфер · bottom38 = жест+14px) */
+  #levelList{display:flex;flex-direction:column;height:100%;background:none;
+    overflow-y:scroll;overflow-x:hidden;margin:0;padding:5px 44px 38px 56px;scrollbar-width:none}
   #levelList::-webkit-scrollbar{display:none}
   #finalStars{font-size:inherit;color:inherit;text-shadow:none;letter-spacing:0}
 
@@ -1094,25 +1089,27 @@
 .m-title--lvl{flex:1;margin:0;font-family:var(--m-font-display);font-size:20px;font-weight:700}
 .m-counter--xs{margin-top:0;font-size:13px;padding:5px 12px}
 
-/* Затемняющий градиент поверх жест-зоны Android (низ списка) */
-.lv-fade-strip{position:absolute;bottom:0;left:0;right:13px;height:52px;
-  background:linear-gradient(to bottom,transparent 0%,rgba(7,12,26,.97) 100%);
-  pointer-events:none;z-index:5}
-/* Кастомный скроллбар (нативный скрыт): тонкая полоса, тап по треку + drag */
-/* top:56px — ниже шапки (back+title+★), чтобы скроллбар не лез на счётчик звёзд */
-.lv-scroll-ind{position:absolute;right:2px;top:56px;bottom:28px;width:14px;z-index:8}
-.lv-scroll-track{width:100%;height:100%;position:relative;
-  display:flex;align-items:center;justify-content:center;cursor:pointer}
-.lv-scroll-track::before{content:'';display:block;width:3px;height:100%;
+/* Вариант Б: блюр-полоса над нижней жест-зоной (внутри .vc-wrap, отсчёт от края экрана) */
+.lv-fade-strip{position:absolute;bottom:0;left:56px;right:28px;height:34px;
+  backdrop-filter:blur(7px) brightness(.55);-webkit-backdrop-filter:blur(7px) brightness(.55);
+  pointer-events:none;z-index:5;border-top:1px solid rgba(255,80,80,.18)}
+/* Кастомный скроллбар: тонкая полоса справа + счётчик всего/текущего; тап по треку + drag */
+.lv-scroll-ind{position:absolute;right:28px;top:6px;bottom:28px;width:9px;z-index:10;
+  display:flex;flex-direction:column;align-items:center;gap:4px}
+.scroll-tot,.scroll-pos{font-size:6px;font-family:var(--m-font-display),monospace;
+  line-height:1;text-align:center;white-space:nowrap;letter-spacing:.04em}
+.scroll-tot{font-weight:900;color:rgba(64,160,255,.55)}
+.scroll-pos{font-weight:700;color:rgba(64,160,255,.4)}
+.lv-scroll-track{flex:1;width:3px;position:relative;cursor:pointer;
   background:rgba(255,255,255,.07);border-radius:2px}
-.lv-scroll-thumb{position:absolute;left:50%;transform:translateX(-50%);
-  width:3px;min-height:20px;border-radius:2px;cursor:grab;touch-action:none;
-  background:rgba(58,210,255,.65);box-shadow:0 0 6px rgba(58,210,255,.35)}
+.lv-scroll-thumb{position:absolute;left:0;width:3px;min-height:18px;border-radius:2px;
+  cursor:grab;touch-action:none;background:rgba(64,160,255,.7);box-shadow:0 0 6px rgba(64,160,255,.4);
+  transition:top .1s,height .1s}
 .lv-scroll-thumb:active{cursor:grabbing}
 
-/* Сетка 6 колонок (отступ под жест-зону теперь на #levelList — вариант В) */
+/* Сетка 6 колонок (инсеты теперь на #levelList — вариант Б) */
 .lvlgrid{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:66px;
-  gap:7px;padding:4px 0 8px;align-content:start}
+  gap:7px;padding:0;align-content:start}
 
 /* База карточки */
 .lvlcard{border-radius:10px;overflow:hidden;position:relative;cursor:pointer;
