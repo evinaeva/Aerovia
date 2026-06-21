@@ -1,6 +1,6 @@
 // ===== 09b-render-entities — draw bays, planes, the HUD, transient FX and the tutorial overlay =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: drawBay, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
+// Provides: drawBay, drawBayTargets, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
 // Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
@@ -83,6 +83,32 @@
     if(busy && b.occupied.serveMax){ const frac=1-Math.max(0,b.occupied.serveTime)/b.occupied.serveMax, ccx=bx+bSize+8*ui, ccy=by+bSize/2;
       ctx.beginPath(); ctx.arc(ccx,ccy,6*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.strokeStyle=col; ctx.stroke(); }
     ctx.restore();
+  }
+
+  // Подсказка «куда вести траекторию»: пока выбран борт, у открытых свободных ангаров
+  // его текущей услуги пульсирует кольцо-цель в центре бокса — туда нужно завести конец
+  // маршрута, чтобы борт заехал внутрь (lockRouteToBay срабатывает на конце линии в боксе).
+  function drawBayTargets(ts: number){
+    const pl: any = selected;
+    if(!pl || pl.dead || pl.zone==='bay' || pl.zone==='air') return;
+    if(LV.bonus) return;                                  // в бонус-мире своя механика
+    const need = curNeed(pl);
+    if(!need || need==='depart') return;                  // вылет — это полоса, не ангар
+    const TONE: Record<string,string>={fuel:'teal',repair:'amber',board:'rose',deice:'ice'};
+    const pulse = 0.5 + 0.5*Math.sin(ts/300);
+    for(const b of bays){
+      if(!b.open || b.type!==need) continue;
+      if(b.occupied && b.occupied!==pl) continue;         // занят чужим бортом — не цель
+      const col = COL[TONE[b.type as string]] || COL.phosphor;
+      const cx=b.x+b.w/2, cy=b.y+b.h/2, rad=Math.min(b.w,b.h)*0.30*(1+0.08*pulse);
+      ctx.save();
+      ctx.fillStyle=hexa(col,.10+.06*pulse); ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.fill();
+      ctx.lineWidth=2.4*ui; ctx.strokeStyle=hexa(col,.55+.35*pulse);
+      ctx.shadowColor=hexa(col,.6); ctx.shadowBlur=10;
+      ctx.setLineDash([7*ui,5*ui]); ctx.lineDashOffset=-ts/40;
+      ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.stroke();
+      ctx.restore();
+    }
   }
 
   function drawBay(b: any){

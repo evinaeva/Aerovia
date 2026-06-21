@@ -259,6 +259,7 @@
 
   // ---- geometry ----
   const rectHit = (px: number,py: number,r: any) => px>r.x && px<r.x+r.w && py>r.y && py<r.y+r.h;
+  const rectPad = (px: number,py: number,r: any,m: number) => px>r.x-m && px<r.x+r.w+m && py>r.y-m && py<r.y+r.h+m;  // rectHit с запасом под палец
   const dist = (ax: number,ay: number,bx: number,by: number) => Math.hypot(ax-bx, ay-by);
 
   // ---- input ----
@@ -349,6 +350,16 @@
     if(b.lvl >= bayMaxLvl(b)) return null;          // апгрейд выключен или достигнут потолок уровня
     return b.upgCost ?? K.BAY_UP_COST[b.lvl] ?? null;
   }
+  // Прямоугольник зелёного чипа «↑» открытого ангара — ровно то место, где его рисует
+  // drawNeonBay. Апгрейд кликается ТОЛЬКО по этому чипу: тап по остальному телу бокса
+  // больше не апгрейдит, чтобы не перехватывать захват борта, стоящего у ворот.
+  function bayUpBtn(b: any){
+    if(!b.open || b.deice || LV.bonus || bayUpCost(b)==null) return null;
+    const pad=5*ui, top=(b.side!=='bottom');
+    const bSize=Math.min(b.w*0.34, b.h*0.5, 40*ui);
+    const cs=Math.min(bSize*0.72, 28*ui);
+    return { x:b.x+b.w-pad-cs, y: top ? b.y+pad : b.y+b.h-pad-cs, w:cs, h:cs };
+  }
 
   function down(e: any){
     if(!running) return;
@@ -358,17 +369,29 @@
     if(rectHit(p.x,p.y,pauseBtn)){ setPaused(!paused); return; }
     if(paused) return;
 
-    // bay tap -> open / upgrade
+    // bay tap: закрытый бокс открываем тапом по нему; у открытого апгрейд кликается ТОЛЬКО
+    // по зелёной стрелке ↑ — тап по остальному телу бокса не апгрейдит, а пропускается
+    // дальше к захвату борта (иначе борт у ворот невозможно подцепить — тап уходил в апгрейд).
     const b=pickBay(p);
-    if(b){
+    if(b && !b.open){
       const cost=bayUpCost(b);
       if(cost!=null && money>=cost){
-        money-=cost;
-        if(!b.open){ b.open=true; ACH.onBayOpen(b); } else { b.lvl++; ACH.onBayUpgrade(b); }
-        upgradesDone++;
-        SND.build(); HAP.tap();
+        money-=cost; b.open=true; ACH.onBayOpen(b);
+        upgradesDone++; SND.build(); HAP.tap();
       }
       return;
+    }
+    if(b && b.open){
+      const btn=bayUpBtn(b);
+      if(btn && rectPad(p.x,p.y,btn,8*ui)){       // попал в стрелку (с запасом под палец)
+        const cost=bayUpCost(b);
+        if(cost!=null && money>=cost){
+          money-=cost; b.lvl++; ACH.onBayUpgrade(b);
+          upgradesDone++; SND.build(); HAP.tap();
+        }
+        return;                                   // тап по стрелке потреблён (даже если денег не хватило)
+      }
+      // мимо стрелки — НЕ апгрейдим; падаем дальше к захвату борта/прочему
     }
     // runway direction tap -> купить посадку или взлёт на ВПП
     if(!LV.bonus){
