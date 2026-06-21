@@ -262,6 +262,37 @@
   const rectPad = (px: number,py: number,r: any,m: number) => px>r.x-m && px<r.x+r.w+m && py>r.y-m && py<r.y+r.h+m;  // rectHit с запасом под палец
   const dist = (ax: number,ay: number,bx: number,by: number) => Math.hypot(ax-bx, ay-by);
 
+  // ---- полукруглые зоны захвата (одна форма на тип; геометрия настраивается в tuning.html) ----
+  // Купол полукруга смотрит «наружу» (в сторону захода — туда, откуда борт подходит к воротам/
+  // торцу), плоская грань проходит через центр. Возвращает {cx,cy,r,ux,uy} или null при r≤0.
+  // ux/uy — единичный вектор наружу (по нему же масштабируется/двигается зона на превью).
+  function bayGrabZone(b: any){
+    const R=(MT_META_VALUES.BAY_GRAB_RADIUS as number)||0; if(R<=0) return null;
+    const o=dirOut(b), off=(MT_META_VALUES.BAY_GRAB_OFFSET as number)||0;
+    // центр ворот = середина полевой кромки бокса; центр зоны смещён наружу на off
+    const half=(Math.abs(o.dy)>Math.abs(o.dx)?b.h:b.w)/2;
+    const gx=b.x+b.w/2+o.dx*half, gy=b.y+b.h/2+o.dy*half;
+    return { cx:gx+o.dx*off, cy:gy+o.dy*off, r:R, ux:o.dx, uy:o.dy, square:MT_META_VALUES.BAY_GRAB_SHAPE==='square' };
+  }
+  // Зона захвата ВПП. side='land' — посадочный (правый, со стороны неба) торец, купол
+  // вправо; side='takeoff' — взлётный (левый, со стороны апрона) торец, купол влево.
+  function runwayGrabZone(r: any, side: 'land'|'takeoff'){
+    const land=side==='land';
+    const R=(MT_META_VALUES[land?'RUNWAY_LAND_GRAB_RADIUS':'RUNWAY_TAKEOFF_GRAB_RADIUS'] as number)||0; if(R<=0) return null;
+    const off=(MT_META_VALUES[land?'RUNWAY_LAND_GRAB_OFFSET':'RUNWAY_TAKEOFF_GRAB_OFFSET'] as number)||0;
+    const ux=land?1:-1, edge=land?r.x+r.w:r.x;
+    return { cx:edge+ux*off, cy:r.cy, r:R, ux, uy:0, square:MT_META_VALUES.RUNWAY_GRAB_SHAPE==='square' };
+  }
+  // точка в зоне захвата. z.square = квадрат со стороной 2r с центром в z; иначе
+  // полукруг (в пределах радиуса И на стороне захода, купол по +u).
+  function inGrabZone(px: number,py: number,z: any){
+    if(!z) return false;
+    const dx=px-z.cx, dy=py-z.cy;
+    if(z.square) return Math.abs(dx)<=z.r && Math.abs(dy)<=z.r;
+    if(dx*dx+dy*dy > z.r*z.r) return false;
+    return (dx*z.ux+dy*z.uy) >= 0;
+  }
+
   // ---- input ----
   let selected: any=null, drag: any=null;
   function pt(e: any){
@@ -288,7 +319,7 @@
     // запасе MT.BAY_HIT_PADDING вокруг (настраивается в tuning.html, по умолчанию 0;
     // зону рисует слой MT.DEBUG_BAY_SNAP_ZONES — тоже только в Workbench)
     const pad=(MT_META_VALUES.BAY_HIT_PADDING as number)||0;
-    for(const b of bays) if(b.open && rectPad(p.x,p.y,b,pad)) return b;
+    for(const b of bays) if(b.open && (rectPad(p.x,p.y,b,pad) || inGrabZone(p.x,p.y,bayGrabZone(b)))) return b;
     return null;
   }
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
@@ -319,6 +350,10 @@
       if(dir==='landing' && !r.landingOpen) continue;
       if(dir==='takeoff' && !r.takeoffOpen) continue;
       if(rectPad(p.x,p.y,r,pad)) return r;
+      // полукруг/квадрат у нужного торца: при заданном направлении — соответствующая
+      // сторона, иначе проверяем обе (посадочную и взлётную)
+      if(dir!=='takeoff' && inGrabZone(p.x,p.y,runwayGrabZone(r,'land')))   return r;
+      if(dir!=='landing' && inGrabZone(p.x,p.y,runwayGrabZone(r,'takeoff'))) return r;
     }
     return null;
   }
