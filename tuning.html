@@ -1276,49 +1276,9 @@
         не пишет; выгруженные значения <code>LEVELS</code> вставь в <code>src/game/04-config-levels.ts</code>.</p>
     </div>
 
-    <!-- level params (moved out of «Разметка») -->
-    <div class="lab-section">
-      <h3>Параметры уровня <span class="h3-sub">· шаблон поля из «Разметки»</span></h3>
-      <div class="lab-params-grid">
-      <div class="lab-row">
-        <span class="lbl-main">Темп <small style="color:var(--muted)">pace 0…1</small></span>
-        <div class="mt-stepper">
-          <button type="button" class="mt-step" data-ly-step="pace" data-dir="-1" tabindex="-1">−</button>
-          <input class="lab-num" id="ly-pace" type="number" inputmode="decimal" min="0" max="1" step="0.05" value="0.4">
-          <button type="button" class="mt-step" data-ly-step="pace" data-dir="1" tabindex="-1">+</button>
-        </div>
-      </div>
-      <div class="lab-row">
-        <span class="lbl-main">Старт. деньги <small id="ly-money-hint" style="color:var(--muted)">0 = дефолт (0)</small></span>
-        <div class="mt-stepper">
-          <button type="button" class="mt-step" data-ly-step="money" data-dir="-1" tabindex="-1">−</button>
-          <input class="lab-num" id="ly-money" type="number" inputmode="numeric" min="0" max="2000" step="10" value="0">
-          <button type="button" class="mt-step" data-ly-step="money" data-dir="1" tabindex="-1">+</button>
-        </div>
-      </div>
-      <div class="lab-row">
-        <span class="lbl-main">Глубина апгрейда <small style="color:var(--muted)">maxUp 0…5</small></span>
-        <div class="mt-stepper">
-          <button type="button" class="mt-step" data-ly-step="maxup" data-dir="-1" tabindex="-1">−</button>
-          <input class="lab-num" id="ly-maxup" type="number" inputmode="numeric" min="0" max="5" step="1" value="3">
-          <button type="button" class="mt-step" data-ly-step="maxup" data-dir="1" tabindex="-1">+</button>
-        </div>
-      </div>
-      </div>
-      <div style="margin-top:10px">
-        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию)</div>
-        <div style="display:flex;gap:6px">
-          <input class="lab-num" type="number" id="ly-s1" min="1" step="1" style="flex:1;text-align:center" value="6">
-          <input class="lab-num" type="number" id="ly-s2" min="1" step="1" style="flex:1;text-align:center" value="8">
-          <input class="lab-num" type="number" id="ly-s3" min="1" step="1" style="flex:1;text-align:center" value="10">
-        </div>
-        <div id="ly-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div>
-      </div>
-      <div style="margin-top:10px">
-        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">События (спецборты)</div>
-        <div class="lab-chips" id="ly-events"></div>
-      </div>
-    </div>
+    <!-- Параметры черновика (темп/деньги/maxUp/звёзды/события) живут в табе
+         «Сложность» (de-*) — здесь их не дублируем. «Уровни» правит только
+         кампанию (ed-*). -->
   </div>
 
   <!-- Tab 4: Difficulty Lab ─────────────────────────────────────────────── -->
@@ -1404,6 +1364,9 @@
     <div class="lab-section">
       <h3>Экономика набора <span class="h3-sub">· 0 = дефолт движка</span></h3>
       <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Старт. деньги <small id="de-money-hint" style="color:var(--muted)">0 = дефолт</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-money" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
         <div class="lab-row"><span class="lbl-main">Цена открытия бокса</span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-open" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
@@ -2615,9 +2578,9 @@
     if (cap && GAME.K) cap.textContent = labFmt(GAME.K.ECON_DIFF_CAP, 1);
     // «Старт. деньги 0 = дефолт» — spell out what the default actually is
     // (K.START_MONEY), so the editor doesn't have to guess. Two identical hints:
-    // the level editor («Правка уровня») and the layout designer.
+    // the level editor («Правка уровня») and the draft editor («Сложность»).
     const defMoney = (GAME.K && GAME.K.START_MONEY != null) ? GAME.K.START_MONEY : 0;
-    ['ed-money-hint', 'ly-money-hint'].forEach(id => {
+    ['ed-money-hint', 'de-money-hint'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = '0 = дефолт (' + defMoney + ')';
     });
@@ -2885,6 +2848,7 @@
        </div>`).join('');
     const bindLE = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('input', () => { const le = draftLE(); if (!le) return; fn(le, el); draftCommit(); afterDiffEdit(); }); };
     bindLE('de-pace',  (le,el)=> le.pace = _clamp01(+el.value||0));
+    bindLE('de-money', (le,el)=> le.startMoney = Math.max(0, Math.min(2000, Math.round(+el.value||0))));
     bindLE('de-time',  (le,el)=> le.time = Math.max(0, Math.round(+el.value||0)));
     bindLE('de-calm',  (le,el)=> le.calm = Math.max(0, +el.value||0));
     bindLE('de-crash', (le,el)=> le.crashPenalty = _clamp01(+el.value||0));
@@ -2926,7 +2890,7 @@
   function renderDiffEditor() {
     const le = draftLE(); if (!le) return;
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-    set('de-pace', le.pace); set('de-time', le.time||0); set('de-calm', le.calm||0);
+    set('de-pace', le.pace); set('de-money', le.startMoney||0); set('de-time', le.time||0); set('de-calm', le.calm||0);
     set('de-crash', le.crashPenalty||0); set('de-late', le.latePenalty||0);
     set('de-open', le.openCost||0); set('de-upg', le.upgCost||0); set('de-rwcost', le.rwOpenCost||0);
     set('de-minup', le.minUp||0); set('de-maxup', le.maxUp!=null ? le.maxUp : 3);
@@ -3557,24 +3521,8 @@
       host.appendChild(zoneEditor('Апрон', 'apron'));
       host.appendChild(zoneEditor('Прилёт', 'arrival'));
     }
-    function renderEvents() {
-      const host = $('ly-events'); host.innerHTML = '';
-      EVENTS.forEach(([k, txt]) => {
-        const chip = document.createElement('label'); chip.className = 'lab-chip' + (LE.events[k] ? ' on' : '');
-        chip.innerHTML = '<input type="checkbox"' + (LE.events[k] ? ' checked' : '') + '><span>' + txt + '</span>';
-        chip.addEventListener('click', e => { e.preventDefault(); LE.events[k] = !LE.events[k]; save(); renderEvents(); });
-        host.appendChild(chip);
-      });
-    }
-    function syncParams() {
-      $('ly-pace').value = LE.pace; $('ly-money').value = LE.startMoney; $('ly-maxup').value = LE.maxUp;
-      $('ly-s1').value = LE.stars[0]; $('ly-s2').value = LE.stars[1]; $('ly-s3').value = LE.stars[2];
-      checkStars();
-    }
-    function checkStars() {
-      const w = $('ly-stars-warn'); const s = LE.stars;
-      w.textContent = (s[0] > 0 && s[0] <= s[1] && s[1] <= s[2]) ? '' : '⚠ звёзды должны идти по возрастанию (1★ ≤ 2★ ≤ 3★)';
-    }
+    // Параметры черновика (темп/деньги/maxUp/звёзды/события) редактируются в табе
+    // «Сложность» (de-*), а не здесь — отдельных контролов в «Разметке»/«Уровни» нет.
     function renderSide() { renderSelBody(); renderZones(); }
 
     /* ---- field templates + view layers ---- */
@@ -3601,7 +3549,7 @@
       const fn = $('ly-filename'); if (fn) fn.placeholder = 'aerovia-' + slug(curTpl) + '.json';
     }
     function uniqName(base) { let n = base, k = 2; while (templates[n]) n = base + ' ' + (k++); return n; }
-    function refreshAll() { syncParams(); renderEvents(); renderSide(); renderTpl(); renderLayers(); draw(); }
+    function refreshAll() { renderSide(); renderTpl(); renderLayers(); draw(); if (typeof renderDiffEditor === 'function' && GAME) { try { renderDiffEditor(); } catch (_) {} } }
     function selectTpl(name) {
       if (!templates[name] || name === curTpl) { renderTpl(); return; }
       templates[curTpl] = clone(LE);                          // stash current edits
@@ -3784,7 +3732,7 @@
         if (o.objective && Array.isArray(o.objective.stars)) next.stars = o.objective.stars.slice(0, 3);
         if (o.events) EVENTS.forEach(([k]) => { next.events[k] = !!o.events[k]; });
         if (o.skins) { if (o.skins.hangar) next.skins.hangar = o.skins.hangar; if (o.skins.background) next.skins.background = o.skins.background; }
-        LE = next; sel = null; save(); syncParams(); renderEvents(); renderSide(); draw();
+        LE = next; sel = null; save(); refreshAll();
         if (window._resourcesSync) window._resourcesSync();
       } catch (err) { $('ly-warn').textContent = 'не удалось импортировать JSON'; }
     }
@@ -3813,19 +3761,9 @@
       setSkins: (patch) => { Object.assign(ensureSkins(), patch || {}); save(); },
     };
 
-    /* ---- param controls ---- */
-    function clampParams() {
-      LE.pace = Math.max(0, Math.min(1, +$('ly-pace').value || 0));
-      LE.startMoney = Math.max(0, Math.min(2000, Math.round(+$('ly-money').value || 0)));
-      LE.maxUp = Math.max(0, Math.min(5, Math.round(+$('ly-maxup').value || 0)));
-      LE.stars = [Math.max(1, +$('ly-s1').value || 1), Math.max(1, +$('ly-s2').value || 1), Math.max(1, +$('ly-s3').value || 1)];
-      checkStars(); save();
-    }
-    // The −/+ steppers reuse the shared document-level .mt-step handler, which
-    // nudges the number field and dispatches 'input'/'change'; we just listen.
-    ['ly-pace', 'ly-money', 'ly-maxup', 'ly-s1', 'ly-s2', 'ly-s3'].forEach(id => {
-      const el = $(id); if (el) { el.addEventListener('input', clampParams); el.addEventListener('change', clampParams); }
-    });
+    /* ---- param controls ----
+       Параметры черновика (темп/деньги/maxUp/звёзды/события) правятся в табе
+       «Сложность» (de-*); здесь остаётся только геометрия поля. */
     document.querySelectorAll('[data-add-hangar]').forEach(b => b.addEventListener('click', () => addHangar(b.dataset.addHangar)));
     $('ly-add-runway').addEventListener('click', addRunway);
     $('ly-del').addEventListener('click', delSelected);
