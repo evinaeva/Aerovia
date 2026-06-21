@@ -40,6 +40,25 @@ class OTAHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
 
+    def _serve_manifest(self, write_body: bool = True) -> None:
+        try:
+            with open(MANIFEST, "rb") as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if write_body:
+                self.wfile.write(body)
+        except FileNotFoundError:
+            self.send_error(404, "No manifest yet")
+
+    def _drain_body(self) -> None:
+        # Прочитать тело запроса до конца, иначе keep-alive-сокет зависнет.
+        length = int(self.headers.get("Content-Length", 0) or 0)
+        if length:
+            self.rfile.read(length)
+
     def do_GET(self):
         path = self.path.split("?")[0].rstrip("/")
 
@@ -49,17 +68,20 @@ class OTAHandler(BaseHTTPRequestHandler):
             self.wfile.write(body)
 
         elif path == "/updates":
-            try:
-                with open(MANIFEST, "rb") as f:
-                    body = f.read()
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-            except FileNotFoundError:
-                self.send_error(404, "No manifest yet")
+            self._serve_manifest()
 
+        else:
+            self.send_error(404)
+
+    def do_POST(self):
+        # Capgo v5 (@capgo/capacitor-updater) шлёт проверку обновления на updateUrl
+        # методом POST с JSON-телом параметров устройства, а НЕ GET. Без do_POST
+        # BaseHTTPRequestHandler отвечает 501 → плагин видит "getLatest failed" и
+        # тихо остаётся на встроенном бандле. Отдаём тот же манифест, что и GET.
+        path = self.path.split("?")[0].rstrip("/")
+        self._drain_body()
+        if path == "/updates":
+            self._serve_manifest()
         else:
             self.send_error(404)
 
