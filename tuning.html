@@ -1387,6 +1387,25 @@
     </div>
 
     <div class="lab-section">
+      <h3>Движение на ВПП <span class="h3-sub">· × от базовой, 1 = дефолт</span></h3>
+      <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Посадка · до касания ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-landbefore" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Посадка · после касания ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-landafter" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Взлёт · разбег ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-takeoffroll" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Взлёт · набор высоты ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-climb" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+      </div>
+      <p class="lab-hint">Множители фаз движения по полосе (× к базовой скорости): посадка — до и после касания земли; взлёт — разбег по полосе и набор высоты после отрыва. Зашиваются в экспорт уровня и применяются после импорта.</p>
+    </div>
+
+    <div class="lab-section">
       <h3>Сводка</h3>
       <div class="lab-stat-grid" id="diff-stats">
         <div class="lab-stat"><div class="lab-stat-label">Сложность</div><div class="lab-stat-val" id="diff-total">—</div><div class="lab-stat-sub">0…1 (analyzeLevel)</div></div>
@@ -2858,6 +2877,10 @@
     bindLE('de-rwcost',(le,el)=> le.rwOpenCost = Math.max(0, Math.round(+el.value||0)));
     bindLE('de-minup', (le,el)=> { le.minUp = Math.max(0, Math.min(5, Math.round(+el.value||0))); if (le.minUp > (le.maxUp??5)) le.maxUp = le.minUp; });
     bindLE('de-maxup', (le,el)=> { le.maxUp = Math.max(0, Math.min(5, Math.round(+el.value||0))); if ((le.minUp||0) > le.maxUp) le.minUp = le.maxUp; });
+    // фазовые множители скорости на ВПП → черновик level.motion (× к базовой, 0.1..3)
+    const _clampMot = v => Math.max(0.1, Math.min(3, +v||1));
+    [['de-mot-landbefore','landBefore'],['de-mot-landafter','landAfter'],['de-mot-takeoffroll','takeoffRoll'],['de-mot-climb','climb']]
+      .forEach(([id,key]) => bindLE(id, (le,el)=> { le.motion = le.motion || {}; le.motion[key] = _clampMot(el.value); }));
     ['de-s1','de-s2','de-s3'].forEach((id,i)=> bindLE(id, (le,el)=>{ le.stars = (le.stars||[1,1,1]).slice(0,3); le.stars[i] = Math.max(1, Math.round(+el.value||1)); }));
     const metric = document.getElementById('de-metric');
     if (metric) metric.addEventListener('change', () => { const le = draftLE(); if (!le) return; le.metric = metric.value; draftCommit(); renderDiffEditor(); afterDiffEdit(); });
@@ -2894,6 +2917,9 @@
     set('de-crash', le.crashPenalty||0); set('de-late', le.latePenalty||0);
     set('de-open', le.openCost||0); set('de-upg', le.upgCost||0); set('de-rwcost', le.rwOpenCost||0);
     set('de-minup', le.minUp||0); set('de-maxup', le.maxUp!=null ? le.maxUp : 3);
+    { const m = le.motion || {};
+      set('de-mot-landbefore', m.landBefore ?? 1); set('de-mot-landafter', m.landAfter ?? 1);
+      set('de-mot-takeoffroll', m.takeoffRoll ?? 1); set('de-mot-climb', m.climb ?? 1); }
     set('de-s1', (le.stars||[])[0]); set('de-s2', (le.stars||[])[1]); set('de-s3', (le.stars||[])[2]);
     const metric = document.getElementById('de-metric'); if (metric) metric.value = le.metric || 'served';
     const lbl = document.getElementById('de-stars-lbl');
@@ -3626,6 +3652,12 @@
       if (LE.weather) o.weather = true;
       if (LE.deice) o.deice = true;
       if (LE.calm > 0) o.calm = +(+LE.calm).toFixed(2);
+      // фазовые множители скорости на ВПП: пишем только не-дефолтные (≠ 1)
+      { const m = LE.motion || {}, mo = {};
+        ['landBefore', 'landAfter', 'takeoffRoll', 'climb'].forEach(k => {
+          const v = +m[k]; if (isFinite(v) && v !== 1) mo[k] = +v.toFixed(2);
+        });
+        if (Object.keys(mo).length) o.motion = mo; }
       if (LE.crashPenalty > 0) o.crashPenalty = +(+LE.crashPenalty).toFixed(2);
       if (LE.latePenalty > 0) o.latePenalty = +(+LE.latePenalty).toFixed(2);
       if (LE.minUp > 0) o.minUp = Math.round(LE.minUp);
@@ -3732,6 +3764,12 @@
         if (o.objective && Array.isArray(o.objective.stars)) next.stars = o.objective.stars.slice(0, 3);
         if (o.events) EVENTS.forEach(([k]) => { next.events[k] = !!o.events[k]; });
         if (o.skins) { if (o.skins.hangar) next.skins.hangar = o.skins.hangar; if (o.skins.background) next.skins.background = o.skins.background; }
+        if (o.motion && typeof o.motion === 'object') {
+          next.motion = {};
+          ['landBefore', 'landAfter', 'takeoffRoll', 'climb'].forEach(k => {
+            const v = +o.motion[k]; if (isFinite(v)) next.motion[k] = Math.max(0.1, Math.min(3, v));
+          });
+        }
         LE = next; sel = null; save(); refreshAll();
         if (window._resourcesSync) window._resourcesSync();
       } catch (err) { $('ly-warn').textContent = 'не удалось импортировать JSON'; }
@@ -3747,6 +3785,7 @@
         .forEach(k => { if (LE[k] === undefined) LE[k] = d[k]; });
       if (!LE.events) LE.events = {}; ['fog', 'wind'].forEach(k => { if (LE.events[k] === undefined) LE.events[k] = false; });
       if (!LE.cond) LE.cond = { money: null, lives: null, timeTier: null, maxLate: null, maxCrash: null };
+      if (!LE.motion) LE.motion = {};   // фазовые множители скорости на ВПП (пусто = все ×1)
       return LE;
     }
     window.Draft = {
@@ -4317,8 +4356,10 @@
           const el = w.document.getElementById(id);
           if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
         });
-        // чистое поле: без лесных помех/деайсинга; готовый борт у левого края апрона
-        if (MT) { MT.apply({ 'K.DISABLE_FOREST': true, 'K.DISABLE_DEICE': true, 'K.APRON_SPAWN': true }, false); syncUI(); }
+        // чистое поле: без лесных помех/деайсинга; готовый борт у левого края апрона.
+        // Боксы ВКЛ (DISABLE_BAY=false): у прилетающих бортов есть нужды — они обязаны
+        // заехать в боксы. Депо-борт на апроне не затронут (у него только 'depart').
+        if (MT) { MT.apply({ 'K.DISABLE_FOREST': true, 'K.DISABLE_DEICE': true, 'K.APRON_SPAWN': true, 'K.DISABLE_BAY': false }, false); syncUI(); }
         const obj = window.Draft.export();
         w.__PLAY.store(obj);
         if (!w.__PLAY.custom(obj)) {           // кастомный уровень = бесконечный (без objective.target)
@@ -4340,7 +4381,7 @@
   function returnToMarkup() {
     const w = gameFrame.contentWindow;
     try {
-      if (MT) { MT.apply({ 'K.APRON_SPAWN': false }, false); syncUI(); }
+      if (MT) { MT.apply({ 'K.APRON_SPAWN': false, 'K.DISABLE_BAY': true }, false); syncUI(); }
       if (window._enterMarkupSurface) window._enterMarkupSurface();   // прячет iframe, монтирует холст
       const backBtn = w && w.document.getElementById('backBtn');
       if (backBtn) backBtn.click();

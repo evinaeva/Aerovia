@@ -187,6 +187,16 @@
     if (o.weather === true) lv.weather = true;
     if (o.deice === true) lv.deice = true;
     if (typeof o.calm === 'number') lv.calm = o.calm;
+    // фазовые множители скорости на ВПП (конструктор): берём только числовые ключи,
+    // зажимаем в 0.1..3; пустой блок не записываем (движение читает motion?.x ?? 1).
+    if (o.motion && typeof o.motion === 'object') {
+      const m: NonNullable<Level['motion']> = {};
+      (['landBefore', 'landAfter', 'takeoffRoll', 'climb'] as const).forEach(k => {
+        const v = o.motion[k];
+        if (typeof v === 'number' && isFinite(v)) m[k] = Math.max(0.1, Math.min(3, v));
+      });
+      if (Object.keys(m).length) lv.motion = m;
+    }
     return lv;
   }
   function startCustomLevel(o: any){ survival=false; curBiome=null; curBonus=null; levelIdx=-1; levelKey='custom'; LV=normalizeCustomLevel(o); bays=[]; runways=[]; layout(); hideAllScreens(); reset(); }
