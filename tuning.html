@@ -1047,7 +1047,7 @@
         <span class="tb-icon">📱</span><span id="tb-size-label">S</span>
       </button>
       <!-- Demo -->
-      <button class="tb-btn" id="btn-demo" title="Forest Survival · бесконечные борта">▶ Демо</button>
+      <button class="tb-btn" id="btn-demo" title="Запустить разметку из «Разметки» · бесконечные борта · готовый борт у апрона">▶ Демо</button>
       <!-- Spacer -->
       <div style="flex:1"></div>
       <!-- Preset -->
@@ -1587,7 +1587,7 @@
   const T = {
     demo:           '▶ Демо',
     demoStop:       '⏹ Стоп',
-    demoRunning:    'Демо: Forest запущен · бесконечные борта · без помех и деайсинга.',
+    demoRunning:    'Демо: запущена разметка из вкладки «Разметка» · бесконечные борта · готовый борт у левого края апрона.',
     demoExit:       'Демо: вернулись в главное меню.',
     demoNotLoaded:  'Игра не загружена.',
     demoNoMenu:     'Сначала вернись в главное меню.',
@@ -3182,11 +3182,38 @@
     /* ---- geometry (normalized → px) ---- */
     function dims() { return { W: cv.clientWidth || 1, H: cv.clientHeight || 1 }; }
     function rectPx(r) { const { W, H } = dims(); return { x: r.x * W, y: r.y * H, w: r.w * W, h: r.h * H }; }
+    // Сторона бокса — КВАДРАТНАЯ и привязана к размеру борта так же, как в игре
+    // (PR #222: сторона ангара = длина борта × K.HANGAR_RATIO). Берём геометрию из
+    // живой игры: если идёт уровень — реальный размер бокса; иначе считаем по формуле
+    // из K.PLANE_SCALE/K.HANGAR_RATIO. Меняешь масштаб борта в «Движении» — бокс в
+    // превью меняется вместе с игрой.
+    function hangarSidePx() {
+      const { W, H } = dims();
+      let side = null;
+      try {
+        const fw = gameFrame.contentWindow, fd = fw && fw.__FIELD;
+        if (fd && fd.W && fd.H) {
+          const s = Math.min(W / fd.W, H / fd.H);   // единый коэф — квадрат остаётся квадратом
+          const b = fd.bays && fd.bays[0];
+          if (b && b.w > 0) {
+            side = b.w * s;                          // живой бокс (в игре он уже квадратный)
+          } else {
+            const K = fw.__GAME && fw.__GAME.K;
+            const ps = (K && +K.PLANE_SCALE) || 1, hr = (K && +K.HANGAR_RATIO) || 1.8;
+            const ui = Math.max(0.7, Math.min(1.5, Math.min(fd.W / 1100, fd.H / 620)));
+            side = 31 * ps * ui * hr * s;            // та же формула, что и в 06-state-layout
+          }
+        }
+      } catch (_) {}
+      if (!side || !isFinite(side)) side = Math.min(W * HW_FR, H * HH_FR);  // запасной квадрат
+      const ap = rectPx(LE.apron);
+      return Math.min(side, ap.w / 2.4);             // тот же потолок, что и в игре (не съедать апрон)
+    }
     function hangarPx(h) {
-      const ap = rectPx(LE.apron), { W, H } = dims();
-      const w = W * HW_FR, hh = H * HH_FR;
+      const ap = rectPx(LE.apron);
+      const s = hangarSidePx();
       const cx = ap.x + h.x * ap.w, cy = ap.y + h.y * ap.h;
-      return { x: cx - w / 2, y: cy - hh / 2, w, h: hh, cx, cy };
+      return { x: cx - s / 2, y: cy - s / 2, w: s, h: s, cx, cy };
     }
     function runwayPx(r) {
       const ap = rectPx(LE.apron), arr = rectPx(LE.arrival), { W, H } = dims();
@@ -3208,18 +3235,50 @@
       try {
         const fd = gameFrame.contentWindow && gameFrame.contentWindow.__FIELD;
         const sr = fd && fd.safetyRects;
-        if (!sr || !Array.isArray(sr.uiReservedRects) || !fd.W || !fd.H) return [];
+        if (!sr || !fd.W || !fd.H) return [];
         const { W, H } = dims();
         const sx = W / fd.W, sy = H / fd.H;
-        return sr.uiReservedRects
-          .filter(r => r && r.w > 0 && r.h > 0)
-          .map(r => ({ x: r.x * sx, y: r.y * sy, w: r.w * sx, h: r.h * sy, label: r.label }));
+        const out = [];
+        const push = (r, label) => { if (r && r.w > 0 && r.h > 0) out.push({ x: r.x * sx, y: r.y * sy, w: r.w * sx, h: r.h * sy, label: r.label || label }); };
+        // HUD + кнопка паузы (как было)
+        (sr.uiReservedRects || []).forEach(r => push(r, 'UI'));
+        // вырез камеры / чёлка
+        push(sr.cutoutRect, 'вырез');
+        // зоны android-жестов по краям экрана (left/right свайпы, домой/назад снизу)
+        const gi = sr.gestureInsets;
+        if (gi) {
+          if (gi.l > 0) push({ x: 0,           y: 0,           w: gi.l, h: fd.H }, 'жест');
+          if (gi.r > 0) push({ x: fd.W - gi.r, y: 0,           w: gi.r, h: fd.H }, 'жест');
+          if (gi.t > 0) push({ x: 0,           y: 0,           w: fd.W, h: gi.t }, 'жест');
+          if (gi.b > 0) push({ x: 0,           y: fd.H - gi.b, w: fd.W, h: gi.b }, 'жест');
+        }
+        // системные safe-area отступы (скругления углов, сторона выреза)
+        const sa = sr.safeAreaInsets;
+        if (sa) {
+          if (sa.l > 0) push({ x: 0,           y: 0,           w: sa.l, h: fd.H }, 'отступ');
+          if (sa.r > 0) push({ x: fd.W - sa.r, y: 0,           w: sa.r, h: fd.H }, 'отступ');
+          if (sa.t > 0) push({ x: 0,           y: 0,           w: fd.W, h: sa.t }, 'отступ');
+          if (sa.b > 0) push({ x: 0,           y: fd.H - sa.b, w: fd.W, h: sa.b }, 'отступ');
+        }
+        return out;
       } catch (_) { return []; }
     }
     function hitsReserved(box) {
       if (!box) return false;
       return reservedRectsPx().some(r =>
         box.x < r.x + r.w && box.x + box.w > r.x && box.y < r.y + r.h && box.y + box.h > r.y);
+    }
+    // Боксы не должны налезать друг на друга: вплотную (встык) — можно, перекрытие — нет.
+    // EPS даёт допуск, чтобы касание край-в-край не считалось пересечением.
+    function boxesOverlap(a, b) {
+      const EPS = 0.5;
+      return a.x < b.x + b.w - EPS && a.x + a.w > b.x + EPS &&
+             a.y < b.y + b.h - EPS && a.y + a.h > b.y + EPS;
+    }
+    function hitsOtherHangar(idx) {
+      if (idx == null || !LE.hangars[idx]) return false;
+      const me = hangarPx(LE.hangars[idx]);
+      return LE.hangars.some((h, i) => i !== idx && boxesOverlap(me, hangarPx(h)));
     }
     // px box of whatever a drag descriptor is currently moving/resizing
     function dragBoxPx(d) {
@@ -3442,8 +3501,10 @@
         }
         drag.start = { x: p.x, y: p.y };
       }
-      // Reject the move if it now overlaps the untouchable UI-reserved zone.
-      if (hitsReserved(dragBoxPx(drag))) { restore(); drag.start = prevStart; }
+      // Reject the move if it now overlaps the untouchable UI-reserved zone,
+      // or (for hangars) overlaps another hangar — встык можно, перекрытие нет.
+      const badHangar = drag.mode === 'move-obj' && drag.kind === 'hangar' && hitsOtherHangar(drag.i);
+      if (hitsReserved(dragBoxPx(drag)) || badHangar) { restore(); drag.start = prevStart; }
       draw();
     });
     function endDrag(e) { if (!drag) return; drag = null; try { cv.releasePointerCapture(e.pointerId); } catch (_) {} renderSide(); save(); }
@@ -4412,7 +4473,8 @@
       if (!w) { setStatus(T.demoNotLoaded); return; }
 
       if (demoActive) {
-        // Second click: return to main screen
+        // Second click: снимаем спавн-борт и возвращаемся в меню
+        if (MT) { MT.apply({'K.APRON_SPAWN': false}, false); syncUI(); }
         const backBtn = w.document.getElementById('backBtn');
         if (backBtn) backBtn.click();
         demoActive = false;
@@ -4427,31 +4489,20 @@
         if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
       });
 
-      // Keep the field clean for the demo: forest hazards stay off
-      // (K.DISABLE_FOREST = true → no елки/птицы/олени/снег on the runway) and
-      // de-icing stays off (K.DISABLE_DEICE = true → no de-ice requests and,
-      // see state-layout, no de-icing box on the field). Both are defaults, so
-      // we just make sure they aren't left enabled from a previous tweak.
-      if (MT) { MT.apply({'K.DISABLE_FOREST': true, 'K.DISABLE_DEICE': true}, false); syncUI(); }
+      // Демо берёт РАЗМЕТКУ из вкладки «Разметка» (черновик LE) и запускает её как
+      // свой уровень — апрон/ВПП/ангары соответствуют тому, что нарисовано. Поле
+      // держим чистым: без лесных помех (K.DISABLE_FOREST) и деайсинга (K.DISABLE_DEICE).
+      // K.APRON_SPAWN — у левого края апрона всегда стоит готовый к взлёту борт.
+      if (MT) { MT.apply({'K.DISABLE_FOREST': true, 'K.DISABLE_DEICE': true, 'K.APRON_SPAWN': true}, false); syncUI(); }
 
-      // Navigate to biome selection, then click the first ready biome (forest)
-      const survBtn = w.document.getElementById('survivalBtn');
-      if (!survBtn) { setStatus(T.demoNoMenu); return; }
-      survBtn.click();
-
-      setTimeout(() => {
-        try {
-          const card = w.document.querySelector('.biome:not(.locked)');
-          if (card) {
-            card.click();
-            demoActive = true;
-            updateDemoBtn();
-            setStatus(T.demoRunning);
-          } else {
-            setStatus(T.demoBiomeNone);
-          }
-        } catch (e2) { setStatus('Demo: ' + e2.message); }
-      }, 150);
+      if (!w.__PLAY || !window.Draft) { setStatus(T.demoNotLoaded); return; }
+      const obj = window.Draft.export();
+      w.__PLAY.store(obj);
+      const ok = w.__PLAY.custom(obj);   // кастомный уровень = бесконечный (без objective.target)
+      if (!ok) { setStatus(T.demoNoMenu); return; }
+      demoActive = true;
+      updateDemoBtn();
+      setStatus(T.demoRunning);
 
     } catch (e) { setStatus('Demo: ' + e.message); }
   });

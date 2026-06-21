@@ -5,7 +5,7 @@
 
   function reset(){
     econ = levelEconomy(LV); lvFx = econ.effects;   // оплата/касса и активные денежные эффекты — из уровня
-    planes=[]; money=debug.richStart?BIG_MONEY:econ.startMoney; lives=K.START_LIVES; served=0; gameTime=0;
+    planes=[]; depotPlane=null; money=debug.richStart?BIG_MONEY:econ.startMoney; lives=K.START_LIVES; served=0; gameTime=0;
     // раунд начинается с пустого неба: первый борт прилетает через 1–3 секунды
     spawnTimer=1 + Math.random()*2; running=true; paused=false; inMenu=false;
     lossLog=[]; toast=null;
@@ -136,6 +136,44 @@
     if(gameTime>0 && !tut){
       if(emergency) toast={text:t('toast.emergency'), t:0, good:false};
       else if(medical) toast={text:t('toast.medical'), t:0, good:false};
+    }
+  }
+
+  // ---- демо: «депо» у левого края апрона (K.APRON_SPAWN) ----
+  // Готовый к взлёту борт (без услуг, requests=['depart']) всегда стоит у левого края
+  // апрона и ждёт, пока игрок не уведёт его маршрутом на ВПП. Как только борт «взят»
+  // (повёл маршрутом) или разбит — на освободившейся точке спавнится новый.
+  function spawnDepotPlane(x: number, y: number){
+    spawnedTotal++;
+    const pl: any = {
+      id: ++planeSeq,
+      x, y, ang: 0,                       // нос вправо — к ВПП
+      requests:['depart'], reqIndex:0, nSvc:0,
+      zone:'field', depot:true,
+      entering:false, path:[], moving:false, selected:false, autoPath:false,
+      landing:false, takeoff:false, exiting:false, approachR:null,
+      runway:null, bay:null,
+      airTime:Infinity, airMax:Infinity, waitMult:2,
+      groundTime:Infinity, groundMax:Infinity, serveTime:0, serveMax:0, landedAt:0,
+      halfPay:false, dead:false,
+      reward: econ.svcReward,
+      vip:false, emergency:false, medical:false,
+    };
+    planes.push(pl); depotPlane = pl;
+    return pl;
+  }
+  function maintainDepot(){
+    if(!K.APRON_SPAWN || LV.bonus) return;
+    // борт «взят» (повёл маршрутом / съехал с точки) или разбит → отпускаем его
+    if(depotPlane && (depotPlane.dead || depotPlane.moving || depotPlane.zone!=='field')){
+      if(!depotPlane.dead) depotPlane.depot=false;   // станет обычным бортом под управлением игрока
+      depotPlane=null;
+    }
+    // новый ставим только когда точка спавна свободна (иначе мгновенный краш с уходящим)
+    if(!depotPlane){
+      const sx = field.x0 + PLANE_LEN()*0.7, sy = (field.y0+field.y1)/2;
+      const clear = !planes.some(p=>!p.dead && dist(p.x,p.y,sx,sy) < K.CRASH_DIST*1.6);
+      if(clear) spawnDepotPlane(sx, sy);
     }
   }
 
@@ -477,6 +515,7 @@
       drag.plane.path=[];            // начинаем новый маршрут
       drag.plane.approachR=null;     // новый маршрут — старый воздушный заход сбрасываем
       drag.plane.moving=true;        // борт трогается сразу, как пошла линия
+      drag.plane.autoPath=false;     // это нарисованный игроком маршрут — его показываем
     }
     if(drag.drew && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
       drag.plane.path.push({x:p.x,y:p.y});
@@ -585,7 +624,8 @@
     // докатывается вглубь апрона и встаёт перед входом. Авто-маршрут к точке остановки
     // на оси полосы; следящий код на ВПП доведёт его, освободит полосу и передаст в поле.
     const apronStopX = Math.max(field.x0 + 10, field.x1 - K.LAND_ROLLOUT*ui);
-    pl.moving=true; pl.path=[{x:apronStopX, y:pl.runway.cy}];
+    // auto-маршрут (игрок его не рисовал) — не отрисовываем фосфорную линию (09b)
+    pl.moving=true; pl.path=[{x:apronStopX, y:pl.runway.cy}]; pl.autoPath=true;
   }
   // наземный таймаут: борт улетает с частичной оплатой (LV.latePenalty, умолч. 50%)
   function groundPenalty(pl: any){

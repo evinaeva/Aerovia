@@ -73,6 +73,7 @@
     // кампания «посадить N»: всего прилетает ровно N бортов. Survival/race — поток бесконечный.
     const spawnCap = (!survival && LV.objective.metric==='served' && !LV.objective.race) ? (LV.objective.target ?? Infinity) : Infinity;
     if(spawnTimer<=0 && planes.length<cap && spawnedTotal<spawnCap){ spawnPlane(); spawnTimer=interval; }
+    maintainDepot();   // демо K.APRON_SPAWN: держим готовый борт у левого края апрона
 
     updateTutorial();
     ACH.onTick(dt);
@@ -186,7 +187,7 @@
               pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
               // подруливаем к точке старта по оси полосы (у полевого торца) и тут же
               // разгоняемся — борт выходит на ВПП уже центрированным, без паузы
-              pl.takeoff=true; pl.moving=true; pl.path=[{x:r.stopX + 8*ui, y:r.cy}];
+              pl.takeoff=true; pl.moving=true; pl.path=[{x:r.stopX + 8*ui, y:r.cy}]; pl.autoPath=true;
               break;
             }
           }

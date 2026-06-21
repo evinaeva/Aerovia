@@ -93,6 +93,7 @@
     DISABLE_FOREST:    true as boolean,  // отключить лесные помехи (елки, птицы, олени, снег)
     DISABLE_DEICE:     true as boolean,  // не добавлять деайсинг в список услуг
     DISABLE_BAY:       true as boolean,  // пропустить все услуги в боксах → сразу к вылету
+    APRON_SPAWN:       false as boolean, // демо: у левого края апрона всегда стоит готовый к взлёту борт (replaces when taken/crashed)
     BAY_DOCK_SPEED:  0.85, // скорость движения в боксе (доля от SPEED_TAXI)
     BAY_ALIGN_SPEED: 6,    // lerp-скорость бокового выравнивания по оси ворот
     BAY_HEAD_SPEED:  2,    // скорость поворота носа при заезде/выезде из бокса

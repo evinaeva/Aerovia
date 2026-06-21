@@ -396,6 +396,7 @@
   let slowmo=0;            // секунды лёгкого замедления времени (near-miss)
   let nearMissPairs: Record<string, any>={};    // key «idA-idB» → время, до которого пара «остыла»
   let planeSeq=0;          // id бортов для антидребезга near-miss
+  let depotPlane: any=null; // демо K.APRON_SPAWN: текущий готовый борт у левого края апрона
   let tut: any=null;            // состояние тихого туториала: {step:'land'|'service'|'takeoff', plane}
   // лесной биом: активные помехи на полосах + выехавшие бригады + таймер спавна
   let hazards: any[]=[], crews: any[]=[], hazardSeq=0, nextHazard=0;
