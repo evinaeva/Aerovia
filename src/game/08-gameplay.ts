@@ -121,7 +121,7 @@
       zone:'air',            // air | runway | field | bay
       entering:true,         // глиссада с правого края до точки зависания
       path:[], moving:false, selected:false,
-      landing:false, takeoff:false, exiting:false,
+      landing:false, takeoff:false, exiting:false, approachR:null,
       runway:null, bay:null,
       airTime: airBase, airMax: airBase,
       groundTime:0, groundMax:0, waitMult,
@@ -259,6 +259,7 @@
 
   // ---- geometry ----
   const rectHit = (px: number,py: number,r: any) => px>r.x && px<r.x+r.w && py>r.y && py<r.y+r.h;
+  const rectPad = (px: number,py: number,r: any,m: number) => px>r.x-m && px<r.x+r.w+m && py>r.y-m && py<r.y+r.h+m;  // rectHit с запасом под палец
   const dist = (ax: number,ay: number,bx: number,by: number) => Math.hypot(ax-bx, ay-by);
 
   // ---- input ----
@@ -283,7 +284,11 @@
   }
   // открытый бокс под точкой (для фиксации конца маршрута)
   function openBayAt(p: any){
-    for(const b of bays) if(b.open && rectHit(p.x,p.y,b)) return b;
+    // конец маршрута «прилипает» к боксу не только внутри его прямоугольника, но и в
+    // запасе MT.BAY_HIT_PADDING вокруг (настраивается в tuning.html, по умолчанию 0;
+    // зону рисует слой MT.DEBUG_BAY_SNAP_ZONES — тоже только в Workbench)
+    const pad=(MT_META_VALUES.BAY_HIT_PADDING as number)||0;
+    for(const b of bays) if(b.open && rectPad(p.x,p.y,b,pad)) return b;
     return null;
   }
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
@@ -304,13 +309,16 @@
   }
   // любая ВПП под точкой — для покупки направления (без фильтрации по open/closed)
   function runwayAt(p: any){ for(const r of runways) if(rectHit(p.x,p.y,r)) return r; return null; }
-  // открытая ВПП под точкой с учётом направления (посадка / взлёт)
+  // открытая ВПП под точкой с учётом направления (посадка / взлёт). Конец маршрута
+  // «прилипает» к полосе в запасе MT.RUNWAY_HIT_PADDING вокруг неё (настройка в
+  // tuning.html, по умолчанию 0; зону рисует слой MT.DEBUG_RUNWAY_SNAP_ZONES).
   function openRunwayAt(p: any, dir?: 'landing'|'takeoff'){
+    const pad=(MT_META_VALUES.RUNWAY_HIT_PADDING as number)||0;
     for(const r of runways){
       if(r.closed) continue;
       if(dir==='landing' && !r.landingOpen) continue;
       if(dir==='takeoff' && !r.takeoffOpen) continue;
-      if(rectHit(p.x,p.y,r)) return r;
+      if(rectPad(p.x,p.y,r,pad)) return r;
     }
     return null;
   }
@@ -334,6 +342,9 @@
     const ty = r.cy;
     pl.path.push({x:tx, y:ty});
     pl.moving=true;
+    // воздушный заход: запоминаем целевую полосу, чтобы добрать борт до рубежа ВПП,
+    // даже если большой «захват точки» съест последний waypoint раньше времени
+    if(pl.zone==='air') pl.approachR = r;
     pulseFx(tx, ty, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
@@ -346,6 +357,16 @@
     if(b.lvl >= bayMaxLvl(b)) return null;          // апгрейд выключен или достигнут потолок уровня
     return b.upgCost ?? K.BAY_UP_COST[b.lvl] ?? null;
   }
+  // Прямоугольник зелёного чипа «↑» открытого ангара — ровно то место, где его рисует
+  // drawNeonBay. Апгрейд кликается ТОЛЬКО по этому чипу: тап по остальному телу бокса
+  // больше не апгрейдит, чтобы не перехватывать захват борта, стоящего у ворот.
+  function bayUpBtn(b: any){
+    if(!b.open || b.deice || LV.bonus || bayUpCost(b)==null) return null;
+    const pad=5*ui, top=(b.side!=='bottom');
+    const bSize=Math.min(b.w*0.34, b.h*0.5, 40*ui);
+    const cs=Math.min(bSize*0.72, 28*ui);
+    return { x:b.x+b.w-pad-cs, y: top ? b.y+pad : b.y+b.h-pad-cs, w:cs, h:cs };
+  }
 
   function down(e: any){
     if(!running) return;
@@ -355,17 +376,29 @@
     if(rectHit(p.x,p.y,pauseBtn)){ setPaused(!paused); return; }
     if(paused) return;
 
-    // bay tap -> open / upgrade
+    // bay tap: закрытый бокс открываем тапом по нему; у открытого апгрейд кликается ТОЛЬКО
+    // по зелёной стрелке ↑ — тап по остальному телу бокса не апгрейдит, а пропускается
+    // дальше к захвату борта (иначе борт у ворот невозможно подцепить — тап уходил в апгрейд).
     const b=pickBay(p);
-    if(b){
+    if(b && !b.open){
       const cost=bayUpCost(b);
       if(cost!=null && money>=cost){
-        money-=cost;
-        if(!b.open){ b.open=true; ACH.onBayOpen(b); } else { b.lvl++; ACH.onBayUpgrade(b); }
-        upgradesDone++;
-        SND.build(); HAP.tap();
+        money-=cost; b.open=true; ACH.onBayOpen(b);
+        upgradesDone++; SND.build(); HAP.tap();
       }
       return;
+    }
+    if(b && b.open){
+      const btn=bayUpBtn(b);
+      if(btn && rectPad(p.x,p.y,btn,8*ui)){       // попал в стрелку (с запасом под палец)
+        const cost=bayUpCost(b);
+        if(cost!=null && money>=cost){
+          money-=cost; b.lvl++; ACH.onBayUpgrade(b);
+          upgradesDone++; SND.build(); HAP.tap();
+        }
+        return;                                   // тап по стрелке потреблён (даже если денег не хватило)
+      }
+      // мимо стрелки — НЕ апгрейдим; падаем дальше к захвату борта/прочему
     }
     // runway direction tap -> купить посадку или взлёт на ВПП
     if(!LV.bonus){
@@ -407,6 +440,7 @@
     if(!drag.drew && dist(p.x,p.y,drag.start.x,drag.start.y)>10){
       drag.drew=true;
       drag.plane.path=[];            // начинаем новый маршрут
+      drag.plane.approachR=null;     // новый маршрут — старый воздушный заход сбрасываем
       drag.plane.moving=true;        // борт трогается сразу, как пошла линия
     }
     if(drag.drew && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
@@ -434,7 +468,7 @@
     const last = pl.path[pl.path.length-1];
     for(const r of runways){
       if(r.closed || !r.landingOpen) continue;
-      if(rectHit(last.x, last.y, r)){ last.x = r.x + r.w - PLANE_LEN()*0.5; last.y = r.cy; break; }
+      if(rectHit(last.x, last.y, r)){ last.x = r.x + r.w - PLANE_LEN()*0.5; last.y = r.cy; pl.approachR = r; break; }
     }
   }
   function up(){
@@ -496,7 +530,7 @@
 
   function land(pl: any, r: any){            // начать посадку на полосу r
     pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
-    pl.landing=true; pl.moving=true; pl.path=[]; pl.touched=false;
+    pl.landing=true; pl.moving=true; pl.path=[]; pl.touched=false; pl.approachR=null;
   }
   // момент касания (за корпус до полевого торца): толчок + визг резины.
   // FX касания живут здесь, а не в startGround, — это и есть «приземление».

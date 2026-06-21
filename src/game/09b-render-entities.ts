@@ -1,7 +1,7 @@
 // ===== 09b-render-entities — draw bays, planes, the HUD, transient FX and the tutorial overlay =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: drawBay, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
-// Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
+// Provides: drawBay, drawBaySnapZones, drawRunwaySnapZones, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
+// Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 04b (MT_META_VALUES); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
   function bayWalls(b: any,out: any,r: number){
@@ -82,6 +82,38 @@
     }
     if(busy && b.occupied.serveMax){ const frac=1-Math.max(0,b.occupied.serveTime)/b.occupied.serveMax, ccx=bx+bSize+8*ui, ccy=by+bSize/2;
       ctx.beginPath(); ctx.arc(ccx,ccy,6*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.strokeStyle=col; ctx.stroke(); }
+    ctx.restore();
+  }
+
+  // Отладочный слой «Зоны захвата боксов» (MT.DEBUG_BAY_SNAP_ZONES) — настройка геометрии
+  // в tuning.html. Когда слой включён, у каждого открытого бокса рисуется прямоугольник
+  // зоны «прилипания» конца маршрута (тело бокса + MT.BAY_HIT_PADDING). Без пульсации и
+  // подсветки — ровная пунктирная рамка. По умолчанию слой выключен → в игре ничего не видно.
+  function drawBaySnapZones(){
+    if(MT_META_VALUES.DEBUG_BAY_SNAP_ZONES!==true || LV.bonus) return;
+    const g=(MT_META_VALUES.BAY_HIT_PADDING as number)||0, rad=Math.min(8*ui, 6*ui+g*0.2);
+    ctx.save();
+    ctx.lineWidth=1.5*ui; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([6*ui,4*ui]);
+    for(const b of bays){
+      if(!b.open) continue;
+      rr(b.x-g, b.y-g, b.w+2*g, b.h+2*g, rad); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Отладочный слой «Зоны захвата ВПП» (MT.DEBUG_RUNWAY_SNAP_ZONES) — аналог боксового,
+  // настройка геометрии в tuning.html. Когда слой включён, у каждой открытой полосы
+  // рисуется прямоугольник зоны «прилипания» конца маршрута (полотно ВПП +
+  // MT.RUNWAY_HIT_PADDING). Ровная пунктирная рамка, по умолчанию слой выключен.
+  function drawRunwaySnapZones(){
+    if(MT_META_VALUES.DEBUG_RUNWAY_SNAP_ZONES!==true || LV.bonus) return;
+    const g=(MT_META_VALUES.RUNWAY_HIT_PADDING as number)||0, rad=Math.min(8*ui, 6*ui+g*0.2);
+    ctx.save();
+    ctx.lineWidth=1.5*ui; ctx.strokeStyle=hexa(COL.gold,.6); ctx.setLineDash([6*ui,4*ui]);
+    for(const r of runways){
+      if(r.closed) continue;
+      rr(r.x-g, r.y-g, r.w+2*g, r.h+2*g, rad); ctx.stroke();
+    }
     ctx.restore();
   }
 
