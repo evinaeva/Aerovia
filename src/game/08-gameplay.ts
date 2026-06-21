@@ -505,13 +505,18 @@
     SND.screech(); HAP.tap();                        // визг резины
   }
   function startGround(pl: any){
-    pl.landing=false; pl.moving=false; pl.zone='runway'; // стоит на полосе, ждёт руления
+    pl.landing=false; pl.zone='runway';
     const rem = pl.nSvc; // число услуг (без вылета)
     pl.groundMax = (K.GROUND_BASE + rem*K.GROUND_STEP) * pl.waitMult * (LV.calm || 1);
     pl.groundTime = pl.groundMax;
     pl.landedAt = gameTime;          // для экспресс-бонуса
     if(!pl.touched) touchdown(pl);   // страховка, если докатился без отдельного касания
     ACH.onLand(pl);
+    // выкатывание с ВПП на апрон: борт не замирает на торце полосы (это некрасиво), а
+    // докатывается вглубь апрона и встаёт перед входом. Авто-маршрут к точке остановки
+    // на оси полосы; следящий код на ВПП доведёт его, освободит полосу и передаст в поле.
+    const apronStopX = Math.max(field.x0 + 10, field.x1 - K.LAND_ROLLOUT*ui);
+    pl.moving=true; pl.path=[{x:apronStopX, y:pl.runway.cy}];
   }
   // наземный таймаут: борт улетает с частичной оплатой (LV.latePenalty, умолч. 50%)
   function groundPenalty(pl: any){

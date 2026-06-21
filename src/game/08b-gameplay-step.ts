@@ -124,10 +124,11 @@
         }
         if(pl.takeoff){
           pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl);
-          // крошечная остановка на старте: выравниваемся по оси и замираем, как настоящие
-          // борта перед разгоном — затем плавно ускоряемся к небу, увеличиваясь
-          if(pl.holdT>0){
-            pl.holdT-=dt; turnTo(pl, 0, dt);
+          // без остановки на старте: борт ПОДРУЛИВАЕТ к точке старта уже по оси полосы
+          // (центруясь на ходу), затем НЕПРЕРЫВНО переходит в разгон — никакой паузы и
+          // доворота на месте у самой ВПП.
+          if(pl.path.length){
+            followPath(pl, taxiSpeed, dt);
             pl.y += (pl.runway.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
             continue;
           }
@@ -139,7 +140,7 @@
         pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl);
         if(pl.moving && pl.path.length){
           followPath(pl, taxiSpeed, dt);
-          if(!rectHit(pl.x,pl.y,pl.runway)){          // съехал с полосы на поле
+          if(!rectHit(pl.x,pl.y,pl.runway)){          // съехал с полосы на апрон
             if(pl.runway.occupied===pl) pl.runway.occupied=null;
             pl.runway=null; pl.zone='field';
           }
@@ -178,7 +179,9 @@
             if(!r.closed && r.takeoffOpen && rectHit(pl.x,pl.y,r)){
               // выезд на полосу под взлёт (takeoffOpen=true; крушение — только при контакте на ВПП)
               pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
-              pl.takeoff=true; pl.moving=true; pl.path=[]; pl.holdT=K.TAKEOFF_HOLD;
+              // подруливаем к точке старта по оси полосы (у полевого торца) и тут же
+              // разгоняемся — борт выходит на ВПП уже центрированным, без паузы
+              pl.takeoff=true; pl.moving=true; pl.path=[{x:r.stopX + 8*ui, y:r.cy}];
               break;
             }
           }

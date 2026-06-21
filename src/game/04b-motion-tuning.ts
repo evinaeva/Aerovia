@@ -18,7 +18,8 @@
 
   const MT_GROUP_CATEGORY: Record<string, string> = {
     movement:'Движение', turns:'Повороты', routing:'Маршрутизация',
-    takeoff:'Взлёт', approach:'Заход на посадку', landing:'Посадка', timing:'Тайминги', service:'Обслуживание',
+    takeoff:'Взлёт', approach:'Заход на посадку', landing:'Посадка', rollout_stop:'Пробег и остановка',
+    aircraft_scale:'Масштаб борта', timing:'Тайминги', service:'Обслуживание',
     spawn:'Поток', collisions:'Столкновения', effects:'Эффекты', bay_nav:'Бокс: заезд/выезд',
     events:'События', weather:'Погода', forest:'Лесной биом', ctrl:'Контроль событий',
     safe_areas:'Безопасные зоны и жесты',
@@ -78,8 +79,10 @@
     {key:'K.SPEED_TAXI', group:'movement', label:'Скорость руления',          target:'K',  name:'SPEED_TAXI',   def:K.SPEED_TAXI,   min:10,  max:120, step:1,    note:'Базовая скорость на поле до погодных множителей.',           impact:'Выше — быстрее обслуживание, но сложнее избегать столкновений.'},
     // ── взлёт ─────────────────────────────────────────────────────────────────
     {key:'K.SPEED_TAKEOFF',     group:'takeoff',  label:'Скорость взлёта',         target:'K',  name:'SPEED_TAKEOFF',     def:K.SPEED_TAKEOFF,     min:40,  max:260, step:1,    note:'Разгон и уход за край экрана.',                              impact:'Сокращает время занятости ВПП при вылете.'},
-    {key:'K.TAKEOFF_HOLD',      group:'takeoff',  label:'Пауза перед взлётом',     target:'K',  name:'TAKEOFF_HOLD',      def:K.TAKEOFF_HOLD,      min:0,   max:2.5, step:.05,  note:'Секунды выравнивания перед разгоном.',                        impact:'Больше — длиннее остановка и выше риск очередей.'},
     {key:'K.TAKEOFF_OVERSHOOT', group:'takeoff',  label:'Цель разгона за ВПП',     target:'K',  name:'TAKEOFF_OVERSHOOT', def:K.TAKEOFF_OVERSHOOT, min:0,   max:800, step:10,   note:'px за exitX — цель steer() при разгоне.',                    impact:'Меньше — борт чуть раньше уходит за край и вызывает depart.'},
+    {key:'K.TAKEOFF_LIFT_DIST', group:'aircraft_scale', label:'Дистанция набора масштаба', target:'K', name:'TAKEOFF_LIFT_DIST', def:K.TAKEOFF_LIFT_DIST, min:0, max:600, step:10, unit:'px', visualsOnly:true, note:'px·ui за торцом ВПП, на которых борт дорастает с наземного до небесного масштаба ПОСЛЕ отрыва.', impact:'Меньше — резче «вырастает» после взлёта; больше — растёт дольше и плавнее.'},
+    // ── пробег и остановка после посадки ────────────────────────────────────
+    {key:'K.LAND_ROLLOUT', group:'rollout_stop', label:'Выкат на апрон', target:'K', name:'LAND_ROLLOUT', def:K.LAND_ROLLOUT, min:0, max:160, step:2, unit:'px', note:'px·ui левее кромки апрона (field.x1), куда севший борт выкатывается с ВПП и встаёт перед входом.', impact:'Больше — борт заезжает глубже на апрон; 0 — встаёт у самой кромки.'},
     // ── заход на посадку ─────────────────────────────────────────────────────
     {key:'K.APPROACH_SPEED_MULT',group:'approach',label:'Скорость захода ×',        target:'K',  name:'APPROACH_SPEED_MULT',def:K.APPROACH_SPEED_MULT,min:.2,  max:1,   step:.05,  note:'Финальный заход = SPEED_AIR × этот множитель.',              impact:'Ниже — медленнее и точнее; выше — быстрее, сложнее попасть.'},
     {key:'K.PLANE_SKY_SCALE',   group:'approach', label:'Масштаб борта в небе',     target:'K',  name:'PLANE_SKY_SCALE',   def:K.PLANE_SKY_SCALE,   min:.5,  max:3,   step:.05,  visualsOnly:true, note:'Визуальный масштаб борта в воздухе.',                         impact:'Больше — заметнее самолёты; влияет только на рендер.'},
