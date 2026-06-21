@@ -2323,6 +2323,15 @@
     buildSubtabs();
   }
 
+  // Params that feed the field LAYOUT (bay/runway/plane geometry) rather than a
+  // per-frame physics read. layout() only re-runs on resize, so after applying one
+  // of these we poke the game with a 'resize' event to recompute the playfield live.
+  const LAYOUT_KEYS = new Set(['K.PLANE_SCALE', 'K.RUNWAY_RATIO', 'K.HANGAR_RATIO']);
+  function nudgeLayout(key) {
+    if (!LAYOUT_KEYS.has(key)) return;
+    try { gameFrame.contentWindow.dispatchEvent(new Event('resize')); } catch (_) {}
+  }
+
   function wireInputs() {
     groupsEl.addEventListener('input', e => {
       const key = e.target.dataset && e.target.dataset.key;
@@ -2335,6 +2344,7 @@
         if (el !== e.target) el.value = val;
       });
       MT.apply({ [key]: val }, false);
+      nudgeLayout(key);
       setStatus(key + '  →  ' + val);
     });
 
@@ -2352,6 +2362,7 @@
       } else {
         MT.apply({ [key]: parseFloat(e.target.value) }, true);
       }
+      nudgeLayout(key);
     });
 
   }
