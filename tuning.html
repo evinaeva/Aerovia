@@ -353,17 +353,6 @@
       font-family: inherit;
     }
 
-    #preset-sel {
-      border: 1px solid rgba(127,155,176,.28);
-      border-radius: 10px;
-      background: var(--input-bg);
-      color: var(--text);
-      padding: 6px 8px;
-      font-size: 12px;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
     /* ── Tab bar: tabs + inline search ─────────────────────────────────── */
     #tab-bar {
       display: flex;
@@ -404,43 +393,6 @@
     .t-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
     .t-tab.stub { opacity: .55; }
     .t-tab.stub:hover:not(.active) { opacity: .8; }
-
-    /* ── Wizard bar (guided level-build flow over the tabs) ────────────────── */
-    #wizard-bar {
-      display: flex; align-items: center; justify-content: space-between; gap: 8px;
-      padding: 6px 10px; border-bottom: 1px solid var(--row-sep);
-      background: rgba(34,227,198,.04); flex-wrap: wrap;
-    }
-    #wizard-steps { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
-    .wz-step {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 10px; border: 1px solid transparent; border-radius: 999px;
-      background: none; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer;
-      transition: background .12s, color .12s, border-color .12s;
-    }
-    .wz-step:hover:not(.active) { color: var(--text); background: #1a2a48; }
-    .wz-step.active { color: var(--accent); border-color: var(--accent); background: rgba(34,227,198,.1); }
-    .wz-step .wz-n {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 800;
-      background: var(--row-sep); color: var(--text);
-    }
-    .wz-step.active .wz-n { background: var(--accent); color: #04212b; }
-    .wz-step.done .wz-n { background: var(--accent2); color: #04212b; }
-    .wz-sep { color: var(--muted); opacity: .5; font-size: 13px; }
-    #wizard-nav { display: flex; align-items: center; gap: 8px; }
-    #wizard-saved { font-size: 10px; color: var(--accent2); opacity: .8; white-space: nowrap; }
-    .wz-btn {
-      padding: 5px 12px; border: 1px solid var(--border); border-radius: 8px;
-      background: var(--panel); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer;
-    }
-    .wz-btn:hover { background: #1a2a48; }
-    .wz-btn:disabled { opacity: .4; cursor: default; }
-    .wz-btn--primary { color: var(--accent); border-color: rgba(34,227,198,.45); background: rgba(34,227,198,.06); }
-    .wz-btn--primary:hover { background: rgba(34,227,198,.14); }
-    @media (max-width: 560px) { .wz-step .wz-t { display: none; } #wizard-saved { display: none; } }
-    @keyframes wzFlash { 0%,100% { box-shadow: 0 0 0 0 rgba(34,227,198,0); } 50% { box-shadow: 0 0 0 3px rgba(34,227,198,.55); } }
-    .wz-flash { animation: wzFlash .8s ease-in-out 3; border-color: var(--accent) !important; }
 
     /* ── Sub-tab bar (inside the Motion tab — splits ~20 groups by domain) ── */
     #subtab-bar {
@@ -513,6 +465,15 @@
          out equal-height, so a tall card (e.g. «События») overflows its track and
          the next card («Погода») is drawn on top of it. */
       grid-auto-rows: min-content;
+    }
+
+    /* When embedded under the «Сложность» editor, #groups flows inside that view's
+       single scroll instead of being its own flex:1 scroll pane. */
+    #groups.groups-embedded {
+      flex: none;
+      min-height: 0;
+      overflow: visible;
+      padding: 8px 0 0;
     }
 
     #groups details {
@@ -749,12 +710,6 @@
       background: var(--input-bg); color: #fff; padding: 4px 6px; font-size: 12px;
       text-align: center; font-family: inherit;
     }
-    #ly-json {
-      width: 100%; min-height: 130px; margin-top: 10px; resize: vertical;
-      border: 1px solid rgba(127,155,176,.22); border-radius: 8px;
-      background: var(--input-bg); color: #cfeefe; font: 11px/1.45 ui-monospace, 'SF Mono', Menlo, monospace; padding: 8px;
-    }
-
     /* ── Level / Difficulty lab (data-driven) ───────────────────────────── */
     .lab-empty { color: var(--muted); font-size: 11px; }
     .lab-section h3 .h3-sub { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
@@ -1104,8 +1059,6 @@
       </button>
       <!-- Spacer -->
       <div style="flex:1"></div>
-      <!-- Preset -->
-      <button class="tb-btn" id="btn-preset-toggle" title="Пресет">💾</button>
       <!-- File -->
       <button class="tb-btn" id="btn-file-toggle" title="Файл">📂</button>
       <!-- Safe-zone frames overlay + cutout/navigation presets -->
@@ -1126,18 +1079,6 @@
         <button class="sz-btn" data-size="l"><span class="sz-name">L</span><span class="sz-dims">873×393</span></button>
         <button class="sz-btn" data-size="xl"><span class="sz-name">XL</span><span class="sz-dims">915×412</span></button>
         <button class="sz-btn" data-size="xxl"><span class="sz-name">XXL</span><span class="sz-dims">960×432</span></button>
-      </div>
-    </div>
-
-    <!-- Preset popup -->
-    <div class="tb-popup" id="popup-preset">
-      <div class="popup-body">
-        <select id="preset-sel"><option value="">Пресет…</option></select>
-        <input class="p-input" id="preset-name" placeholder="Название пресета">
-        <div class="btn-row">
-          <button class="p-btn" id="btn-save">Сохранить</button>
-          <button class="p-btn" id="btn-del-preset" title="Удалить пресет">🗑</button>
-        </div>
       </div>
     </div>
 
@@ -1218,30 +1159,10 @@
 <div id="bottom-pane">
 
   <div id="panel-head">
-    <!-- Мастер создания уровня: ведёт по этапам поверх обычных вкладок -->
-    <div id="wizard-bar">
-      <div id="wizard-steps">
-        <button class="wz-step" data-step="layout"><span class="wz-n">1</span><span class="wz-t">Разметка</span></button>
-        <span class="wz-sep">›</span>
-        <button class="wz-step" data-step="difficulty"><span class="wz-n">2</span><span class="wz-t">Сложность</span></button>
-        <span class="wz-sep">›</span>
-        <button class="wz-step" data-step="test"><span class="wz-n">3</span><span class="wz-t">Тест</span></button>
-        <span class="wz-sep">›</span>
-        <button class="wz-step" data-step="assets"><span class="wz-n">4</span><span class="wz-t">Ресурсы</span></button>
-      </div>
-      <div id="wizard-nav">
-        <span id="wizard-saved" title="Черновик автосохраняется в браузере">💾 автосохранение</span>
-        <button id="wizard-prev" class="wz-btn" type="button">← Назад</button>
-        <button id="wizard-next" class="wz-btn wz-btn--primary" type="button">Далее →</button>
-      </div>
-    </div>
     <div id="tab-bar">
       <div id="tab-nav">
         <button class="t-tab active" data-tab="motion">
           <span class="tab-icon">⚡</span><span>Движение</span>
-        </button>
-        <button class="t-tab" data-tab="demoscreen">
-          <span class="tab-icon">🖥</span><span>Настройки игры</span>
         </button>
         <button class="t-tab" data-tab="level">
           <span class="tab-icon">🗺</span><span>Уровни</span>
@@ -1256,7 +1177,7 @@
           <span class="tab-icon">▶</span><span>Тест</span>
         </button>
         <button class="t-tab" data-tab="assets">
-          <span class="tab-icon">🎨</span><span>Ресурсы</span>
+          <span class="tab-icon">🎨</span><span>Скины</span>
         </button>
       </div>
       <div id="search-wrap">
@@ -1349,12 +1270,10 @@
     <div class="lab-section">
       <h3>Действия</h3>
       <div class="lab-btn-row">
-        <button class="p-btn" id="lab-export">⬇ Экспорт JSON</button>
-        <button class="p-btn" id="lab-copy">📋 Копировать уровень</button>
         <button class="p-btn" id="lab-reset">↺ Сброс правок</button>
       </div>
-      <p class="lab-hint">Экспорт скачивает правленый массив <code>LEVELS</code> как JSON — вставь значения в
-        <code>src/game/04-config-levels.ts</code>. Сама <code>tuning.html</code> в исходник не пишет.</p>
+      <p class="lab-hint">Экспорт всего настроенного — в верхнем меню «📂 Файл». Сама <code>tuning.html</code> в исходник
+        не пишет; выгруженные значения <code>LEVELS</code> вставь в <code>src/game/04-config-levels.ts</code>.</p>
     </div>
 
     <!-- level params (moved out of «Разметка») -->
@@ -1589,24 +1508,15 @@
     <div class="lab-section">
       <h3>Действия</h3>
       <div class="lab-btn-row" style="margin-bottom:6px">
-        <input class="p-input" id="ly-filename" placeholder="имя файла" style="flex:1;min-width:140px" spellcheck="false" autocomplete="off">
-      </div>
-      <div class="lab-btn-row" style="margin-bottom:6px">
         <span class="lab-empty" style="flex:1">▶ Чтобы сыграть разметку — переключатель «Тестовая игра» слева от превью.</span>
       </div>
       <div class="lab-btn-row">
-        <button class="p-btn" id="ly-export">⬇ Экспорт JSON</button>
-        <button class="p-btn" id="ly-copy">📋 Копировать</button>
-        <button class="p-btn" id="ly-import-btn">↑ Импорт</button>
-        <input type="file" id="ly-file" accept=".json" style="display:none">
         <button class="p-btn" id="ly-reset">↺ Сброс</button>
       </div>
-      <p class="lab-hint"><b>Сыграть черновик</b> — загружает уровень в игру (вверху) и стартует его сразу; заодно кладёт его
-        в игру, так что на стартовом экране появляется кнопка «Свой уровень». <b>Экспорт</b> скачивает <code>layout</code>
-        + параметры уровня в JSON — его же можно импортировать обратно или вставить в массив <code>LEVELS</code>
-        (<code>src/game/04-config-levels.ts</code>). Поля <code>apron</code>/<code>zones</code> движок пока не отрисовывает
-        (геометрия апрона процедурная) — это замысел разметки.</p>
-      <textarea id="ly-json" readonly spellcheck="false" placeholder="JSON появится после «Экспорт»"></textarea>
+      <p class="lab-hint"><b>Сыграть черновик</b> — переключатель «Тестовая игра» слева от превью загружает уровень в игру
+        и сразу стартует его. <b>Экспорт/импорт</b> всего настроенного — в верхнем меню «📂 Файл»: выгруженный JSON можно
+        импортировать обратно или вставить в массив <code>LEVELS</code> (<code>src/game/04-config-levels.ts</code>).
+        Поля <code>apron</code>/<code>zones</code> движок пока не отрисовывает (геометрия апрона процедурная).</p>
       <div id="ly-warn" style="margin-top:6px;font-size:11px;color:#e3c522"></div>
     </div>
   </div>
@@ -1664,17 +1574,11 @@
     loading:        'Ждём запуска игры…',
     paramsReady:    (n) => 'Готово · ' + n + ' параметров.',
     cutoutPreset:   (desc) => 'Вырез/навигация: ' + desc,
-    presetSaved:    (n) => 'Пресет сохранён: ' + n,
-    presetDeleted:  (n) => 'Пресет удалён: ' + n,
-    presetApplied:  (n) => 'Применён пресет: ' + n,
     exportDone:     'JSON экспортирован.',
     importDone:     (f) => 'Импортировано: ' + f,
     importError:    (e) => 'Ошибка импорта: ' + e,
-    enterPreset:    'Введи название пресета.',
     confirmReset:   'Сбросить все параметры к значениям по умолчанию?',
-    confirmDel:     (n) => 'Удалить пресет «' + n + '»?',
     paramsReset:    'Все параметры сброшены.',
-    choosePreset:   'Выбери пресет для удаления.',
     livePreview:    'Превью',
 
     /* ── Таб «Зоны экрана» (легенда / таблица / оверлей / предупреждения) ── */
@@ -1858,7 +1762,6 @@
 
   backdrop.addEventListener('click', closeAllPopups);
   document.getElementById('btn-size-toggle').addEventListener('click',   () => togglePopup('popup-size'));
-  document.getElementById('btn-preset-toggle').addEventListener('click', () => togglePopup('popup-preset'));
   document.getElementById('btn-file-toggle').addEventListener('click',   () => togglePopup('popup-file'));
 
   /* ── Cutout / navigation options (combinable, not a single radio) ───────── */
@@ -2185,24 +2088,26 @@
 
   gameFrame.addEventListener('load', () => { setTimeout(pollMT, 80); setTimeout(pollGame, 80); });
 
-  /* ── Sub-tabs for the Motion & «Настройки демо экрана» tabs ────────────────
+  /* ── Sub-tabs for the «Движение» & «Сложность» tabs ────────────────────────
      ~20 parameter groups in one list is unreadable, so we bucket them by domain
      and show one bucket at a time. Each <details> card is tagged data-subtab.
      Each sub-tab declares its `owner` top-level tab; the sub-tab bar shows only
-     the sub-tabs belonging to whichever owner tab is currently active. */
+     the sub-tabs belonging to whichever owner tab is currently active.
+     Бывший таб «Настройки игры» удалён — его движковые группы (Контроль/Поток/
+     События) теперь живут под редактором «Сложности» (см. activateTab). */
   const subtabBar = document.getElementById('subtab-bar');
-  let   currentSubtab = null;                              // active sub-tab key
-  const lastSubtab = { motion: null, demoscreen: null };  // last sub-tab used, per owner tab
+  let   currentSubtab = null;                               // active sub-tab key
+  const lastSubtab = { motion: null, difficulty: null };   // last sub-tab used, per owner tab
 
   const SUBTABS = [
     // «Движение» tab — plane physics / flight / ground tuning.
     { owner:'motion',     key:'plane',   icon:'✈',  label:'Самолёт',       groups:['movement','turns','collisions','effects'] },
     { owner:'motion',     key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','rollout_stop','aircraft_scale','routing'] },
     { owner:'motion',     key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones'] },
-    // «Настройки демо экрана» tab — controls for the test/demo session, not plane physics.
-    { owner:'demoscreen', key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl','debug_overlays','mobile_preview'] },
-    { owner:'demoscreen', key:'flow',    icon:'🌊', label:'Поток',          groups:['spawn','timing'] },
-    { owner:'demoscreen', key:'events',  icon:'🎲', label:'События',        groups:['events','weather'] },
+    // «Сложность» tab — движковые ручки тест/демо-сессии (бывший таб «Настройки игры»).
+    { owner:'difficulty', key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl','debug_overlays','mobile_preview'] },
+    { owner:'difficulty', key:'flow',    icon:'🌊', label:'Поток',          groups:['spawn','timing'] },
+    { owner:'difficulty', key:'events',  icon:'🎲', label:'События',        groups:['events','weather'] },
     // 'zones' (safe_areas) intentionally not surfaced — see HIDDEN_GROUPS below.
     // Those params describe a target device's reserved screen regions for the
     // layout-overlay / export-warning diagnostics; the operator can't (and needn't)
@@ -2213,7 +2118,7 @@
   const SUBTAB_TAB = {};   // sub-tab key -> owner top-level tab
   SUBTABS.forEach(st => { SUBTAB_TAB[st.key] = st.owner; st.groups.forEach(g => { SUBTAB_OF[g] = st.key; }); });
   // Top-level tabs that present their groups through the sub-tab bar.
-  const SUBTAB_TABS = new Set(['motion', 'demoscreen']);
+  const SUBTAB_TABS = new Set(['motion', 'difficulty']);
   // Anything unmapped lands in the demo «Контроль» sub-tab so nothing disappears.
   function subtabOf(group) { return SUBTAB_OF[group] || 'control'; }
   function activeTopTab() { return document.querySelector('.t-tab.active')?.dataset.tab; }
@@ -2430,7 +2335,6 @@
     }
 
     wireInputs();
-    refreshPresets();
     buildSubtabs();
   }
 
@@ -2599,12 +2503,26 @@
     setStatus(T.paramsReset);
   });
 
+  // Единый экспорт: всё, что настроено одним файлом — черновик уровня (разметка +
+  // сложность + скины), правки кампании LEVELS и движковые ручки MotionTuning.
+  function unifiedExportText() {
+    const out = { aerovia: 'tuning/v1', exportedAt: new Date().toISOString() };
+    try { if (window.Draft) out.level = window.Draft.export(); } catch (_) {}
+    try { if (Array.isArray(labLevels) && labLevels.length) out.levels = labLevels; } catch (_) {}
+    try { if (MT) out.motionTuning = JSON.parse(MT.export()); } catch (_) {}
+    return JSON.stringify(out, null, 2);
+  }
+  function applyUnifiedImport(data) {
+    if (data.motionTuning && MT) { try { MT.importText(JSON.stringify(data.motionTuning)); syncUI(); } catch (_) {} }
+    if (data.level && window.Draft && window.Draft.import) { try { window.Draft.import(data.level); } catch (_) {} }
+    if (Array.isArray(data.levels) && window._importLevels) { try { window._importLevels(data.levels); } catch (_) {} }
+  }
+
   document.getElementById('btn-export').addEventListener('click', () => {
-    if (!MT) return;
-    const blob = new Blob([MT.export()], { type: 'application/json' });
+    const blob = new Blob([unifiedExportText()], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'motion-tuning.json';
+    a.download = 'aerovia-tuning.json';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     setStatus(T.exportDone);
@@ -2616,49 +2534,27 @@
 
   document.getElementById('file-import').addEventListener('change', e => {
     const file = e.target.files && e.target.files[0];
-    if (!file || !MT) return;
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      try { MT.importText(ev.target.result); syncUI(); setStatus(T.importDone(file.name)); }
-      catch (err) { setStatus(T.importError(err.message)); }
+      try {
+        const text = ev.target.result;
+        const data = JSON.parse(text);
+        if (data && (data.aerovia || data.level || data.motionTuning || (data.levels && data.version == null))) {
+          applyUnifiedImport(data);                                            // единый формат
+        } else if (data && (data.layout || data.objective || data.apron)) {
+          if (window.Draft && window.Draft.import) window.Draft.import(data);   // одиночный уровень/разметка
+        } else if (data && data.version != null && Array.isArray(data.levels)) {
+          if (window._importLevels) window._importLevels(data.levels);          // старый экспорт кампании
+        } else if (MT) {
+          MT.importText(text); syncUI();                                        // движковые ручки (старый формат)
+        }
+        setStatus(T.importDone(file.name));
+      } catch (err) { setStatus(T.importError(err.message)); }
     };
     reader.readAsText(file);
     e.target.value = '';
   });
-
-  document.getElementById('btn-save').addEventListener('click', () => {
-    if (!MT) return;
-    const name = document.getElementById('preset-name').value.trim();
-    if (!name) { setStatus(T.enterPreset); return; }
-    MT.savePreset(name); refreshPresets(); setStatus(T.presetSaved(name));
-  });
-
-  document.getElementById('preset-sel').addEventListener('change', e => {
-    if (!MT || !e.target.value) return;
-    MT.applyPreset(e.target.value); syncUI(); setStatus(T.presetApplied(e.target.value));
-  });
-
-  document.getElementById('btn-del-preset').addEventListener('click', () => {
-    const sel = document.getElementById('preset-sel');
-    const name = sel.value;
-    if (!name) { setStatus(T.choosePreset); return; }
-    if (!confirm(T.confirmDel(name))) return;
-    try {
-      const ps = JSON.parse(localStorage.getItem('pf_motion_presets_v1') || '{}');
-      delete ps[name];
-      localStorage.setItem('pf_motion_presets_v1', JSON.stringify(ps));
-    } catch (_) {}
-    refreshPresets(); setStatus(T.presetDeleted(name));
-  });
-
-  function refreshPresets() {
-    const sel = document.getElementById('preset-sel');
-    const cur = sel.value;
-    let ps = {};
-    try { ps = JSON.parse(localStorage.getItem('pf_motion_presets_v1') || '{}') || {}; } catch (_) {}
-    sel.innerHTML = '<option value="">Пресет…</option>' +
-      Object.keys(ps).map(n => '<option' + (n === cur ? ' selected' : '') + '>' + n + '</option>').join('');
-  }
 
   function setStatus(msg) { if (statusBar) statusBar.textContent = msg; }   /* status bar removed — no-op safe */
 
@@ -2714,8 +2610,6 @@
     buildDiffEditor();
     buildEvents();
     wireEditor();
-    document.getElementById('lab-export').onclick = exportJSON;
-    document.getElementById('lab-copy').onclick   = copyLevel;
     document.getElementById('lab-reset').onclick  = resetEdits;
     const cap = document.getElementById('diff-cap');
     if (cap && GAME.K) cap.textContent = labFmt(GAME.K.ECON_DIFF_CAP, 1);
@@ -3060,57 +2954,8 @@
     host.innerHTML = gl + rows + `<div style="margin-top:6px;font-weight:600;color:${rep.ok?'#22e3c6':'#e3c522'}">${rep.ok?'✓ Проходим на все три звезды':'✗ Есть недостижимые тиры'}</div>`;
   }
 
-  /* ---- save = JSON export (tuning.html can't write source) ---- */
-  function levelsExportText() {
-    return JSON.stringify({
-      version: 1, exportedAt: new Date().toISOString(),
-      note: 'Edited campaign LEVELS from tuning.html — paste values into src/game/04-config-levels.ts',
-      levels: labLevels,
-    }, null, 2);
-  }
-  function exportJSON() {
-    const blob = new Blob([levelsExportText()], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'levels-tuning.json';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    setStatus('Уровни экспортированы в JSON.');
-    // Non-blocking: surface safe-zone warnings (if any) after the export fires.
-    const warns = (window._zoneWarnings && window._zoneWarnings()) || [];
-    if (warns.length) showZoneWarningModal(warns);
-  }
-
-  /* ── Safe-zone warning modal ──────────────────────────────────────────────
-     Shown on map/levels export when the live field has runways/boxes that fall
-     outside the safe frames. Informational only — the export already happened. */
-  function showZoneWarningModal(warnings) {
-    let back = document.getElementById('zone-warn-modal');
-    if (!back) {
-      back = document.createElement('div');
-      back.id = 'zone-warn-modal';
-      back.innerHTML =
-        '<div class="zwm-box">' +
-          '<div class="zwm-title">⚠ Зоны экрана</div>' +
-          '<div class="zwm-sub">Карта экспортирована, но есть замечания по безопасным зонам:</div>' +
-          '<div class="zwm-list"></div>' +
-          '<button class="zwm-ok" type="button">ОК</button>' +
-        '</div>';
-      document.body.appendChild(back);
-      const close = () => { back.style.display = 'none'; };
-      back.querySelector('.zwm-ok').addEventListener('click', close);
-      back.addEventListener('click', e => { if (e.target === back) close(); });
-    }
-    back.querySelector('.zwm-list').innerHTML =
-      warnings.map(w => '<div class="zwm-item">• ' + escHtml(w) + '</div>').join('');
-    back.style.display = 'flex';
-  }
-  function copyLevel() {
-    const txt = JSON.stringify(curLevel(), null, 2);
-    const done = () => setStatus('L' + (labSel + 1) + ': JSON уровня скопирован.');
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, () => setStatus(txt));
-    else setStatus(txt);
-  }
+  /* Экспорт кампании LEVELS теперь идёт через единый экспорт «Файл» (см.
+     unifiedExportText → поле `levels`); отдельных кнопок выгрузки в табе нет. */
   function resetEdits() {
     if (!GAME) return;
     if (!confirm('Сбросить все правки уровней к значениям из игры?')) return;
@@ -3119,10 +2964,18 @@
     labSelect(Math.min(labSel, labLevels.length - 1));
     setStatus('Правки уровней сброшены.');
   }
+  // Восстановить правленый массив LEVELS из единого импорта «Файл».
+  window._importLevels = function (arr) {
+    if (!Array.isArray(arr) || !GAME) return;
+    labLevels = arr.map(lv => JSON.parse(JSON.stringify(lv)));
+    buildDiffSelect();
+    labSelect(Math.min(labSel, labLevels.length - 1));
+  };
 
   /* ── Tab switching ────────────────────────────────────────────────────── */
   (function () {
     const searchWrap  = document.getElementById('search-wrap');
+    const bottomPane  = document.getElementById('bottom-pane');
     const levelViewEl  = document.getElementById('level-view');
     const layoutViewEl = document.getElementById('layout-view');
     const diffViewEl   = document.getElementById('difficulty-view');
@@ -3132,7 +2985,7 @@
     function activateTab(tab) {
       document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
       const isLayout   = tab === 'layout';
-      const hasSubtabs = SUBTAB_TABS.has(tab);   // «Движение» & «Настройки демо экрана»
+      const hasSubtabs = SUBTAB_TABS.has(tab);   // «Движение» (свои группы) и «Сложность» (группы бывших «Настроек игры»)
       searchWrap.style.visibility = hasSubtabs ? 'visible' : 'hidden';
       groupsEl.style.display    = hasSubtabs ? '' : 'none';
       levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
@@ -3140,6 +2993,16 @@
       diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
       assetViewEl.style.display = tab === 'assets'     ? 'flex' : 'none';
       if (testViewEl) testViewEl.style.display = tab === 'test' ? 'flex' : 'none';
+      // «Сложность» показывает движковые группы (бывший таб «Настройки игры») прямо
+      // под своим редактором — вкладываем #groups в конец редактора, чтобы был один
+      // общий скролл; для остальных вкладок возвращаем #groups на его обычное место.
+      if (tab === 'difficulty') {
+        if (groupsEl.parentNode !== diffViewEl) diffViewEl.appendChild(groupsEl);
+        groupsEl.classList.add('groups-embedded');
+      } else {
+        if (groupsEl.parentNode === diffViewEl) bottomPane.insertBefore(groupsEl, levelViewEl);
+        groupsEl.classList.remove('groups-embedded');
+      }
       // #groups and the sub-tab bar are shared by both sub-tabbed tops — rebuild the
       // bar for whichever is now active and reveal its (remembered) sub-tab.
       if (hasSubtabs) buildSubtabs();
@@ -3151,7 +3014,6 @@
       if (tab === 'difficulty' && GAME) { renderDiffEditor(); renderDiff(); }
       if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
       if (tab === 'test'    && window._testSync)      window._testSync();
-      if (window._wizardSync) window._wizardSync(tab);
     }
     window._activateTab = activateTab;
     document.querySelectorAll('.t-tab').forEach(btn => {
@@ -3867,39 +3729,8 @@
       return (s || '').toString().trim().toLowerCase()
         .replace(/[^a-z0-9а-яё]+/giu, '-').replace(/^-+|-+$/g, '') || 'layout';
     }
-    function fileName() {
-      let n = ($('ly-filename').value || '').trim();
-      if (!n) n = 'aerovia-' + slug(curTpl);
-      if (!/\.json$/i.test(n)) n += '.json';
-      return n;
-    }
-    function warnLine(v) {
-      const parts = v.errors.map(x => '⛔ ' + x).concat(v.warns.map(x => '⚠ ' + x));
-      return parts.join(' · ');
-    }
-    function writeExport(v) {
-      const text = JSON.stringify(exportObj(), null, 2);
-      $('ly-json').value = text;
-      $('ly-warn').textContent = warnLine(v);
-      try {
-        const blob = new Blob([text], { type: 'application/json' });
-        const url = URL.createObjectURL(blob); const a = document.createElement('a');
-        a.href = url; a.download = fileName(); a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
-      } catch (_) {}
-    }
-    function doExport() {
-      const v = validate();
-      if (v.errors.length) { showValidateModal(v, () => writeExport(v), 'Экспортировать всё равно', 'Экспортировать всё равно?'); return; }
-      writeExport(v);
-    }
-    function doCopy() {
-      const text = JSON.stringify(exportObj(), null, 2);
-      $('ly-json').value = text;
-      try { if (navigator.clipboard) navigator.clipboard.writeText(text); } catch (_) {}
-      $('ly-warn').textContent = 'скопировано в буфер';
-      setTimeout(() => { $('ly-warn').textContent = warnLine(validate()); }, 1400);
-    }
+    // Экспорт/импорт черновика консолидированы в верхнем меню «Файл»
+    // (window.Draft.export/import) — отдельных кнопок в табах больше нет.
     // Запуск тестовой игры консолидирован в левом рельсе (window._runTest).
     // Здесь только отдаём наружу проверку «можно ли играть»: при ошибках разметки
     // показываем ту же модалку подтверждения, что и экспорт, и лишь потом стартуем.
@@ -3972,13 +3803,14 @@
     }
     window.Draft = {
       export:   () => exportObj(),
+      import:   (o) => importObj(o),                      // восстановить черновик из JSON (единый импорт «Файл»)
       validate: () => validate(),
       play:     () => { if (window._runTest) window._runTest(); },
       name:     () => curTpl || 'черновик',
       raw:      () => ensureDiffFields(),                 // живая ссылка на LE (для вкладки «Сложность»)
       commit:   () => { save(); refreshAll(); },          // сохранить + пересинхронить контролы «Разметки»
       getSkins: () => Object.assign({ hangar: 'default', background: 'default' }, LE.skins || {}),
-      setSkins: (patch) => { Object.assign(ensureSkins(), patch || {}); save(); if (window._wizardSaved) window._wizardSaved(); },
+      setSkins: (patch) => { Object.assign(ensureSkins(), patch || {}); save(); },
     };
 
     /* ---- param controls ---- */
@@ -3997,14 +3829,7 @@
     document.querySelectorAll('[data-add-hangar]').forEach(b => b.addEventListener('click', () => addHangar(b.dataset.addHangar)));
     $('ly-add-runway').addEventListener('click', addRunway);
     $('ly-del').addEventListener('click', delSelected);
-    $('ly-export').addEventListener('click', doExport);
-    $('ly-copy').addEventListener('click', doCopy);
-    $('ly-import-btn').addEventListener('click', () => $('ly-file').click());
-    $('ly-file').addEventListener('change', e => {
-      const f = e.target.files && e.target.files[0]; if (!f) return;
-      const rd = new FileReader(); rd.onload = () => { try { importObj(JSON.parse(rd.result)); } catch (_) { $('ly-warn').textContent = 'битый JSON'; } }; rd.readAsText(f);
-      e.target.value = '';
-    });
+    // Экспорт/импорт черновика консолидированы в верхнем меню «Файл» (см. window.Draft.export/import).
     $('ly-reset').addEventListener('click', () => { LE = DEFAULTS(); sel = null; save(); refreshAll(); });
     // template controls
     $('ly-tpl-sel').addEventListener('change', e => selectTpl(e.target.value));
@@ -4650,48 +4475,6 @@
       const st = document.getElementById('test-status'); if (st) st.textContent = 'вернулись к разметке';
     });
     window._testSync = syncTest;
-  })();
-
-  /* ── Мастер создания уровня: ведёт по этапам, маппит шаги на вкладки ──────── */
-  (function () {
-    const STEPS = ['layout', 'difficulty', 'test', 'assets'];
-    function go(tab) { if (window._activateTab) window._activateTab(tab); }
-    function curIdx() { const a = document.querySelector('.t-tab.active'); return a ? STEPS.indexOf(a.dataset.tab) : -1; }
-    function sync(tab) {
-      const idx = STEPS.indexOf(tab);
-      document.querySelectorAll('.wz-step').forEach(s => {
-        const si = STEPS.indexOf(s.dataset.step);
-        s.classList.toggle('active', s.dataset.step === tab);
-        s.classList.toggle('done', idx >= 0 && si < idx);
-      });
-      const prev = document.getElementById('wizard-prev'), next = document.getElementById('wizard-next');
-      if (idx < 0) { prev.disabled = false; next.disabled = false; next.textContent = 'К мастеру →'; return; }
-      prev.disabled = idx <= 0;
-      next.disabled = false;
-      next.textContent = idx >= STEPS.length - 1 ? '✓ Готово' : 'Далее →';
-    }
-    document.querySelectorAll('.wz-step').forEach(s => s.addEventListener('click', () => go(s.dataset.step)));
-    document.getElementById('wizard-prev').addEventListener('click', () => { const i = curIdx(); go(STEPS[i > 0 ? i - 1 : 0]); });
-    document.getElementById('wizard-next').addEventListener('click', () => {
-      const i = curIdx();
-      if (i < 0) { go(STEPS[0]); return; }
-      if (i < STEPS.length - 1) { go(STEPS[i + 1]); return; }
-      // последний шаг → финал пайплайна: ведём к экспорту в «Разметке» и подсвечиваем кнопку
-      go('layout');
-      const exp = document.getElementById('ly-export');
-      const warn = document.getElementById('ly-warn');
-      if (warn) warn.textContent = '✓ уровень готов — жми «⬇ Экспорт JSON», чтобы скачать';
-      if (exp) { exp.classList.add('wz-flash'); clearTimeout(exp._wzf); exp._wzf = setTimeout(() => exp.classList.remove('wz-flash'), 2400); }
-    });
-    window._wizardSync = sync;
-    window._wizardSaved = function () {
-      const el = document.getElementById('wizard-saved'); if (!el) return;
-      el.textContent = '💾 сохранено ✓'; clearTimeout(el._t);
-      el._t = setTimeout(() => { el.textContent = '💾 автосохранение'; }, 1500);
-    };
-    // отразить стартовую вкладку в полосе мастера (без принудительного перехода)
-    const a0 = document.querySelector('.t-tab.active');
-    sync(a0 ? a0.dataset.tab : 'motion');
   })();
 
 })();
