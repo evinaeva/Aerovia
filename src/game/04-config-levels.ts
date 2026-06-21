@@ -306,6 +306,17 @@
       latePenalty:0.40,
     },
   ];
+  // ── ВРЕМЕННЫЕ ЗАГЛУШКИ уровней до L50 — для проверки скролла карты уровней ──
+  // Клон валидной «спокойной» смены (структура L2): проходят validateLevels,
+  // analyzeLevel и экономический чек. TODO: убрать перед релизом — не настоящие уровни.
+  while (LEVELS.length < 50) {
+    LEVELS.push({
+      pace: 0.12,
+      objective: { metric: 'served', stars: [8, 10, 12] },
+      sides: { top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
+      runways: 3, events: {},
+    });
+  }
   // ---- biome maps (отдельная от кампании ветка карт) ----
   // Каждый биом — это конфиг уровня (как в LEVELS) + флаг biome для темы/помех.
   // ready:false — биом в работе, на экране показан как «скоро». Сервисное здание
