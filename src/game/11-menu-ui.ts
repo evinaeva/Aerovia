@@ -324,12 +324,53 @@
 
     host.innerHTML='';
     host.appendChild(grid);
-    // Прокрутить к текущему уровню
+    // Прокрутить к текущему уровню + обновить кастомный скроллбар
     setTimeout(()=>{
       const cur=grid.querySelector('.lvlcard--ac') as HTMLElement|null;
       if(cur&&host) host.scrollTop=Math.max(0,cur.offsetTop-80);
+      lvScrollUpd?.();
     },60);
   }
+
+  // Кастомный скроллбар списка уровней (нативный скрыт в CSS): тонкая полоса
+  // справа — тап по треку прыгает, перетаскивание ползунка скроллит. Слушатели
+  // вешаются один раз; renderLevels дёргает lvScrollUpd() после перерисовки.
+  let lvScrollUpd:(()=>void)|null=null;
+  function initLvScrollbar(){
+    const mg=document.getElementById('levelList'),
+          ind=document.getElementById('lvScrollInd'),
+          thumb=document.getElementById('lvScrollThumb');
+    if(!mg||!ind||!thumb) return;
+    const upd=()=>{
+      const{scrollTop:st,scrollHeight:sh,clientHeight:ch}=mg;
+      if(sh<=ch){ thumb.style.opacity='0'; return; }
+      thumb.style.opacity='1';
+      const tH=ind.offsetHeight, thH=Math.max(20,ch/sh*tH), max=sh-ch;
+      thumb.style.height=thH+'px';
+      thumb.style.top=(max>0?st/max*(tH-thH):0)+'px';
+    };
+    lvScrollUpd=upd;
+    mg.addEventListener('scroll',upd);
+    ind.addEventListener('pointerdown',e=>{
+      if(e.target===thumb){ // перетаскивание ползунка
+        e.preventDefault();
+        try{ thumb.setPointerCapture(e.pointerId); }catch{}
+        const y0=e.clientY, s0=mg.scrollTop, max=mg.scrollHeight-mg.clientHeight;
+        const k=(ind.offsetHeight-thumb.offsetHeight)/max;
+        const mv=(ev:PointerEvent)=>{ mg.scrollTop=Math.max(0,Math.min(max,s0+(ev.clientY-y0)/k)); upd(); };
+        const up=()=>{ thumb.removeEventListener('pointermove',mv); thumb.removeEventListener('pointerup',up); };
+        thumb.addEventListener('pointermove',mv);
+        thumb.addEventListener('pointerup',up);
+        return;
+      }
+      // тап по треку — прыжок к позиции
+      const r=ind.getBoundingClientRect();
+      mg.scrollTop=((e.clientY-r.top)/ind.offsetHeight)*(mg.scrollHeight-mg.clientHeight);
+      upd();
+    });
+    setTimeout(upd,80);
+  }
+  initLvScrollbar();
 
   // ---- полноэкранный режим (для телефона: убирает прокрутку и адресную строку) ----
   function lockLandscape(){
