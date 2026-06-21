@@ -74,14 +74,16 @@
   </div>
 
   <div class="overlay hidden" id="levelScreen">
-    <div class="screen" style="padding:22px 24px 18px">
-      <div class="screen__col">
-        <div class="m-head">
-          <h1 class="m-title m-title--lg" data-i18n="levels.title"></h1>
-          <div class="m-counter" id="starCount"></div>
+    <div class="screen" style="padding:12px 16px 10px">
+      <div class="screen__col" style="overflow:hidden">
+        <div class="m-head lvl-head-row">
+          <button class="icon-btn" id="backBtn" data-i18n-aria="levels.back">
+            <span class="mic" data-mic="back"></span>
+          </button>
+          <h1 class="m-title m-title--lvl" data-i18n="levels.title"></h1>
+          <div class="m-counter m-counter--xs" id="starCount"></div>
         </div>
         <div id="levelList"></div>
-        <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="backBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="levels.back"></span></button></div>
       </div>
     </div>
   </div>

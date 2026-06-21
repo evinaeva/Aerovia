@@ -203,86 +203,8 @@
   .starcount svg{width:15px;height:15px;display:block}
   .starcount b{font-weight:800;color:#fbe9a8;font-size:15px}
   .starcount .sclbl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-left:3px}
-  #levelList{display:block;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
-    margin:14px -24px 2px;padding:18px 26px 28px;scrollbar-width:thin;scrollbar-color:#4a4366 transparent;
-    background:linear-gradient(#191522,#241d33 72%,#15111d)}
-  #levelList::-webkit-scrollbar{height:7px}
-  #levelList::-webkit-scrollbar-thumb{background:#4a4366;border-radius:4px}
-  #levelList .cart-row{display:inline-flex;align-items:flex-end;min-width:100%;padding:0 2px}
-  /* вагон-платформа на двух колёсах */
-  #levelList .wagon{flex:0 0 auto;position:relative;margin:0 3px 14px}
-  #levelList .wagon-bed{display:flex;align-items:flex-end;gap:9px;padding:9px 12px 11px;
-    background:linear-gradient(#3c3552,#322b48);border:1.5px solid #4d4569;border-radius:9px;
-    box-shadow:inset 0 2px 0 rgba(255,255,255,.06),0 3px 8px rgba(0,0,0,.35)}
-  #levelList .wagon::before,#levelList .wagon::after{content:"";position:absolute;bottom:-11px;
-    width:17px;height:17px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#5a5470,#1c1828);
-    border:2px solid #0e0b16;box-shadow:0 2px 3px rgba(0,0,0,.4)}
-  #levelList .wagon::before{left:16px}#levelList .wagon::after{right:16px}
-  /* сцепка между вагонами + выпавший чемодан (бонус, тизер «скоро») */
-  #levelList .coupling{flex:0 0 auto;align-self:flex-end;position:relative;width:30px;height:5px;
-    margin:0 -1px 27px;background:#3a3550;border-radius:3px}
-  #levelList .bonuscase{position:absolute;left:50%;bottom:-21px;width:27px;height:19px;
-    transform:translateX(-50%) rotate(-13deg);border-radius:4px;
-    background:linear-gradient(#6a5740,#4e3f2c);border:1.5px solid #2c2417;
-    box-shadow:0 2px 4px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;
-    font-size:11px;font-weight:800;color:#caa15e}
-  #levelList .bonuscase::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;
-    background:rgba(0,0,0,.28);transform:translateY(-1px)}
-  /* чемодан-уровень (сбрасываем оформление .levelcard, id-селектор перебивает) */
-  #levelList .suitcase{position:relative;flex:0 0 auto;width:56px;padding:0;border:0;border-radius:0;
-    background:transparent;box-shadow:none;overflow:visible;font:inherit;color:var(--paper);cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px}
-  #levelList .suitcase:hover{background:transparent;box-shadow:none}
-  #levelList .case-stars{display:flex;gap:1px;height:12px}
-  #levelList .case-stars svg{width:12px;height:12px;display:block}
-  #levelList .case-body{position:relative;width:54px;height:44px;border-radius:8px;
-    background:linear-gradient(#caa15e,#a07b46);border:1.5px solid #6e5430;
-    box-shadow:inset 0 2px 0 rgba(255,255,255,.22),0 3px 7px rgba(0,0,0,.4);
-    display:flex;align-items:center;justify-content:center;transition:transform .15s,box-shadow .15s}
-  #levelList .case-handle{position:absolute;top:-6px;left:50%;transform:translateX(-50%);
-    width:18px;height:9px;border:2px solid #6e5430;border-bottom:0;border-radius:6px 6px 0 0}
-  #levelList .case-strap{position:absolute;top:0;bottom:0;left:11px;width:4px;background:rgba(0,0,0,.16);
-    box-shadow:30px 0 0 rgba(0,0,0,.16)}
-  #levelList .case-num{position:relative;font-family:"Segoe UI",system-ui,sans-serif;font-weight:800;
-    font-size:16px;color:#3a2c14;text-shadow:0 1px 0 rgba(255,255,255,.25)}
-  #levelList .case-lock{position:absolute}
-  #levelList .suitcase:hover .case-body{transform:translateY(-2px);
-    box-shadow:inset 0 2px 0 rgba(255,255,255,.22),0 7px 13px rgba(0,0,0,.45)}
-  #levelList .suitcase.done .case-body{background:linear-gradient(#e7c266,#c89a44);border-color:#8a6b2e}
-  #levelList .suitcase.done .case-handle{border-color:#8a6b2e}
-  #levelList .suitcase.current .case-body{box-shadow:0 0 0 2px var(--phosphor),
-    0 0 16px rgba(205,176,247,.6),inset 0 2px 0 rgba(255,255,255,.22)}
-  #levelList .suitcase.locked{cursor:default}
-  #levelList .suitcase.locked .case-body{background:linear-gradient(#3a3550,#2c2740);border-color:#4a4564;
-    box-shadow:inset 0 2px 0 rgba(255,255,255,.05),0 2px 6px rgba(0,0,0,.4)}
-  #levelList .suitcase.locked .case-handle{border-color:#4a4564}
-  #levelList .suitcase.locked .case-strap{opacity:.5}
-  /* бейдж новой механики (узловой уровень): открыт — иконка; закрыт — «туман» с «?» */
-  #levelList .case-feat{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
-    justify-content:center;font-size:15px;line-height:1;border:2px solid #5a5276;margin-bottom:3px;
-    box-shadow:0 2px 8px rgba(0,0,0,.45)}
-  #levelList .case-feat.mystery{color:#cfc7e6;font-weight:800;
-    background:repeating-linear-gradient(45deg,#352e4a,#352e4a 4px,#2a2440 4px,#2a2440 8px)}
-  #levelList .case-feat.shown{background:#3c3552;color:#fff}
-  #levelList .case-feat.shown.fvip{background:radial-gradient(circle at 35% 30%,#ffe39a,#e7b94e);border-color:#b78a2e;color:#5a4410}
-  #levelList .case-feat.shown.frush{background:radial-gradient(circle at 35% 30%,#ffd49a,#f2a93b);border-color:#b8701f;color:#5a3410}
-  #levelList .case-feat.shown.fmedical{background:radial-gradient(circle at 35% 30%,#ffd0d8,#ef798a);border-color:#c2566a;color:#5a1420}
-  #levelList .case-feat.shown.femergency{background:radial-gradient(circle at 35% 30%,#bdeee9,#4ecdc4);border-color:#2f9a92;color:#0d3a36}
-  /* тягач справа (тащит вагоны к борту) и финиш-самолёт */
-  #levelList .tractor{flex:0 0 auto;align-self:flex-end;width:54px;height:46px;margin:0 0 14px 2px}
-  #levelList .tractor svg{display:block;width:100%;height:100%;overflow:visible}
-  #levelList .destination{flex:0 0 auto;align-self:flex-end;margin:0 8px 12px 10px;
-    display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--muted)}
-  #levelList .destination .plane{font-size:30px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
-  #levelList .destination .dlabel{font-size:8px;letter-spacing:.18em;text-transform:uppercase}
-  /* выпавший чемодан-сюрприз = бонус-уровень: открыт (кликабелен), закрыт, пройден */
-  #levelList .coupling .bonuscase{cursor:default}
-  #levelList .coupling.unlocked .bonuscase{cursor:pointer;color:#3a2c14;
-    background:linear-gradient(#ffc0dd,#ff9ec7);border-color:#c2566a;
-    box-shadow:0 2px 6px rgba(255,158,199,.45),0 0 0 0 rgba(255,158,199,.5)}
-  #levelList .coupling.unlocked .bonuscase:hover{transform:translateX(-50%) rotate(-13deg) translateY(-2px);
-    box-shadow:0 6px 12px rgba(255,158,199,.5)}
-  #levelList .coupling.done .bonuscase{background:linear-gradient(#ffd9ec,#ff9ec7);border-color:#c2566a}
+  #levelList{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
+    scrollbar-width:thin;scrollbar-color:rgba(58,210,255,.18) transparent}
   /* статистика на экране итога */
   .stats{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:18px;padding:16px 18px;
     border:1.5px solid var(--pur-line);border-radius:16px;background:rgba(28,24,48,.6)}
@@ -821,80 +743,6 @@
   box-shadow: var(--m-accent-glow); }
 
 /* ============================================================
-   LEVEL BOARD  (Уровни) — paginated, with a bonus branch
-   ============================================================ */
-.lvlmap { flex: 1; min-height: 0; display: flex; align-items: stretch; gap: 14px; width: 100%; }
-.lvlmap__arrow {
-  align-self: center; width: 52px; height: 52px; flex: none; border-radius: 50%; cursor: pointer;
-  display: grid; place-items: center; background: var(--m-ghost-bg);
-  border: 1px solid var(--m-ghost-border); color: var(--m-text-body);
-  transition: filter var(--m-dur) ease, transform var(--m-dur) var(--m-ease), border-color var(--m-dur) ease;
-}
-.lvlmap__arrow:hover:not(:disabled) { filter: brightness(1.12); border-color: var(--m-accent); }
-.lvlmap__arrow:active:not(:disabled) { transform: scale(0.94); }
-.lvlmap__arrow:disabled { opacity: 0.3; cursor: default; }
-.lvlmap__arrow svg { width: 24px; height: 24px; }
-
-.lvlmap__stage {
-  flex: 1; min-width: 0; position: relative; border-radius: 24px;
-  background: var(--m-panel-2); border: 1px solid var(--m-divider);
-  overflow: hidden; display: flex; align-items: center;
-}
-.lvlmap__line { position: absolute; left: 6%; right: 6%; top: 50%; transform: translateY(-50%);
-  height: 6px; border-radius: 999px; background: var(--m-panel-3); }
-.lvlmap__nodes { position: relative; z-index: 1; flex: 1; display: flex;
-  justify-content: space-around; align-items: center; padding: 0 14px; }
-
-.lvlnode {
-  width: 92px; height: 92px; border-radius: 22px; position: relative; flex: none; cursor: pointer;
-  display: grid; place-items: center; background: var(--m-panel-3);
-  border: 1.5px solid var(--m-panel-border); color: var(--m-text-body);
-  box-shadow: inset 0 1px 0 var(--m-panel-edge), var(--shadow-raised);
-  transition: transform var(--m-dur) var(--m-ease), filter var(--m-dur) ease;
-}
-.lvlnode:hover { filter: brightness(1.08); }
-.lvlnode.locked { color: var(--m-text-muted); background: var(--m-panel-2); cursor: default; opacity: 0.85; }
-.lvlnode.locked svg { width: 28px; height: 28px; opacity: 0.7; }
-.lvlnode.done { background: rgba(93,202,122,0.14); border-color: rgba(93,202,122,0.5); }
-.lvlnode.active { border: 2.5px solid var(--m-gold); color: var(--m-gold);
-  box-shadow: var(--glow-gold); transform: scale(1.1); }
-.lvlnode__num { font-family: var(--m-font-display); font-weight: 700; font-size: 30px; }
-.lvlnode__stars { position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
-  display: flex; gap: 3px; }
-.lvlnode__stars svg { width: 16px; height: 16px; color: var(--m-gold); }
-.lvlnode__stars .off { color: var(--m-text-muted); opacity: 0.35; }
-.lvlnode__label { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%);
-  white-space: nowrap; font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--m-gold); }
-
-/* bonus level in a branch above the line, after the 5th level */
-.lvlmap__bonus { position: absolute; right: 5%; bottom: 50%; z-index: 2; margin-bottom: 3px;
-  display: flex; flex-direction: column; align-items: center; }
-.lvlmap__bonus .branch { width: 2px; height: 26px;
-  background: repeating-linear-gradient(var(--m-accent) 0 4px, transparent 4px 8px); opacity: 0.7; }
-.lvlnode.bonus { width: 72px; height: 72px; border-radius: 20px; box-shadow: var(--m-accent-glow);
-  background: rgba(181,140,240,0.18); border: 1.5px dashed var(--m-accent); color: var(--m-accent); }
-.lvlnode.bonus svg { width: 30px; height: 30px; }
-.bonus-tag { position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
-  font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--m-accent); background: var(--m-panel); padding: 2px 8px; border-radius: 999px;
-  border: 1px solid var(--m-panel-border); white-space: nowrap; }
-
-.lvlmap__dots { display: flex; justify-content: center; gap: 7px; margin-top: 14px; }
-.lvlmap__dots .dot { width: 8px; height: 8px; border-radius: 999px; background: var(--m-panel-3);
-  border: 1px solid var(--m-panel-border); cursor: pointer; transition: all var(--m-dur) ease; }
-.lvlmap__dots .dot.on { background: var(--m-accent); border-color: transparent;
-  box-shadow: var(--m-accent-glow); width: 22px; }
-
-/* ---- оформление карты уровней (неон) ---- */
-.lvlmap__stage {
-  background: radial-gradient(120% 100% at 50% 50%, rgba(18,32,70,0.6), rgba(9,17,38,0.72)); }
-.lvlmap__line { height: 2px; background: var(--m-accent);
-  box-shadow: var(--m-accent-glow); opacity: 0.55; }
-.lvlnode { border-radius: 999px; }
-.lvlnode.bonus { border-radius: 999px; }
-
-/* ============================================================
    BIOME GRID  (Биомы)
    ============================================================ */
 .biome-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
@@ -1002,14 +850,8 @@
   .mic{display:inline-flex;align-items:center;justify-content:center}
   /* legacy id-specificity rules must not override the new menu classes */
   #startScreen{background:none;backdrop-filter:none}
-  #levelList{display:flex;flex-direction:column;flex:1;min-height:0;background:none;overflow:visible;margin:0;padding:0}
+  #levelList{display:flex;flex-direction:column;flex:1;min-height:0;background:none;overflow-y:auto;overflow-x:hidden;margin:0;padding:0;scrollbar-width:thin;scrollbar-color:rgba(58,210,255,.18) transparent}
   #finalStars{font-size:inherit;color:inherit;text-shadow:none;letter-spacing:0}
-
-  /* feature badge on a level node (new-mechanic levels) */
-  .lvlnode{position:relative}
-  .lvlnode__feat{position:absolute;top:-9px;left:-7px;width:24px;height:24px;border-radius:50%;
-    display:grid;place-items:center;font-size:12px;line-height:1;background:var(--m-panel-3);
-    border:1.5px solid var(--m-panel-border);box-shadow:var(--shadow-raised);color:var(--m-text-body)}
 
   /* ============================================================
      MAIN SCREEN (PlaneFlow main-screen handoff) — единый облик neon:
@@ -1217,3 +1059,82 @@
   width: 74px; border: 1px solid rgba(127,155,176,.28); border-radius: 8px;
   background: #070e22; color: #fff; padding: 5px;
 }
+
+/* ================================================================
+   LEVEL GRID v2 — 6-col fill cards
+   Header helpers + grid + card states + bonus card
+   ================================================================ */
+
+/* Заголовок-ряд */
+.lvl-head-row{display:flex;align-items:center;gap:10px;text-align:left;margin-bottom:8px}
+.m-title--lvl{flex:1;margin:0;font-family:var(--m-font-display);font-size:20px;font-weight:700}
+.m-counter--xs{margin-top:0;font-size:13px;padding:5px 12px}
+
+/* Сетка 6 колонок */
+.lvlgrid{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:66px;
+  gap:7px;padding:4px 0 8px;align-content:start}
+
+/* База карточки */
+.lvlcard{border-radius:10px;overflow:hidden;position:relative;cursor:pointer;
+  transition:border-color .15s,box-shadow .15s}
+.lvlcard--lk{opacity:.45;cursor:default}
+
+/* Стиль «Заливка» — диагональный spotlight-градиент */
+.lvlcard--dn{background:linear-gradient(140deg,rgba(58,210,255,.18) 0%,rgba(6,10,22,.97) 58%);
+  border:1px solid rgba(58,210,255,.34)}
+.lvlcard--dn:hover{border-color:var(--m-accent)}
+
+.lvlcard--ac{background:linear-gradient(140deg,rgba(255,210,59,.2) 0%,rgba(10,8,24,.98) 58%);
+  border:1.5px solid rgba(255,210,59,.62);animation:lvlcard-ac 2.3s ease-in-out infinite}
+@keyframes lvlcard-ac{0%,100%{box-shadow:0 0 10px rgba(255,210,59,.45)}
+  50%{box-shadow:0 0 22px rgba(255,210,59,.65)}}
+
+.lvlcard--lk-body{background:rgba(10,12,24,.85);border:1px solid rgba(255,255,255,.07)}
+
+/* Внутренний лейаут карточки */
+.lvlcard__inner{height:100%;display:flex;flex-direction:column;
+  justify-content:space-between;padding:6px 7px 6px 10px}
+.lvlcard__top{display:flex;align-items:flex-start;
+  justify-content:space-between;gap:3px}
+.lvlcard__left{display:flex;align-items:center;gap:3px}
+/* Номер уровня — шрифт дисплея (Fredoka в игре) */
+.lvlcard__num{font-family:var(--m-font-display);font-size:19px;
+  font-weight:700;line-height:1}
+.lvlcard--dn .lvlcard__num{color:var(--m-accent)}
+.lvlcard--ac .lvlcard__num{color:var(--m-gold)}
+.lvlcard--lk .lvlcard__num{color:rgba(58,210,255,.15)}
+.lvlcard__feat{font-size:12px;line-height:1}
+.lvlcard__play{font-size:9px;font-weight:800;color:var(--m-gold);letter-spacing:.08em}
+/* Название уровня — Nunito */
+.lvlcard__nm{font-family:var(--m-font-ui);font-size:8px;font-weight:700;
+  color:var(--m-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Звёзды в правом верхнем углу */
+.lvlcard__stars{display:flex;gap:1.5px}
+.lvlcard__stars svg{width:8px;height:8px;display:block}
+.lvlcard__lock{opacity:.22}
+.lvlcard__lock svg{display:block}
+
+/* Бонус-карточка — бирюзовое свечение */
+.lvlcard--bonus{background:rgba(0,28,26,.95);
+  border:2px solid rgba(78,205,196,.65);/* --teal */
+  animation:lvlcard-bns 2.6s ease-in-out infinite}
+@keyframes lvlcard-bns{
+  0%,100%{box-shadow:0 0 14px rgba(78,205,196,.32),0 0 30px rgba(78,205,196,.12)}
+  50%    {box-shadow:0 0 24px rgba(78,205,196,.52),0 0 52px rgba(78,205,196,.2)}}
+.lvlcard--bonus:not(.lvlcard--bns-locked)::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.05) 50%,transparent 75%);
+  animation:lvlcard-shim 3s ease-in-out infinite;pointer-events:none}
+@keyframes lvlcard-shim{0%{transform:translateX(-120%)}100%{transform:translateX(200%)}}
+.lvlcard--bns-locked{animation:none;opacity:.58;cursor:default}
+.lvlcard--future{animation:none;border-style:dashed;
+  border-color:rgba(78,205,196,.2);background:rgba(0,28,26,.5);cursor:default}
+.lvlcard__bns{height:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;padding:5px 4px}
+.lvlcard__bns-emoji{font-size:20px;filter:drop-shadow(0 0 5px rgba(78,205,196,.5));line-height:1}
+.lvlcard--bns-locked .lvlcard__bns-emoji,
+.lvlcard--future     .lvlcard__bns-emoji{filter:none;opacity:.3}
+.lvlcard__bns-name{font-size:7.5px;font-weight:800;color:var(--teal);/* #4ecdc4 */
+  text-align:center;line-height:1.25}
+.lvlcard__bns-cta{font-size:9px;color:var(--teal);opacity:.8}
+.lvlcard__bns-lock{font-size:7px;font-weight:600;
+  color:var(--m-text-muted);text-align:center;line-height:1.4}

@@ -233,99 +233,89 @@
   const LOCK_SVG='<svg class="case-lock" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">'+
     '<rect x="5" y="11" width="14" height="9" rx="2" fill="#8a8c99"/>'+
     '<path d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="#8a8c99" stroke-width="2" stroke-linecap="round"/></svg>';
-  // тягач: кабина смотрит вправо (к самолёту), сцепка-дышло слева (к вагонам)
-  const TUG_SVG='<svg viewBox="0 0 54 46" aria-hidden="true">'+
-    '<rect x="0" y="26" width="14" height="3" rx="1.5" fill="#3a3550"/>'+              // дышло к вагонам
-    '<rect x="12" y="15" width="30" height="16" rx="4" fill="#f2a93b"/>'+              // корпус
-    '<rect x="27" y="6" width="15" height="12" rx="3" fill="#3c3552"/>'+               // кабина
-    '<rect x="30" y="8" width="10" height="7" rx="2" fill="#bfe9ff" opacity=".85"/>'+  // стекло
-    '<circle cx="34" cy="5" r="2" fill="#ef5365"/>'+                                   // маячок
-    '<circle cx="19" cy="33" r="7" fill="#1c1828" stroke="#0e0b16" stroke-width="2"/>'+
-    '<circle cx="38" cy="33" r="7" fill="#1c1828" stroke="#0e0b16" stroke-width="2"/>'+
-    '<circle cx="19" cy="33" r="2.4" fill="#5a5470"/><circle cx="38" cy="33" r="2.4" fill="#5a5470"/></svg>';
-  // карта уровней (дизайн-система): пагинация по LV_PER, ветка бонус-уровня,
-  // узлы со звёздами/замком/бейджем механики. Данные те же (LEVELS, save.stars,
-  // save.unlocked, bonusAfter/bonusUnlocked) — меняется только облик.
-  let levelPage = 0, levelPageInit = false;
-  const LV_PER = 5;
+  // карта уровней (дизайн-система v2): вертикальная 6-колоночная сетка
+  // (5 уровней + 1 бонус в ряду), стиль «Заливка». Данные те же (LEVELS,
+  // save.stars, save.unlocked, bonusAfter/bonusUnlocked) — меняется только облик.
   function renderLevels(){
-    const host=document.getElementById('levelList')!; host.innerHTML='';
+    // Счётчик звёзд в заголовке
     let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;
-    const max=LEVELS.length*3, sc=document.getElementById('starCount');
-    if(sc) sc.innerHTML=SVGIC('star')+` <b>${got}</b> <span class="muted">/ ${max}</span> <span class="unit">${t('levels.stars')}</span>`;
+    const sc=document.getElementById('starCount');
+    if(sc) sc.innerHTML=SVGIC('star')+
+      ` <b>${got}</b> <span class="muted">/ ${LEVELS.length*3}</span>` +
+      ` <span class="unit">${t('levels.stars')}</span>`;
 
+    const host=document.getElementById('levelList')!;
+    const grid=document.createElement('div');
+    grid.className='lvlgrid';
     const feats=levelFeatures();
-    const pages=Math.max(1, Math.ceil(LEVELS.length/LV_PER));
-    const cur=Math.min(save.unlocked-1, LEVELS.length-1);   // текущий играбельный (0-based)
-    if(!levelPageInit){ levelPage=Math.floor(cur/LV_PER); levelPageInit=true; }  // открыть на текущем
-    if(levelPage>=pages) levelPage=pages-1; if(levelPage<0) levelPage=0;
-    const start=levelPage*LV_PER;
-    const tiles=[]; for(let i=start;i<Math.min(start+LV_PER,LEVELS.length);i++) tiles.push(i);
 
-    const map=document.createElement('div'); map.className='lvlmap';
-    const prev=document.createElement('button'); prev.className='lvlmap__arrow'; prev.innerHTML=SVGIC('back');
-    prev.disabled=levelPage===0; prev.onclick=()=>{ levelPage--; renderLevels(); };
-    const next=document.createElement('button'); next.className='lvlmap__arrow'; next.innerHTML=SVGIC('fwd');
-    next.disabled=levelPage>=pages-1; next.onclick=()=>{ levelPage++; renderLevels(); };
-    const stage=document.createElement('div'); stage.className='lvlmap__stage';
-    const line=document.createElement('div'); line.className='lvlmap__line'; stage.appendChild(line);
+    LEVELS.forEach((lv,i)=>{
+      const unlocked=debug.unlockAll||i<save.unlocked;
+      const stars=save.stars[i]||0;
+      const isCur=(i+1===save.unlocked)&&!debug.unlockAll;
+      const st=unlocked?(isCur?'ac':'dn'):'lk';
 
-    // бонус-уровень, чей «after» попадает на эту страницу — ветка над лентой
-    let pageBonus=null; for(const i of tiles){ const bn=bonusAfter(i+1); if(bn){ pageBonus=bn; break; } }
-    if(pageBonus){
-      const unl=bonusUnlocked(pageBonus);
-      const wrap=document.createElement('div'); wrap.className='lvlmap__bonus';
-      const node=document.createElement('div'); node.className='lvlnode bonus'+(unl?'':' locked');
-      node.style.cursor=unl?'pointer':'default';
-      node.innerHTML=`<div class="bonus-tag">${pageBonus.emoji||'★'}</div>`+SVGIC('gift');
-      node.title = unl ? (bonusName(pageBonus)+(pageBonus.emoji?' '+pageBonus.emoji:'')) : t('bonus.req',{n:pageBonus.after});
-      if(unl) node.onclick=()=>startBonus(pageBonus!);
-      const branch=document.createElement('div'); branch.className='branch';
-      wrap.appendChild(node); wrap.appendChild(branch); stage.appendChild(wrap);
-    }
-
-    const nodes=document.createElement('div'); nodes.className='lvlmap__nodes';
-    tiles.forEach(i=>{
-      const unlocked=debug.unlockAll||i<save.unlocked, stars=save.stars[i]||0;
-      const st = !unlocked ? 'locked' : (i===cur ? 'active' : 'done');
-      const node=document.createElement('div'); node.className='lvlnode '+st;
-      let inner='';
-      if(unlocked) inner+='<div class="lvlnode__stars">'+[0,1,2].map(n=>'<span'+(n<stars?'':' class="off"')+' style="display:inline-flex">'+SVGIC('star')+'</span>').join('')+'</div>';
-      inner+= unlocked ? `<span class="lvlnode__num">${String(i+1).padStart(2,'0')}</span>` : SVGIC('lock');
+      // Иконка механики (только первое появление)
       const feat=feats[i];
-      if(feat){ const meta=FEATURE_META[feat[0]]||{icon:'?'}; inner+=`<span class="lvlnode__feat" title="${unlocked?t('feat.'+feat[0]):t('feat.mystery')}">${unlocked?meta.icon:'?'}</span>`; }
-      if(st==='active') inner+=`<div class="lvlnode__label">${t('start.play')}</div>`;
-      node.innerHTML=inner;
-      let label=t('level.name',{n:i+1})+' — '+levelName(i);
-      if(!unlocked) label+=' — '+t('levels.locked');
-      else if(feat) label+=' — '+t('feat.'+feat[0]);
-      node.setAttribute('aria-label',label);
-      if(unlocked) node.onclick=()=>startLevel(i);
-      nodes.appendChild(node);
+      const featHtml=feat&&unlocked
+        ? `<span class="lvlcard__feat">${FEATURE_META[feat[0]]?.icon||'?'}</span>` : '';
+      const playHtml=isCur?'<span class="lvlcard__play">▶</span>':'';
+
+      // Звёзды (top-right) или замок
+      const starsHtml=unlocked
+        ? `<div class="lvlcard__stars">${[0,1,2].map(j=>starSvg(j<stars)).join('')}</div>`
+        : `<div class="lvlcard__lock">${SVGIC('lock')}</div>`;
+
+      const el=document.createElement('div');
+      el.className=`lvlcard lvlcard--${st}${!unlocked?' lvlcard--lk-body':''}`;
+      el.innerHTML=`<div class="lvlcard__inner">
+        <div class="lvlcard__top">
+          <div class="lvlcard__left">
+            <span class="lvlcard__num">${String(i+1).padStart(2,'0')}</span>
+            ${featHtml}${playHtml}</div>${starsHtml}</div>
+        <div class="lvlcard__nm">${levelName(i)}</div>
+      </div>`;
+      el.setAttribute('aria-label', levelName(i)+(unlocked?'':' — '+t('levels.locked')));
+      if(unlocked) el.onclick=()=>startLevel(i);
+      grid.appendChild(el);
+
+      // Бонус-ячейка после каждого 5-го уровня
+      const bn=bonusAfter(i+1);
+      if(bn){
+        const unl=bonusUnlocked(bn);
+        const bel=document.createElement('div');
+        bel.className='lvlcard lvlcard--bonus'+(unl?'':' lvlcard--bns-locked');
+        bel.title=unl
+          ? bonusName(bn)+(bn.emoji?' '+bn.emoji:'')
+          : t('bonus.req',{n:bn.after});
+        bel.innerHTML=`<div class="lvlcard__bns">
+          <div class="lvlcard__bns-emoji">${bn.emoji||'★'}</div>
+          <div class="lvlcard__bns-name">${bonusName(bn)}</div>
+          ${unl
+            ? '<span class="lvlcard__bns-cta">✨</span>'
+            : `<span class="lvlcard__bns-lock">${t('bonus.req',{n:bn.after})}</span>`}
+        </div>`;
+        if(unl) bel.onclick=()=>startBonus(bn);
+        grid.appendChild(bel);
+      } else if((i+1)%5===0){
+        // Плейсхолдер для будущих бонусов
+        const bel=document.createElement('div');
+        bel.className='lvlcard lvlcard--bonus lvlcard--future';
+        bel.innerHTML='<div class="lvlcard__bns">' +
+          '<div class="lvlcard__bns-emoji">🔮</div>' +
+          `<div class="lvlcard__bns-name">${t('levels.bonusSoon')}</div>` +
+          '</div>';
+        grid.appendChild(bel);
+      }
     });
-    stage.appendChild(nodes);
-    map.appendChild(prev); map.appendChild(stage); map.appendChild(next);
 
-    const dots=document.createElement('div'); dots.className='lvlmap__dots';
-    for(let p=0;p<pages;p++){ const d=document.createElement('span'); d.className='dot'+(p===levelPage?' on':''); d.onclick=()=>{ levelPage=p; renderLevels(); }; dots.appendChild(d); }
-
-    host.appendChild(map); host.appendChild(dots);
-  }
-  // сцепка между вагонами; если bn задан — на ней «выпавший чемодан» = бонус-уровень N½
-  // (открыт — кликабелен и показывает 🦋, закрыт — «?» с подсказкой про нужный уровень)
-  function couplingEl(bn: Bonus | null){
-    const cp=document.createElement('div'); cp.className='coupling';
-    if(bn){
-      const unl=bonusUnlocked(bn), done=(save.stars['bonus_'+bn.id]||0)>0;
-      if(unl) cp.className += done?' unlocked done':' unlocked';
-      const label = unl ? (bonusName(bn)+(bn.emoji?' '+bn.emoji:'')) : t('bonus.req',{n:bn.after});
-      const sc=document.createElement('span'); sc.className='bonuscase';
-      sc.setAttribute('title',label); sc.setAttribute('aria-label',label);
-      sc.textContent = unl ? (bn.emoji||(bn.after+'½')) : '?';
-      if(unl) sc.onclick=()=>startBonus(bn);
-      cp.appendChild(sc);
-    }
-    return cp;
+    host.innerHTML='';
+    host.appendChild(grid);
+    // Прокрутить к текущему уровню
+    setTimeout(()=>{
+      const cur=grid.querySelector('.lvlcard--ac') as HTMLElement|null;
+      if(cur&&host) host.scrollTop=Math.max(0,cur.offsetTop-80);
+    },60);
   }
 
   // ---- полноэкранный режим (для телефона: убирает прокрутку и адресную строку) ----
