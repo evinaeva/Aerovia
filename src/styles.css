@@ -850,7 +850,16 @@
   .mic{display:inline-flex;align-items:center;justify-content:center}
   /* legacy id-specificity rules must not override the new menu classes */
   #startScreen{background:none;backdrop-filter:none}
-  #levelList{display:flex;flex-direction:column;flex:1;min-height:0;background:none;overflow-y:auto;overflow-x:hidden;margin:0;padding:0;scrollbar-width:thin;scrollbar-color:rgba(58,210,255,.18) transparent}
+  /* level select: непрозрачная подложка — canvas главного меню не просвечивает */
+  #levelScreen.overlay{
+    background:#070c1a radial-gradient(120% 90% at 50% 40%,
+      rgba(6,11,18,.36), rgba(6,11,18,.62));
+    backdrop-filter:blur(1px);
+  }
+  /* .screen__col уже position:relative (выше) — контейнер для fade-strip/scrollbar.
+     Скрываем нативный scrollbar #levelList, рисуем свой (.lv-scroll-*). */
+  #levelList{display:flex;flex-direction:column;flex:1;min-height:0;background:none;overflow-y:auto;overflow-x:hidden;margin:0;padding:0;scrollbar-width:none}
+  #levelList::-webkit-scrollbar{display:none}
   #finalStars{font-size:inherit;color:inherit;text-shadow:none;letter-spacing:0}
 
   /* ============================================================
@@ -1070,26 +1079,42 @@
 .m-title--lvl{flex:1;margin:0;font-family:var(--m-font-display);font-size:20px;font-weight:700}
 .m-counter--xs{margin-top:0;font-size:13px;padding:5px 12px}
 
-/* Сетка 6 колонок */
+/* Затемняющий градиент поверх жест-зоны Android (низ списка) */
+.lv-fade-strip{position:absolute;bottom:0;left:0;right:13px;height:52px;
+  background:linear-gradient(to bottom,transparent,rgba(4,8,20,.96));
+  pointer-events:none;z-index:5}
+/* Кастомный скроллбар (нативный скрыт): тонкая полоса, тап по треку + drag */
+/* top:56px — ниже шапки (back+title+★), чтобы скроллбар не лез на счётчик звёзд */
+.lv-scroll-ind{position:absolute;right:2px;top:56px;bottom:28px;width:14px;z-index:8}
+.lv-scroll-track{width:100%;height:100%;position:relative;
+  display:flex;align-items:center;justify-content:center;cursor:pointer}
+.lv-scroll-track::before{content:'';display:block;width:3px;height:100%;
+  background:rgba(255,255,255,.07);border-radius:2px}
+.lv-scroll-thumb{position:absolute;left:50%;transform:translateX(-50%);
+  width:3px;min-height:20px;border-radius:2px;cursor:grab;touch-action:none;
+  background:rgba(58,210,255,.65);box-shadow:0 0 6px rgba(58,210,255,.35)}
+.lv-scroll-thumb:active{cursor:grabbing}
+
+/* Сетка 6 колонок — нижний отступ под fade-полосу/жест-зону (diff: .levellist→.lvlgrid) */
 .lvlgrid{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:66px;
-  gap:7px;padding:4px 0 8px;align-content:start}
+  gap:7px;padding:4px 0 38px;align-content:start}
 
 /* База карточки */
 .lvlcard{border-radius:10px;overflow:hidden;position:relative;cursor:pointer;
   transition:border-color .15s,box-shadow .15s}
-.lvlcard--lk{opacity:.45;cursor:default}
+.lvlcard--lk{opacity:.70;cursor:default}
 
 /* Стиль «Заливка» — диагональный spotlight-градиент */
-.lvlcard--dn{background:linear-gradient(140deg,rgba(58,210,255,.18) 0%,rgba(6,10,22,.97) 58%);
-  border:1px solid rgba(58,210,255,.34)}
+.lvlcard--dn{background:linear-gradient(140deg,rgba(58,210,255,.34) 0%,rgba(6,10,22,.86) 58%);
+  border:1px solid rgba(58,210,255,.54)}
 .lvlcard--dn:hover{border-color:var(--m-accent)}
 
-.lvlcard--ac{background:linear-gradient(140deg,rgba(255,210,59,.2) 0%,rgba(10,8,24,.98) 58%);
-  border:1.5px solid rgba(255,210,59,.62);animation:lvlcard-ac 2.3s ease-in-out infinite}
-@keyframes lvlcard-ac{0%,100%{box-shadow:0 0 10px rgba(255,210,59,.45)}
-  50%{box-shadow:0 0 22px rgba(255,210,59,.65)}}
+.lvlcard--ac{background:linear-gradient(140deg,rgba(255,210,59,.36) 0%,rgba(10,8,24,.88) 58%);
+  border:1.5px solid rgba(255,210,59,.88);animation:lvlcard-ac 2.3s ease-in-out infinite}
+@keyframes lvlcard-ac{0%,100%{box-shadow:0 0 10px rgba(255,210,59,.68)}
+  50%{box-shadow:0 0 22px rgba(255,210,59,.95)}}
 
-.lvlcard--lk-body{background:rgba(10,12,24,.85);border:1px solid rgba(255,255,255,.07)}
+.lvlcard--lk-body{background:rgba(10,12,24,.72);border:1px solid rgba(255,255,255,.16)}
 
 /* Внутренний лейаут карточки */
 .lvlcard__inner{height:100%;display:flex;flex-direction:column;
@@ -1102,16 +1127,16 @@
   font-weight:700;line-height:1}
 .lvlcard--dn .lvlcard__num{color:var(--m-accent)}
 .lvlcard--ac .lvlcard__num{color:var(--m-gold)}
-.lvlcard--lk .lvlcard__num{color:rgba(58,210,255,.15)}
+.lvlcard--lk .lvlcard__num{color:rgba(58,210,255,.30)}
 .lvlcard__feat{font-size:12px;line-height:1}
 .lvlcard__play{font-size:9px;font-weight:800;color:var(--m-gold);letter-spacing:.08em}
 /* Название уровня — Nunito */
 .lvlcard__nm{font-family:var(--m-font-ui);font-size:8px;font-weight:700;
-  color:var(--m-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  color:var(--m-text-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Звёзды в правом верхнем углу */
 .lvlcard__stars{display:flex;gap:1.5px}
 .lvlcard__stars svg{width:8px;height:8px;display:block}
-.lvlcard__lock{opacity:.22}
+.lvlcard__lock{opacity:.50}
 .lvlcard__lock svg{display:block}
 
 /* Бонус-карточка — бирюзовое свечение */
