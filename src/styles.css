@@ -1092,7 +1092,7 @@
 /* Вариант Б: блюр-полоса над нижней жест-зоной (внутри .vc-wrap, отсчёт от края экрана) */
 .lv-fade-strip{position:absolute;bottom:0;left:56px;right:28px;height:34px;
   backdrop-filter:blur(7px) brightness(.55);-webkit-backdrop-filter:blur(7px) brightness(.55);
-  pointer-events:none;z-index:5;border-top:1px solid rgba(255,80,80,.18)}
+  pointer-events:none;z-index:5}
 /* Кастомный скроллбар: тонкая полоса справа + счётчик всего/текущего; тап по треку + drag */
 .lv-scroll-ind{position:absolute;right:28px;top:6px;bottom:28px;width:9px;z-index:10;
   display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -1121,10 +1121,10 @@
   border:1px solid rgba(58,210,255,.54)}
 .lvlcard--dn:hover{border-color:var(--m-accent)}
 
-.lvlcard--ac{background:linear-gradient(140deg,rgba(255,210,59,.36) 0%,rgba(10,8,24,.88) 58%);
-  border:1.5px solid rgba(255,210,59,.88);animation:lvlcard-ac 2.3s ease-in-out infinite}
-@keyframes lvlcard-ac{0%,100%{box-shadow:0 0 10px rgba(255,210,59,.68)}
-  50%{box-shadow:0 0 22px rgba(255,210,59,.95)}}
+.lvlcard--ac{background:linear-gradient(140deg,rgba(58,210,255,.50) 0%,rgba(6,10,22,.86) 58%);
+  border:1.5px solid rgba(58,210,255,1);animation:lvlcard-ac 2.3s ease-in-out infinite}
+@keyframes lvlcard-ac{0%,100%{box-shadow:0 0 10px rgba(58,210,255,.70)}
+  50%{box-shadow:0 0 22px rgba(58,210,255,1)}}
 
 .lvlcard--lk-body{background:rgba(10,12,24,.72);border:1px solid rgba(255,255,255,.16)}
 
@@ -1138,10 +1138,10 @@
 .lvlcard__num{font-family:var(--m-font-display);font-size:19px;
   font-weight:700;line-height:1}
 .lvlcard--dn .lvlcard__num{color:var(--m-accent)}
-.lvlcard--ac .lvlcard__num{color:var(--m-gold)}
+.lvlcard--ac .lvlcard__num{color:var(--m-accent)}
 .lvlcard--lk .lvlcard__num{color:rgba(58,210,255,.30)}
 .lvlcard__feat{font-size:12px;line-height:1}
-.lvlcard__play{font-size:9px;font-weight:800;color:var(--m-gold);letter-spacing:.08em}
+.lvlcard__play{font-size:9px;font-weight:800;color:var(--m-accent);letter-spacing:.08em}
 /* Название уровня — Nunito */
 .lvlcard__nm{font-family:var(--m-font-ui);font-size:8px;font-weight:700;
   color:var(--m-text-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
