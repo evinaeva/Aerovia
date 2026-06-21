@@ -89,6 +89,12 @@
   // в tuning.html. Когда слой включён, у каждого открытого бокса рисуется прямоугольник
   // зоны «прилипания» конца маршрута (тело бокса + MT.BAY_HIT_PADDING). Без пульсации и
   // подсветки — ровная пунктирная рамка. По умолчанию слой выключен → в игре ничего не видно.
+  // Полукруглая зона захвата: дуга купола (по +u) + плоская хорда через центр.
+  function strokeGrabZone(z: any){
+    if(!z) return;
+    const a=Math.atan2(z.uy, z.ux);
+    ctx.beginPath(); ctx.arc(z.cx, z.cy, z.r, a-Math.PI/2, a+Math.PI/2); ctx.closePath(); ctx.stroke();
+  }
   function drawBaySnapZones(){
     if(MT_META_VALUES.DEBUG_BAY_SNAP_ZONES!==true || LV.bonus) return;
     const g=(MT_META_VALUES.BAY_HIT_PADDING as number)||0, rad=Math.min(8*ui, 6*ui+g*0.2);
@@ -96,7 +102,8 @@
     ctx.lineWidth=1.5*ui; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([6*ui,4*ui]);
     for(const b of bays){
       if(!b.open) continue;
-      rr(b.x-g, b.y-g, b.w+2*g, b.h+2*g, rad); ctx.stroke();
+      if(g>0){ rr(b.x-g, b.y-g, b.w+2*g, b.h+2*g, rad); ctx.stroke(); }
+      strokeGrabZone(bayGrabZone(b));
     }
     ctx.restore();
   }
@@ -112,7 +119,8 @@
     ctx.lineWidth=1.5*ui; ctx.strokeStyle=hexa(COL.gold,.6); ctx.setLineDash([6*ui,4*ui]);
     for(const r of runways){
       if(r.closed) continue;
-      rr(r.x-g, r.y-g, r.w+2*g, r.h+2*g, rad); ctx.stroke();
+      if(g>0){ rr(r.x-g, r.y-g, r.w+2*g, r.h+2*g, rad); ctx.stroke(); }
+      strokeGrabZone(runwayGrabZone(r));
     }
     ctx.restore();
   }

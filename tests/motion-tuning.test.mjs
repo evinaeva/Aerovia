@@ -9,6 +9,8 @@ import { boot } from './harness.mjs';
 
 const GEO_KEYS = [
   'MT.BAY_HIT_PADDING', 'MT.RUNWAY_HIT_PADDING',
+  'MT.BAY_GRAB_RADIUS', 'MT.BAY_GRAB_OFFSET',
+  'MT.RUNWAY_GRAB_RADIUS', 'MT.RUNWAY_GRAB_OFFSET',
   'MT.DEBUG_BAY_SNAP_ZONES', 'MT.DEBUG_RUNWAY_SNAP_ZONES',
 ];
 
@@ -27,6 +29,10 @@ test('round-trip export→reset→import восстанавливает знач
   game.MT.apply({
     'MT.BAY_HIT_PADDING': 44,
     'MT.RUNWAY_HIT_PADDING': 30,
+    'MT.BAY_GRAB_RADIUS': 70,
+    'MT.BAY_GRAB_OFFSET': -20,
+    'MT.RUNWAY_GRAB_RADIUS': 55,
+    'MT.RUNWAY_GRAB_OFFSET': 18,
     'MT.DEBUG_BAY_SNAP_ZONES': true,
     'MT.DEBUG_RUNWAY_SNAP_ZONES': true,
   });
@@ -35,12 +41,17 @@ test('round-trip export→reset→import восстанавливает знач
   game.MT.reset();                                   // сбрасываем к дефолтам
   let snap = game.MT.snapshot();
   assert.equal(snap['MT.BAY_HIT_PADDING'], 0, 'после reset бокс-падинг = дефолт 0');
+  assert.equal(snap['MT.BAY_GRAB_RADIUS'], 0, 'после reset радиус полукруга = дефолт 0');
   assert.equal(snap['MT.DEBUG_BAY_SNAP_ZONES'], false, 'после reset слой выключен');
 
   game.MT.importText(json);                          // импортируем ранее экспортированный JSON
   snap = game.MT.snapshot();
   assert.equal(snap['MT.BAY_HIT_PADDING'], 44, 'бокс-падинг восстановлен из JSON');
   assert.equal(snap['MT.RUNWAY_HIT_PADDING'], 30, 'ВПП-падинг восстановлен из JSON');
+  assert.equal(snap['MT.BAY_GRAB_RADIUS'], 70, 'радиус полукруга бокса восстановлен');
+  assert.equal(snap['MT.BAY_GRAB_OFFSET'], -20, 'смещение полукруга бокса восстановлено (отрицательное)');
+  assert.equal(snap['MT.RUNWAY_GRAB_RADIUS'], 55, 'радиус полукруга ВПП восстановлен');
+  assert.equal(snap['MT.RUNWAY_GRAB_OFFSET'], 18, 'смещение полукруга ВПП восстановлено');
   assert.equal(snap['MT.DEBUG_BAY_SNAP_ZONES'], true, 'слой боксов восстановлен');
   assert.equal(snap['MT.DEBUG_RUNWAY_SNAP_ZONES'], true, 'слой ВПП восстановлен');
 });

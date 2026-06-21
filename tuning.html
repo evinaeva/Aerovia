@@ -1122,7 +1122,7 @@
     <div id="phone-wrapper">
       <div id="phone-shell">
         <iframe id="game-frame" src="index.html?test=1" title="Game" allow="autoplay"></iframe>
-        <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg"
+        <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"
              style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
       </div>
       <div id="cutout-sim"></div>
@@ -2318,6 +2318,33 @@
       groupsEl.appendChild(det);
     });
 
+    // Дубль тумблеров отладочных слоёв зон захвата в таб «Боксы и ВПП» (sub-tab ground):
+    // те же data-key, что и в «Контроль» → делегированные обработчики (wireInputs) и syncUI
+    // работают по data-key и держат обе копии синхронными автоматически.
+    const mirrored = MT.params.filter(p => p.key === 'MT.DEBUG_BAY_SNAP_ZONES' || p.key === 'MT.DEBUG_RUNWAY_SNAP_ZONES');
+    if (mirrored.length) {
+      const det = document.createElement('details');
+      det.dataset.group = 'snap_debug_mirror';
+      det.dataset.subtab = 'ground';
+      det.classList.add('wide');
+      det.open = true;
+      det.innerHTML = '<summary><span class="sum-arrow">▸</span>Отладочные слои зон<span class="sum-count">' + mirrored.length + '</span></summary>';
+      const grid = document.createElement('div');
+      grid.className = 'toggle-grid';
+      mirrored.forEach(p => {
+        const card = document.createElement('label');
+        card.className = 'toggle-card';
+        card.dataset.key = p.key;
+        card.title = p.key + (p.description ? ' — ' + p.description : '');
+        card.innerHTML =
+          '<span class="lbl">' + escHtml(posLabel(p)) + '</span>' +
+          '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (snap[p.key] ? ' checked' : '') + '><span class="track"></span></span>';
+        grid.appendChild(card);
+      });
+      det.appendChild(grid);
+      groupsEl.appendChild(det);
+    }
+
     wireInputs();
     refreshPresets();
     buildSubtabs();
@@ -2354,8 +2381,15 @@
       if (e.target.type === 'checkbox') {
         // Inverted ("Отключить …") toggles store the opposite of what's shown.
         const val = e.target.dataset.invert ? !e.target.checked : e.target.checked;
+        // keep mirrored copies of the same toggle (e.g. дубль слоёв в «Боксы и ВПП») in sync
+        groupsEl.querySelectorAll('input[type=checkbox][data-key="' + key + '"]').forEach(el => {
+          if (el !== e.target) el.checked = el.dataset.invert ? !val : val;
+        });
         MT.apply({ [key]: val }, true);
         setStatus(key + '  →  ' + val);
+        // Включение слоя зон захвата сразу показывает оверлей превью — там живут
+        // ручки перетаскивания/масштаба полукруглой зоны (см. Field overlay).
+        if (val && (key === 'MT.DEBUG_BAY_SNAP_ZONES' || key === 'MT.DEBUG_RUNWAY_SNAP_ZONES') && window._setZones) window._setZones(true);
       } else if (e.target.type === 'text' || e.target.tagName === 'SELECT') {
         MT.apply({ [key]: e.target.value }, true);
         setStatus(key + '  →  ' + e.target.value);
@@ -3989,6 +4023,10 @@
       if (g === 'right') return { x: b.x + b.w,        y: b.y + b.h * .5 };
       return { x: b.x + b.w * .5, y: b.y + b.h * .5 };
     }
+    // единичный вектор «наружу из ворот» бокса (в сторону поля/захода)
+    function gateDir(b) {
+      return ({ up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] })[b.gate] || [0,1];
+    }
     function zoneCol(z) {
       return { air:'#f5c842', land:'#f08030', takeoff:'#60d060', bay:'#b060f0', field:'#40d0c0', runway:'#4090f0' }[z] || '#aaa';
     }
@@ -4178,8 +4216,108 @@
         }
       }
 
+      // ── Полукруглые зоны захвата + ручки перетаскивания/масштаба ──────────────
+      // Одна форма на тип (бокс/ВПП); рисуем у репрезентативного объекта. Купол
+      // смотрит в сторону захода. Ручка-центр двигает зону (OFFSET вдоль оси захода),
+      // ручка-апекс масштабирует (RADIUS). Тянем → пишем MT-параметр (см. ниже).
+      if (!editorOnly) {
+        s += grabZoneSvg('bay', snap, fd);
+        s += grabZoneSvg('rw',  snap, fd);
+      }
+
       overlay.innerHTML = s;
     }
+
+    // Геометрия зоны для типа (anchor = точка при OFFSET=0; u = вектор наружу).
+    function grabZoneGeom(kind, fd) {
+      if (kind === 'bay') {
+        const b = (fd.bays || []).find(x => x.open && x.gate);
+        if (!b) return null;
+        return { anchor: gateEntr(b), u: gateDir(b) };
+      }
+      const r = (fd.runways || []).find(x => !x.closed);
+      if (!r) return null;
+      return { anchor: { x: r.x, y: r.cy }, u: [-1, 0] };   // заход со стороны апрона (слева)
+    }
+    function grabZoneSvg(kind, snap, fd) {
+      const on = snap[kind === 'bay' ? 'MT.DEBUG_BAY_SNAP_ZONES' : 'MT.DEBUG_RUNWAY_SNAP_ZONES'] === true;
+      if (!on) return '';
+      const geom = grabZoneGeom(kind, fd);
+      if (!geom) return '';
+      const R   = +(snap[kind === 'bay' ? 'MT.BAY_GRAB_RADIUS' : 'MT.RUNWAY_GRAB_RADIUS'] || 0);
+      const off = +(snap[kind === 'bay' ? 'MT.BAY_GRAB_OFFSET' : 'MT.RUNWAY_GRAB_OFFSET'] || 0);
+      const col = kind === 'bay' ? '#b060f0' : '#3ad2ff';
+      const u = geom.u, a = geom.anchor;
+      const cx = a.x + u[0] * off, cy = a.y + u[1] * off;          // центр купола
+      let out = '';
+      if (R > 0) {                                                  // полукруг (купол по +u)
+        const base = Math.atan2(u[1], u[0]); let pts = '';
+        for (let i = 0; i <= 28; i++) { const an = base - Math.PI / 2 + Math.PI * i / 28; pts += (cx + Math.cos(an) * R).toFixed(1) + ',' + (cy + Math.sin(an) * R).toFixed(1) + ' '; }
+        out += '<polygon points="' + pts + '" fill="' + col + '" fill-opacity=".10" stroke="' + col + '" stroke-width="1.4" stroke-dasharray="5 4"/>';
+      }
+      const hd = Math.max(R, 26);                                   // апекс грабельный даже при R=0
+      const ax = cx + u[0] * hd, ay = cy + u[1] * hd;
+      out += '<line x1="' + cx + '" y1="' + cy + '" x2="' + ax + '" y2="' + ay + '" stroke="' + col + '" stroke-opacity=".5" stroke-width="1"/>';
+      out += '<circle cx="' + cx + '" cy="' + cy + '" r="7" fill="#0a1020" stroke="' + col + '" stroke-width="2" data-grab="' + kind + '-o" style="pointer-events:auto;cursor:move"/>';
+      out += '<circle cx="' + ax + '" cy="' + ay + '" r="7" fill="' + col + '" stroke="#0a1020" stroke-width="2" data-grab="' + kind + '-r" style="pointer-events:auto;cursor:crosshair"/>';
+      return out;
+    }
+
+    // ── drag/scale ручек зоны захвата прямо на превью ────────────────────────────
+    function clampParam(key, v) {
+      const pr = MT && MT.params.find(x => x.key === key);
+      if (pr) { if (pr.min != null && v < pr.min) v = pr.min; if (pr.max != null && v > pr.max) v = pr.max; }
+      return v;
+    }
+    function evGamePt(e) {
+      const fd = getField(); const rect = overlay.getBoundingClientRect();
+      const W = (fd && fd.W) || rect.width || 1, H = (fd && fd.H) || rect.height || 1;
+      return { x: (e.clientX - rect.left) / (rect.width || 1) * W, y: (e.clientY - rect.top) / (rect.height || 1) * H };
+    }
+    let zdrag = null;   // { kind:'bay'|'rw', mode:'o'|'r' }
+    function applyZoneDrag(e) {
+      if (!zdrag || !MT) return;
+      const fd = getField(); if (!fd) return;
+      const geom = grabZoneGeom(zdrag.kind, fd); if (!geom) return;
+      const p = evGamePt(e), u = geom.u, a = geom.anchor;
+      const radKey = zdrag.kind === 'bay' ? 'MT.BAY_GRAB_RADIUS' : 'MT.RUNWAY_GRAB_RADIUS';
+      const offKey = zdrag.kind === 'bay' ? 'MT.BAY_GRAB_OFFSET' : 'MT.RUNWAY_GRAB_OFFSET';
+      if (zdrag.mode === 'o') {
+        const off = clampParam(offKey, (p.x - a.x) * u[0] + (p.y - a.y) * u[1]);   // проекция на ось
+        MT.apply({ [offKey]: Math.round(off) }, false);
+      } else {
+        const off = +(MT.snapshot()[offKey] || 0);
+        const cx = a.x + u[0] * off, cy = a.y + u[1] * off;
+        const R = clampParam(radKey, (p.x - cx) * u[0] + (p.y - cy) * u[1]);
+        MT.apply({ [radKey]: Math.round(R) }, false);
+      }
+      syncUI(); drawOverlay();
+    }
+    overlay.addEventListener('pointerdown', e => {
+      const g = e.target && e.target.getAttribute && e.target.getAttribute('data-grab');
+      if (!g) return;
+      e.preventDefault(); e.stopPropagation();
+      const parts = g.split('-');
+      zdrag = { kind: parts[0], mode: parts[1] };
+      overlay.style.pointerEvents = 'auto';
+      try { overlay.setPointerCapture(e.pointerId); } catch (_) {}
+      applyZoneDrag(e);
+    });
+    overlay.addEventListener('pointermove', e => { if (zdrag) applyZoneDrag(e); });
+    function endZdrag(e) {
+      if (!zdrag) return;
+      if (!MT) { zdrag = null; overlay.style.pointerEvents = 'none'; return; }
+      const radKey = zdrag.kind === 'bay' ? 'MT.BAY_GRAB_RADIUS' : 'MT.RUNWAY_GRAB_RADIUS';
+      const offKey = zdrag.kind === 'bay' ? 'MT.BAY_GRAB_OFFSET' : 'MT.RUNWAY_GRAB_OFFSET';
+      const snap = MT.snapshot();
+      MT.apply({ [radKey]: snap[radKey], [offKey]: snap[offKey] }, true);   // persist финал
+      setStatus(radKey + '  →  ' + snap[radKey] + ' · ' + offKey + '  →  ' + snap[offKey]);
+      zdrag = null;
+      overlay.style.pointerEvents = 'none';
+      try { overlay.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+    overlay.addEventListener('pointerup', endZdrag);
+    overlay.addEventListener('pointercancel', endZdrag);
 
     // Safe-zone validation — runs on demand (map export), not live. Reads the
     // live game field; returns [] when the game isn't running or has no rects.
