@@ -502,21 +502,35 @@
     else if(LV.bonus) hint = objectiveDesc();
     else { const hk='level.h.'+(levelIdx+1); hint = hasI18n(hk) ? t(hk) : objectiveDesc(); }
     const hintHtml = hint ? `<p class="m-subtitle goal-hint">${hint}</p>` : '';
-    // основная метрика: гусеница (луг бабочек) · 🔧 (апгрейд-уровни) · ✈ (иначе)
+    // основная метрика: гусеница (луг бабочек) · 🔧 (апгрейды) · ⏱ (survival) · ✈ (иначе)
+    const metric = LV.objective.metric;
     const primary = LV.bonus==='butterfly' ? GICON.caterpillar
-                  : (!survival && LV.objective.metric==='upgrades') ? GICON.wrench : GICON.plane;
+                  : (!survival && metric==='upgrades') ? GICON.wrench
+                  : (!survival && metric==='survival') ? GICON.clock : GICON.plane;
+    // порог основной метрики: survival — это секунды (⏱ mm:ss), иначе число
+    const fmtThr = (n: number)=> metric==='survival' ? fmtTime(n||0) : fmtNum(n);
     let timeStr: string, headTarget: string, rows = '';
     if(survival){
       timeStr = INF; headTarget = fmtNum(save.best[levelKey]||0);
     } else {
       const o = LV.objective, stars = o.stars || [o.target, o.target, o.target];
       timeStr = o.time ? fmtTime(o.time) : INF;
-      headTarget = o.race ? INF : fmtNum(o.target ?? 0);
+      headTarget = o.race ? INF : (metric==='survival' ? fmtTime(o.target ?? 0) : fmtNum(o.target ?? 0));
+      // доп-условия тира i → компактные чипы (как ✈ + 🔧 на L3, плюс деньги/жизни/время/чистота)
+      const chips = (i: number)=>{
+        let c = '';
+        if(o.upg      && o.upg[i]>0)        c += `<span class="req-upg">${GICON.wrench}${fmtNum(o.upg[i])}</span>`;
+        if(o.money    && o.money[i]>0)      c += `<span class="req-upg">💰${fmtNum(o.money[i])}</span>`;
+        if(o.lives    && o.lives[i]>0)      c += `<span class="req-upg">♥${fmtNum(o.lives[i])}</span>`;
+        if(o.timeTier && o.timeTier[i]>0)   c += `<span class="req-upg">${GICON.clock}${fmtTime(o.timeTier[i])}</span>`;
+        if(o.maxLate  && o.maxLate[i]!=null)  c += `<span class="req-upg">⌛≤${fmtNum(o.maxLate[i])}</span>`;
+        if(o.maxCrash && o.maxCrash[i]!=null) c += `<span class="req-upg">💥≤${fmtNum(o.maxCrash[i])}</span>`;
+        return c;
+      };
       rows = [2,1,0].map(i=>{
         const st=i+1;
         const starsHtml=[0,1,2].map(n=>'<span'+(n<st?'':' class="off"')+' style="display:inline-flex">'+SVGIC('star')+'</span>').join('');
-        let req = `<span class="req">${primary}<span class="thr-num">${fmtNum(stars[i])}</span></span>`;
-        if(o.upg && o.upg[i]>0) req = `<span class="req">${primary}<span class="thr-num">${fmtNum(stars[i])}</span> <span class="req-upg">${GICON.wrench}${fmtNum(o.upg[i])}</span></span>`;
+        const req = `<span class="req">${primary}<span class="thr-num">${fmtThr(stars[i])}</span> ${chips(i)}</span>`;
         return `<div class="row"><span class="stars">${starsHtml}</span>${req}</div>`;
       }).join('');
     }

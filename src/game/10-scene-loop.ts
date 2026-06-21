@@ -167,7 +167,8 @@ function drawMenuScene(tm: number){
       ? '<span class="pop" style="display:inline-flex;color:var(--m-gold)">'+SVGIC('trophy')+'</span>'
       : [0,1,2].map(i=>
       '<span class="'+(i<stars?'pop':'off')+'" style="display:inline-flex'+(i<stars?';animation-delay:'+(i*0.13)+'s':'')+'">'+SVGIC('star')+'</span>').join('');
-    const unit = t(LV.objective.metric==='upgrades'?'unit.upgrades':'unit.planes', {n:v});
+    const mSurv = LV.objective.metric==='survival';
+    const unit = t(mSurv?'unit.seconds':(LV.objective.metric==='upgrades'?'unit.upgrades':'unit.planes'), {n:v});
     document.getElementById('overMsg')!.textContent = survival
       ? t(served>prevBest ? 'over.survRecord' : 'over.survResult', {n:fmtNum(served), best:fmtNum(Math.max(served,prevBest)), money:fmtMoney(money)})
       : t('over.result', {reason:t(reasonKey), desc:objectiveDesc(), n:fmtNum(v), unit, money:fmtMoney(money)});
@@ -186,7 +187,8 @@ function drawMenuScene(tm: number){
     };
     // карточка статистики смены
     const statsBox=document.getElementById('overStats')!; statsBox.innerHTML='';
-    [[LV.objective.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), survival?fmtNum(v):(fmtNum(v)+' / '+fmtNum(LV.objective.target ?? 0)), 'v-phos'],
+    [[mSurv?t('stats.time'):(LV.objective.metric==='upgrades'?t('stats.upgrades'):t('stats.served')),
+      survival?fmtNum(v):(mSurv?(fmtTime(v)+' / '+fmtTime(LV.objective.target ?? 0)):(fmtNum(v)+' / '+fmtNum(LV.objective.target ?? 0))), 'v-phos'],
      [t('stats.money'), fmtMoney(money), 'v-gold'],
      [t('stats.peak'), '✈ '+fmtNum(statPeak), 'v-teal'],
      [t('stats.lives'), '♥ '+fmtNum(Math.max(0,lives))+' / '+fmtNum(K.START_LIVES), 'v-life'],

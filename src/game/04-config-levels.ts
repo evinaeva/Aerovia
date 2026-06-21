@@ -21,7 +21,22 @@
   // (геометрия апрона процедурная) — поля задают замысел до доработки рендера.
   interface LevelLayout { hangars: HangarDef[]; runways: RunwayDef[]; apron?: ZoneRect; zones?: { arrival?: ZoneRect; waiting?: ZoneRect }; }
   interface Events { vip?: boolean; emergency?: boolean; medical?: boolean; rush?: boolean; fog?: boolean; wind?: boolean; [k: string]: boolean | undefined; }
-  interface Objective { metric: 'served' | 'upgrades'; stars: number[]; target?: number; time?: number; race?: boolean; upg?: number[]; }
+  // Цель уровня + градация звёзд. stars=[1★,2★,3★] — пороги по ОСНОВНОЙ метрике
+  // (served: бортов · upgrades: апгрейдов · survival: секунд продержаться). Ниже —
+  // ОПЦИОНАЛЬНЫЕ доп-условия (каждое пер-тир, длиной 3, выровнено на [1★,2★,3★]).
+  // Тир засчитывается, если выполнены ВСЕ заданные условия этого тира (AND). Условия
+  // ≥ (money/lives/upg) идут по возрастанию, ≤ (timeTier/maxLate/maxCrash) — по убыванию.
+  // Подробный разбор и происхождение из референса — docs/design/game-design/star-conditions.md.
+  interface Objective {
+    metric: 'served' | 'upgrades' | 'survival';
+    stars: number[]; target?: number; time?: number; race?: boolean;
+    upg?: number[];       // ≥ апгрейдов (только с metric:'served')
+    money?: number[];     // ≥ касса к концу смены
+    lives?: number[];     // ≥ осталось жизней
+    timeTier?: number[];  // ≤ уложиться за столько секунд (быстрее = выше ★)
+    maxLate?: number[];   // ≤ наземных просрочек
+    maxCrash?: number[];  // ≤ крушений
+  }
   interface Level {
     pace?: number; objective: Objective;
     // геометрия — ЛИБО явный layout (конструктор), ЛИБО старые sides+runways (слоты,
@@ -30,6 +45,7 @@
     sides?: { top?: SideCfg; left?: SideCfg; bottom?: SideCfg };
     services?: string[];   // какие услуги запрашивают борты (подмножество SVC_TYPES; умолч. все)
     maxUp?: number;        // глубина апгрейда на уровне 0..BAY_MAX_LVL (умолч. потолок); 0 — без апгрейдов
+    minUp?: number;        // нижняя граница «вилки» апгрейда 0..maxUp (экон-ручка: считается набор от minUp до maxUp)
     events?: Events; startMoney?: number;
     crashPenalty?: number; // 0..1 — доля вознаграждения борта, списывается с кассы при крэше
     latePenalty?: number;  // 0..1 — доля вознаграждения при истечении наземного терпения (умолч. 0.5)
@@ -398,6 +414,10 @@
   // глубина апгрейда на уровне: одна на всех ангаров, в [0, BAY_MAX_LVL] (умолч. потолок).
   // 0 — апгрейдов нет; per-hangar up:false выключает апгрейд только своего ангара.
   function levelMaxUp(lv?: Level){ const L = lv || LV; const m = L && L.maxUp; const v = (m==null) ? K.BAY_MAX_LVL : m; return Math.max(0, Math.min(K.BAY_MAX_LVL, v)); }
+  // нижняя граница вилки апгрейда [0, maxUp] (умолч. 0). Экон-ручка: «набор» учитывает
+  // только подъём от minUp до maxUp — выше minUp боксы как бы уже прокачаны, ниже maxUp
+  // ещё есть что купить. minUp=0 ⇒ всё как раньше (числа экономики не меняются).
+  function levelMinUp(lv?: Level){ const L = lv || LV; const m = L && L.minUp; const v = (m==null) ? 0 : m; return Math.max(0, Math.min(levelMaxUp(lv), v)); }
   // перевод старой раскладки sides → формат конструктора (layout). Повторяет геометрию
   // packRow: плоский список слотов сторон чередуется верх/низ-ряд, ряды раскладываются по
   // ширине апрона; ВПП — по числу lv.runways, равномерно по вертикали. Нужен редактору,
@@ -466,7 +486,10 @@
     // уровня (maxUp:0 → апгрейдов нет) и долю апгрейдируемых мест (upgShare).
     const expectOpen  = Math.round(openable * K.ECON_OPEN_FRAC);
     const workingBays = open0 + expectOpen;
-    const upgCost = levelMaxUp(lv) > 0 ? workingBays * upgShare * upgCostBase * K.ECON_UP_FRAC : 0;
+    // вилка апгрейда: покупается только подъём minUp→maxUp; spanFrac=1 при minUp=0 (как раньше)
+    const maxUpL = levelMaxUp(lv);
+    const spanFrac = maxUpL > 0 ? (maxUpL - levelMinUp(lv)) / maxUpL : 0;
+    const upgCost = maxUpL > 0 ? workingBays * upgShare * upgCostBase * K.ECON_UP_FRAC * spanFrac : 0;
     const kitCost = expectOpen * openCostAvg + upgCost + rwDirKitCost;
     // (B) сложность → щедрость
     const difficulty = levelDifficulty(lv);
@@ -501,6 +524,7 @@
     const params = {n: o.target ?? 0, time: o.time ? fmtTime(o.time) : ''};
     if(LV.bonus) return t('bonus.obj', params);   // «выпусти N гусениц бабочками»
     if(o.race) return t('obj.race', params);      // «прими сколько успеешь за {time}»
+    if(o.metric==='survival') return t('obj.survival', {time: fmtTime(o.target ?? o.time ?? 0)});
     if(o.metric==='upgrades') return t('obj.upgrades', params);
     return o.time ? t('obj.servedTimed', params) : t('obj.served', params);
   }
