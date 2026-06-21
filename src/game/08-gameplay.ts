@@ -54,7 +54,10 @@
       startMoney: money,
     });
     if(tut) Analytics.track('tutorial_start', {step: tut.step});
-    showGoals(false);          // крупное окно постановки целей в начале раунда (заодно ставит на паузу)
+    // окно постановки целей в начале раунда (заодно ставит на паузу). В тестовом
+    // превью конструктора (tuning.html) его глушим: иначе оно вылезает при каждом
+    // переключении на «Тестовую игру».
+    if(!(window as any).__SUPPRESS_GOALS) showGoals(false);
   }
 
   function shuffle(a: any[]){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
