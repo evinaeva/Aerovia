@@ -4548,6 +4548,7 @@
     const start = () => {
       try {
         if (window._exitMarkupSurface) window._exitMarkupSurface();   // показать iframe, снять холст
+        w.__SUPPRESS_GOALS = true;   // в превью конструктора не показываем окно постановки целей
         // бесконечные жизни + деньги (тест-чит игры)
         ['optLives', 'optMoney'].forEach(id => {
           const el = w.document.getElementById(id);
