@@ -17,7 +17,7 @@
  *
  * After changing precached assets or wanting to force a refresh, bump VERSION.
  */
-const VERSION = 'v11';
+const VERSION = 'v12';
 const CACHE = 'planeflow-' + VERSION;
 
 // App shell — everything needed to boot offline. Paths are relative so the SW
@@ -51,7 +51,13 @@ self.addEventListener('install', (e) => {
   // Precache the shell. Tolerate individual misses so one 404 can't block install.
   e.waitUntil(
     caches.open(CACHE).then((c) =>
-      Promise.all(ASSETS.map((u) => c.add(u).catch(() => {})))
+      // Bypass the HTTP cache while precaching so a fresh deploy can't be
+      // shadowed by a still-valid (max-age) index.html in the browser cache.
+      Promise.all(ASSETS.map((u) =>
+        fetch(new Request(u, { cache: 'reload' }))
+          .then((res) => (res && res.ok ? c.put(u, res) : undefined))
+          .catch(() => {})
+      ))
     )
   );
   // Take over as soon as installed so a single reload adopts the new version —
@@ -115,7 +121,11 @@ self.addEventListener('fetch', (e) => {
   if (req.mode === 'navigate') {
     e.respondWith((async () => {
       try {
-        const res = await fetch(req);
+        // `cache: 'reload'` bypasses the browser HTTP cache so every online
+        // launch gets the freshly deployed index.html — a plain fetch(req)
+        // would happily serve a still-valid (max-age) cached shell, leaving
+        // clients on a stale build until the cache expired.
+        const res = await fetch(req, { cache: 'reload' });
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
         return res;
