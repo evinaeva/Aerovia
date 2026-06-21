@@ -6,8 +6,12 @@
   // Capgo OTA (нативная сборка): помечаем текущий веб-бандл рабочим. Без этого вызова
   // плагин через ~10с считает обновление сломанным и откатывается на прошлый бандл.
   { const cap=window.Capacitor;
-    if(cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins && cap.Plugins.CapacitorUpdater){
-      try{ cap.Plugins.CapacitorUpdater.notifyAppReady(); }catch(e){}
+    if(cap && cap.isNativePlatform && cap.isNativePlatform()){
+      // маркер нативной сборки для CSS (боковые жест-зоны 24px на экране уровней — только тут)
+      document.documentElement.classList.add('is-native');
+      if(cap.Plugins && cap.Plugins.CapacitorUpdater){
+        try{ cap.Plugins.CapacitorUpdater.notifyAppReady(); }catch(e){}
+      }
     }
   }
 
