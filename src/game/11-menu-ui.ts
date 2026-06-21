@@ -159,14 +159,22 @@
   // привести произвольный JSON (экспорт конструктора) к форме Level с безопасными умолчаниями
   function normalizeCustomLevel(o: any): Level {
     o = (o && typeof o === 'object') ? o : {};
-    const obj = (o.objective && Array.isArray(o.objective.stars) && o.objective.stars.length === 3)
-      ? { metric: (o.objective.metric === 'upgrades' ? 'upgrades' : 'served') as Objective['metric'],
-          stars: o.objective.stars.map((n: any) => Math.max(1, +n || 1)) }
+    const src = (o.objective && typeof o.objective === 'object') ? o.objective : {};
+    const obj: Objective = (Array.isArray(src.stars) && src.stars.length === 3)
+      ? { metric: (src.metric === 'upgrades' ? 'upgrades' : 'served') as Objective['metric'],
+          stars: src.stars.map((n: any) => Math.max(1, +n || 1)) }
       : { metric: 'served' as Objective['metric'], stars: [6, 8, 10] };
+    // лимит времени / гонка и опц. пер-тир условия звёзд из конструктора (tuning.html)
+    if (typeof src.time === 'number') obj.time = src.time;
+    if (src.race === true) obj.race = true;
+    (['upg', 'money', 'lives', 'timeTier', 'maxLate', 'maxCrash'] as const).forEach(k => {
+      if (Array.isArray(src[k])) obj[k] = src[k].map((n: any) => +n || 0);
+    });
     const lv: Level = { objective: obj };
     if (typeof o.pace === 'number') lv.pace = Math.max(0, Math.min(1, o.pace));
     if (Array.isArray(o.services)) lv.services = o.services.slice();
     if (typeof o.maxUp === 'number') lv.maxUp = o.maxUp;
+    if (typeof o.minUp === 'number') lv.minUp = o.minUp;
     if (o.layout && typeof o.layout === 'object') lv.layout = o.layout;
     else if (o.sides) lv.sides = o.sides;
     if (typeof o.runways === 'number') lv.runways = o.runways;
@@ -174,6 +182,11 @@
     if (typeof o.startMoney === 'number') lv.startMoney = o.startMoney;
     if (typeof o.crashPenalty === 'number') lv.crashPenalty = o.crashPenalty;
     if (typeof o.latePenalty === 'number') lv.latePenalty = o.latePenalty;
+    // среда/сложность: погода, деайсинг, «спокойствие» воздуха — чтобы тестовая
+    // игра отражала ВСЕ настройки вкладки «Сложность», а не только геометрию.
+    if (o.weather === true) lv.weather = true;
+    if (o.deice === true) lv.deice = true;
+    if (typeof o.calm === 'number') lv.calm = o.calm;
     return lv;
   }
   function startCustomLevel(o: any){ survival=false; curBiome=null; curBonus=null; levelIdx=-1; levelKey='custom'; LV=normalizeCustomLevel(o); bays=[]; runways=[]; layout(); hideAllScreens(); reset(); }
