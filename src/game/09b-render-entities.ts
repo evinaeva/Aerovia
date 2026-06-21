@@ -1,7 +1,7 @@
 // ===== 09b-render-entities — draw bays, planes, the HUD, transient FX and the tutorial overlay =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: drawBay, drawBayCaptureZones, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
-// Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, drag, touchdown, up); 08b (dirOut); 07 (Analytics).
+// Provides: drawBay, drawBaySnapZones, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
+// Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 04b (MT_META_VALUES); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
   function bayWalls(b: any,out: any,r: number){
@@ -85,29 +85,20 @@
     ctx.restore();
   }
 
-  // Зона захвата ангара: пока тянется маршрут наземного борта, у открытых боксов
-  // рисуем прямоугольник «прилипания» (тело бокса + запас K.BAY_GRAB). Заведя конец
-  // линии в эту зону, игрок цепляет маршрут к боксу (см. openBayAt). Бокс текущей
-  // услуги борта выделен ярче, остальные открытые — приглушённо.
-  function drawBayCaptureZones(){
-    if(LV.bonus || !drag || !drag.plane || drag.plane.zone==='air') return;
-    const need = curNeed(drag.plane);
-    const TONE: Record<string,string>={fuel:'teal',repair:'amber',board:'rose',deice:'ice'};
-    const g=K.BAY_GRAB, rad=Math.min(8*ui, 6*ui+g*0.2);
+  // Отладочный слой «Зоны захвата боксов» (MT.DEBUG_BAY_SNAP_ZONES) — настройка геометрии
+  // в tuning.html. Когда слой включён, у каждого открытого бокса рисуется прямоугольник
+  // зоны «прилипания» конца маршрута (тело бокса + MT.BAY_HIT_PADDING). Без пульсации и
+  // подсветки — ровная пунктирная рамка. По умолчанию слой выключен → в игре ничего не видно.
+  function drawBaySnapZones(){
+    if(MT_META_VALUES.DEBUG_BAY_SNAP_ZONES!==true || LV.bonus) return;
+    const g=(MT_META_VALUES.BAY_HIT_PADDING as number)||0, rad=Math.min(8*ui, 6*ui+g*0.2);
+    ctx.save();
+    ctx.lineWidth=1.5*ui; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([6*ui,4*ui]);
     for(const b of bays){
       if(!b.open) continue;
-      const match = b.type===need;
-      const col = match ? (COL[TONE[b.type as string]] || COL.phosphor) : COL.phosphor;
-      const a = match ? 1 : 0.4;
-      ctx.save();
-      ctx.fillStyle=hexa(col,.07*a);
-      rr(b.x-g, b.y-g, b.w+2*g, b.h+2*g, rad); ctx.fill();
-      ctx.lineWidth=(match?2:1.4)*ui; ctx.strokeStyle=hexa(col,.5*a+.15);
-      ctx.setLineDash([6*ui,4*ui]);
-      if(match){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=8; }
       rr(b.x-g, b.y-g, b.w+2*g, b.h+2*g, rad); ctx.stroke();
-      ctx.restore();
     }
+    ctx.restore();
   }
 
   function drawBay(b: any){

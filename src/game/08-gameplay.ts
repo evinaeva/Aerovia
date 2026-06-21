@@ -285,8 +285,10 @@
   // открытый бокс под точкой (для фиксации конца маршрута)
   function openBayAt(p: any){
     // конец маршрута «прилипает» к боксу не только внутри его прямоугольника, но и в
-    // настраиваемом запасе K.BAY_GRAB вокруг (зону рисует drawBayCaptureZones)
-    for(const b of bays) if(b.open && rectPad(p.x,p.y,b,K.BAY_GRAB)) return b;
+    // запасе MT.BAY_HIT_PADDING вокруг (настраивается в tuning.html, по умолчанию 0;
+    // зону рисует слой MT.DEBUG_BAY_SNAP_ZONES — тоже только в Workbench)
+    const pad=(MT_META_VALUES.BAY_HIT_PADDING as number)||0;
+    for(const b of bays) if(b.open && rectPad(p.x,p.y,b,pad)) return b;
     return null;
   }
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
