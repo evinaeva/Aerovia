@@ -141,10 +141,7 @@
         if(pl.moving && pl.path.length){
           followPath(pl, taxiSpeed, dt);
           if(!rectHit(pl.x,pl.y,pl.runway)){          // съехал с полосы на апрон
-            // полосу НЕ освобождаем автоматически: севший борт продолжает «занимать» её,
-            // пока игрок не уведёт его в бокс/на вылет. Так посадка второго борта следом
-            // за первым опасна — они врежутся, если не успеть развести (в этом сложность).
-            pl.heldRunway = pl.runway;
+            if(pl.runway.occupied===pl) pl.runway.occupied=null;
             pl.runway=null; pl.zone='field';
           }
         }
@@ -181,7 +178,6 @@
           for(const r of runways){
             if(!r.closed && r.takeoffOpen && rectHit(pl.x,pl.y,r)){
               // выезд на полосу под взлёт (takeoffOpen=true; крушение — только при контакте на ВПП)
-              releaseHeldRunway(pl);   // освобождаем удерживаемую с посадки полосу (если была)
               pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
               // подруливаем к точке старта по оси полосы (у полевого торца) и тут же
               // разгоняемся — борт выходит на ВПП уже центрированным, без паузы
@@ -197,7 +193,6 @@
               if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
               if(b.occupied && b.occupied!==pl){ if(!LV.bonus){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
               else {
-                releaseHeldRunway(pl);   // доехал до бокса — теперь полоса свободна
                 pl.zone='bay'; pl.bay=b; b.occupied=pl;
                 pl.moving=false; pl.path=[];
                 pl.serveMax=serveTimeFor(b); pl.serveTime=pl.serveMax;
