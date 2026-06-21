@@ -284,7 +284,9 @@
   }
   // открытый бокс под точкой (для фиксации конца маршрута)
   function openBayAt(p: any){
-    for(const b of bays) if(b.open && rectHit(p.x,p.y,b)) return b;
+    // конец маршрута «прилипает» к боксу не только внутри его прямоугольника, но и в
+    // настраиваемом запасе K.BAY_GRAB вокруг (зону рисует drawBayCaptureZones)
+    for(const b of bays) if(b.open && rectPad(p.x,p.y,b,K.BAY_GRAB)) return b;
     return null;
   }
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот

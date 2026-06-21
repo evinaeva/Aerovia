@@ -1,7 +1,7 @@
 // ===== 09b-render-entities — draw bays, planes, the HUD, transient FX and the tutorial overlay =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: drawBay, drawBayTargets, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
-// Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
+// Provides: drawBay, drawBayCaptureZones, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
+// Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, drag, touchdown, up); 08b (dirOut); 07 (Analytics).
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
   function bayWalls(b: any,out: any,r: number){
@@ -85,28 +85,27 @@
     ctx.restore();
   }
 
-  // Подсказка «куда вести траекторию»: пока выбран борт, у открытых свободных ангаров
-  // его текущей услуги пульсирует кольцо-цель в центре бокса — туда нужно завести конец
-  // маршрута, чтобы борт заехал внутрь (lockRouteToBay срабатывает на конце линии в боксе).
-  function drawBayTargets(ts: number){
-    const pl: any = selected;
-    if(!pl || pl.dead || pl.zone==='bay' || pl.zone==='air') return;
-    if(LV.bonus) return;                                  // в бонус-мире своя механика
-    const need = curNeed(pl);
-    if(!need || need==='depart') return;                  // вылет — это полоса, не ангар
+  // Зона захвата ангара: пока тянется маршрут наземного борта, у открытых боксов
+  // рисуем прямоугольник «прилипания» (тело бокса + запас K.BAY_GRAB). Заведя конец
+  // линии в эту зону, игрок цепляет маршрут к боксу (см. openBayAt). Бокс текущей
+  // услуги борта выделен ярче, остальные открытые — приглушённо.
+  function drawBayCaptureZones(){
+    if(LV.bonus || !drag || !drag.plane || drag.plane.zone==='air') return;
+    const need = curNeed(drag.plane);
     const TONE: Record<string,string>={fuel:'teal',repair:'amber',board:'rose',deice:'ice'};
-    const pulse = 0.5 + 0.5*Math.sin(ts/300);
+    const g=K.BAY_GRAB, rad=Math.min(8*ui, 6*ui+g*0.2);
     for(const b of bays){
-      if(!b.open || b.type!==need) continue;
-      if(b.occupied && b.occupied!==pl) continue;         // занят чужим бортом — не цель
-      const col = COL[TONE[b.type as string]] || COL.phosphor;
-      const cx=b.x+b.w/2, cy=b.y+b.h/2, rad=Math.min(b.w,b.h)*0.30*(1+0.08*pulse);
+      if(!b.open) continue;
+      const match = b.type===need;
+      const col = match ? (COL[TONE[b.type as string]] || COL.phosphor) : COL.phosphor;
+      const a = match ? 1 : 0.4;
       ctx.save();
-      ctx.fillStyle=hexa(col,.10+.06*pulse); ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.fill();
-      ctx.lineWidth=2.4*ui; ctx.strokeStyle=hexa(col,.55+.35*pulse);
-      ctx.shadowColor=hexa(col,.6); ctx.shadowBlur=10;
-      ctx.setLineDash([7*ui,5*ui]); ctx.lineDashOffset=-ts/40;
-      ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.stroke();
+      ctx.fillStyle=hexa(col,.07*a);
+      rr(b.x-g, b.y-g, b.w+2*g, b.h+2*g, rad); ctx.fill();
+      ctx.lineWidth=(match?2:1.4)*ui; ctx.strokeStyle=hexa(col,.5*a+.15);
+      ctx.setLineDash([6*ui,4*ui]);
+      if(match){ ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=8; }
+      rr(b.x-g, b.y-g, b.w+2*g, b.h+2*g, rad); ctx.stroke();
       ctx.restore();
     }
   }
