@@ -259,8 +259,9 @@
       } else {
         ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
       }
-      // осевая пунктирная
-      ctx.strokeStyle=hexa(nt,r.occupied?0.5:0.8);
+      // осевая пунктирная (без реакции на занятость — состояние полосы визуально
+      // не меняется, иначе это подсказка, упрощающая игру)
+      ctx.strokeStyle=hexa(nt,0.8);
       ctx.lineWidth=2.5; ctx.setLineDash([18,15]);
       ctx.beginPath(); ctx.moveTo(r.x+12*ui,r.cy); ctx.lineTo(r.x+r.w-12*ui,r.cy); ctx.stroke(); ctx.setLineDash([]);
       // пороговые отметки с обоих торцов
