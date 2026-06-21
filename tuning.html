@@ -81,10 +81,6 @@
     .tb-btn:hover { background: #1a2a48; }
     .tb-btn.tb-active { border-color: var(--accent); background: rgba(34,227,198,.08); color: var(--accent); }
     .tb-icon { font-size: 15px; line-height: 1; flex: none; }
-    #btn-demo { color: var(--accent); border-color: rgba(34,227,198,.45); background: rgba(34,227,198,.06); }
-    #btn-demo:hover { background: rgba(34,227,198,.14); }
-    #btn-demo.demo-active { color: #ff8080; border-color: rgba(255,80,80,.5); background: rgba(255,80,80,.06); }
-    #btn-demo.demo-active:hover { background: rgba(255,80,80,.14); }
 
     /* Size button inside popup */
     .sz-btn {
@@ -138,6 +134,60 @@
     .popup-body .p-btn, .popup-body .p-input, .popup-body select { width: 100%; text-align: left; }
     .popup-body .btn-row { display: flex; gap: 4px; }
     .popup-body .btn-row .p-btn { flex: 1; }
+
+
+    /* ── Preview row: mode rail (left) + phone preview ───────────────────────
+       The preview (markup canvas ↔ game iframe) is always present; the left
+       rail toggles which surface is shown — «Разметка» (edit) ↔ «Тестовая
+       игра» (play). The active mode is independent of the bottom-pane tab. */
+    #preview-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+    }
+    #mode-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: none;
+      align-self: center;
+    }
+    .mode-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      width: 88px;
+      padding: 12px 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--btn-bg);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-align: center;
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mode-btn .mode-ic { font-size: 18px; line-height: 1; }
+    .mode-btn:hover:not(.active) { background: rgba(58,210,255,.10); color: var(--text); }
+    .mode-btn.active {
+      color: #061018;
+      border-color: transparent;
+      background: linear-gradient(180deg, var(--accent2), var(--accent));
+      box-shadow: 0 4px 18px rgba(34,227,198,.30);
+    }
+    @media (max-height: 560px) {
+      .mode-btn { width: 74px; padding: 8px 6px; font-size: 10px; }
+      .mode-btn .mode-ic { font-size: 15px; }
+    }
 
 
     /* ── Phone column ───────────────────────────────────────────────────── */
@@ -1046,8 +1096,6 @@
       <button class="tb-btn" id="btn-size-toggle" title="Выбрать размер экрана">
         <span class="tb-icon">📱</span><span id="tb-size-label">S</span>
       </button>
-      <!-- Demo -->
-      <button class="tb-btn" id="btn-demo" title="Запустить разметку из «Разметки» · бесконечные борта · готовый борт у апрона">▶ Демо</button>
       <!-- Spacer -->
       <div style="flex:1"></div>
       <!-- Preset -->
@@ -1117,6 +1165,19 @@
     </div>
   </div>
 
+  <!-- Preview row: mode rail (left) + phone preview -->
+  <div id="preview-row">
+
+    <!-- Mode rail: единое превью, переключатель режимов слева -->
+    <div id="mode-rail">
+      <button class="mode-btn active" id="mode-markup" type="button" title="Разметка поля — расставь апрон/ВПП/ангары на превью">
+        <span class="mode-ic">✎</span><span id="mode-markup-label">Разметка</span>
+      </button>
+      <button class="mode-btn" id="mode-test" type="button" title="Тестовая игра — сыграй текущую разметку с её настройками сложности">
+        <span class="mode-ic">▶</span><span id="mode-test-label">Тестовая&nbsp;игра</span>
+      </button>
+    </div>
+
   <!-- Phone preview -->
   <div id="phone-col">
     <div id="phone-wrapper">
@@ -1135,6 +1196,8 @@
     </div>
     <div id="phone-label">Превью · S Android Common · 800×360</div>
   </div>
+
+  </div><!-- /#preview-row -->
 
 </div>
 
@@ -1172,7 +1235,7 @@
           <span class="tab-icon">⚡</span><span>Движение</span>
         </button>
         <button class="t-tab" data-tab="demoscreen">
-          <span class="tab-icon">🖥</span><span>Настройки демо экрана</span>
+          <span class="tab-icon">🖥</span><span>Настройки тестовой игры</span>
         </button>
         <button class="t-tab" data-tab="level">
           <span class="tab-icon">🗺</span><span>Уровни</span>
@@ -1523,7 +1586,7 @@
         <input class="p-input" id="ly-filename" placeholder="имя файла" style="flex:1;min-width:140px" spellcheck="false" autocomplete="off">
       </div>
       <div class="lab-btn-row" style="margin-bottom:6px">
-        <button class="p-btn" id="ly-play" style="flex:1;color:var(--accent);border-color:rgba(34,227,198,.45);background:rgba(34,227,198,.06)">▶ Сыграть черновик</button>
+        <span class="lab-empty" style="flex:1">▶ Чтобы сыграть разметку — переключатель «Тестовая игра» слева от превью.</span>
       </div>
       <div class="lab-btn-row">
         <button class="p-btn" id="ly-export">⬇ Экспорт JSON</button>
@@ -1546,11 +1609,12 @@
   <div id="test-view" class="lab-view">
     <div class="lab-section">
       <h3>Тест-драйв <span class="h3-sub" id="test-draft-name">черновик</span></h3>
-      <p class="lab-hint" style="margin-top:0">Запусти черновик в игре (вверху) и поиграй сам — проверь проходимость и баланс.
-        Авто-бота нет: это ручной тест-драйв.</p>
+      <p class="lab-hint" style="margin-top:0">Переключатель <b>«Тестовая игра»</b> слева от превью запускает текущую
+        разметку с её настройками сложности — играй сам, проверь проходимость и баланс. Авто-бота нет: это ручной
+        тест-драйв. «Разметка» возвращает к редактированию поля.</p>
       <div class="lab-btn-row">
-        <button class="p-btn" id="test-play" style="flex:1;color:var(--accent);border-color:rgba(34,227,198,.45);background:rgba(34,227,198,.06)">▶ Сыграть черновик</button>
-        <button class="p-btn" id="test-stop">⏹ В меню</button>
+        <button class="p-btn" id="test-play" style="flex:1;color:var(--accent);border-color:rgba(34,227,198,.45);background:rgba(34,227,198,.06)">▶ Тестовая игра</button>
+        <button class="p-btn" id="test-stop">✎ К разметке</button>
       </div>
       <div id="test-status" style="margin-top:6px;font-size:11px;color:var(--muted)"></div>
     </div>
@@ -1585,13 +1649,11 @@
 
   /* ── i18n ─────────────────────────────────────────────────────────────── */
   const T = {
-    demo:           '▶ Демо',
-    demoStop:       '⏹ Стоп',
-    demoRunning:    'Демо: запущена разметка из вкладки «Разметка» · бесконечные борта · готовый борт у левого края апрона.',
-    demoExit:       'Демо: вернулись в главное меню.',
-    demoNotLoaded:  'Игра не загружена.',
-    demoNoMenu:     'Сначала вернись в главное меню.',
-    demoBiomeNone:  'Биом не найден — попробуй ещё раз.',
+    // Единое превью: разметка ↔ тестовая игра (левый рельс)
+    testRunning:    'Тестовая игра: текущая разметка · бесконечные борта · готовый борт у левого края апрона · без леса.',
+    markupMode:     'Разметка: расставь апрон, ВПП и ангары прямо на превью.',
+    testNotLoaded:  'Игра ещё не загрузилась — подожди и повтори.',
+    testFailed:     'Движок не смог запустить уровень.',
     ready:          'Готово',
     loading:        'Ждём запуска игры…',
     paramsReady:    (n) => 'Готово · ' + n + ' параметров.',
@@ -3068,7 +3130,9 @@
       // bar for whichever is now active and reveal its (remembered) sub-tab.
       if (hasSubtabs) buildSubtabs();
       else subtabBar.style.display = 'none';
-      if (window._layoutActivate) window._layoutActivate(isLayout);
+      // Превью (холст разметки ↔ игровой iframe) больше НЕ привязано к вкладке —
+      // им управляет левый рельс (см. runTest/returnToMarkup). Любая вкладка
+      // настроек кормит то же единое превью.
       // освежаем вкладки, которые читают черновик (он мог измениться в «Разметке»)
       if (tab === 'difficulty' && GAME) { renderDiffEditor(); renderDiff(); }
       if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
@@ -3818,30 +3882,14 @@
       $('ly-warn').textContent = 'скопировано в буфер';
       setTimeout(() => { $('ly-warn').textContent = warnLine(validate()); }, 1400);
     }
-    // «Сыграть черновик»: грузим уровень в игровой iframe и стартуем его сразу.
-    // Через __PLAY.store он же ложится в localStorage игры → на стартовом экране
-    // появляется кнопка «Свой уровень». Раз холст «Разметки» накрывает игру в
-    // макете телефона — переключаемся на «Движение», чтобы увидеть, как идёт игра.
-    function playDraft() {
-      const obj = exportObj();
-      try {
-        const w = gameFrame.contentWindow;
-        if (!w || !w.__PLAY) { $('ly-warn').textContent = 'игра ещё не загрузилась — подожди и повтори'; return; }
-        w.__PLAY.store(obj);
-        const ok = w.__PLAY.custom(obj);
-        if (!ok) { $('ly-warn').textContent = 'движок не смог запустить уровень'; return; }
-        // холст «Разметки» накрывает игру — если играем из неё, уходим на «Тест»
-        // (там оверлей снят → игра видна, и шаг мастера остаётся осмысленным).
-        // Из самого «Теста» (active=false) игра уже видна — вкладку не дёргаем.
-        if (active) { const testTab = document.querySelector('.t-tab[data-tab="test"]'); if (testTab) testTab.click(); }
-        $('ly-warn').textContent = '▶ уровень запущен в игре выше';
-      } catch (e) { $('ly-warn').textContent = 'не удалось запустить: ' + e.message; }
-    }
-    function doPlay() {
+    // Запуск тестовой игры консолидирован в левом рельсе (window._runTest).
+    // Здесь только отдаём наружу проверку «можно ли играть»: при ошибках разметки
+    // показываем ту же модалку подтверждения, что и экспорт, и лишь потом стартуем.
+    window._confirmPlay = function (onProceed) {
       const v = validate();
-      if (v.errors.length) { showValidateModal(v, playDraft, 'Сыграть всё равно', 'Запустить уровень всё равно?'); return; }
-      playDraft();
-    }
+      if (v.errors.length) { showValidateModal(v, onProceed, 'Сыграть всё равно', 'Запустить уровень всё равно?'); return; }
+      onProceed();
+    };
     /* Blocking pre-action validator modal (errors → confirm before export/play).
        goLabel/subText подставляются на каждый вызов — модалка общая для «Экспорт» и «Сыграть». */
     function showValidateModal(v, onProceed, goLabel, subText) {
@@ -3907,7 +3955,7 @@
     window.Draft = {
       export:   () => exportObj(),
       validate: () => validate(),
-      play:     () => doPlay(),
+      play:     () => { if (window._runTest) window._runTest(); },
       name:     () => curTpl || 'черновик',
       raw:      () => ensureDiffFields(),                 // живая ссылка на LE (для вкладки «Сложность»)
       commit:   () => { save(); refreshAll(); },          // сохранить + пересинхронить контролы «Разметки»
@@ -3931,7 +3979,6 @@
     document.querySelectorAll('[data-add-hangar]').forEach(b => b.addEventListener('click', () => addHangar(b.dataset.addHangar)));
     $('ly-add-runway').addEventListener('click', addRunway);
     $('ly-del').addEventListener('click', delSelected);
-    $('ly-play').addEventListener('click', doPlay);
     $('ly-export').addEventListener('click', doExport);
     $('ly-copy').addEventListener('click', doCopy);
     $('ly-import-btn').addEventListener('click', () => $('ly-file').click());
@@ -3989,7 +4036,13 @@
     window._layoutResize = function () { if (active) resize(); };
     window.addEventListener('resize', () => { if (active) resize(); });
 
-    // boot
+    // Поверхности единого превью для левого рельса (runTest/returnToMarkup):
+    //   markup-surface = холст в шелле, iframe скрыт;  test-surface = iframe виден.
+    window._enterMarkupSurface = function () { window._layoutActivate(true); };
+    window._exitMarkupSurface  = function () { window._layoutActivate(false); };
+
+    // boot (начальную активацию режима «Разметка» делает контроллер левого рельса —
+    // он идёт ниже, когда уже определены хуки зон _enterEditorZones/_fieldActivate)
     load(); refreshAll();
   })();
 
@@ -4453,59 +4506,76 @@
     };
   })();
 
-  /* ── Demo mode (toggle: first click = start forest, second = main screen) */
-  let demoActive = false;
+  /* ── Единое превью: режим «Разметка» ↔ «Тестовая игра» ─────────────────────
+     Одно постоянное превью. Левый рельс переключает, ЧТО в нём видно:
+       • markup — схематичный холст #ly-canvas (редактор поля), iframe скрыт;
+       • test   — настоящая игра в iframe, запущенная из текущей разметки.
+     Режим не зависит от активной нижней вкладки (настройки кормят то же превью).
+     Главный экран игры не показываем: в markup iframe скрыт, на старте — markup;
+     лес выключаем (K.DISABLE_FOREST), кастомный уровень не имеет биома. */
+  let previewMode = 'markup';
 
-  function updateDemoBtn() {
-    const btn = document.getElementById('btn-demo');
-    if (demoActive) {
-      btn.textContent = T.demoStop;
-      btn.classList.add('demo-active');
-    } else {
-      btn.textContent = T.demo;
-      btn.classList.remove('demo-active');
-    }
+  function syncModeButtons() {
+    const mk = document.getElementById('mode-markup');
+    const ts = document.getElementById('mode-test');
+    if (mk) mk.classList.toggle('active', previewMode === 'markup');
+    if (ts) ts.classList.toggle('active', previewMode === 'test');
   }
 
-  document.getElementById('btn-demo').addEventListener('click', () => {
+  // Запустить (или перезапустить) тестовую игру из текущей разметки.
+  // Перезапуск важен: даёт «применить» свежие правки сложности/событий/уровня.
+  function runTest() {
+    const w = gameFrame.contentWindow;
+    if (!w || !w.__PLAY || !window.Draft) { setStatus(T.testNotLoaded); return; }
+    const start = () => {
+      try {
+        if (window._exitMarkupSurface) window._exitMarkupSurface();   // показать iframe, снять холст
+        // бесконечные жизни + деньги (тест-чит игры)
+        ['optLives', 'optMoney'].forEach(id => {
+          const el = w.document.getElementById(id);
+          if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
+        });
+        // чистое поле: без лесных помех/деайсинга; готовый борт у левого края апрона
+        if (MT) { MT.apply({ 'K.DISABLE_FOREST': true, 'K.DISABLE_DEICE': true, 'K.APRON_SPAWN': true }, false); syncUI(); }
+        const obj = window.Draft.export();
+        w.__PLAY.store(obj);
+        if (!w.__PLAY.custom(obj)) {           // кастомный уровень = бесконечный (без objective.target)
+          setStatus(T.testFailed);
+          if (window._enterMarkupSurface) window._enterMarkupSurface();   // откат к холсту
+          previewMode = 'markup'; syncModeButtons();
+          return;
+        }
+        previewMode = 'test'; syncModeButtons();
+        setStatus(T.testRunning);
+      } catch (e) { setStatus('Test: ' + e.message); }
+    };
+    // валидируем как «Сыграть»: при ошибках — модалка с подтверждением
+    if (window._confirmPlay) window._confirmPlay(start); else start();
+  }
+
+  // Вернуться к разметке: остановить игру и снова показать холст.
+  // iframe прячем ДО клика по backBtn — чтобы мелькание главного меню не было видно.
+  function returnToMarkup() {
+    const w = gameFrame.contentWindow;
     try {
-      const w = gameFrame.contentWindow;
-      if (!w) { setStatus(T.demoNotLoaded); return; }
+      if (MT) { MT.apply({ 'K.APRON_SPAWN': false }, false); syncUI(); }
+      if (window._enterMarkupSurface) window._enterMarkupSurface();   // прячет iframe, монтирует холст
+      const backBtn = w && w.document.getElementById('backBtn');
+      if (backBtn) backBtn.click();
+    } catch (_) {}
+    previewMode = 'markup'; syncModeButtons();
+    setStatus(T.markupMode);
+  }
 
-      if (demoActive) {
-        // Second click: снимаем спавн-борт и возвращаемся в меню
-        if (MT) { MT.apply({'K.APRON_SPAWN': false}, false); syncUI(); }
-        const backBtn = w.document.getElementById('backBtn');
-        if (backBtn) backBtn.click();
-        demoActive = false;
-        updateDemoBtn();
-        setStatus(T.demoExit);
-        return;
-      }
+  window._runTest = runTest;
+  window._returnToMarkup = returnToMarkup;
 
-      // First click: enable infinite lives + money
-      ['optLives', 'optMoney'].forEach(id => {
-        const el = w.document.getElementById(id);
-        if (el && !el.checked) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
-      });
-
-      // Демо берёт РАЗМЕТКУ из вкладки «Разметка» (черновик LE) и запускает её как
-      // свой уровень — апрон/ВПП/ангары соответствуют тому, что нарисовано. Поле
-      // держим чистым: без лесных помех (K.DISABLE_FOREST) и деайсинга (K.DISABLE_DEICE).
-      // K.APRON_SPAWN — у левого края апрона всегда стоит готовый к взлёту борт.
-      if (MT) { MT.apply({'K.DISABLE_FOREST': true, 'K.DISABLE_DEICE': true, 'K.APRON_SPAWN': true}, false); syncUI(); }
-
-      if (!w.__PLAY || !window.Draft) { setStatus(T.demoNotLoaded); return; }
-      const obj = window.Draft.export();
-      w.__PLAY.store(obj);
-      const ok = w.__PLAY.custom(obj);   // кастомный уровень = бесконечный (без objective.target)
-      if (!ok) { setStatus(T.demoNoMenu); return; }
-      demoActive = true;
-      updateDemoBtn();
-      setStatus(T.demoRunning);
-
-    } catch (e) { setStatus('Demo: ' + e.message); }
-  });
+  { const mk = document.getElementById('mode-markup'); if (mk) mk.addEventListener('click', returnToMarkup); }
+  { const ts = document.getElementById('mode-test');   if (ts) ts.addEventListener('click', runTest); }
+  syncModeButtons();
+  // Старт: превью в режиме «Разметка» — холст в шелле, игровой iframe скрыт
+  // (главный экран не мелькает). Хуки зон уже определены к этому моменту.
+  if (window._enterMarkupSurface) window._enterMarkupSurface();
 
   /* ── Ресурсы: примерка скинов (плейсхолдеры) — выбор сохраняется в черновике ─ */
   (function () {
@@ -4552,12 +4622,13 @@
         : v.errors.map(e => '<div style="font-size:11px;color:#ff8080;padding:2px 0">⛔ ' + escHtml(e) + '</div>').join('')
           + v.warns.map(w => '<div style="font-size:11px;color:#e3c522;padding:2px 0">⚠ ' + escHtml(w) + '</div>').join('');
     }
+    // Кнопки вкладки «Тест» — те же действия, что и левый рельс единого превью.
     const play = document.getElementById('test-play');
-    if (play) play.addEventListener('click', () => { if (window.Draft) window.Draft.play(); setTimeout(syncTest, 60); });
+    if (play) play.addEventListener('click', () => { if (window._runTest) window._runTest(); setTimeout(syncTest, 60); });
     const stop = document.getElementById('test-stop');
     if (stop) stop.addEventListener('click', () => {
-      try { const w = gameFrame.contentWindow; const b = w && w.document.getElementById('backBtn'); if (b) b.click(); } catch (_) {}
-      const st = document.getElementById('test-status'); if (st) st.textContent = 'вернулись в меню игры';
+      if (window._returnToMarkup) window._returnToMarkup();
+      const st = document.getElementById('test-status'); if (st) st.textContent = 'вернулись к разметке';
     });
     window._testSync = syncTest;
   })();
