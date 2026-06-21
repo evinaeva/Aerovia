@@ -159,6 +159,7 @@
     {key:'K.DISABLE_FOREST',    group:'ctrl', label:'Отключить лесные помехи',target:'K', name:'DISABLE_FOREST',    def:true, note:'Блокирует спавн и очищает елки, птиц, оленей, снег.', impact:'Убирает лесные прерывания с ВПП.'},
     {key:'K.DISABLE_DEICE',     group:'ctrl', label:'Отключить деайсинг',     target:'K', name:'DISABLE_DEICE',     def:true, note:'Не добавляет деайсинг в список услуг при снеге.',     impact:'Упрощает маршруты при тестировании в снег.'},
     {key:'K.DISABLE_BAY',       group:'ctrl', label:'Отключить боксы',        target:'K', name:'DISABLE_BAY',       def:true, note:'Пропускает все услуги в боксах — сразу к вылету.',   impact:'Чистый тест руления и взлёта без обслуживания.'},
+    {key:'K.APRON_SPAWN',       group:'ctrl', label:'Спавн борта на апроне',  target:'K', name:'APRON_SPAWN',       def:false,note:'Демо: у левого края апрона всегда стоит готовый к взлёту борт; заменяется при взятии/крушении.', impact:'Постоянный готовый борт для теста руления и взлёта.'},
   ];
 
   MT_PARAMS.forEach(p => {

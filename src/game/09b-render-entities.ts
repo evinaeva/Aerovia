@@ -238,8 +238,10 @@
     const ncol=(SVC as Record<string, {color: string}>)[need].color;
     const vs=planeScale(pl);   // визуальная «перспектива»: кольца/пузырёк тянутся за бортом
 
-    // маршрут — фосфорная линия со свечением: сплошная тонкая линия
-    if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving){
+    // маршрут — фосфорная линия со свечением: сплошная тонкая линия.
+    // autoPath — системный маршрут (выкат на апрон, разгон на взлёте): игрок его не
+    // рисовал, поэтому линию не показываем (иначе она мелькает на секунду перед бортом).
+    if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving && !pl.autoPath){
       const _rc = COL.phosphor;
       ctx.save();
       ctx.strokeStyle=hexa(_rc, pl.selected?0.95:0.6);
