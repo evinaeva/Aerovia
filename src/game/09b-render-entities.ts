@@ -89,11 +89,11 @@
   // в tuning.html. Когда слой включён, у каждого открытого бокса рисуется прямоугольник
   // зоны «прилипания» конца маршрута (тело бокса + MT.BAY_HIT_PADDING). Без пульсации и
   // подсветки — ровная пунктирная рамка. По умолчанию слой выключен → в игре ничего не видно.
-  // Зона захвата: «square» — квадрат со стороной 2r (центр в z); иначе полукруг
+  // Зона захвата: z.square — квадрат со стороной 2r (центр в z); иначе полукруг
   // (дуга купола по +u + плоская хорда через центр).
   function strokeGrabZone(z: any){
     if(!z) return;
-    if(MT_META_VALUES.GRAB_SHAPE==='square'){ ctx.strokeRect(z.cx-z.r, z.cy-z.r, z.r*2, z.r*2); return; }
+    if(z.square){ ctx.strokeRect(z.cx-z.r, z.cy-z.r, z.r*2, z.r*2); return; }
     const a=Math.atan2(z.uy, z.ux);
     ctx.beginPath(); ctx.arc(z.cx, z.cy, z.r, a-Math.PI/2, a+Math.PI/2); ctx.closePath(); ctx.stroke();
   }
@@ -122,7 +122,8 @@
     for(const r of runways){
       if(r.closed) continue;
       if(g>0){ rr(r.x-g, r.y-g, r.w+2*g, r.h+2*g, rad); ctx.stroke(); }
-      strokeGrabZone(runwayGrabZone(r));
+      strokeGrabZone(runwayGrabZone(r,'land'));
+      strokeGrabZone(runwayGrabZone(r,'takeoff'));
     }
     ctx.restore();
   }

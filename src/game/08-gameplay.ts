@@ -269,23 +269,26 @@
   function bayGrabZone(b: any){
     const R=(MT_META_VALUES.BAY_GRAB_RADIUS as number)||0; if(R<=0) return null;
     const o=dirOut(b), off=(MT_META_VALUES.BAY_GRAB_OFFSET as number)||0;
-    // центр ворот = середина полевой кромки бокса; центр купола смещён наружу на off
+    // центр ворот = середина полевой кромки бокса; центр зоны смещён наружу на off
     const half=(Math.abs(o.dy)>Math.abs(o.dx)?b.h:b.w)/2;
     const gx=b.x+b.w/2+o.dx*half, gy=b.y+b.h/2+o.dy*half;
-    return { cx:gx+o.dx*off, cy:gy+o.dy*off, r:R, ux:o.dx, uy:o.dy };
+    return { cx:gx+o.dx*off, cy:gy+o.dy*off, r:R, ux:o.dx, uy:o.dy, square:MT_META_VALUES.BAY_GRAB_SHAPE==='square' };
   }
-  function runwayGrabZone(r: any){
-    const R=(MT_META_VALUES.RUNWAY_GRAB_RADIUS as number)||0; if(R<=0) return null;
-    const off=(MT_META_VALUES.RUNWAY_GRAB_OFFSET as number)||0;
-    // заход на полосу идёт со стороны апрона (слева) — купол смотрит влево от полевого торца
-    return { cx:r.x-off, cy:r.cy, r:R, ux:-1, uy:0 };
+  // Зона захвата ВПП. side='land' — посадочный (правый, со стороны неба) торец, купол
+  // вправо; side='takeoff' — взлётный (левый, со стороны апрона) торец, купол влево.
+  function runwayGrabZone(r: any, side: 'land'|'takeoff'){
+    const land=side==='land';
+    const R=(MT_META_VALUES[land?'RUNWAY_LAND_GRAB_RADIUS':'RUNWAY_TAKEOFF_GRAB_RADIUS'] as number)||0; if(R<=0) return null;
+    const off=(MT_META_VALUES[land?'RUNWAY_LAND_GRAB_OFFSET':'RUNWAY_TAKEOFF_GRAB_OFFSET'] as number)||0;
+    const ux=land?1:-1, edge=land?r.x+r.w:r.x;
+    return { cx:edge+ux*off, cy:r.cy, r:R, ux, uy:0, square:MT_META_VALUES.RUNWAY_GRAB_SHAPE==='square' };
   }
-  // точка в зоне захвата. Форма — MT.GRAB_SHAPE: «square» = квадрат со стороной 2r
-  // с центром в z; иначе полукруг (в пределах радиуса И на стороне захода, купол по +u).
+  // точка в зоне захвата. z.square = квадрат со стороной 2r с центром в z; иначе
+  // полукруг (в пределах радиуса И на стороне захода, купол по +u).
   function inGrabZone(px: number,py: number,z: any){
     if(!z) return false;
     const dx=px-z.cx, dy=py-z.cy;
-    if(MT_META_VALUES.GRAB_SHAPE==='square') return Math.abs(dx)<=z.r && Math.abs(dy)<=z.r;
+    if(z.square) return Math.abs(dx)<=z.r && Math.abs(dy)<=z.r;
     if(dx*dx+dy*dy > z.r*z.r) return false;
     return (dx*z.ux+dy*z.uy) >= 0;
   }
@@ -346,7 +349,11 @@
       if(r.closed) continue;
       if(dir==='landing' && !r.landingOpen) continue;
       if(dir==='takeoff' && !r.takeoffOpen) continue;
-      if(rectPad(p.x,p.y,r,pad) || inGrabZone(p.x,p.y,runwayGrabZone(r))) return r;
+      if(rectPad(p.x,p.y,r,pad)) return r;
+      // полукруг/квадрат у нужного торца: при заданном направлении — соответствующая
+      // сторона, иначе проверяем обе (посадочную и взлётную)
+      if(dir!=='takeoff' && inGrabZone(p.x,p.y,runwayGrabZone(r,'land')))   return r;
+      if(dir!=='landing' && inGrabZone(p.x,p.y,runwayGrabZone(r,'takeoff'))) return r;
     }
     return null;
   }

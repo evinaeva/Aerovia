@@ -2186,7 +2186,11 @@
 
   // Enum params shown as a dropdown instead of a free-text field.
   const SELECT_OPTIONS = {
-    'MT.GRAB_SHAPE': [
+    'MT.BAY_GRAB_SHAPE': [
+      ['semicircle', 'Полукруг'],
+      ['square',     'Квадрат'],
+    ],
+    'MT.RUNWAY_GRAB_SHAPE': [
       ['semicircle', 'Полукруг'],
       ['square',     'Квадрат'],
     ],
@@ -4220,40 +4224,45 @@
         }
       }
 
-      // ── Полукруглые зоны захвата + ручки перетаскивания/масштаба ──────────────
-      // Одна форма на тип (бокс/ВПП); рисуем у репрезентативного объекта. Купол
-      // смотрит в сторону захода. Ручка-центр двигает зону (OFFSET вдоль оси захода),
-      // ручка-апекс масштабирует (RADIUS). Тянем → пишем MT-параметр (см. ниже).
+      // ── Зоны захвата + ручки перетаскивания/масштаба ──────────────────────────
+      // Раздельно: бокс, ВПП-посадка, ВПП-взлёт (у каждой свои radius/offset; форма —
+      // на тип). Рисуем у репрезентативного объекта. Ручка-центр двигает зону (OFFSET
+      // вдоль оси захода), ручка-апекс масштабирует (RADIUS). Тянем → пишем MT-параметр.
       if (!editorOnly) {
         s += grabZoneSvg('bay', snap, fd);
-        s += grabZoneSvg('rw',  snap, fd);
+        s += grabZoneSvg('rwland', snap, fd);
+        s += grabZoneSvg('rwtake', snap, fd);
       }
 
       overlay.innerHTML = s;
     }
 
-    // Геометрия зоны для типа (anchor = точка при OFFSET=0; u = вектор наружу).
+    // Конфиг трёх настраиваемых зон захвата (по одной форме на тип; у ВПП — две стороны).
+    const GRAB_DEFS = {
+      bay:    { flag:'MT.DEBUG_BAY_SNAP_ZONES',    shapeKey:'MT.BAY_GRAB_SHAPE',    radKey:'MT.BAY_GRAB_RADIUS',            offKey:'MT.BAY_GRAB_OFFSET',            col:'#b060f0' },
+      rwland: { flag:'MT.DEBUG_RUNWAY_SNAP_ZONES', shapeKey:'MT.RUNWAY_GRAB_SHAPE', radKey:'MT.RUNWAY_LAND_GRAB_RADIUS',    offKey:'MT.RUNWAY_LAND_GRAB_OFFSET',    col:'#3ad2ff' },
+      rwtake: { flag:'MT.DEBUG_RUNWAY_SNAP_ZONES', shapeKey:'MT.RUNWAY_GRAB_SHAPE', radKey:'MT.RUNWAY_TAKEOFF_GRAB_RADIUS', offKey:'MT.RUNWAY_TAKEOFF_GRAB_OFFSET', col:'#60d060' },
+    };
+    // Геометрия зоны (anchor = точка при OFFSET=0; u = вектор наружу, в сторону захода).
     function grabZoneGeom(kind, fd) {
       if (kind === 'bay') {
         const b = (fd.bays || []).find(x => x.open && x.gate);
-        if (!b) return null;
-        return { anchor: gateEntr(b), u: gateDir(b) };
+        return b ? { anchor: gateEntr(b), u: gateDir(b) } : null;
       }
       const r = (fd.runways || []).find(x => !x.closed);
       if (!r) return null;
-      return { anchor: { x: r.x, y: r.cy }, u: [-1, 0] };   // заход со стороны апрона (слева)
+      if (kind === 'rwland') return { anchor: { x: r.x + r.w, y: r.cy }, u: [1, 0] };   // посадка: правый торец (небо)
+      return { anchor: { x: r.x, y: r.cy }, u: [-1, 0] };                                // взлёт: левый торец (апрон)
     }
     function grabZoneSvg(kind, snap, fd) {
-      const on = snap[kind === 'bay' ? 'MT.DEBUG_BAY_SNAP_ZONES' : 'MT.DEBUG_RUNWAY_SNAP_ZONES'] === true;
-      if (!on) return '';
+      const def = GRAB_DEFS[kind];
+      if (snap[def.flag] !== true) return '';
       const geom = grabZoneGeom(kind, fd);
       if (!geom) return '';
-      const R   = +(snap[kind === 'bay' ? 'MT.BAY_GRAB_RADIUS' : 'MT.RUNWAY_GRAB_RADIUS'] || 0);
-      const off = +(snap[kind === 'bay' ? 'MT.BAY_GRAB_OFFSET' : 'MT.RUNWAY_GRAB_OFFSET'] || 0);
-      const col = kind === 'bay' ? '#b060f0' : '#3ad2ff';
+      const R = +(snap[def.radKey] || 0), off = +(snap[def.offKey] || 0), col = def.col;
       const u = geom.u, a = geom.anchor;
       const cx = a.x + u[0] * off, cy = a.y + u[1] * off;          // центр зоны
-      const square = snap['MT.GRAB_SHAPE'] === 'square';
+      const square = snap[def.shapeKey] === 'square';
       let out = '';
       if (R > 0) {
         if (square) {                                              // квадрат со стороной 2R
@@ -4283,22 +4292,21 @@
       const W = (fd && fd.W) || rect.width || 1, H = (fd && fd.H) || rect.height || 1;
       return { x: (e.clientX - rect.left) / (rect.width || 1) * W, y: (e.clientY - rect.top) / (rect.height || 1) * H };
     }
-    let zdrag = null;   // { kind:'bay'|'rw', mode:'o'|'r' }
+    let zdrag = null;   // { kind:'bay'|'rwland'|'rwtake', mode:'o'|'r' }
     function applyZoneDrag(e) {
       if (!zdrag || !MT) return;
       const fd = getField(); if (!fd) return;
       const geom = grabZoneGeom(zdrag.kind, fd); if (!geom) return;
+      const def = GRAB_DEFS[zdrag.kind];
       const p = evGamePt(e), u = geom.u, a = geom.anchor;
-      const radKey = zdrag.kind === 'bay' ? 'MT.BAY_GRAB_RADIUS' : 'MT.RUNWAY_GRAB_RADIUS';
-      const offKey = zdrag.kind === 'bay' ? 'MT.BAY_GRAB_OFFSET' : 'MT.RUNWAY_GRAB_OFFSET';
       if (zdrag.mode === 'o') {
-        const off = clampParam(offKey, (p.x - a.x) * u[0] + (p.y - a.y) * u[1]);   // проекция на ось
-        MT.apply({ [offKey]: Math.round(off) }, false);
+        const off = clampParam(def.offKey, (p.x - a.x) * u[0] + (p.y - a.y) * u[1]);   // проекция на ось
+        MT.apply({ [def.offKey]: Math.round(off) }, false);
       } else {
-        const off = +(MT.snapshot()[offKey] || 0);
+        const off = +(MT.snapshot()[def.offKey] || 0);
         const cx = a.x + u[0] * off, cy = a.y + u[1] * off;
-        const R = clampParam(radKey, (p.x - cx) * u[0] + (p.y - cy) * u[1]);
-        MT.apply({ [radKey]: Math.round(R) }, false);
+        const R = clampParam(def.radKey, (p.x - cx) * u[0] + (p.y - cy) * u[1]);
+        MT.apply({ [def.radKey]: Math.round(R) }, false);
       }
       syncUI(); drawOverlay();
     }
@@ -4306,8 +4314,8 @@
       const g = e.target && e.target.getAttribute && e.target.getAttribute('data-grab');
       if (!g) return;
       e.preventDefault(); e.stopPropagation();
-      const parts = g.split('-');
-      zdrag = { kind: parts[0], mode: parts[1] };
+      const i = g.lastIndexOf('-');
+      zdrag = { kind: g.slice(0, i), mode: g.slice(i + 1) };
       overlay.style.pointerEvents = 'auto';
       try { overlay.setPointerCapture(e.pointerId); } catch (_) {}
       applyZoneDrag(e);
@@ -4315,12 +4323,11 @@
     overlay.addEventListener('pointermove', e => { if (zdrag) applyZoneDrag(e); });
     function endZdrag(e) {
       if (!zdrag) return;
-      if (!MT) { zdrag = null; overlay.style.pointerEvents = 'none'; return; }
-      const radKey = zdrag.kind === 'bay' ? 'MT.BAY_GRAB_RADIUS' : 'MT.RUNWAY_GRAB_RADIUS';
-      const offKey = zdrag.kind === 'bay' ? 'MT.BAY_GRAB_OFFSET' : 'MT.RUNWAY_GRAB_OFFSET';
+      const def = MT && GRAB_DEFS[zdrag.kind];
+      if (!def) { zdrag = null; overlay.style.pointerEvents = 'none'; return; }
       const snap = MT.snapshot();
-      MT.apply({ [radKey]: snap[radKey], [offKey]: snap[offKey] }, true);   // persist финал
-      setStatus(radKey + '  →  ' + snap[radKey] + ' · ' + offKey + '  →  ' + snap[offKey]);
+      MT.apply({ [def.radKey]: snap[def.radKey], [def.offKey]: snap[def.offKey] }, true);   // persist финал
+      setStatus(def.radKey + '  →  ' + snap[def.radKey] + ' · ' + def.offKey + '  →  ' + snap[def.offKey]);
       zdrag = null;
       overlay.style.pointerEvents = 'none';
       try { overlay.releasePointerCapture(e.pointerId); } catch (_) {}
