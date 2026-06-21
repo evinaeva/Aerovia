@@ -122,7 +122,9 @@
           // идём по оси полосы к полевому торцу; за корпус до него — касание (толчок +
           // визг), дальше докатываемся уже на земле, не меняя размер
           const r=pl.runway;
-          steer(pl, r.stopX, r.cy, K.SPEED_AIR * K.APPROACH_SPEED_MULT, dt);
+          // фазовый множитель уровня: до касания (landBefore) ↔ докат после (landAfter)
+          const landMult = pl.touched ? (LV.motion?.landAfter ?? 1) : (LV.motion?.landBefore ?? 1);
+          steer(pl, r.stopX, r.cy, K.SPEED_AIR * K.APPROACH_SPEED_MULT * landMult, dt);
           if(!pl.touched && pl.x <= r.stopX + PLANE_LEN()) touchdown(pl);
           if(pl.touched) pl.y += (r.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
           if(pl.x <= r.stopX+2){ pl.x=r.stopX; pl.y=r.cy; startGround(pl); }
@@ -138,7 +140,11 @@
             pl.y += (pl.runway.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
             continue;
           }
-          steer(pl, pl.runway.exitX + K.TAKEOFF_OVERSHOOT, pl.runway.cy, K.SPEED_TAKEOFF, dt);
+          // фазовый множитель уровня: разбег по полосе (takeoffRoll) ↔ набор высоты
+          // после отрыва за торцом ВПП (climb)
+          const climbing = pl.x > pl.runway.exitX;
+          const toMult = climbing ? (LV.motion?.climb ?? 1) : (LV.motion?.takeoffRoll ?? 1);
+          steer(pl, pl.runway.exitX + K.TAKEOFF_OVERSHOOT, pl.runway.cy, K.SPEED_TAKEOFF * toMult, dt);
           if(pl.x > W+30){ depart(pl); }
           continue;
         }

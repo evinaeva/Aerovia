@@ -51,6 +51,10 @@
     latePenalty?: number;  // 0..1 — доля вознаграждения при истечении наземного терпения (умолч. 0.5)
     biome?: string; bonus?: string; weather?: boolean; deice?: boolean;
     calm?: number; survRamp?: number; combo?: boolean; express?: boolean;
+    // фазовые множители скорости на ВПП (× к базовой; умолч. 1 = как сейчас).
+    // Задаются в конструкторе (tuning.html), зашиваются в экспорт уровня и
+    // применяются движением посадки/взлёта (см. 08b-gameplay-step).
+    motion?: { landBefore?: number; landAfter?: number; takeoffRoll?: number; climb?: number };
   }
   interface Biome { id: string; emoji: string; ready: boolean; level?: Level; }
   interface Bonus { id: number; after: number; emoji: string; level: Level; }
