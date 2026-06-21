@@ -469,6 +469,12 @@
   function freeRes(pl: any){
     if(pl.runway){ if(pl.runway.occupied===pl) pl.runway.occupied=null; pl.runway=null; }
     if(pl.bay){ if(pl.bay.occupied===pl) pl.bay.occupied=null; pl.bay=null; }
+    releaseHeldRunway(pl);   // полоса, удерживаемая с посадки до руления к боксу/вылету
+  }
+  // освободить полосу, которую борт «удерживает» после посадки, пока катится по апрону
+  // (визуально она остаётся занятой — следующий севший борт рискует врезаться)
+  function releaseHeldRunway(pl: any){
+    if(pl.heldRunway){ if(pl.heldRunway.occupied===pl) pl.heldRunway.occupied=null; pl.heldRunway=null; }
   }
   // reason — ключ i18n (loss.*): в lossLog хранится ключ, перевод — при показе
   // penaltyFrac — доля reward, списываемая с кассы (0 = нет штрафа; 1 = полная стоимость борта)
