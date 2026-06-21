@@ -121,7 +121,7 @@
       zone:'air',            // air | runway | field | bay
       entering:true,         // глиссада с правого края до точки зависания
       path:[], moving:false, selected:false,
-      landing:false, takeoff:false, exiting:false,
+      landing:false, takeoff:false, exiting:false, approachR:null,
       runway:null, bay:null,
       airTime: airBase, airMax: airBase,
       groundTime:0, groundMax:0, waitMult,
@@ -334,6 +334,9 @@
     const ty = r.cy;
     pl.path.push({x:tx, y:ty});
     pl.moving=true;
+    // воздушный заход: запоминаем целевую полосу, чтобы добрать борт до рубежа ВПП,
+    // даже если большой «захват точки» съест последний waypoint раньше времени
+    if(pl.zone==='air') pl.approachR = r;
     pulseFx(tx, ty, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
@@ -407,6 +410,7 @@
     if(!drag.drew && dist(p.x,p.y,drag.start.x,drag.start.y)>10){
       drag.drew=true;
       drag.plane.path=[];            // начинаем новый маршрут
+      drag.plane.approachR=null;     // новый маршрут — старый воздушный заход сбрасываем
       drag.plane.moving=true;        // борт трогается сразу, как пошла линия
     }
     if(drag.drew && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
@@ -434,7 +438,7 @@
     const last = pl.path[pl.path.length-1];
     for(const r of runways){
       if(r.closed || !r.landingOpen) continue;
-      if(rectHit(last.x, last.y, r)){ last.x = r.x + r.w - PLANE_LEN()*0.5; last.y = r.cy; break; }
+      if(rectHit(last.x, last.y, r)){ last.x = r.x + r.w - PLANE_LEN()*0.5; last.y = r.cy; pl.approachR = r; break; }
     }
   }
   function up(){
@@ -496,7 +500,7 @@
 
   function land(pl: any, r: any){            // начать посадку на полосу r
     pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
-    pl.landing=true; pl.moving=true; pl.path=[]; pl.touched=false;
+    pl.landing=true; pl.moving=true; pl.path=[]; pl.touched=false; pl.approachR=null;
   }
   // момент касания (за корпус до полевого торца): толчок + визг резины.
   // FX касания живут здесь, а не в startGround, — это и есть «приземление».

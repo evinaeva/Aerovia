@@ -95,6 +95,11 @@
         pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; }
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_AIR, dt);
+        } else if(pl.approachR && pl.x > field.rwR!){
+          // маршрут заведён на ВПП, но «захват точки» съел последний waypoint раньше,
+          // чем борт дошёл до рубежа полосы — доводим его к створу, чтобы он сел,
+          // а не завис перед полосой (иначе при большом ARRIVE посадка невозможна)
+          steer(pl, field.rwR! - 1, pl.approachR.cy, K.SPEED_AIR, dt);
         }
         // заход на посадку: с неба на поле — ТОЛЬКО через ВПП. Сесть можно, лишь когда
         // борт идёт по оси открытой полосы (в пределах её полотна по вертикали). Если
