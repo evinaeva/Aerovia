@@ -280,10 +280,12 @@
     // заход на полосу идёт со стороны апрона (слева) — купол смотрит влево от полевого торца
     return { cx:r.x-off, cy:r.cy, r:R, ux:-1, uy:0 };
   }
-  // точка в полукруге: в пределах радиуса И на стороне захода (купол по +u)
+  // точка в зоне захвата. Форма — MT.GRAB_SHAPE: «square» = квадрат со стороной 2r
+  // с центром в z; иначе полукруг (в пределах радиуса И на стороне захода, купол по +u).
   function inGrabZone(px: number,py: number,z: any){
     if(!z) return false;
     const dx=px-z.cx, dy=py-z.cy;
+    if(MT_META_VALUES.GRAB_SHAPE==='square') return Math.abs(dx)<=z.r && Math.abs(dy)<=z.r;
     if(dx*dx+dy*dy > z.r*z.r) return false;
     return (dx*z.ux+dy*z.uy) >= 0;
   }

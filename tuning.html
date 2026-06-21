@@ -2186,6 +2186,10 @@
 
   // Enum params shown as a dropdown instead of a free-text field.
   const SELECT_OPTIONS = {
+    'MT.GRAB_SHAPE': [
+      ['semicircle', 'Полукруг'],
+      ['square',     'Квадрат'],
+    ],
     'MT.SCENARIO': [
       ['complete_cycle', 'Полный цикл'],
       ['landing',        'Посадка'],
@@ -4248,12 +4252,17 @@
       const off = +(snap[kind === 'bay' ? 'MT.BAY_GRAB_OFFSET' : 'MT.RUNWAY_GRAB_OFFSET'] || 0);
       const col = kind === 'bay' ? '#b060f0' : '#3ad2ff';
       const u = geom.u, a = geom.anchor;
-      const cx = a.x + u[0] * off, cy = a.y + u[1] * off;          // центр купола
+      const cx = a.x + u[0] * off, cy = a.y + u[1] * off;          // центр зоны
+      const square = snap['MT.GRAB_SHAPE'] === 'square';
       let out = '';
-      if (R > 0) {                                                  // полукруг (купол по +u)
-        const base = Math.atan2(u[1], u[0]); let pts = '';
-        for (let i = 0; i <= 28; i++) { const an = base - Math.PI / 2 + Math.PI * i / 28; pts += (cx + Math.cos(an) * R).toFixed(1) + ',' + (cy + Math.sin(an) * R).toFixed(1) + ' '; }
-        out += '<polygon points="' + pts + '" fill="' + col + '" fill-opacity=".10" stroke="' + col + '" stroke-width="1.4" stroke-dasharray="5 4"/>';
+      if (R > 0) {
+        if (square) {                                              // квадрат со стороной 2R
+          out += '<rect x="' + (cx - R) + '" y="' + (cy - R) + '" width="' + (R * 2) + '" height="' + (R * 2) + '" fill="' + col + '" fill-opacity=".10" stroke="' + col + '" stroke-width="1.4" stroke-dasharray="5 4"/>';
+        } else {                                                   // полукруг (купол по +u)
+          const base = Math.atan2(u[1], u[0]); let pts = '';
+          for (let i = 0; i <= 28; i++) { const an = base - Math.PI / 2 + Math.PI * i / 28; pts += (cx + Math.cos(an) * R).toFixed(1) + ',' + (cy + Math.sin(an) * R).toFixed(1) + ' '; }
+          out += '<polygon points="' + pts + '" fill="' + col + '" fill-opacity=".10" stroke="' + col + '" stroke-width="1.4" stroke-dasharray="5 4"/>';
+        }
       }
       const hd = Math.max(R, 26);                                   // апекс грабельный даже при R=0
       const ax = cx + u[0] * hd, ay = cy + u[1] * hd;

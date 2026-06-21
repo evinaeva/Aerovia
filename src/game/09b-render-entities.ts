@@ -89,9 +89,11 @@
   // в tuning.html. Когда слой включён, у каждого открытого бокса рисуется прямоугольник
   // зоны «прилипания» конца маршрута (тело бокса + MT.BAY_HIT_PADDING). Без пульсации и
   // подсветки — ровная пунктирная рамка. По умолчанию слой выключен → в игре ничего не видно.
-  // Полукруглая зона захвата: дуга купола (по +u) + плоская хорда через центр.
+  // Зона захвата: «square» — квадрат со стороной 2r (центр в z); иначе полукруг
+  // (дуга купола по +u + плоская хорда через центр).
   function strokeGrabZone(z: any){
     if(!z) return;
+    if(MT_META_VALUES.GRAB_SHAPE==='square'){ ctx.strokeRect(z.cx-z.r, z.cy-z.r, z.r*2, z.r*2); return; }
     const a=Math.atan2(z.uy, z.ux);
     ctx.beginPath(); ctx.arc(z.cx, z.cy, z.r, a-Math.PI/2, a+Math.PI/2); ctx.closePath(); ctx.stroke();
   }
