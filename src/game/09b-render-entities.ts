@@ -309,14 +309,16 @@
     else drawPlaneBodyAt(pl.x, by, pl.ang, ui*0.5*SZ()*vs, pl.vip, pl.emergency, pl.medical);
 
     // пузырёк нужды над бортом
-    if(pl.zone!=='bay'){
+    if(LV.bonus){
+      // бонус: над гусеницей — цветок нужного цвета (её цель). Куколка/бабочка — без пузырька.
+      if(pl.zone!=='bay' && pl.bug==='cat') drawFlower(pl.x, pl.y-28*ui*vs, 9*ui, BSP[pl.species||0].petal);
+    } else if(pl.zone==='field'){
+      // иконка нужды появляется только когда борт уже на апроне (сел и выкатился с ВПП).
+      // В воздухе (зона ожидания) и на ВПП её нет — нужду в небе игрок узнаёт тапом по
+      // борту (карточка слева сверху, см. drawPlaneCard).
       const _ny = pl.y-28*ui*vs;
-      if(LV.bonus){
-        // бонус: над гусеницей — цветок нужного цвета (её цель). Куколка/бабочка — без пузырька.
-        if(pl.bug==='cat') drawFlower(pl.x, _ny, 9*ui, BSP[pl.species||0].petal);
-      } else if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui))) {
+      if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui)))
         drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // чип svc-* (фолбэк: процедурная иконка)
-      }
     }
   }
 
