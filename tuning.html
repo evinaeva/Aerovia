@@ -1342,6 +1342,92 @@
       </div>
       <p class="lab-hint" id="diff-src-hint" style="margin-top:0">Анализируется твой черновик из «Разметки». Меняй поле/темп там — здесь обновится.</p>
     </div>
+
+    <!-- ✏ РЕДАКТОР СЛОЖНОСТИ — всё пишет в черновик «Разметки» (LE) -->
+    <div class="lab-section">
+      <h3>✨ Авто-сложность <span class="h3-sub">· один регулятор → набор факторов</span></h3>
+      <div class="lab-row" style="gap:10px;align-items:center;margin-bottom:8px">
+        <input type="range" id="de-auto" min="0" max="100" step="1" value="40" style="flex:1">
+        <span class="lab-stat-val" id="de-auto-val" style="min-width:46px;text-align:right">40%</span>
+      </div>
+      <div class="lab-btn-row"><button class="p-btn" id="de-auto-apply">Сгенерировать в черновик</button></div>
+      <p class="lab-hint">Подбирает темп, события, среду и пороги звёзд под целевую сложность по формуле
+        <code>levelDifficulty</code>, затем ослабляет до проходимости 1★/2★/3★. Перезаписывает ручки черновика «Разметки».</p>
+    </div>
+
+    <div class="lab-section">
+      <h3>Темп и события <span class="h3-sub">· черновик «Разметки»</span></h3>
+      <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Темп <small style="color:var(--muted)">pace 0…1</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-pace" type="number" min="0" max="1" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+      </div>
+      <div style="margin-top:8px"><div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">События / спецборты (вес в сложности)</div>
+        <div class="lab-chips" id="de-events"></div></div>
+    </div>
+
+    <div class="lab-section">
+      <h3>Время · среда · штрафы</h3>
+      <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Лимит времени <small style="color:var(--muted)">сек · 0 = нет</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-time" type="number" min="0" max="1800" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Спокойный мир <small style="color:var(--muted)">calm × · 0 = нет</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-calm" type="number" min="0" max="3" step="0.1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Штраф за крушение <small style="color:var(--muted)">0…1</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-crash" type="number" min="0" max="1" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Штраф за просрочку <small style="color:var(--muted)">0…1</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-late" type="number" min="0" max="1" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+      </div>
+      <div class="lab-chips" id="de-modes" style="margin-top:8px">
+        <label class="lab-chip" data-mode="race"><input type="checkbox"> 🏁 Гонка (за время)</label>
+        <label class="lab-chip" data-mode="weather"><input type="checkbox"> 🌧 Погода</label>
+        <label class="lab-chip" data-mode="deice"><input type="checkbox"> ❄ Деайсинг</label>
+      </div>
+    </div>
+
+    <div class="lab-section">
+      <h3>Цель и звёзды</h3>
+      <div class="lab-row"><span class="lbl-main">Метрика</span>
+        <select id="de-metric" class="lab-select" style="grid-column:2 / 4">
+          <option value="served">борта (served)</option>
+          <option value="upgrades">апгрейды</option>
+          <option value="survival">выживание (сек)</option></select></div>
+      <div style="margin-top:8px"><div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px" id="de-stars-lbl">Пороги 1★ / 2★ / 3★ (по возрастанию)</div>
+        <div style="display:flex;gap:6px">
+          <input class="lab-num" type="number" id="de-s1" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="de-s2" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="de-s3" min="1" step="1" style="flex:1;text-align:center"></div>
+        <div id="de-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div></div>
+      <div style="margin-top:10px"><div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Доп-условия звёзд <small>· вкл → пороги 1★/2★/3★</small></div>
+        <div id="de-cond"></div></div>
+    </div>
+
+    <div class="lab-section">
+      <h3>Экономика набора <span class="h3-sub">· 0 = дефолт движка</span></h3>
+      <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Цена открытия бокса</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-open" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Цена апгрейда (1 ур.)</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-upg" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Цена открытия полосы <small style="color:var(--muted)">с двух сторон</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-rwcost" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Апгрейд: мин уровень <small style="color:var(--muted)">minUp 0…5</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-minup" type="number" min="0" max="5" step="1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Апгрейд: макс уровень <small style="color:var(--muted)">maxUp 0…5</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-maxup" type="number" min="0" max="5" step="1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+      </div>
+      <p class="lab-hint">Цены штампуются на боксы/полосы черновика; «мин уровень» — экон-ручка (набор считается от minUp до maxUp).</p>
+    </div>
+
     <div class="lab-section">
       <h3>Сводка</h3>
       <div class="lab-stat-grid" id="diff-stats">
@@ -1362,6 +1448,10 @@
     <div class="lab-section">
       <h3>Предупреждения</h3>
       <div id="diff-warnings"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+    <div class="lab-section">
+      <h3>🎯 Проходимость черновика <span class="h3-sub">· достижимы ли 1★ / 2★ / 3★</span></h3>
+      <div id="diff-pass"><span class="lab-empty">Ждём запуска игры…</span></div>
     </div>
   </div>
 
@@ -2399,6 +2489,7 @@
     if (!GAME) return;
     buildDiffSelect();
     wireDiffSource();
+    buildDiffEditor();
     buildEvents();
     wireEditor();
     document.getElementById('lab-export').onclick = exportJSON;
@@ -2652,6 +2743,99 @@
     document.getElementById('diff-warnings').innerHTML = rep.warnings.length
       ? rep.warnings.map(w => '<div style="font-size:11px;color:#e3c522;padding:2px 0">⚠ ' + escHtml(w) + '</div>').join('')
       : '<span class="lab-empty">✓ Нет замечаний</span>';
+    renderPass();
+  }
+
+  /* ───── РЕДАКТОР СЛОЖНОСТИ — все контролы пишут в черновик «Разметки» (window.Draft) ───── */
+  const DE_EVENTS = [['vip','VIP'],['emergency','авария'],['medical','медицина'],['rush','час пик'],['fog','туман'],['wind','ветер']];
+  const DE_COND   = [['money','💰 Деньги','≥',100],['lives','♥ Жизни','≥',1],['timeTier','⏱ За время, с','≤',120],['maxLate','⌛ Просрочек','≤',0],['maxCrash','💥 Крушений','≤',0]];
+  const _clamp01 = v => Math.max(0, Math.min(1, v));
+  function draftLE()    { return (window.Draft && window.Draft.raw) ? window.Draft.raw() : null; }
+  function draftCommit(){ if (window.Draft && window.Draft.commit) window.Draft.commit(); }
+  function afterDiffEdit(){ renderDiff(); }            // пересчитать анализ + валидатор (renderPass внутри)
+  let diffEditorBuilt = false;
+  function buildDiffEditor() {
+    if (diffEditorBuilt) return;
+    const evHost = document.getElementById('de-events');
+    if (evHost) evHost.innerHTML = DE_EVENTS.map(([k,t]) =>
+      `<label class="lab-chip" data-de-ev="${k}"><input type="checkbox"><span>${t}</span></label>`).join('');
+    const condHost = document.getElementById('de-cond');
+    if (condHost) condHost.innerHTML = DE_COND.map(([k,t,op]) =>
+      `<div class="de-cond-row" data-de-cond="${k}" style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+         <label class="lab-chip" style="flex:none;white-space:nowrap" data-de-cond-tog="${k}"><input type="checkbox"><span>${t} ${op}</span></label>
+         <input class="lab-num de-cond-v" type="number" step="1" data-i="0" style="flex:1;text-align:center" disabled>
+         <input class="lab-num de-cond-v" type="number" step="1" data-i="1" style="flex:1;text-align:center" disabled>
+         <input class="lab-num de-cond-v" type="number" step="1" data-i="2" style="flex:1;text-align:center" disabled>
+       </div>`).join('');
+    const bindLE = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('input', () => { const le = draftLE(); if (!le) return; fn(le, el); draftCommit(); afterDiffEdit(); }); };
+    bindLE('de-pace',  (le,el)=> le.pace = _clamp01(+el.value||0));
+    bindLE('de-time',  (le,el)=> le.time = Math.max(0, Math.round(+el.value||0)));
+    bindLE('de-calm',  (le,el)=> le.calm = Math.max(0, +el.value||0));
+    bindLE('de-crash', (le,el)=> le.crashPenalty = _clamp01(+el.value||0));
+    bindLE('de-late',  (le,el)=> le.latePenalty = _clamp01(+el.value||0));
+    bindLE('de-open',  (le,el)=> le.openCost = Math.max(0, Math.round(+el.value||0)));
+    bindLE('de-upg',   (le,el)=> le.upgCost = Math.max(0, Math.round(+el.value||0)));
+    bindLE('de-rwcost',(le,el)=> le.rwOpenCost = Math.max(0, Math.round(+el.value||0)));
+    bindLE('de-minup', (le,el)=> { le.minUp = Math.max(0, Math.min(5, Math.round(+el.value||0))); if (le.minUp > (le.maxUp??5)) le.maxUp = le.minUp; });
+    bindLE('de-maxup', (le,el)=> { le.maxUp = Math.max(0, Math.min(5, Math.round(+el.value||0))); if ((le.minUp||0) > le.maxUp) le.minUp = le.maxUp; });
+    ['de-s1','de-s2','de-s3'].forEach((id,i)=> bindLE(id, (le,el)=>{ le.stars = (le.stars||[1,1,1]).slice(0,3); le.stars[i] = Math.max(1, Math.round(+el.value||1)); }));
+    const metric = document.getElementById('de-metric');
+    if (metric) metric.addEventListener('change', () => { const le = draftLE(); if (!le) return; le.metric = metric.value; draftCommit(); renderDiffEditor(); afterDiffEdit(); });
+    document.querySelectorAll('#de-events [data-de-ev]').forEach(chip =>
+      chip.addEventListener('click', e => { e.preventDefault(); const le = draftLE(); if (!le) return; const k = chip.dataset.deEv; le.events = le.events || {}; le.events[k] = !le.events[k]; draftCommit(); renderDiffEditor(); afterDiffEdit(); }));
+    document.querySelectorAll('#de-modes [data-mode]').forEach(chip =>
+      chip.addEventListener('click', e => { e.preventDefault(); const le = draftLE(); if (!le) return; const k = chip.dataset.mode; le[k] = !le[k]; draftCommit(); renderDiffEditor(); afterDiffEdit(); }));
+    document.querySelectorAll('#de-cond [data-de-cond-tog]').forEach(tog =>
+      tog.addEventListener('click', e => { e.preventDefault(); const le = draftLE(); if (!le) return; const k = tog.dataset.deCondTog; le.cond = le.cond || {};
+        if (le.cond[k]) le.cond[k] = null; else { const def = (DE_COND.find(c=>c[0]===k)||[])[3]||0; le.cond[k] = [def,def,def]; }
+        draftCommit(); renderDiffEditor(); afterDiffEdit(); }));
+    document.querySelectorAll('#de-cond .de-cond-v').forEach(inp =>
+      inp.addEventListener('input', () => { const le = draftLE(); if (!le) return; const row = inp.closest('[data-de-cond]'); const k = row.dataset.deCond; if (!le.cond || !le.cond[k]) return; le.cond[k][+inp.dataset.i] = Math.round(+inp.value||0); draftCommit(); afterDiffEdit(); }));
+    const auto = document.getElementById('de-auto'), autoVal = document.getElementById('de-auto-val');
+    if (auto) auto.addEventListener('input', () => { autoVal.textContent = auto.value + '%'; });
+    const apply = document.getElementById('de-auto-apply');
+    if (apply) apply.addEventListener('click', () => applyAuto(+((auto&&auto.value)||40) / 100));
+    diffEditorBuilt = true;
+  }
+  function applyAuto(target) {
+    const le = draftLE(); if (!le || !GAME || !GAME.autoDifficulty) return;
+    const k = GAME.autoDifficulty(target);
+    le.pace = k.pace;
+    le.events = Object.assign({ vip:false, emergency:false, medical:false, rush:false, fog:false, wind:false }, k.events || {});
+    if (k.objective) { le.metric = k.objective.metric || 'served'; le.stars = (k.objective.stars || le.stars).slice(0,3); le.time = k.objective.time || 0; le.race = !!k.objective.race; }
+    le.weather = !!k.weather; le.deice = false;
+    draftCommit(); renderDiffEditor(); afterDiffEdit();
+    setStatus('Авто-сложность ' + Math.round(target*100) + '% → черновик обновлён');
+  }
+  function renderDiffEditor() {
+    const le = draftLE(); if (!le) return;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('de-pace', le.pace); set('de-time', le.time||0); set('de-calm', le.calm||0);
+    set('de-crash', le.crashPenalty||0); set('de-late', le.latePenalty||0);
+    set('de-open', le.openCost||0); set('de-upg', le.upgCost||0); set('de-rwcost', le.rwOpenCost||0);
+    set('de-minup', le.minUp||0); set('de-maxup', le.maxUp!=null ? le.maxUp : 3);
+    set('de-s1', (le.stars||[])[0]); set('de-s2', (le.stars||[])[1]); set('de-s3', (le.stars||[])[2]);
+    const metric = document.getElementById('de-metric'); if (metric) metric.value = le.metric || 'served';
+    const lbl = document.getElementById('de-stars-lbl');
+    if (lbl) lbl.textContent = le.metric==='survival' ? 'Пороги 1★ / 2★ / 3★ (секунды)' : le.metric==='upgrades' ? 'Пороги 1★ / 2★ / 3★ (апгрейды)' : 'Пороги 1★ / 2★ / 3★ (борта)';
+    document.querySelectorAll('#de-events [data-de-ev]').forEach(chip => { const on = !!(le.events && le.events[chip.dataset.deEv]); chip.classList.toggle('on', on); const cb = chip.querySelector('input'); if (cb) cb.checked = on; });
+    document.querySelectorAll('#de-modes [data-mode]').forEach(chip => { const on = !!le[chip.dataset.mode]; chip.classList.toggle('on', on); const cb = chip.querySelector('input'); if (cb) cb.checked = on; });
+    document.querySelectorAll('#de-cond [data-de-cond]').forEach(row => { const k = row.dataset.deCond; const arr = le.cond && le.cond[k]; const on = Array.isArray(arr);
+      const tog = row.querySelector('[data-de-cond-tog]'); tog.classList.toggle('on', on); const tcb = tog.querySelector('input'); if (tcb) tcb.checked = on;
+      row.querySelectorAll('.de-cond-v').forEach(inp => { inp.disabled = !on; inp.value = on ? arr[+inp.dataset.i] : ''; }); });
+    const s = le.stars || [], w = document.getElementById('de-stars-warn');
+    if (w) w.textContent = (s[0]>0 && s[0]<=s[1] && s[1]<=s[2]) ? '' : '⚠ пороги должны идти по возрастанию';
+  }
+  function renderPass() {
+    const host = document.getElementById('diff-pass'); if (!host || !GAME || !GAME.validatePassable) return;
+    let lv; try { lv = window.Draft ? window.Draft.export() : curLevel(); } catch (_) { lv = curLevel(); }
+    if (!lv) { host.innerHTML = '<span class="lab-empty">—</span>'; return; }
+    const rep = GAME.validatePassable(lv);
+    const rows = rep.tiers.map(tr =>
+      `<div class="lab-bar-row"><span class="lab-bar-label">${tr.star}★ ${tr.ok?'🟢':'🔴'}</span>` +
+      `<span style="flex:1;font-size:11px;color:${tr.ok?'var(--muted)':'#e3c522'}">${tr.ok?'достижимо':escHtml(tr.reasons.join(' · '))}</span></div>`).join('');
+    const gl = rep.globalReasons.length ? '<div style="font-size:11px;color:#e3c522;padding:2px 0">⚠ ' + rep.globalReasons.map(escHtml).join(' · ') + '</div>' : '';
+    host.innerHTML = gl + rows + `<div style="margin-top:6px;font-weight:600;color:${rep.ok?'#22e3c6':'#e3c522'}">${rep.ok?'✓ Проходим на все три звезды':'✗ Есть недостижимые тиры'}</div>`;
   }
 
   /* ---- save = JSON export (tuning.html can't write source) ---- */
@@ -2740,7 +2924,7 @@
       else subtabBar.style.display = 'none';
       if (window._layoutActivate) window._layoutActivate(isLayout);
       // освежаем вкладки, которые читают черновик (он мог измениться в «Разметке»)
-      if (tab === 'difficulty' && GAME) renderDiff();
+      if (tab === 'difficulty' && GAME) { renderDiffEditor(); renderDiff(); }
       if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
       if (tab === 'test'    && window._testSync)      window._testSync();
       if (window._wizardSync) window._wizardSync(tab);
@@ -2767,6 +2951,8 @@
       repair: { label: 'ремонт',  col: '#ffc14d' },
     };
     const EVENTS = [ ['vip','VIP'], ['emergency','авария'], ['medical','медицина'], ['rush','час пик'] ];
+    // все типы событий (для вкладки «Сложность» и экспорта): + туман/ветер
+    const ALL_EVENTS = ['vip','emergency','medical','rush','fog','wind'];
     const RW_COL = '#3ad2ff';
     const HW_FR = 0.072, HH_FR = 0.135;   // hangar size — fraction of screen (fixed)
     const RH_FR = 0.072;                  // runway height — fraction of screen (fixed)
@@ -2789,8 +2975,14 @@
         { y: 0.34, landingOpen: true, takeoffOpen: true },
         { y: 0.70, landingOpen: true, takeoffOpen: true },
       ],
-      pace: 0.4, startMoney: 0, maxUp: 3, stars: [6, 8, 10],
-      events: { vip: false, emergency: false, medical: false, rush: false },
+      pace: 0.4, startMoney: 0, maxUp: 3, minUp: 0, stars: [6, 8, 10],
+      events: { vip: false, emergency: false, medical: false, rush: false, fog: false, wind: false },
+      // вкладка «Сложность» — расширенные ручки (0/false = дефолт движка, в JSON не пишутся)
+      metric: 'served', time: 0, race: false,
+      weather: false, deice: false, calm: 0,
+      crashPenalty: 0, latePenalty: 0,
+      openCost: 0, upgCost: 0, rwOpenCost: 0,         // цена бокса / апгрейда / открытия полосы (0 = дефолт)
+      cond: { money: null, lives: null, timeTier: null, maxLate: null, maxCrash: null },  // доп-условия звёзд (null = выкл)
       // оформление (таб «Ресурсы»): движок пока скины не рисует — выбор едет в JSON
       skins: { hangar: 'default', background: 'default' },
     });
@@ -3266,8 +3458,29 @@
         },
       };
       if (LE.startMoney > 0) o.startMoney = LE.startMoney;
-      const ev = {}; EVENTS.forEach(([k]) => { if (LE.events[k]) ev[k] = true; });
+      const ev = {}; ALL_EVENTS.forEach(k => { if (LE.events[k]) ev[k] = true; });
       if (Object.keys(ev).length) o.events = ev;
+      // --- вкладка «Сложность»: расширенные ручки (пишем только не-дефолтные) ---
+      const O = o.objective;
+      if (LE.metric && LE.metric !== 'served') O.metric = LE.metric;     // upgrades / survival
+      if (LE.time > 0) { O.time = Math.round(LE.time); if (LE.race) O.race = true; }
+      ['money', 'lives', 'timeTier', 'maxLate', 'maxCrash'].forEach(k => {
+        const a = LE.cond && LE.cond[k];
+        if (Array.isArray(a) && a.length === 3) O[k] = a.map(n => Math.round(+n) || 0);
+      });
+      if (LE.weather) o.weather = true;
+      if (LE.deice) o.deice = true;
+      if (LE.calm > 0) o.calm = +(+LE.calm).toFixed(2);
+      if (LE.crashPenalty > 0) o.crashPenalty = +(+LE.crashPenalty).toFixed(2);
+      if (LE.latePenalty > 0) o.latePenalty = +(+LE.latePenalty).toFixed(2);
+      if (LE.minUp > 0) o.minUp = Math.round(LE.minUp);
+      // экон-ручки уровня штампуются на объекты (движок читает per-hangar / per-runway)
+      if (LE.openCost > 0) o.layout.hangars.forEach(h => { if (h.open === false) h.openCost = Math.round(LE.openCost); });
+      if (LE.upgCost > 0)  o.layout.hangars.forEach(h => { h.upgCost = Math.round(LE.upgCost); });
+      if (LE.rwOpenCost > 0) o.layout.runways.forEach(r => {
+        if (r.landingOpen === false) r.landingCost = Math.round(LE.rwOpenCost);
+        if (r.takeoffOpen === false) r.takeoffCost = Math.round(LE.rwOpenCost);
+      });
       // оформление: пишем только не-дефолтные выборы (движок пока их игнорирует)
       const sk = LE.skins || {};
       const skOut = {};
@@ -3419,11 +3632,22 @@
     /* ---- единый доступ к черновику для других вкладок (Сложность / Ресурсы / Тест / мастер).
        Черновик = текущий шаблон «Разметки» (LE), он же автосохраняется в localStorage. ---- */
     function ensureSkins() { if (!LE.skins) LE.skins = { hangar: 'default', background: 'default' }; return LE.skins; }
+    // дозаполнить старый черновик новыми полями вкладки «Сложность» (миграция на лету)
+    function ensureDiffFields() {
+      const d = DEFAULTS();
+      ['minUp', 'metric', 'time', 'race', 'weather', 'deice', 'calm', 'crashPenalty', 'latePenalty', 'openCost', 'upgCost', 'rwOpenCost']
+        .forEach(k => { if (LE[k] === undefined) LE[k] = d[k]; });
+      if (!LE.events) LE.events = {}; ['fog', 'wind'].forEach(k => { if (LE.events[k] === undefined) LE.events[k] = false; });
+      if (!LE.cond) LE.cond = { money: null, lives: null, timeTier: null, maxLate: null, maxCrash: null };
+      return LE;
+    }
     window.Draft = {
       export:   () => exportObj(),
       validate: () => validate(),
       play:     () => doPlay(),
       name:     () => curTpl || 'черновик',
+      raw:      () => ensureDiffFields(),                 // живая ссылка на LE (для вкладки «Сложность»)
+      commit:   () => { save(); refreshAll(); },          // сохранить + пересинхронить контролы «Разметки»
       getSkins: () => Object.assign({ hangar: 'default', background: 'default' }, LE.skins || {}),
       setSkins: (patch) => { Object.assign(ensureSkins(), patch || {}); save(); if (window._wizardSaved) window._wizardSaved(); },
     };

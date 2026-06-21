@@ -85,8 +85,8 @@
     window.__GAME = {
       VERSION, LEVELS, BIOMES, BONUS, K, MT, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
       t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, recordResult, goalRowsHTML, bayUpCost, bayMaxLvl,
-      levelEconomy, levelEffects, levelDifficulty, levelPace, paceInterval, paceCap, airPatience, levelServices, levelMaxUp, sidesToLayout, levelToEditorObj,
-      analyzeLevel, countOpenHangars, countTotalHangars, countOpenRunwayDirections,
+      levelEconomy, levelEffects, levelDifficulty, levelPace, paceInterval, paceCap, airPatience, levelServices, levelMaxUp, levelMinUp, sidesToLayout, levelToEditorObj,
+      analyzeLevel, countOpenHangars, countTotalHangars, countOpenRunwayDirections, autoDifficulty, validatePassable,
       dayCycle, weatherTaxiMult, neededCrew, planePrimaryState, fmtNum, fmtMoney,
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
@@ -114,6 +114,7 @@
         levelIdx = opts.level||0; levelKey = levelIdx; LV = LEVELS[levelIdx];
         served = opts.served||0; upgradesDone = opts.upgrades||0;
         runPenalties = opts.penalties||0; runCrashes = opts.crashes||0;
+        money = opts.money||0; lives = opts.lives!=null ? opts.lives : K.START_LIVES; gameTime = opts.time||0;
         const stars = computeStars(); recordResult();
         return { stars, unlocked: save.unlocked, best: save.best[levelKey], saved: save.stars[levelKey] };
       },

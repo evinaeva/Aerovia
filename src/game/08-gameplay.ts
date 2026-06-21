@@ -559,16 +559,30 @@
     if(tut && tut.plane===pl) completeTutorial();
     pl.dead=true; freeRes(pl);
   }
-  function metricValue(){ return LV.objective.metric==='upgrades' ? upgradesDone : served; }
-  // звёзды-градация (как в референсе): пороги stars=[1★,2★,3★] по основной метрике.
-  // upg (если задан) — доп. порог по апгрейдам для соответствующей звезды: чтобы
-  // взять 2★/3★, нужно дотянуть И метрику, И апгрейды (✈+🔧 на L3).
+  function metricValue(){
+    const m = LV.objective.metric;
+    return m==='upgrades' ? upgradesDone : m==='survival' ? Math.floor(gameTime) : served;
+  }
+  // звёзды-градация (как в референсе): пороги stars=[1★,2★,3★] по основной метрике
+  // (served · upgrades · survival=сек). Опц. доп-условия — пер-тир массивы (длиной 3):
+  // upg ≥ апгрейдов, money ≥ касса, lives ≥ жизней, timeTier ≤ время закрытия (сек),
+  // maxLate ≤ просрочек, maxCrash ≤ крушений. Тир берётся, если выполнены ВСЕ заданные
+  // условия этого тира (AND). Разбор — docs/design/game-design/star-conditions.md.
+  function tierMet(o: any, i: number, v: number){
+    const th = o.stars || [o.target ?? 0, o.target ?? 0, o.target ?? 0];
+    if(!(v >= (th[i] ?? 0))) return false;
+    if(o.upg      && !(upgradesDone >= o.upg[i]))   return false;
+    if(o.money    && !(money        >= o.money[i])) return false;
+    if(o.lives    && !(lives        >= o.lives[i])) return false;
+    if(o.timeTier && !(gameTime     <= o.timeTier[i])) return false;
+    if(o.maxLate  && !(runPenalties <= o.maxLate[i]))  return false;
+    if(o.maxCrash && !(runCrashes   <= o.maxCrash[i])) return false;
+    return true;
+  }
   function computeStars(){
-    const o = LV.objective, v = metricValue(), th = o.stars || [o.target ?? 0, o.target ?? 0, o.target ?? 0];
+    const o = LV.objective, v = metricValue();
     let s = 0;
-    for(let i=0; i<th.length; i++){
-      if(v >= th[i] && (!o.upg || upgradesDone >= o.upg[i])) s = i+1; else break;
-    }
+    for(let i=0; i<3; i++){ if(tierMet(o, i, v)) s = i+1; else break; }
     return s;
   }
   function recordResult(){

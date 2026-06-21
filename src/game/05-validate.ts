@@ -12,7 +12,7 @@
       const o = lv.objective;
       if(!o){ p.push(L+'нет objective'); }
       else {
-        if(!['served','upgrades'].includes(o.metric)) p.push(L+'неизвестная метрика "'+o.metric+'"');
+        if(!['served','upgrades','survival'].includes(o.metric)) p.push(L+'неизвестная метрика "'+o.metric+'"');
         const th = o.stars;
         if(!Array.isArray(th) || th.length!==3) p.push(L+'objective.stars должен быть массивом из 3 порогов [1★,2★,3★]');
         else {
@@ -28,6 +28,17 @@
           if(!Array.isArray(o.upg) || o.upg.length!==3) p.push(L+'objective.upg должен быть массивом из 3 порогов');
           else if(!(o.upg[0]<=o.upg[1] && o.upg[1]<=o.upg[2])) p.push(L+'objective.upg должны идти по возрастанию');
         }
+        // доп-условия звёзд (пер-тир, длиной 3). ≥-условия не убывают, ≤-условия не возрастают.
+        const ascCond  = (['money','lives'] as const);
+        const descCond = (['timeTier','maxLate','maxCrash'] as const);
+        ascCond.forEach(k=>{ const a=(o as any)[k]; if(a!=null){
+          if(!Array.isArray(a) || a.length!==3) p.push(L+'objective.'+k+' должен быть массивом из 3 порогов');
+          else if(!(a[0]<=a[1] && a[1]<=a[2])) p.push(L+'objective.'+k+' должны идти по возрастанию (1★ ≤ 2★ ≤ 3★)');
+        }});
+        descCond.forEach(k=>{ const a=(o as any)[k]; if(a!=null){
+          if(!Array.isArray(a) || a.length!==3) p.push(L+'objective.'+k+' должен быть массивом из 3 порогов');
+          else if(!(a[0]>=a[1] && a[1]>=a[2])) p.push(L+'objective.'+k+' должны идти по убыванию (1★ ≥ 2★ ≥ 3★: верхняя звезда строже)');
+        }});
       }
       // ГЕОМЕТРИЯ: либо явный layout (конструктор), либо старые sides+runways.
       if(lv.layout){
@@ -80,6 +91,10 @@
         else lv.services.forEach(sv=>{ if(!SVC_TYPES.includes(sv)) p.push(L+'неизвестная услуга "'+sv+'" в services'); });
       }
       if(lv.maxUp!=null && !(Number.isInteger(lv.maxUp) && lv.maxUp>=0 && lv.maxUp<=K.BAY_MAX_LVL)) p.push(L+'maxUp должен быть целым в [0, '+K.BAY_MAX_LVL+']');
+      if(lv.minUp!=null){
+        const maxU = lv.maxUp!=null ? lv.maxUp : K.BAY_MAX_LVL;
+        if(!(Number.isInteger(lv.minUp) && lv.minUp>=0 && lv.minUp<=maxU)) p.push(L+'minUp должен быть целым в [0, maxUp]');
+      }
       // медицинский борт высаживает пациента в пассажирском боксе — нужен board в услугах
       if(lv.events && lv.events.medical && !levelServices(lv).includes('board')) p.push(L+'событие medical требует услугу "board" в services');
       if(lv.startMoney!=null && !(lv.startMoney>=0)) p.push(L+'startMoney должен быть >= 0');
