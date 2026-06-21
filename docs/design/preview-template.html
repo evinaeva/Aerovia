@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Aerovia · Шаблон превью для Claude design</title>
+  <link rel="icon" type="image/png" href="../../assets/icon/tuning-favicon.png">
+
+<!-- ════════════════════════════════════════════════════════════════════════════
+     ШАБЛОН ПРЕВЬЮ ТЕЛЕФОНА + ЗОНЫ  —  инструкция для Claude design
+     ════════════════════════════════════════════════════════════════════════════
+
+     ЧТО ЭТО
+     -------
+     Это вырезанная из tuning.html верхняя половина: макет телефона, в <iframe>
+     которого грузится РЕАЛЬНАЯ сборка игры (../../index.html), плюс переключатель
+     размеров экрана (📱) и переключатель безопасных зон / выреза камеры (📐 «Зоны»).
+     Нижняя панель tuning.html (редактор уровней / настройка движения) сюда НЕ входит.
+
+     Это ШАБЛОН-ВЬЮПОРТ, А НЕ ПЕСОЧНИЦА. «Рисовать внутри превью» НЕ значит рисовать
+     мокап поверх. Это значит: править реальный исходник игры в src/, пересобирать —
+     и iframe сам покажет результат 1:1 так, как он будет рендериться и располагаться
+     на телефоне. Поэтому любое изменение ложится обычным `git diff` по src/.
+
+     ПЕРЕД ТЕМ КАК РИСОВАТЬ
+     ---------------------
+     1. Склонировать ЧИСТОЕ репо (или убедиться, что рабочая копия чистая):
+            git clone <repo> && cd aerovia
+            npm install
+     2. Собрать игру (генерирует index.html в корне репо — он git-ignored):
+            node scripts/build.mjs            # или: npm run build
+     3. Поднять статический сервер ИЗ КОРНЯ репо и открыть этот файл:
+            npm run serve                     # или: python3 -m http.server
+            → http://localhost:PORT/docs/design/preview-template.html
+        iframe (../../index.html?test=1) покажет РОВНО ТЕКУЩЕЕ состояние игры =
+        то, что сейчас показывает APK на телефоне. Сначала посмотри реальный текущий
+        экран — ничего не дорисовывай «на глаз» поверх него.
+
+     ГДЕ ЧТО РИСУЕТСЯ (править в тех же технологиях, что и игра)
+     ----------------------------------------------------------
+       • DOM-экраны (главное меню, ЭКРАН ПАУЗЫ, настройки, выбор уровня и т.п.) —
+         это <div class="overlay" id="..."> в  index.template.html
+         + стили в  src/styles.css.
+       • Канвас (игровое поле, HUD, кнопка паузы, тосты) — рисуется кодом в
+         src/game/09-render.ts  и  src/game/09b-render-entities.ts
+         (логика экранов/меню — src/game/11-menu-ui.ts).
+       • НИКОГДА не править index.html напрямую — он генерится сборкой и не в git.
+         Правки идут только в src/ и index.template.html.
+
+     ЦИКЛ РАБОТЫ
+     ----------
+       правка в src/  →  node scripts/build.mjs  →  обновить эту страницу (iframe)
+       →  включить 📐 «Зоны» и проверить, что интерактивные элементы НЕ попадают
+          на жест-полосы, системные отступы и ВЫРЕЗ КАМЕРЫ (например, не ставить
+          тумблер переключения карт на вырез под камеру)
+       →  перебрать размеры 📱 (XS…XXL) и пресеты выреза (лев./прав. камера,
+          скруглённые углы, 3 кнопки), чтобы убедиться в раскладке на всех экранах.
+       Итог — обычный `git diff` по src/, который просто внедряется в игру.
+
+     КАК ЭТО РАБОТАЕТ ПОД КАПОТОМ (не трогать без нужды)
+     --------------------------------------------------
+       • Оверлей зон читает живую геометрию игры из gameFrame.contentWindow.__FIELD
+         (поле/ВПП/боксы/борта + safetyRects), которую игра выставляет в
+         src/game/13-init.js. Зоны рисуются в SVG #field-overlay поверх iframe.
+       • Пресеты выреза проталкиваются в игру через gameFrame.contentWindow.__MT и
+         резайзят iframe, чтобы игра пересчитала безопасные зоны под выбранный вырез.
+       Менять код игры для работы этого шаблона НЕ нужно — оба глобала уже есть.
+
+     Шаблон можно скопировать, если нужно зафиксировать другой src у iframe или
+     добавить аннотации, но обычно копия не нужна — это просто окно просмотра.
+     ════════════════════════════════════════════════════════════════════════════ -->
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #040810;
+      --panel-bg:   rgba(6,11,26,.98);
+      --border:     rgba(58,210,255,.18);
+      --accent:     #22e3c6;
+      --accent2:    #3ad2ff;
+      --text:       #eaf7ff;
+      --muted:      #7fa4b8;
+      --row-sep:    rgba(127,155,176,.10);
+      --btn-bg:     #101a36;
+      --input-bg:   #070e22;
+    }
+
+    html, body {
+      /* Dynamic viewport height: on iOS, height:100% / 100vh resolve against the
+         *layout* viewport (taller than the visible area when Safari's bars show).
+         dvh tracks the actually-visible height. */
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.45 system-ui, 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP PANE — Live Preview (fills the whole window in this template) ─── */
+    #top-pane {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      padding: 8px 10px;
+      background: #020609;
+      border-bottom: 1px solid var(--border);
+      overflow: visible;
+      flex: 1;
+      min-height: 80px;
+      position: relative;
+    }
+
+    /* ── Toolbar: horizontal icon row above phone ─────────────────────────── */
+    #toolbar-wrap { position: relative; flex: none; }
+
+    #toolbar {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+
+    .tb-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .tb-btn:hover { background: #1a2a48; }
+    .tb-btn.tb-active { border-color: var(--accent); background: rgba(34,227,198,.08); color: var(--accent); }
+    .tb-icon { font-size: 15px; line-height: 1; flex: none; }
+
+    /* Size button inside popup */
+    .sz-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .sz-btn:hover { background: #1a2a48; }
+    .sz-btn.active { border-color: var(--accent); background: rgba(34,227,198,.08); }
+    .sz-btn .sz-name { font-size: 11px; font-weight: 700; }
+    .sz-btn.active .sz-name { color: var(--accent); }
+    .sz-btn .sz-dims { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Floating popups (centered in viewport) ─────────────────────────── */
+    #popup-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 199;
+    }
+    .tb-popup {
+      display: none;
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(6,11,26,.98);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      z-index: 200;
+      min-width: 160px;
+      max-width: min(300px, 90vw);
+      box-shadow: 0 8px 32px rgba(0,0,0,.8);
+    }
+    .tb-popup.open { display: block; }
+
+    #popup-size { min-width: 240px; }
+    #size-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+
+    /* ── Phone column ─────────────────────────────────────────────────────── */
+    #phone-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-height: 0;
+    }
+
+    #phone-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* wrapper holds the visual (scaled) footprint */
+    #phone-wrapper {
+      position: relative;
+      flex: none;
+    }
+
+    /* phone-shell is positioned absolute so wrapper sets visual size */
+    #phone-shell {
+      position: absolute;
+      top: 0; left: 0;
+      border-radius: 46px;
+      border: 7px solid #172237;
+      box-shadow:
+        inset 0 0 0 1px #0c1930,
+        0 0 0 1px rgba(58,210,255,.12),
+        0 0 60px rgba(34,227,198,.06),
+        0 20px 70px rgba(0,0,0,.7);
+      overflow: hidden;
+      background: #000;
+      transform-origin: top left;
+    }
+
+    /* notch pill (landscape: left side) */
+    #phone-shell::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 10px;
+      transform: translateY(-50%);
+      width: 28px; height: 90px;
+      background: #000;
+      border-radius: 18px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* ── Resize handle (bottom-right corner of phone-wrapper) ────────────── */
+    #resize-handle {
+      position: absolute;
+      bottom: -4px; right: -4px;
+      width: 28px; height: 28px;
+      cursor: se-resize;
+      z-index: 30;
+      display: flex; align-items: flex-end; justify-content: flex-end;
+      opacity: 0;
+      transition: opacity .2s;
+      touch-action: none;
+    }
+    #phone-wrapper:hover #resize-handle { opacity: 1; }
+    #resize-handle.dragging { opacity: 1; }
+    /* Touch devices have no hover — keep the resize handle visible */
+    @media (hover: none) { #resize-handle { opacity: 1; } }
+    #resize-handle svg { display: block; }
+
+    #game-frame {
+      width: 100%; height: 100%;
+      border: none; display: block;
+    }
+
+    /* ── Toggle switch (used by the «Зоны» panel rows) ────────────────────── */
+    .mt-toggle {
+      position: relative;
+      width: 36px; height: 20px;
+      flex: none;
+    }
+    .mt-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .mt-toggle .track {
+      position: absolute; inset: 0;
+      border-radius: 10px;
+      background: #1a2a48;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .18s;
+    }
+    .mt-toggle input:checked + .track { background: var(--accent); border-color: var(--accent); }
+    .mt-toggle .track::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform .18s;
+    }
+    .mt-toggle input:checked + .track::after { transform: translateX(16px); }
+
+    /* ── Safe-zone legend panel (docked under the top-right toolbar buttons) ── */
+    #zones-panel {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 120;
+      width: 248px;
+      max-width: min(280px, 92vw);
+      background: rgba(6,11,26,.98);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+      padding: 8px;
+      max-height: calc(100dvh - 120px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #zones-panel.open { display: block; }
+    .zp-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 2px 2px 8px;
+      border-bottom: 1px solid var(--row-sep);
+      margin-bottom: 4px;
+    }
+    .zp-title {
+      font-size: 10px; font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--accent);
+    }
+    .zp-close {
+      flex: none; width: 22px; height: 22px; line-height: 1;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--btn-bg); color: var(--muted);
+      font-size: 12px; cursor: pointer; font-family: inherit;
+      transition: background .12s, color .12s;
+    }
+    .zp-close:hover { background: #1a2a48; color: var(--text); }
+    .zp-list { display: flex; flex-direction: column; }
+    .zp-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 4px;
+      border-top: 1px solid var(--row-sep);
+      cursor: pointer;
+    }
+    .zp-row:first-child { border-top: none; }
+    .zp-label { flex: 1; font-size: 11px; color: var(--muted); line-height: 1.25; }
+    .zp-row .z-sw, .zp-row .mt-toggle { flex: none; }
+    .zp-master {
+      padding-top: 0; padding-bottom: 8px; margin-bottom: 2px;
+      border-top: none; border-bottom: 1px solid var(--row-sep);
+    }
+    .zp-master .zp-label { font-weight: 700; color: var(--text); font-size: 12px; }
+    /* dim per-zone rows while the master overlay is off — and make them
+       non-interactive so toggles don't silently change a hidden overlay */
+    #zones-panel.zones-off #zones-list { opacity: .45; pointer-events: none; }
+
+    /* sub-section header inside the panel (e.g. «Вырез / навигация») */
+    .zp-sub {
+      font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); padding: 2px 4px 3px;
+    }
+
+    /* row wrapper holds the row + its collapsible hint */
+    .zp-row-wrap { }
+    .zp-list .zp-row-wrap:first-child > .zp-row { border-top: none; }
+
+    /* «?» info button — click/tap toggles the inline hint (touch-friendly) */
+    .zp-info {
+      flex: none; width: 18px; height: 18px; line-height: 1; padding: 0;
+      border: 1px solid var(--border); border-radius: 50%;
+      background: var(--btn-bg); color: var(--muted);
+      font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: color .12s, border-color .12s, background .12s;
+    }
+    .zp-info:hover { color: var(--text); border-color: var(--accent); }
+    .zp-info[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); background: rgba(34,227,198,.12); }
+
+    /* collapsible Russian explanation */
+    .zp-hint {
+      display: none;
+      font-size: 10px; line-height: 1.45; color: var(--muted);
+      padding: 0 6px 7px 8px;
+    }
+    .zp-hint.open { display: block; }
+
+    /* cutout/navigation presets rendered as panel rows (reuse .zp-row layout) */
+    #zones-panel .co-btn {
+      border: none; border-radius: 0; background: none;
+      padding: 5px 4px; font-size: 11px; white-space: normal; color: var(--muted);
+    }
+    #zones-panel .co-btn:hover { background: rgba(58,210,255,.05); }
+    #zones-panel .co-btn.active { background: rgba(34,227,198,.06); color: var(--accent); }
+    /* square (not round) — these are independent multi-select toggles, not radios */
+    .co-dot {
+      flex: none; width: 12px; height: 12px; border-radius: 3px;
+      border: 1px solid var(--border); background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; line-height: 1; color: #04080f;
+    }
+    .co-btn.active .co-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px rgba(34,227,198,.5); }
+    .co-btn.active .co-dot::after { content: '✓'; }
+    .co-btn .zp-label { flex: 1; }
+    .co-btn.active .zp-label { color: var(--accent); font-weight: 700; }
+
+    .co-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--muted);
+      padding: 3px 8px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .co-btn:hover { background: #1a2a48; }
+    .co-btn.active { background: rgba(34,227,198,.10); border-color: var(--accent); color: var(--accent); }
+
+    /* ── Cutout simulation overlay (in phone-wrapper, above phone-shell) ── */
+    #cutout-sim {
+      position: absolute;
+      pointer-events: none;
+      z-index: 20;
+      background: rgba(255,50,50,.22);
+      border: 2px dashed rgba(255,80,80,.95);
+      display: none;
+    }
+
+    /* ── Zone legend swatches (used in the «Зоны» legend panel) ───────────── */
+    .z-sw { width: 18px; height: 3px; flex: none; border-radius: 2px; }
+    .z-sw.fill { height: 10px; border-radius: 3px; }
+
+    /* ── Responsive: small screens ──────────────────────────────────────── */
+    @media (max-width: 600px) {
+      #toolbar { flex-wrap: wrap; }
+    }
+    @media (max-height: 560px) {
+      #top-pane { min-height: 60px; }
+    }
+
+    /* Snappier taps on iOS — no 300ms delay, no grey flash.
+       (#resize-handle keeps touch-action:none for dragging.) */
+    .tb-btn, .co-btn, .sz-btn {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── PREVIEW PANE: phone mock + size switcher + zones switcher ──────────── -->
+<div id="top-pane">
+
+  <!-- Toolbar: icon row above phone -->
+  <div id="toolbar-wrap">
+    <div id="toolbar">
+      <!-- Size picker -->
+      <button class="tb-btn" id="btn-size-toggle" title="Выбрать размер экрана">
+        <span class="tb-icon">📱</span><span id="tb-size-label">S</span>
+      </button>
+      <!-- Spacer -->
+      <div style="flex:1"></div>
+      <!-- Safe-zone frames overlay + cutout/navigation presets -->
+      <button class="tb-btn" id="btn-frames-toggle" title="Зоны и вырез экрана — рамки поверх превью + пресеты выреза/навигации">
+        <span class="tb-icon">📐</span><span>Зоны</span>
+      </button>
+    </div>
+
+    <!-- Popup backdrop -->
+    <div id="popup-backdrop"></div>
+
+    <!-- Size popup -->
+    <div class="tb-popup" id="popup-size">
+      <div id="size-strip">
+        <button class="sz-btn" data-size="st"><span class="sz-name">XS</span><span class="sz-dims">720×320</span></button>
+        <button class="sz-btn active" data-size="s"><span class="sz-name">S</span><span class="sz-dims">800×360</span></button>
+        <button class="sz-btn" data-size="m"><span class="sz-name">M</span><span class="sz-dims">832×384</span></button>
+        <button class="sz-btn" data-size="l"><span class="sz-name">L</span><span class="sz-dims">873×393</span></button>
+        <button class="sz-btn" data-size="xl"><span class="sz-name">XL</span><span class="sz-dims">915×412</span></button>
+        <button class="sz-btn" data-size="xxl"><span class="sz-name">XXL</span><span class="sz-dims">960×432</span></button>
+      </div>
+    </div>
+
+    <!-- Safe-zone legend + cutout/navigation panel — docked under the top-right buttons,
+         toggled by «Зоны». Header × hides the panel (zones stay on); per-row toggles
+         show/hide each zone. The cutout/navigation presets live at the top of this panel.
+         Rows are populated from i18n by buildCutoutList() (#cutout-list) and
+         renderZoneLegend() (#zones-list). -->
+    <div id="zones-panel">
+      <div class="zp-head">
+        <span class="zp-title">📐 Зоны и вырез</span>
+        <button class="zp-close" id="zones-panel-close" title="Скрыть панель (зоны останутся)">✕</button>
+      </div>
+      <div class="zp-sub">Вырез / навигация</div>
+      <div class="zp-list" id="cutout-list"></div>
+      <label class="zp-row zp-master">
+        <span class="zp-label">Показывать зоны</span>
+        <span class="mt-toggle"><input type="checkbox" id="zones-master"><span class="track"></span></span>
+      </label>
+      <div class="zp-list" id="zones-list"></div>
+    </div>
+  </div>
+
+  <!-- Phone preview -->
+  <div id="phone-col">
+    <div id="phone-wrapper">
+      <div id="phone-shell">
+        <iframe id="game-frame" src="../../index.html?test=1" title="Game" allow="autoplay"></iframe>
+        <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"
+             style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
+      </div>
+      <div id="cutout-sim"></div>
+      <div id="resize-handle" title="Потяни чтобы выбрать размер экрана">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M6 16L16 16L16 6" stroke="rgba(58,210,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 16L16 16L16 10" stroke="rgba(58,210,255,.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div id="phone-label">Превью · S Android Common · 800×360</div>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ── i18n (zone / cutout labels & hints) ────────────────────────────────── */
+  const T = {
+    livePreview:    'Превью',
+
+    /* зоны экрана — легенда / подписи поверх превью */
+    zoneContent:        'Контент-зона',
+    zoneInteractive:    'Интерактивная зона',
+    // старт/рисование/цель маршрута объединены в одну зону по самой строгой (наименьшей)
+    zoneRoute:          'Зона маршрута',
+    zoneGesture:        'Жест-зоны Android',
+    zoneSafeInsets:     'Системные отступы',
+    zoneCutout:         'Вырез камеры',
+    zoneUiReserved:     'Зарезервировано под UI (HUD/кнопки)',
+    zoneToast:          'Тост достижения',
+    // короткие подписи поверх превью (мелкий шрифт)
+    zoneOvContent:      'контент',
+    zoneOvInteractive:  'интеракт.',
+    zoneOvRoute:        'маршрут',
+    zoneOvCutout:       'вырез',
+    zoneOvToast:        'тост',
+    // вырез / навигация — независимые опции (несколько можно включить сразу):
+    // лев./прав. камера взаимоисключающие, скруглённые углы и 3 кнопки — независимы.
+    cutoutLabels: {
+      left:  '◀ Лев. камера',
+      right: 'Прав. камера ▶',
+      round: '⌒ Скруглённые углы',
+      '3btn':'⊟ 3 кнопки (старая навигация)',
+    },
+    cutoutHints: {
+      left:  'Камера-вырез у левого края (ландшафт). Слева добавляется запретная зона под камеру. Взаимоисключается с правой камерой.',
+      right: 'Камера-вырез у правого края (ландшафт). Справа добавляется запретная зона под камеру. Взаимоисключается с левой камерой.',
+      round: 'Скруглённые углы экрана: добавляет системные отступы слева и справа, чтобы контент не уезжал под скругление. Можно сочетать с камерой и навигацией.',
+      '3btn':'Старая 3-кнопочная навигация: жест-зон у краёв нет, нижний край свободен. Можно сочетать с камерой и скруглением.',
+    },
+    // пояснения к зонам — показываются по клику/тапу на «?» в строке зоны
+    zoneHints: {
+      gesture:     'Полосы у краёв, где Android перехватывает свайпы (назад/домой/недавние). Тапаемые элементы сюда ставить нельзя — система перехватит касание.',
+      safe:        'Системная safe-area сверх жест-зон: отступы под скругления и вырез. Контент может заходить, но впритык к краю рискованно.',
+      cutout:      'Прямоугольник физического выреза камеры. Под ним картинка перекрыта — ничего важного туда не помещай.',
+      content:     'Зона, внутри которой безопасно показывать любой контент с учётом всех отступов.',
+      interactive: 'Зона, где безопасно ставить кнопки и тапаемые элементы — не перекрывается жестами и вырезом.',
+      route:       'Объединённая зона маршрута: старт + рисование + цель почти совпадают, поэтому показана самая строгая (наименьшая) из них. Внутри безопасно начинать и вести линию маршрута, сюда же должны попадать точки назначения (ВПП, боксы).',
+      uiReserved:  'Место под игровой интерфейс (деньги, жизни, пауза, HUD). Неприкасаемая зона: игровые объекты (апрон, ангары, ВПП) сюда ставить нельзя — перекроются интерфейсом.',
+      toast:       'Фактический размер всплывашки достижения (#achToast): по центру сверху (top 13%), ширина под её содержимое (значок + заголовок + описание), не более 86% экрана. Если сюда попадают важные игровые объекты — тост их перекроет.',
+    },
+  };
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Live game iframe + its MT (motion-tuning) bridge ───────────────────── */
+  const gameFrame = document.getElementById('game-frame');
+  let MT = null;
+  // Acquire the game's __MT so drawOverlay() can read its snapshot (debug flags,
+  // K.ARRIVE). The cutout push in applyCutout() reads __MT directly, so it works
+  // even before this resolves.
+  function pollMT() {
+    try {
+      const mt = gameFrame.contentWindow && gameFrame.contentWindow.__MT;
+      if (mt && Array.isArray(mt.params) && mt.params.length) { MT = mt; return; }
+    } catch (_) {}
+    setTimeout(pollMT, 150);
+  }
+  gameFrame.addEventListener('load', () => setTimeout(pollMT, 80));
+
+  /* ── Phone size presets ─────────────────────────────────────────────────── */
+  const PHONES = [
+    { key: 'st',  label: 'XS стресс-тест',    w: 720, h: 320 },
+    { key: 's',   label: 'S Android Common',   w: 800, h: 360 },
+    { key: 'm',   label: 'M Android Common+',  w: 832, h: 384 },
+    { key: 'l',   label: 'L Android Tall',     w: 873, h: 393 },
+    { key: 'xl',  label: 'XL Android Large',   w: 915, h: 412 },
+    { key: 'xxl', label: 'XXL Android Wide',   w: 960, h: 432 },
+  ];
+  let phoneKey = 's';
+
+  const shell   = document.getElementById('phone-shell');
+  const wrapper = document.getElementById('phone-wrapper');
+  const label   = document.getElementById('phone-label');
+
+  function getScale(key) {
+    const ph      = PHONES.find(p => p.key === key);
+    const pane    = document.getElementById('top-pane');
+    const toolbar = document.getElementById('toolbar-wrap');
+    const toolH   = toolbar ? toolbar.offsetHeight + 6 : 0;
+    const availW  = pane.clientWidth  - 20;
+    const availH  = pane.clientHeight - toolH - 30;
+    return Math.min(1, availW / ph.w, availH / ph.h);
+  }
+
+  function applyPhone(key) {
+    phoneKey = key;
+    const ph    = PHONES.find(p => p.key === key);
+    const scale = getScale(key);
+
+    shell.style.width     = ph.w + 'px';
+    shell.style.height    = ph.h + 'px';
+    shell.style.transform = 'scale(' + scale + ')';
+
+    wrapper.style.width  = Math.round(ph.w * scale) + 'px';
+    wrapper.style.height = Math.round(ph.h * scale) + 'px';
+
+    label.textContent = T.livePreview + ' · ' + ph.label + ' · ' + ph.w + '×' + ph.h;
+
+    document.querySelectorAll('.sz-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.size === key);
+    });
+    const tbLbl = document.getElementById('tb-size-label');
+    if (tbLbl) tbLbl.textContent = ph.key === 'st' ? 'XS' : ph.key.toUpperCase();
+
+    applyCutout();
+  }
+
+  // Size strip buttons (inside popup)
+  document.querySelectorAll('.sz-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyPhone(btn.dataset.size);
+      closeAllPopups();
+    });
+  });
+
+  // Resize handle: drag right/down = larger, drag left/up = smaller.
+  // Snaps through PHONES steps; 80px = one step.
+  (function () {
+    const handle = document.getElementById('resize-handle');
+    handle.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      handle.classList.add('dragging');
+      const startX    = e.clientX;
+      const startIdx  = PHONES.findIndex(p => p.key === phoneKey);
+      try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+
+      function onMove(ev) {
+        const dx = ev.clientX - startX;
+        const step = Math.round(dx / 80);
+        const idx = Math.max(0, Math.min(PHONES.length - 1, startIdx + step));
+        if (PHONES[idx].key !== phoneKey) applyPhone(PHONES[idx].key);
+      }
+      function onUp(ev) {
+        handle.classList.remove('dragging');
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+        try { handle.releasePointerCapture(ev.pointerId); } catch (_) {}
+      }
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    });
+  })();
+
+  window.addEventListener('resize', () => applyPhone(phoneKey));
+
+  /* ── Popup system ──────────────────────────────────────────────────────── */
+  const allPopups  = document.querySelectorAll('.tb-popup');
+  const backdrop   = document.getElementById('popup-backdrop');
+
+  function openPopup(id) {
+    if (window._closeZonesPanel) window._closeZonesPanel();   // don't overlap the «Зоны» panel
+    const toolbar = document.getElementById('toolbar-wrap');
+    const tRect   = toolbar.getBoundingClientRect();
+    const top     = tRect.bottom + 6;
+    allPopups.forEach(p => {
+      p.classList.remove('open');
+      p.style.top = top + 'px';
+    });
+    const popup = document.getElementById(id);
+    if (popup) {
+      popup.style.top = top + 'px';
+      popup.classList.add('open');
+      backdrop.style.display = '';
+    }
+  }
+
+  function closeAllPopups() {
+    allPopups.forEach(p => p.classList.remove('open'));
+    backdrop.style.display = 'none';
+  }
+
+  function togglePopup(id) {
+    const popup = document.getElementById(id);
+    const wasOpen = popup && popup.classList.contains('open');
+    closeAllPopups();
+    if (!wasOpen) openPopup(id);
+  }
+
+  backdrop.addEventListener('click', closeAllPopups);
+  document.getElementById('btn-size-toggle').addEventListener('click', () => togglePopup('popup-size'));
+
+  /* ── Cutout / navigation options (combinable, not a single radio) ───────── */
+  //   • camera  : 'none' | 'left' | 'right'  — a side camera cutout (mutually exclusive)
+  //   • rounded : bool                        — rounded corners add side safe-area insets
+  //   • threeBtn: bool                        — old 3-button nav removes the gesture insets
+  const cutoutState = { camera: 'none', rounded: false, threeBtn: false };
+
+  // Camera geometry (matches MT.SA_CUTOUT_* values).
+  const CAMERA_W = 28, CAMERA_H = 90, CAMERA_OFFSET = 135;
+  const ROUND_INSET = 12;     // side safe-area inset added by rounded corners
+  const GEST = 24;            // gesture-nav exclusion width (0 under 3-button nav)
+
+  // Resolve the active toggle set into the flat MT/cutout values the game understands.
+  function resolveCutout() {
+    const cam = cutoutState.camera;
+    return {
+      side:   cam,
+      w:      cam === 'none' ? 0 : CAMERA_W,
+      h:      cam === 'none' ? 0 : CAMERA_H,
+      offset: cam === 'none' ? 0 : CAMERA_OFFSET,
+      saL:    cutoutState.rounded ? ROUND_INSET : 0,
+      saR:    cutoutState.rounded ? ROUND_INSET : 0,
+      gestL:  cutoutState.threeBtn ? 0 : GEST,
+      gestR:  cutoutState.threeBtn ? 0 : GEST,
+      gestB:  cutoutState.threeBtn ? 0 : GEST,
+    };
+  }
+
+  const cutoutSim = document.getElementById('cutout-sim');
+
+  // The red-dashed cutout preview (#cutout-sim) shows ONLY when a side camera is
+  // active AND the safe-zones overlay is off. When zones are on, drawOverlay()
+  // renders the cutout itself, so showing both would double-draw it.
+  function refreshCutoutSim() {
+    const show = cutoutState.camera !== 'none' && !window._zonesOn;
+    cutoutSim.style.display = show ? 'block' : 'none';
+  }
+  window._refreshCutoutSim = refreshCutoutSim;
+
+  // Reflect cutoutState onto the panel rows (multiple rows can be active at once).
+  function syncCutoutButtons() {
+    document.querySelectorAll('.co-btn').forEach(b => {
+      const k = b.dataset.co;
+      const on = (k === 'left'  && cutoutState.camera === 'left')  ||
+                 (k === 'right' && cutoutState.camera === 'right') ||
+                 (k === 'round' && cutoutState.rounded)            ||
+                 (k === '3btn'  && cutoutState.threeBtn);
+      b.classList.toggle('active', on);
+    });
+  }
+
+  // Toggle one option. left/right are mutually exclusive (clicking the active one
+  // clears it); rounded and 3-button flip independently.
+  function toggleCutout(opt) {
+    if (opt === 'left' || opt === 'right') {
+      cutoutState.camera = (cutoutState.camera === opt) ? 'none' : opt;
+    } else if (opt === 'round') {
+      cutoutState.rounded = !cutoutState.rounded;
+    } else if (opt === '3btn') {
+      cutoutState.threeBtn = !cutoutState.threeBtn;
+    } else { return; }
+    applyCutout();
+  }
+
+  function applyCutout() {
+    const co    = resolveCutout();
+    const ph    = PHONES.find(p => p.key === phoneKey);
+    const scale = ph ? getScale(phoneKey) : 1;
+
+    syncCutoutButtons();
+
+    // Visual overlay positioned in phone-wrapper coordinates. cutoutSim is a sibling
+    // of phone-shell so it renders above the iframe. phone-shell has a 7px border;
+    // absolute children start at the padding edge (inside the border):
+    //   wrapper_pos = (BORDER + cx) * scale
+    const BORDER = 7;
+    if (co.side !== 'none' && ph) {
+      const contentW = shell.clientWidth || (ph.w - 2 * BORDER);
+      let cx = 0, cy = co.offset;
+      if (co.side === 'right') cx = contentW - co.w;
+      cutoutSim.style.left    = Math.round((BORDER + cx) * scale) + 'px';
+      cutoutSim.style.top     = Math.round((BORDER + cy) * scale) + 'px';
+      cutoutSim.style.width   = Math.round(co.w * scale) + 'px';
+      cutoutSim.style.height  = Math.round(co.h * scale) + 'px';
+    }
+    refreshCutoutSim();
+
+    // Push new values into the game iframe's MT and trigger recalculation.
+    try {
+      const mt = gameFrame.contentWindow && gameFrame.contentWindow.__MT;
+      if (!mt) return;
+      mt.apply({
+        'MT.SA_CUTOUT_SIDE':    co.side,
+        'MT.SA_CUTOUT_W':       co.w,
+        'MT.SA_CUTOUT_H':       co.h,
+        'MT.SA_CUTOUT_OFFSET':  co.offset,
+        'MT.SA_INSET_LEFT':     co.saL,
+        'MT.SA_INSET_RIGHT':    co.saR,
+        'MT.SA_GESTURE_LEFT':   co.gestL,
+        'MT.SA_GESTURE_RIGHT':  co.gestR,
+        'MT.SA_GESTURE_BOTTOM': co.gestB,
+      }, true);
+      // Trigger game resize so calcSafetyRects() re-reads updated MT values.
+      try { gameFrame.contentWindow.dispatchEvent(new Event('resize')); } catch (_) {}
+    } catch (e) { /* iframe not ready yet */ }
+  }
+
+  // Click/tap a row's «?» to toggle its inline Russian explanation (works on touch,
+  // unlike title= tooltips). The hint is the .zp-hint sibling in the shared .zp-row-wrap.
+  function wireHints(container) {
+    container.querySelectorAll('.zp-info').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        const wrap = btn.closest('.zp-row-wrap');
+        const hint = wrap && wrap.querySelector('.zp-hint');
+        if (!hint) return;
+        const open = hint.classList.toggle('open');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
+  }
+
+  // Cutout/navigation options live as rows inside the «Зоны» panel. Each row TOGGLES
+  // one option (several can be on at once); its «?» toggles an inline explanation.
+  (function buildCutoutList() {
+    const host = document.getElementById('cutout-list');
+    if (!host) return;
+    const order = ['left', 'right', 'round', '3btn'];
+    host.innerHTML = order.map(k =>
+      '<div class="zp-row-wrap">' +
+        '<div class="zp-row co-btn" data-co="' + k + '">' +
+          '<span class="co-dot"></span>' +
+          '<span class="zp-label">' + escHtml(T.cutoutLabels[k]) + '</span>' +
+          '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false">?</button>' +
+        '</div>' +
+        '<div class="zp-hint">' + escHtml(T.cutoutHints[k]) + '</div>' +
+      '</div>'
+    ).join('');
+    host.querySelectorAll('.co-btn').forEach(row => {
+      row.addEventListener('click', e => {
+        if (e.target.closest('.zp-info')) return;   // «?» handled separately
+        toggleCutout(row.dataset.co);
+      });
+    });
+    wireHints(host);
+    syncCutoutButtons();
+  })();
+
+  /* Per-zone overlay visibility — shared with drawOverlay() (toolbar «Зоны»).
+     Each key gates one safety-zone group; default all-visible. */
+  window._zoneVis = window._zoneVis || {
+    gesture: true, safe: true, cutout: true, content: true, interactive: true,
+    route: true, uiReserved: true,
+    toast: true,
+  };
+
+  /* zone legend — подписи берутся из i18n (T.zone*). Каждый пункт — строка с тоглом,
+     который скрывает/показывает зону. */
+  (function renderZoneLegend() {
+    const host = document.getElementById('zones-list');
+    if (!host) return;
+    // [key, swatch-class, swatch-style, label]
+    const items = [
+      ['gesture',     'z-sw fill', 'background:rgba(255,60,60,.4);border:1px solid rgba(255,60,60,.7)', T.zoneGesture],
+      ['safe',        'z-sw fill', 'background:rgba(255,160,60,.3);border:1px solid rgba(255,160,60,.6)', T.zoneSafeInsets],
+      ['cutout',      'z-sw fill', 'background:rgba(0,0,0,.5);border:1px solid rgba(255,60,60,.8)', T.zoneCutout],
+      ['content',     'z-sw', 'background:rgba(34,210,255,.9)', T.zoneContent],
+      ['interactive', 'z-sw', 'background:rgba(34,240,100,.9)', T.zoneInteractive],
+      ['route',       'z-sw', 'background:rgba(50,255,50,1)', T.zoneRoute],
+      ['uiReserved',  'z-sw fill', 'background:rgba(255,220,0,.5);border:1px solid rgba(255,220,0,.9)', T.zoneUiReserved],
+      ['toast',       'z-sw fill', 'background:rgba(244,207,94,.22);border:1px solid rgba(244,207,94,.85)', T.zoneToast],
+    ];
+    // The row is a <div>, NOT a <label>: a <label> wrapping both the «?» <button>
+    // and the checkbox would associate with the FIRST labelable descendant (the
+    // button), so every row click would open the hint instead of toggling the zone.
+    host.innerHTML = items.map(it =>
+      '<div class="zp-row-wrap">' +
+        '<div class="zp-row">' +
+          '<span class="' + it[1] + '" style="' + it[2] + '"></span>' +
+          '<span class="zp-label">' + it[3] + '</span>' +
+          '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false">?</button>' +
+          '<label class="mt-toggle"><input type="checkbox" data-zone="' + it[0] + '"' +
+            (window._zoneVis[it[0]] !== false ? ' checked' : '') + '><span class="track"></span></label>' +
+        '</div>' +
+        '<div class="zp-hint">' + escHtml(T.zoneHints[it[0]] || '') + '</div>' +
+      '</div>'
+    ).join('');
+    host.querySelectorAll('input[data-zone]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        window._zoneVis[inp.dataset.zone] = inp.checked;
+        if (window._fieldRedraw) window._fieldRedraw();
+      });
+    });
+    // Click anywhere on the row (except the «?» or the toggle) toggles the zone.
+    host.querySelectorAll('.zp-row').forEach(row => {
+      row.addEventListener('click', e => {
+        if (e.target.closest('.zp-info') || e.target.closest('.mt-toggle')) return;
+        const cb = row.querySelector('input[data-zone]');
+        if (cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+      });
+    });
+    wireHints(host);
+  })();
+
+  /* initial render after layout settles */
+  requestAnimationFrame(() => applyPhone(phoneKey));
+
+  /* ── Field overlay (reads the live game's __FIELD geometry) ─────────────── */
+  (function () {
+    const overlay  = document.getElementById('field-overlay');
+    let   fieldOn  = false;
+    let   overlayTab = '';
+    const editorOnly = false;   // template always shows the live game's field
+
+    function getField() {
+      try { const fw = gameFrame.contentWindow; return fw && fw.__FIELD ? fw.__FIELD : null; } catch (_) { return null; }
+    }
+    function gateEntr(b) {
+      const g = b.gate;
+      if (g === 'up')    return { x: b.x + b.w * .5, y: b.y };
+      if (g === 'down')  return { x: b.x + b.w * .5, y: b.y + b.h };
+      if (g === 'left')  return { x: b.x,              y: b.y + b.h * .5 };
+      if (g === 'right') return { x: b.x + b.w,        y: b.y + b.h * .5 };
+      return { x: b.x + b.w * .5, y: b.y + b.h * .5 };
+    }
+    function zoneCol(z) {
+      return { air:'#f5c842', land:'#f08030', takeoff:'#60d060', bay:'#b060f0', field:'#40d0c0', runway:'#4090f0' }[z] || '#aaa';
+    }
+
+    // Intersection of a list of rects ({x,y,w,h}); null if any is missing/empty or
+    // they don't overlap. Collapses the near-identical route zones into the strictest.
+    function rectIntersect(rects) {
+      var x0 = -Infinity, y0 = -Infinity, x1 = Infinity, y1 = Infinity;
+      for (var i = 0; i < rects.length; i++) {
+        var r = rects[i];
+        if (!r || r.w <= 0 || r.h <= 0) return null;
+        x0 = Math.max(x0, r.x);       y0 = Math.max(y0, r.y);
+        x1 = Math.min(x1, r.x + r.w); y1 = Math.min(y1, r.y + r.h);
+      }
+      if (x1 <= x0 || y1 <= y0) return null;
+      return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+
+    // Actual rendered size of the achievement toast (#achToast) inside the game
+    // iframe. offsetWidth/Height already honour its content and the max-width:86%
+    // cap. The toast is normally empty in the preview, so we briefly inject sample
+    // content to get a representative natural size, then restore it. Returns {w,h}.
+    function measureToast() {
+      try {
+        const doc = gameFrame.contentWindow && gameFrame.contentWindow.document;
+        const el  = doc && doc.getElementById('achToast');
+        if (!el) return null;
+        const ic  = doc.getElementById('achIc');
+        const ttl = doc.getElementById('achTtl');
+        const dsc = doc.getElementById('achDsc');
+        const empty = !ttl || !ttl.textContent.trim();
+        let saved = null;
+        if (empty && ic && ttl && dsc) {
+          saved = { ic: ic.textContent, ttl: ttl.textContent, dsc: dsc.textContent };
+          ic.textContent  = '🏅';
+          ttl.textContent = 'Первая посадка';
+          dsc.textContent = 'Ты посадил первый борт без происшествий.';
+        }
+        const w = el.offsetWidth, h = el.offsetHeight;
+        if (saved) { ic.textContent = saved.ic; ttl.textContent = saved.ttl; dsc.textContent = saved.dsc; }
+        if (w < 1 || h < 1) return null;
+        return { w: w, h: h };
+      } catch (_) { return null; }
+    }
+
+    function drawOverlay() {
+      const fd = getField();
+      if (!fd || !fd.W) { overlay.innerHTML = ''; return; }
+      const W = fd.W, H = fd.H;
+      overlay.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      const snap   = MT ? MT.snapshot() : {};
+      const arrive = +(snap['K.ARRIVE'] || 12);
+      const GDX = { up:0, down:0, left:-1, right:1 };
+      const GDY = { up:-1, down:1, left:0, right:0 };
+      let s = '<defs><marker id="ga" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">'
+            + '<path d="M0,0 L0,6 L6,3 z" fill="rgba(34,200,100,.8)"/></marker></defs>';
+
+      // Live game field: runways / bays / planes (read from __FIELD).
+      if (!editorOnly) {
+      (fd.runways || []).forEach((r, i) => {
+        s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="rgba(58,130,255,.05)" stroke="rgba(58,210,255,.5)" stroke-width="1.5"/>';
+        s += '<line x1="'+r.x+'" y1="'+r.cy+'" x2="'+(r.x+r.w)+'" y2="'+r.cy+'" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="6 4"/>';
+        s += '<line x1="'+r.stopX+'" y1="'+r.y+'" x2="'+r.stopX+'" y2="'+(r.y+r.h)+'" stroke="rgba(245,200,66,.85)" stroke-width="1.5" stroke-dasharray="4 3"/>';
+        s += '<text x="'+(r.stopX+2)+'" y="'+(r.y+10)+'" font-size="8" fill="rgba(245,200,66,.9)">stop</text>';
+        s += '<line x1="'+r.exitX+'" y1="'+r.y+'" x2="'+r.exitX+'" y2="'+(r.y+r.h)+'" stroke="rgba(240,128,48,.85)" stroke-width="1.5" stroke-dasharray="4 3"/>';
+        s += '<text x="'+(r.exitX+2)+'" y="'+(r.y+10)+'" font-size="8" fill="rgba(240,128,48,.9)">exit</text>';
+        s += '<text x="'+(r.x+3)+'" y="'+(r.y+r.h-3)+'" font-size="8" fill="rgba(58,210,255,.65)">ВПП'+(i+1)+(r.closed?' ✕':'')+'</text>';
+      });
+      (fd.bays || []).forEach(b => {
+        const col = b.occupied ? 'rgba(180,96,240,.7)' : (b.open ? 'rgba(34,200,100,.55)' : 'rgba(200,80,80,.5)');
+        s += '<rect x="'+b.x+'" y="'+b.y+'" width="'+b.w+'" height="'+b.h+'" fill="'+col+'" fill-opacity=".1" stroke="'+col+'" stroke-width="1.5"/>';
+        const ge = gateEntr(b);
+        const dx = GDX[b.gate]||0, dy = GDY[b.gate]||0;
+        s += '<circle cx="'+ge.x+'" cy="'+ge.y+'" r="3" fill="'+col+'"/>';
+        s += '<line x1="'+ge.x+'" y1="'+ge.y+'" x2="'+(ge.x+dx*12)+'" y2="'+(ge.y+dy*12)+'" stroke="'+col+'" stroke-width="1.5" marker-end="url(#ga)"/>';
+        s += '<text x="'+(b.x+2)+'" y="'+(b.y+9)+'" font-size="7" fill="'+col+'">'+(b.type||'')+'</text>';
+      });
+      (fd.planes || []).forEach(pl => {
+        const col = zoneCol(pl.zone);
+        if (pl.path && pl.path.length) {
+          const pts = pl.x+','+pl.y+' '+pl.path.map(p => p.x+','+p.y).join(' ');
+          s += '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-opacity=".45" stroke-width="1.2" stroke-dasharray="5 3"/>';
+          const wp = pl.path[0];
+          s += '<circle cx="'+wp.x+'" cy="'+wp.y+'" r="'+arrive+'" fill="none" stroke="'+col+'" stroke-opacity=".35" stroke-width="1" stroke-dasharray="3 3"/>';
+          s += '<circle cx="'+wp.x+'" cy="'+wp.y+'" r="2.5" fill="'+col+'" fill-opacity=".8"/>';
+        }
+        s += '<circle cx="'+pl.x+'" cy="'+pl.y+'" r="5" fill="'+col+'" fill-opacity=".85" stroke="rgba(0,0,0,.3)" stroke-width="1"/>';
+      });
+      } // !editorOnly
+
+      // ── Safety zones overlay ──────────────────────────────────────────────
+      const showSafe = editorOnly || overlayTab === 'safe' || !!snap['MT.SA_DEBUG_OVERLAY'];
+      if (showSafe && fd.safetyRects) {
+        const sr = fd.safetyRects;
+        const gi = sr.gestureInsets;
+        const sa = sr.safeAreaInsets;
+        // per-zone visibility (toggled from the «Зоны» legend); missing key = shown
+        const vis = window._zoneVis || {};
+        const zv  = function (k) { return vis[k] !== false; };
+
+        // gesture edge strips (red hatched)
+        if (zv('gesture')) [
+          [0,       0,       gi.l, H,    'жест←'],
+          [W - gi.r, 0,      gi.r, H,    'жест→'],
+          [0,       0,       W,    gi.t, 'жест↑'],
+          [0,       H - gi.b, W,   gi.b, 'жест↓'],
+        ].forEach(function(row) {
+          var rx=row[0], ry=row[1], rw=row[2], rh=row[3], lbl=row[4];
+          if (rw <= 0 || rh <= 0) return;
+          s += '<rect x="'+rx+'" y="'+ry+'" width="'+rw+'" height="'+rh+'" fill="rgba(255,60,60,.16)" stroke="rgba(255,60,60,.5)" stroke-width="1" stroke-dasharray="4 3"/>';
+          var tx = rx + 2, ty = ry + (rh > 14 ? rh * 0.5 : 9);
+          s += '<text x="'+tx+'" y="'+ty+'" font-size="7" fill="rgba(255,110,70,.95)" dominant-baseline="middle">'+lbl+'</text>';
+        });
+
+        // safe-area strips where they extend beyond gesture zone (orange)
+        if (zv('safe')) [
+          [0,        0,        sa.l,  H,    sa.l > gi.l],
+          [W - sa.r, 0,        sa.r,  H,    sa.r > gi.r],
+          [0,        0,        W,     sa.t, sa.t > gi.t],
+          [0,        H - sa.b, W,     sa.b, sa.b > gi.b],
+        ].forEach(function(row) {
+          var rx=row[0], ry=row[1], rw=row[2], rh=row[3], cond=row[4];
+          if (!cond || rw <= 0 || rh <= 0) return;
+          s += '<rect x="'+rx+'" y="'+ry+'" width="'+rw+'" height="'+rh+'" fill="rgba(255,160,60,.13)" stroke="rgba(255,160,60,.4)" stroke-width="1"/>';
+        });
+
+        // cutout (black overlay with red border)
+        var cr = sr.cutoutRect;
+        if (zv('cutout') && cr && cr.w > 0 && cr.h > 0) {
+          s += '<rect x="'+cr.x+'" y="'+cr.y+'" width="'+cr.w+'" height="'+cr.h+'" fill="rgba(0,0,0,.55)" stroke="rgba(255,60,60,.85)" stroke-width="2"/>';
+          s += '<text x="'+(cr.x+2)+'" y="'+(cr.y+9)+'" font-size="7" fill="rgba(255,80,80,.9)">'+T.zoneOvCutout+'</text>';
+        }
+
+        // content / interactive safe rects (outlines only — drawn on top)
+        [
+          { k: 'content',     r: sr.contentSafeRect,     col: 'rgba(34,210,255,.75)', da: '6 3', lbl: T.zoneOvContent     },
+          { k: 'interactive', r: sr.interactiveSafeRect, col: 'rgba(34,240,100,.75)', da: '5 4', lbl: T.zoneOvInteractive },
+        ].forEach(function(item) {
+          var r=item.r, col=item.col, da=item.da, lbl=item.lbl;
+          if (!zv(item.k) || !r || r.w <= 0 || r.h <= 0) return;
+          var daAttr = da ? ' stroke-dasharray="' + da + '"' : '';
+          s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="none" stroke="'+col+'" stroke-width="1.5"'+daAttr+'/>';
+          s += '<text x="'+(r.x+2)+'" y="'+(r.y+9)+'" font-size="7" fill="'+col+'">'+lbl+'</text>';
+        });
+
+        // route zone (merged) — collapse the near-identical route rects into their
+        // intersection (the strictest/smallest), i.e. the safe area to design against.
+        if (zv('route')) {
+          var rIsec = rectIntersect([
+            sr.routeStartAllowedRect, sr.routeDrawAllowedRect, sr.routeTargetAllowedRect,
+          ]);
+          if (rIsec && rIsec.w > 0 && rIsec.h > 0) {
+            s += '<rect x="'+rIsec.x+'" y="'+rIsec.y+'" width="'+rIsec.w+'" height="'+rIsec.h+'" fill="none" stroke="rgba(50,255,50,1)" stroke-width="1.5"/>';
+            s += '<text x="'+(rIsec.x+2)+'" y="'+(rIsec.y+9)+'" font-size="7" fill="rgba(50,255,50,1)">'+T.zoneOvRoute+'</text>';
+          }
+        }
+
+        // UI reserved (HUD, pause button) — SOLID fill: an untouchable zone.
+        if (zv('uiReserved')) (sr.uiReservedRects || []).forEach(function(r) {
+          if (!r || r.w <= 0 || r.h <= 0) return;
+          s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="rgba(255,220,0,.5)" stroke="rgba(255,220,0,.95)" stroke-width="1.5"/>';
+          s += '<text x="'+(r.x+2)+'" y="'+(r.y+8)+'" font-size="6" fill="rgba(40,30,0,.9)">'+r.label+'</text>';
+        });
+
+        // Achievement toast (#achToast) — ACTUAL box (read live), centred at top 13%.
+        if (zv('toast')) {
+          var tb = measureToast();
+          if (tb) {
+            var tW = Math.min(tb.w, W * 0.86);   // never wider than the CSS cap
+            var tH = tb.h;
+            var tX = (W - tW) / 2;               // centred (left:50% + translateX(-50%))
+            var tY = H * 0.13;                   // CSS top:13%
+            s += '<rect x="'+tX+'" y="'+tY+'" width="'+tW+'" height="'+tH+'" rx="6" '
+               + 'fill="rgba(244,207,94,.10)" stroke="rgba(244,207,94,.85)" stroke-width="1.5" stroke-dasharray="6 4"/>';
+            s += '<text x="'+(tX+4)+'" y="'+(tY+10)+'" font-size="7" fill="rgba(244,207,94,.95)">'+T.zoneOvToast+'</text>';
+          }
+        }
+      }
+
+      overlay.innerHTML = s;
+    }
+
+    let ticking = false;
+    function tick() {
+      if (!fieldOn) { ticking = false; return; }
+      if (ticking && arguments[0] !== true) return;   // already looping
+      ticking = true;
+      drawOverlay();
+      setTimeout(() => tick(true), 150);
+    }
+
+    window._fieldActivate = function (on, tab) {
+      fieldOn  = on;
+      overlayTab = tab || '';
+      overlay.style.display = on ? '' : 'none';
+      if (on) tick();
+    };
+    // immediate redraw (used by the «Зоны» legend toggles for snappy feedback)
+    window._fieldRedraw = function () { if (fieldOn) drawOverlay(); };
+  })();
+
+  /* ── Safe-zone frames overlay + legend panel (toolbar «Зоны» button) ──────
+     The «Зоны» button opens the legend panel (docked under the top-right buttons)
+     and reveals the safety-zone frames. The panel's × hides the legend without
+     turning the zones off; the master toggle turns the overlay on/off; per-row
+     toggles filter which zones are drawn (via window._zoneVis, read by drawOverlay). */
+  (function () {
+    const btn    = document.getElementById('btn-frames-toggle');
+    const panel  = document.getElementById('zones-panel');
+    const close   = document.getElementById('zones-panel-close');
+    const master = document.getElementById('zones-master');
+    if (!btn || !panel) return;
+
+    let panelOpen = false;
+    let zonesOn   = false;
+
+    function syncBtn() { btn.classList.toggle('tb-active', panelOpen || zonesOn); }
+
+    function setZones(on) {
+      zonesOn = on;
+      window._zonesOn = on;            // read by refreshCutoutSim()
+      if (master) master.checked = on;
+      panel.classList.toggle('zones-off', !on);
+      if (window._fieldActivate) window._fieldActivate(on, on ? 'safe' : '');
+      if (window._refreshCutoutSim) window._refreshCutoutSim();
+      syncBtn();
+    }
+    function openPanel() {
+      if (typeof closeAllPopups === 'function') closeAllPopups();  // don't overlap toolbar popups
+      panelOpen = true;
+      panel.classList.add('open');
+      if (!zonesOn) setZones(true);   // opening the legend reveals the zones
+      else syncBtn();
+    }
+    function closePanel() {            // hide the legend, leave the zones as-is
+      panelOpen = false;
+      panel.classList.remove('open');
+      syncBtn();
+    }
+    window._setZones        = setZones;
+    window._closeZonesPanel = closePanel;
+
+    setZones(false);                   // initial: overlay off, panel closed
+    btn.addEventListener('click', () => {
+      if (panelOpen) { closePanel(); setZones(false); }   // panel open → power everything off
+      else openPanel();                                    // panel closed → open legend (+ zones)
+    });
+    if (close)  close.addEventListener('click', closePanel);  // hide legend, keep zones
+    if (master) master.addEventListener('change', () => setZones(master.checked));
+
+    // Click outside the panel (and not on the «Зоны» button) hides the legend.
+    document.addEventListener('click', (e) => {
+      if (!panelOpen) return;
+      if (panel.contains(e.target) || btn.contains(e.target)) return;
+      closePanel();
+    });
+  })();
+
+})();
+</script>
+</body>
+</html>
