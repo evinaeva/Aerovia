@@ -536,8 +536,11 @@
       border: 1px solid var(--border); border-radius: 7px;
       background: var(--btn-bg); color: var(--text);
       font-size: 18px; line-height: 1; font-family: inherit;
-      cursor: pointer; user-select: none; padding: 0;
+      cursor: pointer; padding: 0;
       transition: background .12s, border-color .12s;
+      /* no text-selection / iOS «copy» callout on long-press — long-press auto-repeats */
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+      touch-action: manipulation;
     }
     .mt-step:hover  { background: #1a2a48; border-color: var(--accent); }
     .mt-step:active { background: rgba(34,227,198,.16); }
@@ -2354,28 +2357,65 @@
   }
 
   // −/+ stepper buttons (Motion params + lab stubs): nudge the number field in
-  // the same .mt-stepper by its step, then dispatch input/change so the
-  // relevant listeners (delegated MT handlers, or inline lab oninput) apply it.
-  // Document-level + container-relative so it works for every stepper anywhere.
-  document.addEventListener('click', e => {
-    const btn = e.target.closest && e.target.closest('.mt-step');
-    if (!btn) return;
-    e.preventDefault();
-    const wrap  = btn.closest('.mt-stepper');
-    const input = wrap && wrap.querySelector('input[type=number]');
-    if (!input) return;
-    const dir  = parseFloat(btn.dataset.dir) || 1;
-    const step = parseFloat(input.step) || 1;
-    const dec  = (String(input.step).split('.')[1] || '').length;   // step decimals → avoid float drift
-    let val = parseFloat(input.value);
-    if (!Number.isFinite(val)) val = 0;
-    val = +(val + dir * step).toFixed(dec);
-    if (input.min !== '' && val < +input.min) val = +input.min;
-    if (input.max !== '' && val > +input.max) val = +input.max;
-    input.value = val;
-    input.dispatchEvent(new Event('input',  { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+  // the same .mt-stepper by its step, then dispatch input/change so the relevant
+  // listeners (delegated MT handlers, or inline lab oninput) apply it.
+  // Pointer-based so a *held* button auto-repeats (and accelerates) instead of
+  // just selecting the «+»; document-level so it covers every stepper anywhere.
+  (function () {
+    let activeBtn = null, holdTimer = null;
+
+    // One nudge. Returns false when the value can't change (already clamped at
+    // min/max) so the auto-repeat can stop instead of spinning uselessly.
+    function doStep(btn) {
+      const wrap  = btn.closest('.mt-stepper');
+      const input = wrap && wrap.querySelector('input[type=number]');
+      if (!input || input.disabled) return false;
+      const dir  = parseFloat(btn.dataset.dir) || 1;
+      const step = parseFloat(input.step) || 1;
+      const dec  = (String(input.step).split('.')[1] || '').length;   // step decimals → avoid float drift
+      let val = parseFloat(input.value);
+      if (!Number.isFinite(val)) val = 0;
+      const before = val;
+      val = +(val + dir * step).toFixed(dec);
+      if (input.min !== '' && val < +input.min) val = +input.min;
+      if (input.max !== '' && val > +input.max) val = +input.max;
+      if (val === before) return false;   // clamped — nothing to do
+      input.value = val;
+      input.dispatchEvent(new Event('input',  { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
+
+    function stopHold() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      activeBtn = null;
+    }
+
+    // After an initial delay, repeat — speeding up the longer it's held.
+    function startHold() {
+      let n = 0;
+      function tick() {
+        if (!activeBtn || !doStep(activeBtn)) { stopHold(); return; }
+        n++;
+        const interval = n < 12 ? 70 : n < 30 ? 40 : 20;
+        holdTimer = setTimeout(tick, interval);
+      }
+      holdTimer = setTimeout(tick, 380);
+    }
+
+    document.addEventListener('pointerdown', e => {
+      const btn = e.target.closest && e.target.closest('.mt-step');
+      if (!btn) return;
+      if (e.button != null && e.button > 0) return;   // ignore right/middle click
+      e.preventDefault();                              // no focus jump / text-selection
+      activeBtn = btn;
+      try { btn.setPointerCapture(e.pointerId); } catch (_) {}
+      if (doStep(btn)) startHold();                    // immediate first step, then hold-repeat
+    });
+    document.addEventListener('pointerup',     stopHold);
+    document.addEventListener('pointercancel', stopHold);
+    window.addEventListener('blur', stopHold);
+  })();
 
   function syncUI() {
     if (!MT) return;
