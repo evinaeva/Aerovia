@@ -118,23 +118,35 @@
   }
   // корпус с тенью/окнами/свечением; vip — золото, аварийный — тёплый светлый,
   // медицинский — белый с красным крестом на фюзеляже
-  // визуальный масштаб борта (перспектива небо↔земля). На ВПП во время посадки/взлёта
-  // меняется ПЛАВНО по позиции вдоль полосы: у полевого торца (stopX) — наземный,
-  // у небесного края (exitX) — небесный. Одна формула покрывает оба направления:
-  // садящийся борт едет stopX←exitX (ужимается), взлетающий exitX→stopX… наоборот
-  // (раздувается) — обоим достаточно интерполяции по x.
+  // визуальный масштаб борта (перспектива небо↔земля). На ВПП посадка и взлёт ведут
+  // себя ПО-РАЗНОМУ — это не симметричная интерполяция:
+  //  • ПОСАДКА: борт снижается с неба (A) на полосу, ужимаясь к точке касания; ПОСЛЕ
+  //    касания размер фиксируется наземным (G) и больше не уменьшается — дальше борт
+  //    катится/выкатывается на апрон тем же размером.
+  //  • ВЗЛЁТ: пока борт разбегается ПО полосе — он наземный (G, маленький); расти к
+  //    небесному (A) он начинает только ПОСЛЕ отрыва, за торцом ВПП, на дистанции
+  //    K.TAKEOFF_LIFT_DIST.
   function planeScale(pl: any){
     const A=K.PLANE_SKY_SCALE, G=K.PLANE_GND_SCALE;
     if(pl.zone==='air') return A;
-    if(pl.zone==='runway' && pl.runway && (pl.landing || pl.takeoff)){
+    if(pl.zone==='runway' && pl.runway){
       const r=pl.runway;
-      const tdX = r.stopX + PLANE_LEN();   // точка касания/отрыва — корпус от полевого торца
-      const skyX = r.x + r.w;              // правый конец ВПП — небо
-      if(pl.x <= tdX) return G;            // наземный участок: катится/стоит, размер фиксирован
-      if(pl.x >= skyX) return A;
-      return G + (pl.x - tdX) / Math.max(1, skyX - tdX) * (A - G);
+      const skyX = r.x + r.w;                 // правый (небесный) торец ВПП
+      if(pl.landing){
+        if(pl.touched) return G;              // коснулся — наземный, дальше НЕ ужимается
+        const tdX = r.stopX + PLANE_LEN();    // точка касания — корпус от полевого торца
+        if(pl.x >= skyX) return A;
+        if(pl.x <= tdX) return G;
+        return G + (pl.x - tdX) / Math.max(1, skyX - tdX) * (A - G);
+      }
+      if(pl.takeoff){
+        if(pl.x <= skyX) return G;            // разбег по полосе — остаётся наземным
+        const liftEnd = skyX + K.TAKEOFF_LIFT_DIST*ui;   // дорос до небесного — за торцом
+        if(pl.x >= liftEnd) return A;
+        return G + (pl.x - skyX) / Math.max(1, liftEnd - skyX) * (A - G);
+      }
     }
-    return G;   // field / bay / борт стоит на полосе
+    return G;   // field / bay / борт стоит/выкатывается на полосе
   }
   function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any){
     if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)
