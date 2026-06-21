@@ -7,6 +7,9 @@
 
 > **Метки:** **Сложность** — низкая / средняя / высокая.
 >
+> 🖼️ **Шаблон превью для дизайна** — [`design/preview-template.html`](design/preview-template.html):
+> макет телефона + зоны для Claude design (рисовать экраны 1:1 как на телефоне).
+>
 > Смежные доки: арт-задачи — [`assets.md`](assets.md),
 > список медалей — [`achievements.md`](achievements.md),
 > конкурентный разбор — [`competitor-reviews.md`](competitor-reviews.md).
