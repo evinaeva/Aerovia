@@ -536,8 +536,11 @@
       border: 1px solid var(--border); border-radius: 7px;
       background: var(--btn-bg); color: var(--text);
       font-size: 18px; line-height: 1; font-family: inherit;
-      cursor: pointer; user-select: none; padding: 0;
+      cursor: pointer; padding: 0;
       transition: background .12s, border-color .12s;
+      /* no text-selection / iOS «copy» callout on long-press — long-press auto-repeats */
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+      touch-action: manipulation;
     }
     .mt-step:hover  { background: #1a2a48; border-color: var(--accent); }
     .mt-step:active { background: rgba(34,227,198,.16); }
@@ -880,11 +883,15 @@
     }
     #zones-panel .co-btn:hover { background: rgba(58,210,255,.05); }
     #zones-panel .co-btn.active { background: rgba(34,227,198,.06); color: var(--accent); }
+    /* square (not round) — these are independent multi-select toggles, not radios */
     .co-dot {
-      flex: none; width: 11px; height: 11px; border-radius: 50%;
+      flex: none; width: 12px; height: 12px; border-radius: 3px;
       border: 1px solid var(--border); background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; line-height: 1; color: #04080f;
     }
     .co-btn.active .co-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px rgba(34,227,198,.5); }
+    .co-btn.active .co-dot::after { content: '✓'; }
     .co-btn .zp-label { flex: 1; }
     .co-btn.active .zp-label { color: var(--accent); font-weight: 700; }
 
@@ -1588,7 +1595,7 @@
     ready:          'Готово',
     loading:        'Ждём запуска игры…',
     paramsReady:    (n) => 'Готово · ' + n + ' параметров.',
-    cutoutPreset:   (k) => 'Вырез: ' + k,
+    cutoutPreset:   (desc) => 'Вырез/навигация: ' + desc,
     presetSaved:    (n) => 'Пресет сохранён: ' + n,
     presetDeleted:  (n) => 'Пресет удалён: ' + n,
     presetApplied:  (n) => 'Применён пресет: ' + n,
@@ -1605,38 +1612,36 @@
     /* ── Таб «Зоны экрана» (легенда / таблица / оверлей / предупреждения) ── */
     zoneContent:        'Контент-зона',
     zoneInteractive:    'Интерактивная зона',
-    zoneRouteStart:     'Зона старта маршрута',
-    zoneRouteDraw:      'Зона рисования маршрута',
-    zoneRouteTarget:    'Зона цели маршрута',
+    // Старт/рисование/цель маршрута — почти одинаковые вложенные прямоугольники;
+    // в легенде и оверлее они объединены в одну зону по самой строгой (наименьшей).
+    zoneRoute:          'Зона маршрута',
     zoneViewport:       'Вьюпорт',
     zoneGesture:        'Жест-зоны Android',
     zoneGestureInsets:  'Жест-отступы',
     zoneSafeInsets:     'Системные отступы',
     zoneCutout:         'Вырез камеры',
     zoneUiReserved:     'Зарезервировано под UI (HUD/кнопки)',
-    zoneToast:          'Тост достижения (макс.)',
+    zoneToast:          'Тост достижения',
     // короткие подписи поверх превью (мелкий шрифт)
     zoneOvContent:      'контент',
     zoneOvInteractive:  'интеракт.',
-    zoneOvRouteStart:   'старт',
-    zoneOvRouteDraw:    'рисование',
-    zoneOvRouteTarget:  'цель',
+    zoneOvRoute:        'маршрут',
     zoneOvCutout:       'вырез',
     zoneOvToast:        'тост',
-    // вырез / навигация — подписи и пояснения (перенесены в панель «Зоны»)
+    // вырез / навигация — независимые опции (несколько можно включить сразу):
+    // лев./прав. камера взаимоисключающие, скруглённые углы и 3 кнопки — независимы.
+    cutoutNone:  'Без выреза, жест-навигация',
     cutoutLabels: {
-      none:  'Без выреза',
       left:  '◀ Лев. камера',
       right: 'Прав. камера ▶',
       round: '⌒ Скруглённые углы',
-      '3btn':'3 кнопки (старая навигация)',
+      '3btn':'⊟ 3 кнопки (старая навигация)',
     },
     cutoutHints: {
-      none:  'Экран без выреза, жест-навигация. Базовый случай: доступен весь экран, по краям только жест-отступы.',
-      left:  'Камера-вырез у левого края (ландшафт). Слева добавляется запретная зона под камеру.',
-      right: 'Камера-вырез у правого края (ландшафт). Справа добавляется запретная зона под камеру.',
-      round: 'Скруглённые углы экрана: добавляет системные отступы слева и справа, чтобы контент не уезжал под скругление.',
-      '3btn':'Старая 3-кнопочная навигация: жест-зон у краёв нет, нижний край свободен.',
+      left:  'Камера-вырез у левого края (ландшафт). Слева добавляется запретная зона под камеру. Взаимоисключается с правой камерой.',
+      right: 'Камера-вырез у правого края (ландшафт). Справа добавляется запретная зона под камеру. Взаимоисключается с левой камерой.',
+      round: 'Скруглённые углы экрана: добавляет системные отступы слева и справа, чтобы контент не уезжал под скругление. Можно сочетать с камерой и навигацией.',
+      '3btn':'Старая 3-кнопочная навигация: жест-зон у краёв нет, нижний край свободен. Можно сочетать с камерой и скруглением.',
     },
     // пояснения к зонам — показываются по клику/тапу на «?» в строке зоны
     zoneHints: {
@@ -1645,11 +1650,9 @@
       cutout:      'Прямоугольник физического выреза камеры. Под ним картинка перекрыта — ничего важного туда не помещай.',
       content:     'Зона, внутри которой безопасно показывать любой контент с учётом всех отступов.',
       interactive: 'Зона, где безопасно ставить кнопки и тапаемые элементы — не перекрывается жестами и вырезом.',
-      routeStart:  'Откуда игрок может начинать вести маршрут пальцем.',
-      routeDraw:   'В пределах которой можно вести линию маршрута.',
-      routeTarget: 'Куда маршрут может приходить — точки назначения (ВПП, боксы) должны попадать сюда.',
-      uiReserved:  'Места под игровой интерфейс (деньги, жизни, пауза, HUD). Игровые объекты сюда не ставь — перекроются интерфейсом.',
-      toast:       'Зона, которую может занять всплывашка достижения (#achToast): по центру сверху (top 13%), ширина до 86% экрана, высота под значок + заголовок + описание (до 2 строк). Если сюда попадают важные игровые объекты — широкий тост их перекроет.',
+      route:       'Объединённая зона маршрута: старт + рисование + цель почти совпадают, поэтому показана самая строгая (наименьшая) из них. Внутри безопасно начинать и вести линию маршрута, сюда же должны попадать точки назначения (ВПП, боксы).',
+      uiReserved:  'Место под игровой интерфейс (деньги, жизни, пауза, HUD). Неприкасаемая зона: игровые объекты (апрон, ангары, ВПП) сюда ставить нельзя — перекроются интерфейсом, а в редакторе их в эту заливку не подвинуть.',
+      toast:       'Фактический размер всплывашки достижения (#achToast): по центру сверху (top 13%), ширина под её содержимое (значок + заголовок + описание), не более 86% экрана. Если сюда попадают важные игровые объекты — тост их перекроет.',
     },
     // предупреждения проверки зон
     warnNone:           '✓ Нет предупреждений',
@@ -1704,7 +1707,7 @@
     const tbLbl = document.getElementById('tb-size-label');
     if (tbLbl) tbLbl.textContent = ph.key === 'st' ? 'XS' : ph.key.toUpperCase();
 
-    applyCutout(cutoutKey);
+    applyCutout();
     if (window._layoutResize) window._layoutResize();   // editor canvas follows the shell size
   }
 
@@ -1786,40 +1789,94 @@
   document.getElementById('btn-preset-toggle').addEventListener('click', () => togglePopup('popup-preset'));
   document.getElementById('btn-file-toggle').addEventListener('click',   () => togglePopup('popup-file'));
 
-  /* ── Cutout presets ────────────────────────────────────────────────────── */
-  // side: 'none'|'left'|'right'  — matches MT.SA_CUTOUT_SIDE values
-  // saL/saR: manual safe-area inset additions (rounded corners etc.)
-  // gestL/gestR/gestB: gesture exclusion widths (0 = 3-button nav, 24 = gesture nav)
-  const CUTOUT_PRESETS = {
-    none:  { side:'none',  w:0,  h:0,   offset:0,   saL:0,  saR:0,  gestL:24, gestR:24, gestB:24 },
-    left:  { side:'left',  w:28, h:90,  offset:135, saL:0,  saR:0,  gestL:24, gestR:24, gestB:24 },
-    right: { side:'right', w:28, h:90,  offset:135, saL:0,  saR:0,  gestL:24, gestR:24, gestB:24 },
-    round: { side:'none',  w:0,  h:0,   offset:0,   saL:12, saR:12, gestL:24, gestR:24, gestB:24 },
-    '3btn':{ side:'none',  w:0,  h:0,   offset:0,   saL:0,  saR:0,  gestL:0,  gestR:0,  gestB:0  },
-  };
+  /* ── Cutout / navigation options (combinable, not a single radio) ───────── */
+  // The screen shape used to be a single mutually-exclusive preset. It is really
+  // three orthogonal axes that combine — so each is its own toggle now:
+  //   • camera  : 'none' | 'left' | 'right'  — a side camera cutout (left/right
+  //               are mutually exclusive; clicking the active one clears it)
+  //   • rounded : bool                        — rounded corners add side safe-area insets
+  //   • threeBtn: bool                        — old 3-button nav removes the gesture insets
+  // e.g. «левая камера + скруглённые углы» or «3 кнопки + левая камера» are all valid.
+  const cutoutState = { camera: 'none', rounded: false, threeBtn: false };
 
-  let cutoutKey = 'none';
+  // Camera geometry (matches MT.SA_CUTOUT_* values).
+  const CAMERA_W = 28, CAMERA_H = 90, CAMERA_OFFSET = 135;
+  const ROUND_INSET = 12;     // side safe-area inset added by rounded corners
+  const GEST = 24;            // gesture-nav exclusion width (0 under 3-button nav)
+
+  // Resolve the active toggle set into the flat MT/cutout values the rest of the
+  // page already understands (side/w/h/offset/insets/gesture widths).
+  function resolveCutout() {
+    const cam = cutoutState.camera;
+    return {
+      side:   cam,
+      w:      cam === 'none' ? 0 : CAMERA_W,
+      h:      cam === 'none' ? 0 : CAMERA_H,
+      offset: cam === 'none' ? 0 : CAMERA_OFFSET,
+      saL:    cutoutState.rounded ? ROUND_INSET : 0,
+      saR:    cutoutState.rounded ? ROUND_INSET : 0,
+      gestL:  cutoutState.threeBtn ? 0 : GEST,
+      gestR:  cutoutState.threeBtn ? 0 : GEST,
+      gestB:  cutoutState.threeBtn ? 0 : GEST,
+    };
+  }
+
+  // Human-readable summary of the active combination (for the status line).
+  function cutoutSummary() {
+    const parts = [];
+    if (cutoutState.camera !== 'none') parts.push(T.cutoutLabels[cutoutState.camera]);
+    if (cutoutState.rounded)  parts.push(T.cutoutLabels.round);
+    if (cutoutState.threeBtn) parts.push(T.cutoutLabels['3btn']);
+    return parts.length ? parts.join(' + ') : T.cutoutNone;
+  }
+
   const cutoutSim = document.getElementById('cutout-sim');
 
-  // The red-dashed cutout preview (#cutout-sim) shows ONLY when a side-cutout preset
-  // is active AND the safe-zones overlay is off. When zones are on, drawOverlay()
+  // The red-dashed cutout preview (#cutout-sim) shows ONLY when a side camera is
+  // active AND the safe-zones overlay is off. When zones are on, drawOverlay()
   // renders the cutout itself (gated by the legend's «Вырез камеры» toggle), so
   // showing both would double-draw the cutout with two switches that disagree.
   function refreshCutoutSim() {
-    const co = CUTOUT_PRESETS[cutoutKey];
-    const show = !!co && co.side !== 'none' && !window._zonesOn;
+    const show = cutoutState.camera !== 'none' && !window._zonesOn;
     cutoutSim.style.display = show ? 'block' : 'none';
   }
   window._refreshCutoutSim = refreshCutoutSim;
 
-  function applyCutout(key) {
-    if (!CUTOUT_PRESETS[key]) return;
-    cutoutKey = key;
-    const co    = CUTOUT_PRESETS[key];
+  // Reflect cutoutState onto the panel rows: camera rows reflect the chosen side,
+  // rounded/3-button reflect their own flags. Multiple rows can be active at once.
+  function syncCutoutButtons() {
+    document.querySelectorAll('.co-btn').forEach(b => {
+      const k = b.dataset.co;
+      const on = (k === 'left'  && cutoutState.camera === 'left')  ||
+                 (k === 'right' && cutoutState.camera === 'right') ||
+                 (k === 'round' && cutoutState.rounded)            ||
+                 (k === '3btn'  && cutoutState.threeBtn);
+      b.classList.toggle('active', on);
+    });
+  }
+
+  // Toggle one option. left/right are mutually exclusive (and clicking the active
+  // one clears it); rounded and 3-button flip independently.
+  function toggleCutout(opt) {
+    if (opt === 'left' || opt === 'right') {
+      cutoutState.camera = (cutoutState.camera === opt) ? 'none' : opt;
+    } else if (opt === 'round') {
+      cutoutState.rounded = !cutoutState.rounded;
+    } else if (opt === '3btn') {
+      cutoutState.threeBtn = !cutoutState.threeBtn;
+    } else { return; }
+    applyCutout();
+  }
+
+  // Reset everything back to «без выреза, жест-навигация».
+  function resetCutout() { cutoutState.camera = 'none'; cutoutState.rounded = false; cutoutState.threeBtn = false; applyCutout(); }
+
+  function applyCutout() {
+    const co    = resolveCutout();
     const ph    = PHONES.find(p => p.key === phoneKey);
     const scale = ph ? getScale(phoneKey) : 1;
 
-    document.querySelectorAll('.co-btn').forEach(b => b.classList.toggle('active', b.dataset.co === key));
+    syncCutoutButtons();
 
     // Visual overlay positioned in phone-wrapper coordinates.
     // cutoutSim is a sibling of phone-shell so it renders above the iframe.
@@ -1840,7 +1897,7 @@
       cutoutSim.style.width   = Math.round(co.w * scale) + 'px';
       cutoutSim.style.height  = Math.round(co.h * scale) + 'px';
     }
-    refreshCutoutSim();   // visibility depends on the preset + the zones-overlay state
+    refreshCutoutSim();   // visibility depends on the camera + the zones-overlay state
 
     // Push new values into the game iframe's MT and trigger recalculation.
     try {
@@ -1860,7 +1917,7 @@
       // Trigger game resize so calcSafetyRects() re-reads updated MT values.
       try { gameFrame.contentWindow.dispatchEvent(new Event('resize')); } catch(_) {}
       if (MT) syncUI();
-      setStatus(T.cutoutPreset(key));
+      setStatus(T.cutoutPreset(cutoutSummary()));
     } catch (e) { /* iframe not ready yet */ }
   }
 
@@ -1880,16 +1937,16 @@
     });
   }
 
-  // Cutout/navigation presets live as rows inside the «Зоны» panel. Each row applies
-  // a preset on click; its «?» toggles an inline Russian explanation (click/tap — so
-  // it works on touch, where title= tooltips never show).
+  // Cutout/navigation options live as rows inside the «Зоны» panel. Each row TOGGLES
+  // one option (several can be on at once); its «?» toggles an inline Russian
+  // explanation (click/tap — so it works on touch, where title= tooltips never show).
   (function buildCutoutList() {
     const host = document.getElementById('cutout-list');
     if (!host) return;
-    const order = ['none', 'left', 'right', 'round', '3btn'];
+    const order = ['left', 'right', 'round', '3btn'];
     host.innerHTML = order.map(k =>
       '<div class="zp-row-wrap">' +
-        '<div class="zp-row co-btn' + (k === cutoutKey ? ' active' : '') + '" data-co="' + k + '">' +
+        '<div class="zp-row co-btn" data-co="' + k + '">' +
           '<span class="co-dot"></span>' +
           '<span class="zp-label">' + escHtml(T.cutoutLabels[k]) + '</span>' +
           '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false">?</button>' +
@@ -1900,10 +1957,11 @@
     host.querySelectorAll('.co-btn').forEach(row => {
       row.addEventListener('click', e => {
         if (e.target.closest('.zp-info')) return;   // «?» handled separately
-        applyCutout(row.dataset.co);
+        toggleCutout(row.dataset.co);
       });
     });
     wireHints(host);
+    syncCutoutButtons();
   })();
 
   /* ── Splitter drag (pointer events → works for mouse, touch & pen) ──────── */
@@ -1968,7 +2026,7 @@
      Each key gates one safety-zone group; default all-visible. */
   window._zoneVis = window._zoneVis || {
     gesture: true, safe: true, cutout: true, content: true, interactive: true,
-    routeStart: true, routeDraw: true, routeTarget: true, uiReserved: true,
+    route: true, uiReserved: true,
     toast: true,
   };
 
@@ -1984,10 +2042,8 @@
       ['cutout',      'z-sw fill', 'background:rgba(0,0,0,.5);border:1px solid rgba(255,60,60,.8)', T.zoneCutout],
       ['content',     'z-sw', 'background:rgba(34,210,255,.9)', T.zoneContent],
       ['interactive', 'z-sw', 'background:rgba(34,240,100,.9)', T.zoneInteractive],
-      ['routeStart',  'z-sw', 'background:rgba(50,255,50,1)', T.zoneRouteStart],
-      ['routeDraw',   'z-sw', 'background:rgba(60,180,255,.9)', T.zoneRouteDraw],
-      ['routeTarget', 'z-sw', 'background:rgba(180,80,255,.9)', T.zoneRouteTarget],
-      ['uiReserved',  'z-sw', 'background:rgba(255,220,0,.6)', T.zoneUiReserved],
+      ['route',       'z-sw', 'background:rgba(50,255,50,1)', T.zoneRoute],
+      ['uiReserved',  'z-sw fill', 'background:rgba(255,220,0,.5);border:1px solid rgba(255,220,0,.9)', T.zoneUiReserved],
       ['toast',       'z-sw fill', 'background:rgba(244,207,94,.22);border:1px solid rgba(244,207,94,.85)', T.zoneToast],
     ];
     // The row is a <div>, NOT a <label>: a <label> wrapping both the «?» <button>
@@ -2301,28 +2357,65 @@
   }
 
   // −/+ stepper buttons (Motion params + lab stubs): nudge the number field in
-  // the same .mt-stepper by its step, then dispatch input/change so the
-  // relevant listeners (delegated MT handlers, or inline lab oninput) apply it.
-  // Document-level + container-relative so it works for every stepper anywhere.
-  document.addEventListener('click', e => {
-    const btn = e.target.closest && e.target.closest('.mt-step');
-    if (!btn) return;
-    e.preventDefault();
-    const wrap  = btn.closest('.mt-stepper');
-    const input = wrap && wrap.querySelector('input[type=number]');
-    if (!input) return;
-    const dir  = parseFloat(btn.dataset.dir) || 1;
-    const step = parseFloat(input.step) || 1;
-    const dec  = (String(input.step).split('.')[1] || '').length;   // step decimals → avoid float drift
-    let val = parseFloat(input.value);
-    if (!Number.isFinite(val)) val = 0;
-    val = +(val + dir * step).toFixed(dec);
-    if (input.min !== '' && val < +input.min) val = +input.min;
-    if (input.max !== '' && val > +input.max) val = +input.max;
-    input.value = val;
-    input.dispatchEvent(new Event('input',  { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+  // the same .mt-stepper by its step, then dispatch input/change so the relevant
+  // listeners (delegated MT handlers, or inline lab oninput) apply it.
+  // Pointer-based so a *held* button auto-repeats (and accelerates) instead of
+  // just selecting the «+»; document-level so it covers every stepper anywhere.
+  (function () {
+    let activeBtn = null, holdTimer = null;
+
+    // One nudge. Returns false when the value can't change (already clamped at
+    // min/max) so the auto-repeat can stop instead of spinning uselessly.
+    function doStep(btn) {
+      const wrap  = btn.closest('.mt-stepper');
+      const input = wrap && wrap.querySelector('input[type=number]');
+      if (!input || input.disabled) return false;
+      const dir  = parseFloat(btn.dataset.dir) || 1;
+      const step = parseFloat(input.step) || 1;
+      const dec  = (String(input.step).split('.')[1] || '').length;   // step decimals → avoid float drift
+      let val = parseFloat(input.value);
+      if (!Number.isFinite(val)) val = 0;
+      const before = val;
+      val = +(val + dir * step).toFixed(dec);
+      if (input.min !== '' && val < +input.min) val = +input.min;
+      if (input.max !== '' && val > +input.max) val = +input.max;
+      if (val === before) return false;   // clamped — nothing to do
+      input.value = val;
+      input.dispatchEvent(new Event('input',  { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      return true;
+    }
+
+    function stopHold() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+      activeBtn = null;
+    }
+
+    // After an initial delay, repeat — speeding up the longer it's held.
+    function startHold() {
+      let n = 0;
+      function tick() {
+        if (!activeBtn || !doStep(activeBtn)) { stopHold(); return; }
+        n++;
+        const interval = n < 12 ? 70 : n < 30 ? 40 : 20;
+        holdTimer = setTimeout(tick, interval);
+      }
+      holdTimer = setTimeout(tick, 380);
+    }
+
+    document.addEventListener('pointerdown', e => {
+      const btn = e.target.closest && e.target.closest('.mt-step');
+      if (!btn) return;
+      if (e.button != null && e.button > 0) return;   // ignore right/middle click
+      e.preventDefault();                              // no focus jump / text-selection
+      activeBtn = btn;
+      try { btn.setPointerCapture(e.pointerId); } catch (_) {}
+      if (doStep(btn)) startHold();                    // immediate first step, then hold-repeat
+    });
+    document.addEventListener('pointerup',     stopHold);
+    document.addEventListener('pointercancel', stopHold);
+    window.addEventListener('blur', stopHold);
+  })();
 
   function syncUI() {
     if (!MT) return;
@@ -2368,7 +2461,7 @@
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (!MT) return;
     if (!confirm(T.confirmReset)) return;
-    MT.reset(); syncUI(); applyCutout('none');
+    MT.reset(); syncUI(); resetCutout();
     // Reset the safe-zone overlay state too, so «Сбросить всё» really resets all.
     document.querySelectorAll('#zones-list input[data-zone]').forEach(i => { i.checked = true; });
     if (window._zoneVis) Object.keys(window._zoneVis).forEach(k => { window._zoneVis[k] = true; });
@@ -2939,7 +3032,9 @@
      Standalone visual editor: drag the apron, runways, hangars and the
      arrival zone on a phone-shaped canvas, resize the zones, then export a
      layout-JSON compatible with LEVELS[].layout in 04-config-levels.ts.
-     Self-contained — does not read or drive the game iframe. */
+     Mostly self-contained — the one exception is the UI-reserved zone (HUD /
+     pause button), which it reads from the game's safetyRects so objects can't
+     be placed there (see reservedRectsPx / hitsReserved). */
   (function () {
     const cv = document.getElementById('ly-canvas');
     if (!cv) return;
@@ -3051,6 +3146,35 @@
     const clamp01 = v => Math.max(0, Math.min(1, v));
     const clampZone = z => { z.w = Math.max(Z_MIN, Math.min(1, z.w)); z.h = Math.max(Z_MIN, Math.min(1, z.h)); z.x = Math.max(0, Math.min(1 - z.w, z.x)); z.y = Math.max(0, Math.min(1 - z.h, z.y)); };
 
+    /* ---- UI-reserved zone (untouchable) ----
+       Read the game's UI-reserved rects (HUD + pause button) and scale them into
+       this canvas's px space. Objects can't be dragged into these, and they're
+       painted as a solid fill so it's obvious nothing goes there. Empty when the
+       game iframe isn't ready — then there's simply no constraint. */
+    function reservedRectsPx() {
+      try {
+        const fd = gameFrame.contentWindow && gameFrame.contentWindow.__FIELD;
+        const sr = fd && fd.safetyRects;
+        if (!sr || !Array.isArray(sr.uiReservedRects) || !fd.W || !fd.H) return [];
+        const { W, H } = dims();
+        const sx = W / fd.W, sy = H / fd.H;
+        return sr.uiReservedRects
+          .filter(r => r && r.w > 0 && r.h > 0)
+          .map(r => ({ x: r.x * sx, y: r.y * sy, w: r.w * sx, h: r.h * sy, label: r.label }));
+      } catch (_) { return []; }
+    }
+    function hitsReserved(box) {
+      if (!box) return false;
+      return reservedRectsPx().some(r =>
+        box.x < r.x + r.w && box.x + box.w > r.x && box.y < r.y + r.h && box.y + box.h > r.y);
+    }
+    // px box of whatever a drag descriptor is currently moving/resizing
+    function dragBoxPx(d) {
+      if (!d) return null;
+      if (d.mode === 'move-obj') return d.kind === 'hangar' ? hangarPx(LE.hangars[d.i]) : runwayPx(LE.runways[d.i]);
+      return rectPx(d.kind === 'apron' ? LE.apron : LE.arrival);
+    }
+
     /* ---- draw ---- */
     function resize() {
       if (!active) return;
@@ -3147,6 +3271,16 @@
         }
       });
 
+      // UI-reserved zone (HUD / pause) — solid fill, drawn on top: nothing goes here
+      reservedRectsPx().forEach(r => {
+        g.fillStyle = 'rgba(255,220,0,.5)';
+        g.fillRect(r.x, r.y, r.w, r.h);
+        g.strokeStyle = 'rgba(255,220,0,.95)'; g.lineWidth = 1.5;
+        g.strokeRect(r.x + .5, r.y + .5, r.w - 1, r.h - 1);
+        g.fillStyle = 'rgba(40,30,0,.9)'; g.font = '9px system-ui';
+        g.fillText(r.label || 'UI', r.x + 4, r.y + 11);
+      });
+
       // selected-zone handles
       if (sel && (sel.kind === 'apron' || sel.kind === 'arrival') && layers[sel.kind === 'apron' ? 'apron' : 'arrival']) {
         const hs = zoneHandles(sel.kind === 'apron' ? LE.apron : LE.arrival);
@@ -3218,6 +3352,19 @@
       if (!drag) return;
       const p = evPos(e), { W, H } = dims();
       const dx = (p.x - drag.start.x) / W, dy = (p.y - drag.start.y) / H;
+      // Snapshot the thing being moved so we can revert if it lands in the
+      // untouchable UI-reserved zone.
+      const prevStart = drag.start;
+      let restore = null;
+      if (drag.mode === 'move-obj') {
+        const arr = drag.kind === 'hangar' ? LE.hangars : LE.runways;
+        const snap = Object.assign({}, arr[drag.i]);
+        restore = () => Object.assign(arr[drag.i], snap);
+      } else {
+        const z = drag.kind === 'apron' ? LE.apron : LE.arrival;
+        const snap = Object.assign({}, z);
+        restore = () => Object.assign(z, snap);
+      }
       if (drag.mode === 'move-zone') {
         const z = drag.kind === 'apron' ? LE.apron : LE.arrival;
         z.x = snapV(drag.x0 + dx); z.y = snapV(drag.y0 + dy); clampZone(z);
@@ -3242,6 +3389,8 @@
         }
         drag.start = { x: p.x, y: p.y };
       }
+      // Reject the move if it now overlaps the untouchable UI-reserved zone.
+      if (hitsReserved(dragBoxPx(drag))) { restore(); drag.start = prevStart; }
       draw();
     });
     function endDrag(e) { if (!drag) return; drag = null; try { cv.releasePointerCapture(e.pointerId); } catch (_) {} renderSide(); save(); }
@@ -3833,6 +3982,50 @@
       return { air:'#f5c842', land:'#f08030', takeoff:'#60d060', bay:'#b060f0', field:'#40d0c0', runway:'#4090f0' }[z] || '#aaa';
     }
 
+    // Intersection of a list of rects ({x,y,w,h}); null if any is missing/empty or
+    // they don't overlap. Used to collapse the near-identical route zones into the
+    // single strictest (smallest) one.
+    function rectIntersect(rects) {
+      var x0 = -Infinity, y0 = -Infinity, x1 = Infinity, y1 = Infinity;
+      for (var i = 0; i < rects.length; i++) {
+        var r = rects[i];
+        if (!r || r.w <= 0 || r.h <= 0) return null;
+        x0 = Math.max(x0, r.x);       y0 = Math.max(y0, r.y);
+        x1 = Math.min(x1, r.x + r.w); y1 = Math.min(y1, r.y + r.h);
+      }
+      if (x1 <= x0 || y1 <= y0) return null;
+      return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+
+    // Actual rendered size of the achievement toast (#achToast) inside the game
+    // iframe. offsetWidth/Height already honour its content and the max-width:86%
+    // cap, so this is the real box — not the worst-case 86%-wide rectangle. The
+    // toast is normally empty/hidden in the preview, so we briefly inject sample
+    // content to get a representative natural size, then restore it (synchronous,
+    // so nothing paints in between). Returns {w,h} in iframe CSS px, or null.
+    function measureToast() {
+      try {
+        const doc = gameFrame.contentWindow && gameFrame.contentWindow.document;
+        const el  = doc && doc.getElementById('achToast');
+        if (!el) return null;
+        const ic  = doc.getElementById('achIc');
+        const ttl = doc.getElementById('achTtl');
+        const dsc = doc.getElementById('achDsc');
+        const empty = !ttl || !ttl.textContent.trim();
+        let saved = null;
+        if (empty && ic && ttl && dsc) {
+          saved = { ic: ic.textContent, ttl: ttl.textContent, dsc: dsc.textContent };
+          ic.textContent  = '🏅';
+          ttl.textContent = 'Первая посадка';
+          dsc.textContent = 'Ты посадил первый борт без происшествий.';
+        }
+        const w = el.offsetWidth, h = el.offsetHeight;
+        if (saved) { ic.textContent = saved.ic; ttl.textContent = saved.ttl; dsc.textContent = saved.dsc; }
+        if (w < 1 || h < 1) return null;
+        return { w: w, h: h };
+      } catch (_) { return null; }
+    }
+
     function drawOverlay() {
       const fd = getField();
       if (!fd || !fd.W) { overlay.innerHTML = ''; return; }
@@ -3921,13 +4114,10 @@
           s += '<text x="'+(cr.x+2)+'" y="'+(cr.y+9)+'" font-size="7" fill="rgba(255,80,80,.9)">'+T.zoneOvCutout+'</text>';
         }
 
-        // named safe rects (outlines only — drawn on top so they're always visible)
+        // content / interactive safe rects (outlines only — drawn on top)
         [
-          { k: 'content',     r: sr.contentSafeRect,        col: 'rgba(34,210,255,.75)', da: '6 3', lbl: T.zoneOvContent     },
-          { k: 'interactive', r: sr.interactiveSafeRect,    col: 'rgba(34,240,100,.75)', da: '5 4', lbl: T.zoneOvInteractive },
-          { k: 'routeStart',  r: sr.routeStartAllowedRect,  col: 'rgba(50,255,50,1)',    da: '',    lbl: T.zoneOvRouteStart  },
-          { k: 'routeDraw',   r: sr.routeDrawAllowedRect,   col: 'rgba(60,180,255,.9)',  da: '8 3', lbl: T.zoneOvRouteDraw   },
-          { k: 'routeTarget', r: sr.routeTargetAllowedRect, col: 'rgba(180,80,255,.9)',  da: '5 4', lbl: T.zoneOvRouteTarget },
+          { k: 'content',     r: sr.contentSafeRect,     col: 'rgba(34,210,255,.75)', da: '6 3', lbl: T.zoneOvContent     },
+          { k: 'interactive', r: sr.interactiveSafeRect, col: 'rgba(34,240,100,.75)', da: '5 4', lbl: T.zoneOvInteractive },
         ].forEach(function(item) {
           var r=item.r, col=item.col, da=item.da, lbl=item.lbl;
           if (!zv(item.k) || !r || r.w <= 0 || r.h <= 0) return;
@@ -3936,29 +4126,44 @@
           s += '<text x="'+(r.x+2)+'" y="'+(r.y+9)+'" font-size="7" fill="'+col+'">'+lbl+'</text>';
         });
 
-        // UI reserved (HUD, pause button) — faint yellow dashed
+        // route zone (merged) — routeStart/routeDraw/routeTarget are near-identical
+        // nested rects, so collapse them into a single zone = their intersection,
+        // i.e. the strictest (smallest) one. That's the safe area to design against.
+        if (zv('route')) {
+          var rIsec = rectIntersect([
+            sr.routeStartAllowedRect, sr.routeDrawAllowedRect, sr.routeTargetAllowedRect,
+          ]);
+          if (rIsec && rIsec.w > 0 && rIsec.h > 0) {
+            s += '<rect x="'+rIsec.x+'" y="'+rIsec.y+'" width="'+rIsec.w+'" height="'+rIsec.h+'" fill="none" stroke="rgba(50,255,50,1)" stroke-width="1.5"/>';
+            s += '<text x="'+(rIsec.x+2)+'" y="'+(rIsec.y+9)+'" font-size="7" fill="rgba(50,255,50,1)">'+T.zoneOvRoute+'</text>';
+          }
+        }
+
+        // UI reserved (HUD, pause button) — SOLID fill: an untouchable zone. In the
+        // layout editor (LE) objects can't be dragged into it either (see LE drag
+        // clamp), so it reads as a hard "nothing goes here" block.
         if (zv('uiReserved')) (sr.uiReservedRects || []).forEach(function(r) {
           if (!r || r.w <= 0 || r.h <= 0) return;
-          s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="rgba(255,220,0,.04)" stroke="rgba(255,220,0,.28)" stroke-width="1" stroke-dasharray="3 4"/>';
-          s += '<text x="'+(r.x+2)+'" y="'+(r.y+8)+'" font-size="6" fill="rgba(255,220,0,.6)">'+r.label+'</text>';
+          s += '<rect x="'+r.x+'" y="'+r.y+'" width="'+r.w+'" height="'+r.h+'" fill="rgba(255,220,0,.5)" stroke="rgba(255,220,0,.95)" stroke-width="1.5"/>';
+          s += '<text x="'+(r.x+2)+'" y="'+(r.y+8)+'" font-size="6" fill="rgba(40,30,0,.9)">'+r.label+'</text>';
         });
 
-        // Achievement toast (#achToast) — the worst-case area it can cover. The
-        // toast isn't in safetyRects (it's a DOM overlay, not a game rect); its
-        // box comes straight from the CSS in src/styles.css (#achToast):
-        //   top:13%  ·  left:50% + translateX(-50%)  ·  max-width:86%
-        //   padding:12px 20px  ·  icon 28px / title 14px / desc 10.5px(×≤2 lines)
+        // Achievement toast (#achToast) — ACTUAL box, not the 86% worst case. We read
+        // the live element's rendered size (offsetWidth/Height respects its content and
+        // the max-width:86% cap) and place it per its CSS rules: centred, top 13%.
         // W/H here are the iframe's innerWidth/innerHeight in CSS px (06-state-layout
-        // sets W=window.innerWidth, H=window.innerHeight), the same units the CSS
-        // %/px values resolve against — so the mapping is 1:1, no scaling needed.
+        // sets W=window.innerWidth, H=window.innerHeight) — same units as the CSS, 1:1.
         if (zv('toast')) {
-          var tW = W * 0.86;                 // CSS max-width:86% (widest a toast can get)
-          var tH = 88;                       // padding 24 + icon/text column (desc up to 2 lines)
-          var tX = (W - tW) / 2;             // centred (left:50% + translateX(-50%))
-          var tY = H * 0.13;                 // CSS top:13%
-          s += '<rect x="'+tX+'" y="'+tY+'" width="'+tW+'" height="'+tH+'" rx="6" '
-             + 'fill="rgba(244,207,94,.10)" stroke="rgba(244,207,94,.85)" stroke-width="1.5" stroke-dasharray="6 4"/>';
-          s += '<text x="'+(tX+4)+'" y="'+(tY+10)+'" font-size="7" fill="rgba(244,207,94,.95)">'+T.zoneOvToast+'</text>';
+          var tb = measureToast();
+          if (tb) {
+            var tW = Math.min(tb.w, W * 0.86);   // never wider than the CSS cap
+            var tH = tb.h;
+            var tX = (W - tW) / 2;               // centred (left:50% + translateX(-50%))
+            var tY = H * 0.13;                   // CSS top:13%
+            s += '<rect x="'+tX+'" y="'+tY+'" width="'+tW+'" height="'+tH+'" rx="6" '
+               + 'fill="rgba(244,207,94,.10)" stroke="rgba(244,207,94,.85)" stroke-width="1.5" stroke-dasharray="6 4"/>';
+            s += '<text x="'+(tX+4)+'" y="'+(tY+10)+'" font-size="7" fill="rgba(244,207,94,.95)">'+T.zoneOvToast+'</text>';
+          }
         }
       }
 
