@@ -38,6 +38,22 @@ first. CI (`.github/workflows/deploy.yml`) type-checks, builds and unit-tests on
 every push to `main` and publishes to GitHub Pages, so nobody has to remember to
 rebuild and `index.html` is never committed.
 
+### `tuning.html` — same deal, edit `src/tuning/`, never edit `tuning.html`
+
+`tuning.html` is the **dev workbench** (motion / level / difficulty / layout
+tuning; it drives the game in an `index.html?test=1` iframe). It is **also a
+generated, git-ignored artifact** — built by `node scripts/build-tuning.mjs`
+(`npm run build:tuning`), exactly like `index.html`. **Do not edit `tuning.html`
+by hand.** Its source lives in:
+- `src/tuning.css` — the workbench `<style>` block.
+- `src/tuning/01..16-*.{js,ts}` — the workbench IIFE split into ordered modules
+  (order in `scripts/build-tuning.mjs` → `TUNING_ORDER`). **Module 01 opens the
+  IIFE, module 16 closes it** — fragments of one shared closure scope, *not* ES
+  modules. Modules are plain `.js` today (the build strips `.ts` too, if added).
+- `tuning.template.html` — the HTML shell with `/*__BUILD_TUNING_*__*/` placeholders.
+
+CI builds `tuning.html` right after `index.html` and publishes both to Pages.
+
 ## TypeScript
 
 The game is TypeScript: every `src/game` module except **01-bootstrap-theme.js**

@@ -20,6 +20,11 @@ android/
 # его публикует робот при деплое. В git хранится только исходник в src/.
 /index.html
 
+# СБОРОЧНЫЙ артефакт: tuning.html (dev-воркбенч) собирается из src/tuning/ +
+# src/tuning.css (node scripts/build-tuning.mjs). Робот пересобирает его при
+# деплое; в git — только исходники в src/.
+/tuning.html
+
 # тесты (Playwright)
 test-results/
 playwright-report/
