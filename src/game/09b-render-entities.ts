@@ -380,24 +380,25 @@
 
   function drawHUD(){
     const hud=HUD_H();
-    // плавающая панель
-    rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui);
-    ctx.fillStyle='rgba(7,13,30,.82)'; ctx.fill();
-    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.3); rr(10*ui,6*ui,W-20*ui,hud-12*ui,9*ui); ctx.stroke();
-    const cy=hud/2;
+    // плавающая панель — Variant A: ghost pill, full-width, square corners
+    // панель перекрывает safe-area сверху, контент — ниже выреза/скругления
+    rr(0,0,W,hud+safe.t,0);
+    ctx.fillStyle='rgba(4,8,20,.06)'; ctx.fill();
+    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.10); rr(0,0,W,hud+safe.t,0); ctx.stroke();
+    const cy=safe.t+hud/2;
     ctx.textBaseline='middle';
     // тонкий вертикальный разделитель (VSep из макета TopHUD)
     const vsep=(vx: number)=>{ ctx.fillStyle=hexa(COL.phosphor,.16); ctx.fillRect(vx, cy-13*ui, 1, 26*ui); };
     // ── левый кластер: жизни · | · деньги · | · цель (мокап TopHUD) ──
-    for(let i=0;i<K.START_LIVES;i++) heart(26*ui+i*19*ui, cy, 6.3*ui, i<lives?COL.life:null);
-    let lx = 26*ui + K.START_LIVES*19*ui + 12*ui;
+    for(let i=0;i<K.START_LIVES;i++) heart(safe.l+26*ui+i*19*ui, cy, 4.5*ui, i<lives?COL.life:null);
+    let lx = safe.l+26*ui + K.START_LIVES*19*ui + 12*ui;
     vsep(lx); lx += 13*ui;
     // деньги (золото)
     if(ATLAS) SPRITES.blitC('coin', lx+7*ui, cy, 16*ui, 16*ui);
     else { ctx.textAlign='left'; ctx.fillStyle=COL.coin; ctx.font=`${13*ui}px ${NUM}`; ctx.fillText('$', lx, cy); }
     ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`;
     ctx.fillStyle = money<0?COL.life:COL.coin;
-    ctx.shadowColor=hexa(COL.gold,.4); ctx.shadowBlur=9*ui;
+    ctx.shadowColor=hexa(COL.gold,.55); ctx.shadowBlur=12*ui;
     ctx.fillText(fmtMoney(money), lx+18*ui, cy); ctx.shadowBlur=0;
     lx += 18*ui + ctx.measureText(fmtMoney(money)).width + 16*ui;
     // ── цель уровня (сирень): мишень + «N / M». В бесконечном — налёт «✈ N» (фосфор) ──
@@ -407,14 +408,14 @@
     const goalTone = endless ? COL.phosphor : COL.purple;
     iconTarget(lx+9*ui, cy, 9*ui, goalTone);
     ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`; ctx.fillStyle=goalTone;
-    ctx.shadowColor=hexa(goalTone,.4); ctx.shadowBlur=9*ui;
+    ctx.shadowColor=hexa(goalTone,.55); ctx.shadowBlur=12*ui;
     const goalTxt = endless ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target ?? 0));
     ctx.fillText(goalTxt, lx+23*ui, cy); ctx.shadowBlur=0;
     // ── правый: таймер перед кнопкой паузы (число, как в макете) ──
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
     const urgent = LV.objective.time && tShown<=10;
     ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`700 ${18*ui}px ${NUM}`;
-    ctx.shadowColor=hexa(urgent?COL.life:COL.phosphor,.4); ctx.shadowBlur=9*ui;
+    ctx.shadowColor=hexa(urgent?COL.life:COL.phosphor,.55); ctx.shadowBlur=12*ui;
     ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy); ctx.shadowBlur=0;
 
     // кнопка паузы — спрайт-чип (на паузе поверх рисуем «play»)
@@ -423,8 +424,8 @@
       SPRITES.blitC('pause-btn', pcx, pcy, Math.max(pauseBtn.w,pauseBtn.h), Math.max(pauseBtn.w,pauseBtn.h));
     if(!pauseSprite){
       rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui);
-      ctx.fillStyle='rgba(154,111,212,.10)'; ctx.fill();
-      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.4);
+      ctx.fillStyle='rgba(4,8,20,.10)'; ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.08);
       rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui); ctx.stroke();
       ctx.fillStyle=COL.paper;
       if(!paused){
@@ -446,7 +447,7 @@
     ctx.save(); ctx.globalAlpha=Math.max(0,a);
     ctx.font=`${12*ui}px ${MONO}`;
     const w=ctx.measureText(toast.text).width+44*ui, h=24*ui;
-    const x=W/2-w/2, y=HUD_H()+12*ui;
+    const x=W/2-w/2, y=HUD_H()+safe.t+12*ui;
     rr(x,y,w,h,12*ui); ctx.fillStyle='rgba(26,22,40,.92)'; ctx.fill();
     ctx.lineWidth=1.5; ctx.strokeStyle=hexa(col,.7);
     ctx.shadowColor=hexa(col,.5); ctx.shadowBlur=10; rr(x,y,w,h,12*ui); ctx.stroke(); ctx.shadowBlur=0;
