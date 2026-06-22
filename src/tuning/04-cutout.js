@@ -41,12 +41,13 @@
 
   const cutoutSim = document.getElementById('cutout-sim');
 
-  // The red-dashed cutout preview (#cutout-sim) shows ONLY when a side camera is
-  // active AND the safe-zones overlay is off. When zones are on, drawOverlay()
-  // renders the cutout itself (gated by the legend's «Вырез камеры» toggle), so
-  // showing both would double-draw the cutout with two switches that disagree.
+  // The red-dashed cutout preview (#cutout-sim) shows whenever a side camera is
+  // active. When the zones overlay is also on, drawOverlay() draws the cutout
+  // inside the SVG too, but cutoutSim lives on the phone FRAME (above the bezel),
+  // so together they show both where the camera notch is on the device AND where
+  // it lands inside the game canvas — two complementary views, not duplicates.
   function refreshCutoutSim() {
-    const show = cutoutState.camera !== 'none' && !window._zonesOn;
+    const show = cutoutState.camera !== 'none';
     cutoutSim.style.display = show ? 'block' : 'none';
   }
   window._refreshCutoutSim = refreshCutoutSim;
@@ -66,6 +67,9 @@
 
   // Toggle one option. left/right are mutually exclusive (and clicking the active
   // one clears it); rounded and 3-button flip independently.
+  // rounded/3btn только влияют на safetyRects — эффект виден только в зонах-оверлее,
+  // поэтому при их включении автоматически открываем «Зоны» (чтобы пользователь
+  // сразу видел, что изменилось).
   function toggleCutout(opt) {
     if (opt === 'left' || opt === 'right') {
       cutoutState.camera = (cutoutState.camera === opt) ? 'none' : opt;
@@ -75,6 +79,9 @@
       cutoutState.threeBtn = !cutoutState.threeBtn;
     } else { return; }
     applyCutout();
+    if ((opt === 'round' || opt === '3btn') && !window._zonesOn && window._setZones) {
+      window._setZones(true);
+    }
   }
 
   // Reset everything back to «без выреза, жест-навигация».

@@ -3,7 +3,7 @@
   window._zoneVis = window._zoneVis || {
     gesture: true, safe: true, cutout: true, content: true, interactive: true,
     route: true, uiReserved: true,
-    toast: true,
+    toast: false,
   };
 
   /* zone legend — подписи берутся из i18n (T.zone*), а не зашиты в разметку.

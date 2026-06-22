@@ -137,13 +137,16 @@
     // Ширина (высота на холсте) ВПП привязана к размеру борта так же, как в игре
     // (06-state-layout: rh = длина борта × K.RUNWAY_RATIO) — иначе ВПП на «Разметке»
     // и в «Тестовой игре» получались разного размера. Та же формула из коэффициентов.
+    // Левый край: rwL = fx1 - 8*ui (заходит на 8*ui px внутрь апрона — как в игре).
+    // Правый край: rwR = W*0.84 — захардкожен в игре, не зависит от зоны прилёта.
     function runwayPx(r) {
-      const ap = rectPx(LE.apron), arr = rectPx(LE.arrival), { W } = dims();
+      const ap = rectPx(LE.apron), { W, H } = dims();
       const gm = gameGeom();
+      const ui = Math.max(0.7, Math.min(1.5, Math.min(W / 1100, H / 620)));
       const hh = gm.plane * gm.rr;
       const cy = ap.y + r.y * ap.h;
-      const x = ap.x + ap.w;
-      const right = Math.max(x + W * 0.05, arr.x);
+      const x = ap.x + ap.w - 8 * ui;   // совпадает с rwL = fx1 - 8*ui в игре
+      const right = W * 0.84;             // совпадает с rwR = W*0.84 в игре
       return { x, y: cy - hh / 2, w: right - x, h: hh, cy };
     }
     const clamp01 = v => Math.max(0, Math.min(1, v));
