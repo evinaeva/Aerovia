@@ -19,8 +19,6 @@
     // все типы событий (для вкладки «Сложность» и экспорта): + туман/ветер
     const ALL_EVENTS = ['vip','emergency','medical','rush','fog','wind'];
     const RW_COL = '#3ad2ff';
-    const HW_FR = 0.072, HH_FR = 0.135;   // hangar size — fraction of screen (fixed)
-    const RH_FR = 0.072;                  // runway height — fraction of screen (fixed)
     const HANDLE = 9;                     // zone resize-handle hit size, px
     const Z_MIN  = 0.06;                  // smallest zone edge, normalized
     const LS_KEY  = 'pf_tuning_layout_v1';     // legacy single-layout (migrated → templates)
@@ -99,43 +97,32 @@
     /* ---- geometry (normalized → px) ---- */
     function dims() { return { W: cv.clientWidth || 1, H: cv.clientHeight || 1 }; }
     function rectPx(r) { const { W, H } = dims(); return { x: r.x * W, y: r.y * H, w: r.w * W, h: r.h * H }; }
-    // Геометрия техники из живой игры — единый источник размеров боксов И ВПП, чтобы
-    // «Разметка» и «Тестовая игра» рисовали их одинаково (same-origin __FIELD).
-    // Возвращает масштаб game-px → editor-px (s) и длину борта в game-px (plane),
-    // выведенную из тех же коэффициентов K.PLANE_SCALE/RUNWAY_RATIO/HANGAR_RATIO и
-    // того же `ui`, что и 06-state-layout. null — пока игра не сообщила размеры поля
-    // (__FIELD.W/H ещё не посчитаны): тогда вызывающий берёт запасной размер.
+    // Геометрия техники — единый источник размеров боксов И ВПП, чтобы «Разметка» и
+    // «Тестовая игра» рисовали их одинаково. КЛЮЧЕВОЕ: холст редактора и игровой iframe
+    // живут в ОДНОМ шелле телефона, то есть в одном px-масштабе (1:1). Размер бокса в
+    // игре НЕ пропорционален ширине поля — он = 31·PLANE_SCALE·ui·RATIO, где `ui` зажат
+    // в 0.7–1.5 (06-state-layout). Поэтому пересчёт game-px→editor-px через коэф W/fd.W
+    // НЕЛЬЗЯ: пока скрытый iframe ещё не принял размер шелла, fd.W мал, коэф огромен —
+    // и боксы раздувались (тот самый баг). Считаем напрямую из размеров ХОЛСТА и тех же
+    // коэффициентов K — без какого-либо масштабирования и без зависимости от готовности
+    // iframe. K берём из игры, если доступна; иначе дефолты движка (04-config-levels).
     function gameGeom() {
-      try {
-        const fw = gameFrame.contentWindow, fd = fw && fw.__FIELD;
-        if (!fd || !fd.W || !fd.H) return null;
-        const { W, H } = dims();
-        const s = Math.min(W / fd.W, H / fd.H);    // единый коэф — пропорции сохраняются
-        const K = fw.__GAME && fw.__GAME.K;
-        const ps = (K && +K.PLANE_SCALE)  || 1;
-        const hr = (K && +K.HANGAR_RATIO) || 1.8;
-        const rr = (K && +K.RUNWAY_RATIO) || 1.23;
-        const ui = Math.max(0.7, Math.min(1.5, Math.min(fd.W / 1100, fd.H / 620)));
-        return { s, plane: 31 * ps * ui, hr, rr, fd };   // plane = длина борта (game-px)
-      } catch (_) { return null; }
+      const { W, H } = dims();
+      let K = null;
+      try { const fw = gameFrame.contentWindow; K = fw && fw.__GAME && fw.__GAME.K; } catch (_) {}
+      const ps = (K && +K.PLANE_SCALE)  || 1;
+      const hr = (K && +K.HANGAR_RATIO) || 1.8;
+      const rr = (K && +K.RUNWAY_RATIO) || 1.23;
+      const ui = Math.max(0.7, Math.min(1.5, Math.min(W / 1100, H / 620)));  // как в игре
+      return { plane: 31 * ps * ui, hr, rr };   // plane = длина борта (px холста = px игры)
     }
     // Сторона бокса — КВАДРАТНАЯ и привязана к размеру борта так же, как в игре
-    // (PR #222: сторона ангара = длина борта × K.HANGAR_RATIO). Берём живой бокс, если
-    // идёт уровень; иначе ту же формулу из коэффициентов борта. Меняешь масштаб борта
-    // в «Движении» — бокс в превью меняется вместе с игрой.
+    // (PR #222: сторона ангара = длина борта × K.HANGAR_RATIO). Меняешь масштаб борта
+    // в «Движении» (K.PLANE_SCALE) — бокс в превью меняется вместе с игрой.
     function hangarSidePx() {
-      const { W, H } = dims();
       const ap = rectPx(LE.apron);
       const gm = gameGeom();
-      let side;
-      if (gm) {
-        const b = gm.fd.bays && gm.fd.bays[0];
-        side = (b && b.w > 0) ? b.w * gm.s            // живой бокс (в игре он уже квадратный)
-                              : gm.plane * gm.hr * gm.s;  // та же формула, что и в 06-state-layout
-      } else {
-        side = Math.min(W * HW_FR, H * HH_FR);         // запасной квадрат, пока игра не готова
-      }
-      return Math.min(side, ap.w / 2.4);               // тот же потолок, что и в игре (не съедать апрон)
+      return Math.min(gm.plane * gm.hr, ap.w / 2.4);   // тот же потолок, что и в игре (не съедать апрон)
     }
     function hangarPx(h) {
       const ap = rectPx(LE.apron);
@@ -149,18 +136,11 @@
     }
     // Ширина (высота на холсте) ВПП привязана к размеру борта так же, как в игре
     // (06-state-layout: rh = длина борта × K.RUNWAY_RATIO) — иначе ВПП на «Разметке»
-    // и в «Тестовой игре» получались разного размера. Берём живую полосу, если идёт
-    // уровень; иначе ту же формулу из коэффициентов борта; RH_FR — лишь запас.
+    // и в «Тестовой игре» получались разного размера. Та же формула из коэффициентов.
     function runwayPx(r) {
-      const ap = rectPx(LE.apron), arr = rectPx(LE.arrival), { W, H } = dims();
+      const ap = rectPx(LE.apron), arr = rectPx(LE.arrival), { W } = dims();
       const gm = gameGeom();
-      let hh;
-      if (gm) {
-        const rw = gm.fd.runways && gm.fd.runways[0];
-        hh = (rw && rw.h > 0) ? rw.h * gm.s : gm.plane * gm.rr * gm.s;
-      } else {
-        hh = H * RH_FR;                                // запас, пока игра не готова
-      }
+      const hh = gm.plane * gm.rr;
       const cy = ap.y + r.y * ap.h;
       const x = ap.x + ap.w;
       const right = Math.max(x + W * 0.05, arr.x);
@@ -861,22 +841,20 @@
       }
       if (active) { resize(); requestAnimationFrame(() => { resize(); }); ensureGameGeom(); }
     };
-    // На ПЕРВОЙ загрузке холст «Разметки» рисуется раньше, чем игра в скрытом iframe
-    // успевает посчитать реальные размеры поля (__FIELD.W/H). До этого боксы/ВПП брали
-    // запасной размер и выглядели огромными; «нормальный» вид возвращался лишь после
-    // переключения на «Тестовую игру» и обратно (тогда игра пересчитывала поле). Здесь
-    // мы дожидаемся готовности поля сами: подталкиваем игру пересчитать размеры под
-    // текущий шелл и перерисовываем холст, как только __FIELD сообщит валидные W/H.
+    // Размер боксов/ВПП теперь считается из размеров холста и коэффициентов борта
+    // (gameGeom), поэтому на первой загрузке он корректен сразу — ждать iframe не нужно.
+    // Но коэффициенты K приходят из игры чуть позже самого холста (и пользователь мог
+    // сменить K.PLANE_SCALE в «Движении»). Поэтому, как только игра становится доступна,
+    // делаем финальную перерисовку — чтобы превью встало по реальным K, а не по дефолтам.
     let geomWaitTimer = 0;
     function ensureGameGeom(tries) {
       clearTimeout(geomWaitTimer);
       if (!active) return;
       tries = tries == null ? 40 : tries;          // ~3.2 c суммарно — игра грузится быстрее
-      const fw = gameFrm && gameFrm.contentWindow;
-      const fd = fw && fw.__FIELD;
-      if (fd && fd.W && fd.H) { resize(); return; }  // поле готово — финальная перерисовка
+      let K = null;
+      try { const fw = gameFrm && gameFrm.contentWindow; K = fw && fw.__GAME && fw.__GAME.K; } catch (_) {}
+      if (K) { resize(); return; }                 // K готовы — перерисовка по реальным коэф.
       if (tries <= 0) return;
-      try { if (fw) fw.dispatchEvent(new Event('resize')); } catch (_) {}  // пересчёт под шелл
       geomWaitTimer = setTimeout(() => ensureGameGeom(tries - 1), 80);
     }
     // Re-fit when the phone size picker changes the shell dimensions.
