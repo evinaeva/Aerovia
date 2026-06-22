@@ -96,6 +96,12 @@
         pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; }
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_AIR, dt);
+          // выравнивание на заходе: если точка начала выравнивания вынесена в небо
+          // (RW_ALIGN_OFF>0), уже в воздухе подтягиваем борт к осевой линии полосы,
+          // на которую заведён маршрут — не дожидаясь рубежа ВПП.
+          if(pl.approachR && pl.x <= field.rwR! + K.RW_ALIGN_OFF*ui){
+            pl.y += (pl.approachR.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
+          }
         } else if(pl.approachR && pl.x > field.rwR!){
           // маршрут заведён на ВПП, но «захват точки» съел последний waypoint раньше,
           // чем борт дошёл до рубежа полосы — доводим его к створу, чтобы он сел,
@@ -124,9 +130,14 @@
           const r=pl.runway;
           // фазовый множитель уровня: до касания (landBefore) ↔ докат после (landAfter)
           const landMult = pl.touched ? (LV.motion?.landAfter ?? 1) : (LV.motion?.landBefore ?? 1);
-          steer(pl, r.stopX, r.cy, K.SPEED_AIR * K.APPROACH_SPEED_MULT * landMult, dt);
-          if(!pl.touched && pl.x <= r.stopX + PLANE_LEN()) touchdown(pl);
-          if(pl.touched) pl.y += (r.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
+          // настраиваемые точки полосы (см. K.RW_*): касание и начало выравнивания по оси
+          const tdX    = r.stopX + PLANE_LEN() + K.RW_TOUCHDOWN_OFF*ui;          // где борт касается земли
+          const alignX = (r.x + r.w) + K.RW_ALIGN_OFF*ui;                        // с какого места выравниваемся по оси
+          const aligned = pl.x <= alignX;
+          // до точки выравнивания держим текущий курс по высоте полосы, после — на осевую
+          steer(pl, r.stopX, aligned ? r.cy : pl.y, K.SPEED_AIR * K.APPROACH_SPEED_MULT * landMult, dt);
+          if(!pl.touched && pl.x <= tdX) touchdown(pl);
+          if(pl.touched && aligned) pl.y += (r.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
           if(pl.x <= r.stopX+2){ pl.x=r.stopX; pl.y=r.cy; startGround(pl); }
           continue;
         }
@@ -141,10 +152,11 @@
             continue;
           }
           // фазовый множитель уровня: разбег по полосе (takeoffRoll) ↔ набор высоты
-          // после отрыва за торцом ВПП (climb)
-          const climbing = pl.x > pl.runway.exitX;
+          // после отрыва (climb). Точка отрыва настраивается (K.RW_LIFTOFF_OFF).
+          const liftX = pl.runway.exitX + K.RW_LIFTOFF_OFF*ui;
+          const climbing = pl.x > liftX;
           const toMult = climbing ? (LV.motion?.climb ?? 1) : (LV.motion?.takeoffRoll ?? 1);
-          steer(pl, pl.runway.exitX + K.TAKEOFF_OVERSHOOT, pl.runway.cy, K.SPEED_TAKEOFF * toMult, dt);
+          steer(pl, liftX + K.TAKEOFF_OVERSHOOT, pl.runway.cy, K.SPEED_TAKEOFF * toMult, dt);
           if(pl.x > W+30){ depart(pl); }
           continue;
         }
@@ -198,10 +210,20 @@
             }
           }
         } else {
-          // заезд в бокс
+          // заезд в бокс. Если задана точка подъезда (K.BAY_APPROACH_DIST>0), борт
+          // «захватывается» уже у неё — перед воротами на оси — и оттуда центрируется
+          // и заезжает прямо; иначе (0) — заезд штатно при касании бокса.
+          const ad = K.BAY_APPROACH_DIST*ui;
           for(const b of bays){
             if(!b.open) continue;
-            if(rectHit(pl.x,pl.y,b)){
+            const o=dirOut(b);
+            const vert=Math.abs(o.dy)>Math.abs(o.dx);
+            const half=(vert? b.h : b.w)/2;
+            const cx=b.x+b.w/2, cy=b.y+b.h/2;
+            const apx=cx+o.dx*(half+ad), apy=cy+o.dy*(half+ad);     // точка подъезда на оси ворот
+            const inRect=rectHit(pl.x,pl.y,b);
+            const atAppr=ad>0 && dist(pl.x,pl.y,apx,apy) <= Math.max(K.ARRIVE*1.5, half*0.7);
+            if(inRect || atAppr){
               if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
               if(b.occupied && b.occupied!==pl){ if(!LV.bonus){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
               else {
@@ -209,7 +231,7 @@
                 pl.moving=false; pl.path=[];
                 pl.serveMax=serveTimeFor(b); pl.serveTime=pl.serveMax;
                 if(LV.bonus){ pl.bug='cocoon'; pl.landedAt=gameTime; }   // бонус: окуклилась; «вовремя» — от входа в цветок
-                else { pl.bayPhase='in'; }                              // кампания: плавный заезд носом к стене
+                else { pl.bayPhase = (ad>0 && !inRect) ? 'approach' : 'in'; }   // подъезд → центровка → заезд
                 SND.dock();
               }
               break;
@@ -242,6 +264,15 @@
         const cx=b.x+b.w/2, cy=b.y+b.h/2;
         const vert=Math.abs(o.dy)>Math.abs(o.dx);
         const half=(vert? b.h : b.w)/2;
+        // ПОДЪЕЗД: доехать до точки подъезда на оси ворот (K.BAY_APPROACH_DIST), попутно
+        // центрируясь на неё, затем — заезд внутрь. Обслуживание ещё не идёт.
+        if(pl.bayPhase==='approach'){
+          const ad=K.BAY_APPROACH_DIST*ui;
+          const apx=cx+o.dx*(half+ad), apy=cy+o.dy*(half+ad);
+          steer(pl, apx, apy, taxiSpeed*K.BAY_DOCK_SPEED, dt);
+          if(dist(pl.x,pl.y,apx,apy) < Math.max(K.ARRIVE, 4*ui)) pl.bayPhase='in';
+          continue;
+        }
         const L=13*ui, gap=4*ui;                   // полудлина борта + зазор до стены
         const parkA = -(half - L - gap);           // центр борта у дальней стены (целиком внутри)
         const exitA =  (half + L + gap);           // центр борта снаружи у ворот — точка остановки после выезда
@@ -263,16 +294,15 @@
           }
         }
         if(pl.bayPhase==='out'){
-          // ВЫЕЗД: подать к центру (клиренс для разворота) → довернуть носом наружу →
-          // плавно выехать к точке остановки и встать (без рывка/телепорта)
+          // ВЫЕЗД: сначала РАЗВОРОТ НА МЕСТЕ носом наружу — борт крутится вокруг своей
+          // оси, не смещаясь (раньше он одновременно ехал и доворачивал, отчего на оси
+          // ворот возникал «рывок»/боковой снос). Боковой lerp выше держит его ровно на
+          // оси. Как только нос смотрит наружу — плавно выезжаем по оси к точке остановки.
           let d=angOut-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
-          if(along < -0.5){
-            turnTo(pl, angOut, dt*K.BAY_HEAD_SPEED*0.8);        // от дальней стены к центру, попутно доворачивая
-            setAlong(along + Math.min(step, 0-along));
-          } else if(Math.abs(d)>0.12){
-            turnTo(pl, angOut, dt*K.BAY_HEAD_SPEED);             // на центре — разворот носом наружу
+          if(Math.abs(d)>0.04){
+            turnTo(pl, angOut, dt*K.BAY_HEAD_SPEED);             // разворот вокруг своей оси
           } else {
-            turnTo(pl, angOut, dt*K.BAY_HEAD_SPEED);
+            pl.ang=angOut;                                       // довёрнут — едем строго по оси
             setAlong(along + Math.min(step, exitA-along));       // плавный выезд к точке остановки
             if(along>=exitA-0.5){
               // выехал целиком — освобождаем бокс, встаём в поле и стоим
