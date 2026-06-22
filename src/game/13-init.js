@@ -71,6 +71,8 @@
     get bays()         { return bays;              },
     get W()            { return W;                 },
     get H()            { return H;                 },
+    get ui()           { return ui;                },
+    get planeLen()     { return PLANE_LEN();        },
     get safetyRects()  { return calcSafetyRects(); },
     get safe()         { return safe;              },
   };

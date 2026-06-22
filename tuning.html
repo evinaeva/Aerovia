@@ -2339,7 +2339,7 @@
         setStatus(key + '  →  ' + val);
         // Включение слоя зон захвата сразу показывает оверлей превью — там живут
         // ручки перетаскивания/масштаба полукруглой зоны (см. Field overlay).
-        if (val && (key === 'MT.DEBUG_BAY_SNAP_ZONES' || key === 'MT.DEBUG_RUNWAY_SNAP_ZONES') && window._setZones) window._setZones(true);
+        if (val && (key === 'MT.DEBUG_BAY_SNAP_ZONES' || key === 'MT.DEBUG_RUNWAY_SNAP_ZONES' || key === 'MT.DEBUG_MOTION_POINTS') && window._setZones) window._setZones(true);
       } else if (e.target.type === 'text' || e.target.tagName === 'SELECT') {
         MT.apply({ [key]: e.target.value }, true);
         setStatus(key + '  →  ' + e.target.value);
@@ -4151,6 +4151,7 @@
         s += grabZoneSvg('bay', snap, fd);
         s += grabZoneSvg('rwland', snap, fd);
         s += grabZoneSvg('rwtake', snap, fd);
+        s += motionPointsSvg(snap, fd);
       }
 
       overlay.innerHTML = s;
@@ -4200,6 +4201,59 @@
       return out;
     }
 
+    // ── Перетаскиваемые точки ВПП/ангара (геймплейные K.RW_* / K.BAY_APPROACH_DIST) ──
+    // В отличие от «зон захвата» (только Workbench), эти точки РЕАЛЬНО управляют игрой:
+    // место касания/отрыва/начала выравнивания на ВПП и точку подъезда к ангару.
+    const MP_COL   = { rwtd:'#f5c842', rwlift:'#60d060', rwalign:'#3ad2ff', bayapp:'#b060f0' };
+    const MP_PARAM = { rwtd:'K.RW_TOUCHDOWN_OFF', rwlift:'K.RW_LIFTOFF_OFF', rwalign:'K.RW_ALIGN_OFF', bayapp:'K.BAY_APPROACH_DIST' };
+    const MP_LABEL = { rwtd:'касание', rwlift:'отрыв', rwalign:'выравн.', bayapp:'подъезд' };
+    function repRunway(fd) { return (fd.runways || []).find(x => !x.closed) || (fd.runways || [])[0]; }
+    function repBay(fd)    { return (fd.bays || []).find(x => x.open && x.gate); }
+    // Якорь точки (положение при значении параметра 0) в координатах поля.
+    function mpAnchor(kind, fd) {
+      const ui = fd.ui || 1, PL = fd.planeLen || 0;
+      if (kind === 'bayapp') {
+        const b = repBay(fd); if (!b) return null;
+        const ge = gateEntr(b), u = gateDir(b);
+        return { x: ge.x, y: ge.y, ux: u[0], uy: u[1], ui };   // наружу от ворот по оси
+      }
+      const r = repRunway(fd); if (!r) return null;
+      const ax = kind === 'rwtd' ? r.stopX + PL : kind === 'rwlift' ? r.exitX : (r.x + r.w);
+      return { x: ax, y: r.cy, ux: 1, uy: 0, ui, r };          // ВПП: ось горизонтальная
+    }
+    function motionPointsSvg(snap, fd) {
+      if (snap['MT.DEBUG_MOTION_POINTS'] !== true) return '';
+      let out = '';
+      const r = repRunway(fd);
+      if (r) ['rwtd', 'rwlift', 'rwalign'].forEach(kind => {
+        const a = mpAnchor(kind, fd); if (!a) return;
+        const off = +(snap[MP_PARAM[kind]] || 0), col = MP_COL[kind];
+        const x = a.x + a.ux * off * a.ui;
+        out += '<line x1="' + x + '" y1="' + r.y + '" x2="' + x + '" y2="' + (r.y + r.h) + '" stroke="' + col + '" stroke-width="2" stroke-dasharray="3 3"/>';
+        out += '<text x="' + (x + 2) + '" y="' + (r.y + r.h + 10) + '" font-size="8" fill="' + col + '">' + MP_LABEL[kind] + '</text>';
+        out += '<circle cx="' + x + '" cy="' + r.cy + '" r="7" fill="#0a1020" stroke="' + col + '" stroke-width="2" data-mp="' + kind + '" style="pointer-events:auto;cursor:ew-resize"/>';
+      });
+      const a = mpAnchor('bayapp', fd);
+      if (a) {
+        const d = +(snap[MP_PARAM.bayapp] || 0), col = MP_COL.bayapp;
+        const x = a.x + a.ux * d * a.ui, y = a.y + a.uy * d * a.ui;
+        out += '<line x1="' + a.x + '" y1="' + a.y + '" x2="' + x + '" y2="' + y + '" stroke="' + col + '" stroke-opacity=".6" stroke-width="1.5"/>';
+        out += '<circle cx="' + x + '" cy="' + y + '" r="7" fill="#0a1020" stroke="' + col + '" stroke-width="2" data-mp="bayapp" style="pointer-events:auto;cursor:move"/>';
+        out += '<text x="' + (x + 9) + '" y="' + y + '" font-size="8" fill="' + col + '">' + MP_LABEL.bayapp + '</text>';
+      }
+      return out;
+    }
+    let mpdrag = null;   // kind перетаскиваемой точки
+    function applyMpDrag(e) {
+      if (!mpdrag || !MT) return;
+      const fd = getField(); if (!fd) return;
+      const a = mpAnchor(mpdrag, fd); if (!a) return;
+      const p = evGamePt(e);
+      let val = ((p.x - a.x) * a.ux + (p.y - a.y) * a.uy) / a.ui;   // проекция на ось / ui
+      MT.apply({ [MP_PARAM[mpdrag]]: clampParam(MP_PARAM[mpdrag], Math.round(val)) }, false);
+      syncUI(); drawOverlay();
+    }
+
     // ── drag/scale ручек зоны захвата прямо на превью ────────────────────────────
     function clampParam(key, v) {
       const pr = MT && MT.params.find(x => x.key === key);
@@ -4230,6 +4284,15 @@
       syncUI(); drawOverlay();
     }
     overlay.addEventListener('pointerdown', e => {
+      const mp = e.target && e.target.getAttribute && e.target.getAttribute('data-mp');
+      if (mp) {
+        e.preventDefault(); e.stopPropagation();
+        mpdrag = mp;
+        overlay.style.pointerEvents = 'auto';
+        try { overlay.setPointerCapture(e.pointerId); } catch (_) {}
+        applyMpDrag(e);
+        return;
+      }
       const g = e.target && e.target.getAttribute && e.target.getAttribute('data-grab');
       if (!g) return;
       e.preventDefault(); e.stopPropagation();
@@ -4239,8 +4302,16 @@
       try { overlay.setPointerCapture(e.pointerId); } catch (_) {}
       applyZoneDrag(e);
     });
-    overlay.addEventListener('pointermove', e => { if (zdrag) applyZoneDrag(e); });
+    overlay.addEventListener('pointermove', e => { if (mpdrag) applyMpDrag(e); else if (zdrag) applyZoneDrag(e); });
     function endZdrag(e) {
+      if (mpdrag) {
+        const key = MT && MP_PARAM[mpdrag];
+        if (key) { const snap = MT.snapshot(); MT.apply({ [key]: snap[key] }, true); setStatus(key + '  →  ' + snap[key]); }
+        mpdrag = null;
+        overlay.style.pointerEvents = 'none';
+        try { overlay.releasePointerCapture(e.pointerId); } catch (_) {}
+        return;
+      }
       if (!zdrag) return;
       const def = MT && GRAB_DEFS[zdrag.kind];
       if (!def) { zdrag = null; overlay.style.pointerEvents = 'none'; return; }
