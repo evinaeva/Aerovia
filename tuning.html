@@ -1281,6 +1281,28 @@
          кампанию (ed-*). -->
   </div>
 
+  <!-- Tab 1: Motion Lab — per-level runway overrides (static) + #groups (appended via JS) -->
+  <div id="motion-view" class="lab-view" style="display:none">
+    <div class="lab-section motion-runway-section" style="display:none">
+      <h3>Движение на ВПП <span class="h3-sub">· × от базовой, 1 = дефолт</span></h3>
+      <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Посадка · до касания ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-landbefore" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Посадка · после касания ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-landafter" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Взлёт · разбег ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-takeoffroll" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Взлёт · набор высоты ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-climb" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+      </div>
+      <p class="lab-hint">Множители фаз движения по полосе (× к базовой скорости): посадка — до и после касания земли; взлёт — разбег по полосе и набор высоты после отрыва. Зашиваются в экспорт уровня и применяются после импорта.</p>
+    </div>
+  </div>
+
   <!-- Tab 4: Difficulty Lab ─────────────────────────────────────────────── -->
   <div id="difficulty-view" class="lab-view">
     <div class="lab-section">
@@ -1384,25 +1406,6 @@
             <input class="lab-num" id="de-maxup" type="number" min="0" max="5" step="1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
       </div>
       <p class="lab-hint">Цены штампуются на боксы/полосы черновика; «мин уровень» — экон-ручка (набор считается от minUp до maxUp).</p>
-    </div>
-
-    <div class="lab-section">
-      <h3>Движение на ВПП <span class="h3-sub">· × от базовой, 1 = дефолт</span></h3>
-      <div class="lab-params-grid">
-        <div class="lab-row"><span class="lbl-main">Посадка · до касания ×</span>
-          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
-            <input class="lab-num" id="de-mot-landbefore" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
-        <div class="lab-row"><span class="lbl-main">Посадка · после касания ×</span>
-          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
-            <input class="lab-num" id="de-mot-landafter" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
-        <div class="lab-row"><span class="lbl-main">Взлёт · разбег ×</span>
-          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
-            <input class="lab-num" id="de-mot-takeoffroll" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
-        <div class="lab-row"><span class="lbl-main">Взлёт · набор высоты ×</span>
-          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
-            <input class="lab-num" id="de-mot-climb" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
-      </div>
-      <p class="lab-hint">Множители фаз движения по полосе (× к базовой скорости): посадка — до и после касания земли; взлёт — разбег по полосе и набор высоты после отрыва. Зашиваются в экспорт уровня и применяются после импорта.</p>
     </div>
 
     <div class="lab-section">
@@ -2083,13 +2086,13 @@
 
   const SUBTABS = [
     // «Движение» tab — plane physics / flight / ground tuning.
-    { owner:'motion',     key:'plane',   icon:'✈',  label:'Самолёт',       groups:['movement','turns','collisions','effects'] },
-    { owner:'motion',     key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','rollout_stop','aircraft_scale','routing'] },
-    { owner:'motion',     key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones'] },
-    // «Сложность» tab — движковые ручки тест/демо-сессии (бывший таб «Настройки игры»).
-    { owner:'difficulty', key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl','debug_overlays','mobile_preview'] },
+    { owner:'motion',     key:'plane',   icon:'✈',  label:'Самолёт',       groups:['movement','turns','routing','collisions','effects','weather','mobile_preview'] },
+    { owner:'motion',     key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','rollout_stop','aircraft_scale'] },
+    { owner:'motion',     key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones','debug_overlays'] },
+    // «Сложность» tab — движковые ручки тест/демо-сессии.
+    { owner:'difficulty', key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl'] },
     { owner:'difficulty', key:'flow',    icon:'🌊', label:'Поток',          groups:['spawn','timing'] },
-    { owner:'difficulty', key:'events',  icon:'🎲', label:'События',        groups:['events','weather'] },
+    { owner:'difficulty', key:'events',  icon:'🎲', label:'События',        groups:['events'] },
     // 'zones' (safe_areas) intentionally not surfaced — see HIDDEN_GROUPS below.
     // Those params describe a target device's reserved screen regions for the
     // layout-overlay / export-warning diagnostics; the operator can't (and needn't)
@@ -2111,6 +2114,10 @@
     subtabBar.querySelectorAll('.s-tab').forEach(b => b.classList.toggle('active', b.dataset.subtab === key));
     groupsEl.querySelectorAll('details[data-subtab]').forEach(d => {
       d.style.display = d.dataset.subtab === key ? '' : 'none';
+    });
+    // Секция per-level ×-множителей ВПП видна только в подтабе «Взлёт/посадка»
+    document.querySelectorAll('.motion-runway-section').forEach(el => {
+      el.style.display = key === 'flight' ? '' : 'none';
     });
   }
 
@@ -2288,33 +2295,6 @@
 
       groupsEl.appendChild(det);
     });
-
-    // Дубль тумблеров отладочных слоёв зон захвата в таб «Боксы и ВПП» (sub-tab ground):
-    // те же data-key, что и в «Контроль» → делегированные обработчики (wireInputs) и syncUI
-    // работают по data-key и держат обе копии синхронными автоматически.
-    const mirrored = MT.params.filter(p => p.key === 'MT.DEBUG_BAY_SNAP_ZONES' || p.key === 'MT.DEBUG_RUNWAY_SNAP_ZONES');
-    if (mirrored.length) {
-      const det = document.createElement('details');
-      det.dataset.group = 'snap_debug_mirror';
-      det.dataset.subtab = 'ground';
-      det.classList.add('wide');
-      det.open = true;
-      det.innerHTML = '<summary><span class="sum-arrow">▸</span>Отладочные слои зон<span class="sum-count">' + mirrored.length + '</span></summary>';
-      const grid = document.createElement('div');
-      grid.className = 'toggle-grid';
-      mirrored.forEach(p => {
-        const card = document.createElement('label');
-        card.className = 'toggle-card';
-        card.dataset.key = p.key;
-        card.title = p.key + (p.description ? ' — ' + p.description : '');
-        card.innerHTML =
-          '<span class="lbl">' + escHtml(posLabel(p)) + '</span>' +
-          '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (snap[p.key] ? ' checked' : '') + '><span class="track"></span></span>';
-        grid.appendChild(card);
-      });
-      det.appendChild(grid);
-      groupsEl.appendChild(det);
-    }
 
     wireInputs();
     buildSubtabs();
@@ -2968,6 +2948,7 @@
     const bottomPane  = document.getElementById('bottom-pane');
     const levelViewEl  = document.getElementById('level-view');
     const layoutViewEl = document.getElementById('layout-view');
+    const motionViewEl = document.getElementById('motion-view');
     const diffViewEl   = document.getElementById('difficulty-view');
     const assetViewEl  = document.getElementById('asset-view');
     const testViewEl   = document.getElementById('test-view');
@@ -2975,22 +2956,25 @@
     function activateTab(tab) {
       document.querySelectorAll('.t-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
       const isLayout   = tab === 'layout';
-      const hasSubtabs = SUBTAB_TABS.has(tab);   // «Движение» (свои группы) и «Сложность» (группы бывших «Настроек игры»)
+      const hasSubtabs = SUBTAB_TABS.has(tab);   // «Движение» и «Сложность»
       searchWrap.style.visibility = hasSubtabs ? 'visible' : 'hidden';
       groupsEl.style.display    = hasSubtabs ? '' : 'none';
       levelViewEl.style.display = tab === 'level'      ? 'flex' : 'none';
-      layoutViewEl.style.display = isLayout        ? 'flex' : 'none';
+      layoutViewEl.style.display = isLayout             ? 'flex' : 'none';
+      if (motionViewEl) motionViewEl.style.display = tab === 'motion'     ? 'flex' : 'none';
       diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
       assetViewEl.style.display = tab === 'assets'     ? 'flex' : 'none';
       if (testViewEl) testViewEl.style.display = tab === 'test' ? 'flex' : 'none';
-      // «Сложность» показывает движковые группы (бывший таб «Настройки игры») прямо
-      // под своим редактором — вкладываем #groups в конец редактора, чтобы был один
-      // общий скролл; для остальных вкладок возвращаем #groups на его обычное место.
-      if (tab === 'difficulty') {
+      // «Движение» и «Сложность» встраивают #groups в свой view для единого скролла.
+      if (tab === 'motion' && motionViewEl) {
+        if (groupsEl.parentNode !== motionViewEl) motionViewEl.appendChild(groupsEl);
+        groupsEl.classList.add('groups-embedded');
+      } else if (tab === 'difficulty') {
         if (groupsEl.parentNode !== diffViewEl) diffViewEl.appendChild(groupsEl);
         groupsEl.classList.add('groups-embedded');
       } else {
-        if (groupsEl.parentNode === diffViewEl) bottomPane.insertBefore(groupsEl, levelViewEl);
+        if (groupsEl.parentNode === motionViewEl || groupsEl.parentNode === diffViewEl)
+          bottomPane.insertBefore(groupsEl, levelViewEl);
         groupsEl.classList.remove('groups-embedded');
       }
       // #groups and the sub-tab bar are shared by both sub-tabbed tops — rebuild the
@@ -3001,6 +2985,7 @@
       // им управляет левый рельс (см. runTest/returnToMarkup). Любая вкладка
       // настроек кормит то же единое превью.
       // освежаем вкладки, которые читают черновик (он мог измениться в «Разметке»)
+      if (tab === 'motion'     && GAME) renderDiffEditor();
       if (tab === 'difficulty' && GAME) { renderDiffEditor(); renderDiff(); }
       if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
       if (tab === 'test'    && window._testSync)      window._testSync();
