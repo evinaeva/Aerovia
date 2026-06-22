@@ -629,6 +629,20 @@
       font-size: 10px; font-weight: 800; text-transform: uppercase;
       letter-spacing: .08em; color: var(--accent); margin-bottom: 10px;
     }
+    /* ── Collapsible lab sections (click the h3 to fold/unfold) ──────────── */
+    .lab-section.collapsible > h3 {
+      cursor: pointer; user-select: none;
+      display: flex; align-items: center; gap: 7px; margin-bottom: 0;
+    }
+    .lab-section.collapsible > h3::before {
+      content: '▸'; flex: none; font-size: 11px; color: var(--muted);
+      transition: transform .15s; transform: translateY(-1px);
+    }
+    .lab-section.collapsible:not(.collapsed) > h3 { margin-bottom: 10px; }
+    .lab-section.collapsible:not(.collapsed) > h3::before { transform: translateY(-1px) rotate(90deg); }
+    .lab-section.collapsible.collapsed > *:not(h3) { display: none !important; }
+    /* a small live badge can sit on the right of a folded header */
+    .lab-section.collapsible > h3 .h3-fold-tail { margin-left: auto; }
     .lab-row {
       display: grid;
       grid-template-columns: 1fr auto;   /* label · number-stepper (slider removed) */
@@ -726,6 +740,20 @@
     .lab-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .lab-table th, .lab-table td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--row-sep); white-space: nowrap; }
     .lab-table th { color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    /* Campaign curve list — bounded box so hundreds of levels don't grow the
+       page forever; scroll inside, with a sticky header that stays visible. */
+    #level-table-wrap { max-height: 46vh; overflow-y: auto; overflow-x: auto; border-radius: 8px; }
+    #level-table-wrap .lab-table thead th {
+      position: sticky; top: 0; z-index: 2;
+      background: #0c1330; box-shadow: inset 0 -1px 0 var(--row-sep);
+    }
+    #level-table-wrap .lab-table tbody tr.hidden { display: none; }
+    .level-list-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .level-list-tools input {
+      flex: 1; min-width: 0; border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
+      background: var(--input-bg); color: #fff; padding: 5px 9px; font-size: 12px; font-family: inherit;
+    }
+    .level-list-tools .level-count { flex: none; font-size: 11px; color: var(--muted); white-space: nowrap; }
     .lab-table th:nth-child(2), .lab-table td:nth-child(2) { text-align: left; }
     .lab-table tbody tr { cursor: pointer; transition: background .12s; }
     .lab-table tbody tr:hover { background: rgba(58,210,255,.07); }
@@ -1216,16 +1244,20 @@
 
   <!-- Tab 3: Level Lab ──────────────────────────────────────────────────── -->
   <div id="level-view" class="lab-view">
-    <div class="lab-section">
+    <div class="lab-section collapsible collapsed">
       <h3>Кривая кампании <span class="h3-sub">· клик по строке — выбрать уровень</span></h3>
       <p class="lab-hint" style="margin-top:0">
         Реальные уровни из <code>LEVELS</code>. Главная ось сложности — <b>темп</b> (pace): частота прилёта
         + одновременность бортов; по кампании он не убывает. Правки идут по рабочей копии и не трогают кампанию в превью.
       </p>
+      <div class="level-list-tools">
+        <input id="level-filter" placeholder="Фильтр: номер или имя…" autocomplete="off" spellcheck="false">
+        <span class="level-count" id="level-count"></span>
+      </div>
       <div id="level-table-wrap"><span class="lab-empty">Ждём запуска игры…</span></div>
     </div>
 
-    <div class="lab-section" id="level-edit-sec">
+    <div class="lab-section collapsible collapsed" id="level-edit-sec">
       <h3>Правка уровня <span class="h3-sub" id="ed-name">—</span></h3>
       <div class="lab-params-grid">
       <div class="lab-row">
@@ -1272,25 +1304,25 @@
       </div>
     </div>
 
-    <div class="lab-section">
+    <div class="lab-section collapsible collapsed">
       <h3>События <span class="h3-sub">· спецборты — не раньше L5</span></h3>
       <div class="lab-chips" id="ed-events"></div>
       <p class="lab-hint">Каждый спецборт добавляет вес в сложность (vip .5 · emergency .8 · rush 1 · medical 1).</p>
     </div>
 
-    <div class="lab-section" id="ed-bays-sec">
+    <div class="lab-section collapsible collapsed" id="ed-bays-sec">
       <h3>Боксы по сторонам <span class="h3-sub">· слотов / открыто на старте</span></h3>
       <div id="ed-bays" class="lab-params-grid"><span class="lab-empty">—</span></div>
     </div>
 
-    <div class="lab-section">
+    <div class="lab-section collapsible collapsed">
       <h3>Профиль темпа <span class="h3-sub" id="ed-diff-live">сложность —</span></h3>
       <div id="level-pace-chart" class="pace-chart"></div>
       <div id="level-pace-axis"  class="pace-axis"></div>
       <p class="lab-hint">Высота столбца = <code>pace</code> уровня (0…1). Кривая должна расти монотонно.</p>
     </div>
 
-    <div class="lab-section">
+    <div class="lab-section collapsible collapsed">
       <h3>Действия</h3>
       <div class="lab-btn-row">
         <button class="p-btn" id="lab-reset">↺ Сброс правок</button>
@@ -2651,6 +2683,8 @@
     buildEvents();
     wireEditor();
     document.getElementById('lab-reset').onclick  = resetEdits;
+    const lvlFilter = document.getElementById('level-filter');
+    if (lvlFilter && !lvlFilter._wired) { lvlFilter._wired = true; lvlFilter.addEventListener('input', applyLevelFilter); }
     const cap = document.getElementById('diff-cap');
     if (cap && GAME.K) cap.textContent = labFmt(GAME.K.ECON_DIFF_CAP, 1);
     // «Старт. деньги 0 = дефолт» — spell out what the default actually is
@@ -2693,6 +2727,31 @@
     wrap.innerHTML = h;
     wrap.querySelectorAll('tr[data-idx]').forEach(tr =>
       tr.addEventListener('click', () => labSelect(+tr.dataset.idx)));
+    applyLevelFilter();
+    // keep the chosen level in view inside the bounded scroll box
+    const selRow = wrap.querySelector('tr.sel');
+    if (selRow) selRow.scrollIntoView({ block: 'nearest' });
+  }
+
+  // Filter the campaign list by level number ("12") or name. Rows are hidden
+  // in place (data-idx preserved) so selection/edit keep pointing at the right
+  // level — this keeps the list usable when there are hundreds of levels.
+  function applyLevelFilter() {
+    const wrap = document.getElementById('level-table-wrap');
+    const input = document.getElementById('level-filter');
+    const countEl = document.getElementById('level-count');
+    if (!wrap) return;
+    const q = (input && input.value || '').trim().toLowerCase();
+    const rows = wrap.querySelectorAll('tr[data-idx]');
+    let shown = 0;
+    rows.forEach(tr => {
+      const i = +tr.dataset.idx;
+      const hay = ((i + 1) + ' ' + labLevelName(i)).toLowerCase();
+      const hit = !q || hay.indexOf(q) !== -1;
+      tr.classList.toggle('hidden', !hit);
+      if (hit) shown++;
+    });
+    if (countEl) countEl.textContent = q ? (shown + ' / ' + rows.length) : (rows.length + ' ур.');
   }
 
   function renderPaceChart() {
@@ -3071,6 +3130,26 @@
     window._activateTab = activateTab;
     document.querySelectorAll('.t-tab').forEach(btn => {
       btn.addEventListener('click', () => activateTab(btn.dataset.tab));
+    });
+  })();
+
+  /* ── Collapsible lab sections ────────────────────────────────────────────
+     Any .lab-section.collapsible folds/unfolds when its <h3> is clicked. The
+     «Уровни» sections ship collapsed by default (class in markup), so the tab
+     opens as a compact stack of headers instead of one long scroll. Delegated
+     so it works no matter when a section is built. The campaign list keeps its
+     selected row in view after unfolding. */
+  (function () {
+    document.addEventListener('click', e => {
+      const h3 = e.target.closest('.lab-section.collapsible > h3');
+      if (!h3) return;
+      const sec = h3.parentNode;
+      const nowOpen = sec.classList.toggle('collapsed') === false;
+      // unfolding the campaign list: re-center the chosen level in its scroll box
+      if (nowOpen && sec.querySelector('#level-table-wrap')) {
+        const selRow = sec.querySelector('#level-table-wrap tr.sel');
+        if (selRow) selRow.scrollIntoView({ block: 'nearest' });
+      }
     });
   })();
 
