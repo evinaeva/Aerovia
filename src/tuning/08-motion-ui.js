@@ -148,7 +148,7 @@
         setStatus(key + '  →  ' + val);
         // Включение слоя зон захвата сразу показывает оверлей превью — там живут
         // ручки перетаскивания/масштаба полукруглой зоны (см. Field overlay).
-        if (val && (key === 'MT.DEBUG_BAY_SNAP_ZONES' || key === 'MT.DEBUG_RUNWAY_SNAP_ZONES') && window._setZones) window._setZones(true);
+        if (val && (key === 'MT.DEBUG_BAY_SNAP_ZONES' || key === 'MT.DEBUG_RUNWAY_SNAP_ZONES' || key === 'MT.DEBUG_MOTION_POINTS') && window._setZones) window._setZones(true);
       } else if (e.target.type === 'text' || e.target.tagName === 'SELECT') {
         MT.apply({ [key]: e.target.value }, true);
         setStatus(key + '  →  ' + e.target.value);

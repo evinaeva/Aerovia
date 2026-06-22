@@ -134,16 +134,17 @@
       const skyX = r.x + r.w;                 // правый (небесный) торец ВПП
       if(pl.landing){
         if(pl.touched) return G;              // коснулся — наземный, дальше НЕ ужимается
-        const tdX = r.stopX + PLANE_LEN();    // точка касания — корпус от полевого торца
+        const tdX = r.stopX + PLANE_LEN() + K.RW_TOUCHDOWN_OFF*ui;   // точка касания (настраиваемая)
         if(pl.x >= skyX) return A;
         if(pl.x <= tdX) return G;
         return G + (pl.x - tdX) / Math.max(1, skyX - tdX) * (A - G);
       }
       if(pl.takeoff){
-        if(pl.x <= skyX) return G;            // разбег по полосе — остаётся наземным
-        const liftEnd = skyX + K.TAKEOFF_LIFT_DIST*ui;   // дорос до небесного — за торцом
+        const liftX = skyX + K.RW_LIFTOFF_OFF*ui;        // точка отрыва (настраиваемая)
+        if(pl.x <= liftX) return G;           // разбег по полосе — остаётся наземным
+        const liftEnd = liftX + K.TAKEOFF_LIFT_DIST*ui;  // дорос до небесного — за точкой отрыва
         if(pl.x >= liftEnd) return A;
-        return G + (pl.x - skyX) / Math.max(1, liftEnd - skyX) * (A - G);
+        return G + (pl.x - liftX) / Math.max(1, liftEnd - liftX) * (A - G);
       }
     }
     return G;   // field / bay / борт стоит/выкатывается на полосе
