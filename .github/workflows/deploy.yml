@@ -42,6 +42,9 @@ jobs:
       - name: Сборка index.html из src/
         run: node scripts/build.mjs
 
+      - name: Сборка tuning.html из src/ (dev-воркбенч)
+        run: node scripts/build-tuning.mjs
+
       - name: Юнит-тесты (страховка перед публикацией)
         run: node --test tests/*.test.mjs
 

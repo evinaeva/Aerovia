@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Aerovia · Motion Tuning Workbench</title>
+  <link rel="icon" type="image/png" href="assets/icon/tuning-favicon.png">
+  <style>
+/*__BUILD_TUNING_CSS__*/
+  </style>
+</head>
+<body>
+
+<!-- ── TOP PANE: Live Preview ────────────────────────────────────────────── -->
+<div id="top-pane">
+
+  <!-- Toolbar: icon row above phone -->
+  <div id="toolbar-wrap">
+    <div id="toolbar">
+      <!-- Size picker -->
+      <button class="tb-btn" id="btn-size-toggle" title="Выбрать размер экрана">
+        <span class="tb-icon">📱</span><span id="tb-size-label">S</span>
+      </button>
+      <!-- Spacer -->
+      <div style="flex:1"></div>
+      <!-- File -->
+      <button class="tb-btn" id="btn-file-toggle" title="Файл">📂</button>
+      <!-- Safe-zone frames overlay + cutout/navigation presets -->
+      <button class="tb-btn" id="btn-frames-toggle" title="Зоны и вырез экрана — рамки поверх превью + пресеты выреза/навигации">
+        <span class="tb-icon">📐</span><span>Зоны</span>
+      </button>
+    </div>
+
+    <!-- Popup backdrop -->
+    <div id="popup-backdrop"></div>
+
+    <!-- Size popup -->
+    <div class="tb-popup" id="popup-size">
+      <div id="size-strip">
+        <button class="sz-btn" data-size="st"><span class="sz-name">XS</span><span class="sz-dims">720×320</span></button>
+        <button class="sz-btn active" data-size="s"><span class="sz-name">S</span><span class="sz-dims">800×360</span></button>
+        <button class="sz-btn" data-size="m"><span class="sz-name">M</span><span class="sz-dims">832×384</span></button>
+        <button class="sz-btn" data-size="l"><span class="sz-name">L</span><span class="sz-dims">873×393</span></button>
+        <button class="sz-btn" data-size="xl"><span class="sz-name">XL</span><span class="sz-dims">915×412</span></button>
+        <button class="sz-btn" data-size="xxl"><span class="sz-name">XXL</span><span class="sz-dims">960×432</span></button>
+      </div>
+    </div>
+
+    <!-- File popup -->
+    <div class="tb-popup" id="popup-file">
+      <div class="popup-body">
+        <button class="p-btn" id="btn-export">↓ Экспорт JSON</button>
+        <button class="p-btn" id="btn-import">↑ Импорт JSON</button>
+        <input type="file" id="file-import" accept=".json" style="display:none">
+        <button class="p-btn" id="btn-reset">↺ Сбросить всё</button>
+      </div>
+    </div>
+
+    <!-- Safe-zone legend + cutout/navigation panel — docked under the top-right buttons,
+         toggled by «Зоны». Header × hides the panel (zones stay on); per-row toggles
+         show/hide each zone. The cutout/navigation presets (formerly a separate ✂️
+         popup) now live at the top of this panel. Rows are populated from i18n by
+         buildCutoutList() (#cutout-list) and renderZoneLegend() (#zones-list). -->
+    <div id="zones-panel">
+      <div class="zp-head">
+        <span class="zp-title">📐 Зоны и вырез</span>
+        <button class="zp-close" id="zones-panel-close" title="Скрыть панель (зоны останутся)">✕</button>
+      </div>
+      <div class="zp-sub">Вырез / навигация</div>
+      <div class="zp-list" id="cutout-list"></div>
+      <label class="zp-row zp-master">
+        <span class="zp-label">Показывать зоны</span>
+        <span class="mt-toggle"><input type="checkbox" id="zones-master"><span class="track"></span></span>
+      </label>
+      <div class="zp-list" id="zones-list"></div>
+    </div>
+  </div>
+
+  <!-- Preview row: mode rail (left) + phone preview -->
+  <div id="preview-row">
+
+    <!-- Mode rail: единое превью, переключатель режимов слева -->
+    <div id="mode-rail">
+      <button class="mode-btn active" id="mode-markup" type="button" title="Разметка поля — расставь апрон/ВПП/ангары на превью">
+        <span class="mode-ic">✎</span><span id="mode-markup-label">Разметка</span>
+      </button>
+      <button class="mode-btn" id="mode-test" type="button" title="Тестовая игра — сыграй текущую разметку с её настройками сложности">
+        <span class="mode-ic">▶</span><span id="mode-test-label">Тестовая&nbsp;игра</span>
+      </button>
+    </div>
+
+  <!-- Phone preview -->
+  <div id="phone-col">
+    <div id="phone-wrapper">
+      <div id="phone-shell">
+        <iframe id="game-frame" src="index.html?test=1" title="Game" allow="autoplay"></iframe>
+        <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"
+             style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;"></svg>
+      </div>
+      <div id="cutout-sim"></div>
+      <div id="resize-handle" title="Потяни чтобы выбрать размер экрана">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M6 16L16 16L16 6" stroke="rgba(58,210,255,.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M10 16L16 16L16 10" stroke="rgba(58,210,255,.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div id="phone-label">Превью · S Android Common · 800×360</div>
+  </div>
+
+  </div><!-- /#preview-row -->
+
+</div>
+
+<!-- ── SPLITTER ──────────────────────────────────────────────────────────── -->
+<div id="splitter">
+  <div id="splitter-grip">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+</div>
+
+<!-- ── BOTTOM PANE: Designer Workbench ───────────────────────────────────── -->
+<div id="bottom-pane">
+
+  <div id="panel-head">
+    <div id="tab-bar">
+      <div id="tab-nav">
+        <button class="t-tab active" data-tab="motion">
+          <span class="tab-icon">⚡</span><span>Движение</span>
+        </button>
+        <button class="t-tab" data-tab="level">
+          <span class="tab-icon">🗺</span><span>Уровни</span>
+        </button>
+        <button class="t-tab" data-tab="layout">
+          <span class="tab-icon">🛠</span><span>Разметка</span>
+        </button>
+        <button class="t-tab" data-tab="difficulty">
+          <span class="tab-icon">📊</span><span>Сложность</span>
+        </button>
+        <button class="t-tab" data-tab="test">
+          <span class="tab-icon">▶</span><span>Тест</span>
+        </button>
+        <button class="t-tab" data-tab="assets">
+          <span class="tab-icon">🎨</span><span>Скины</span>
+        </button>
+      </div>
+      <div id="search-wrap">
+        <input id="search" placeholder="Поиск…" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div id="subtab-bar"></div>
+  </div>
+  <div id="groups">
+    <div id="loading-msg">Ждём запуска игры…</div>
+  </div>
+
+
+  <!-- Tab 3: Level Lab ──────────────────────────────────────────────────── -->
+  <div id="level-view" class="lab-view">
+    <div class="lab-section collapsible collapsed">
+      <h3>Кривая кампании <span class="h3-sub">· клик по строке — выбрать уровень</span></h3>
+      <p class="lab-hint" style="margin-top:0">
+        Реальные уровни из <code>LEVELS</code>. Главная ось сложности — <b>темп</b> (pace): частота прилёта
+        + одновременность бортов; по кампании он не убывает. Правки идут по рабочей копии и не трогают кампанию в превью.
+      </p>
+      <div class="level-list-tools">
+        <input id="level-filter" placeholder="Фильтр: номер или имя…" autocomplete="off" spellcheck="false">
+        <span class="level-count" id="level-count"></span>
+      </div>
+      <div id="level-table-wrap"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+
+    <div class="lab-section collapsible collapsed" id="level-edit-sec">
+      <h3>Правка уровня <span class="h3-sub" id="ed-name">—</span></h3>
+      <div class="lab-params-grid">
+      <div class="lab-row">
+        <span class="lbl-main">Темп <small>pace 0…1</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" id="ed-pace" type="number" inputmode="decimal" min="0" max="1" step="0.01" value="0">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+        </div>
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">ВПП <small>число полос</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" id="ed-runways" type="number" inputmode="numeric" min="1" max="5" step="1" value="3">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+        </div>
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">Старт. деньги <small id="ed-money-hint">0 = дефолт (0)</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" id="ed-money" type="number" inputmode="numeric" min="0" max="2000" step="10" value="0">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+        </div>
+      </div>
+      <div class="lab-row">
+        <span class="lbl-main">Лимит времени <small>сек, 0 = нет</small></span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" id="ed-time" type="number" inputmode="numeric" min="0" max="3600" step="5" value="0">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+        </div>
+      </div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию; 3★ = target)</div>
+        <div style="display:flex;gap:6px">
+          <input class="lab-num" type="number" id="ed-s1" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="ed-s2" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="ed-s3" min="1" step="1" style="flex:1;text-align:center">
+        </div>
+        <div id="ed-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div>
+      </div>
+    </div>
+
+    <div class="lab-section collapsible collapsed">
+      <h3>События <span class="h3-sub">· спецборты — не раньше L5</span></h3>
+      <div class="lab-chips" id="ed-events"></div>
+      <p class="lab-hint">Каждый спецборт добавляет вес в сложность (vip .5 · emergency .8 · rush 1 · medical 1).</p>
+    </div>
+
+    <div class="lab-section collapsible collapsed" id="ed-bays-sec">
+      <h3>Боксы по сторонам <span class="h3-sub">· слотов / открыто на старте</span></h3>
+      <div id="ed-bays" class="lab-params-grid"><span class="lab-empty">—</span></div>
+    </div>
+
+    <div class="lab-section collapsible collapsed">
+      <h3>Профиль темпа <span class="h3-sub" id="ed-diff-live">сложность —</span></h3>
+      <div id="level-pace-chart" class="pace-chart"></div>
+      <div id="level-pace-axis"  class="pace-axis"></div>
+      <p class="lab-hint">Высота столбца = <code>pace</code> уровня (0…1). Кривая должна расти монотонно.</p>
+    </div>
+
+    <div class="lab-section collapsible collapsed">
+      <h3>Действия</h3>
+      <div class="lab-btn-row">
+        <button class="p-btn" id="lab-reset">↺ Сброс правок</button>
+      </div>
+      <p class="lab-hint">Экспорт всего настроенного — в верхнем меню «📂 Файл». Сама <code>tuning.html</code> в исходник
+        не пишет; выгруженные значения <code>LEVELS</code> вставь в <code>src/game/04-config-levels.ts</code>.</p>
+    </div>
+
+    <!-- Параметры черновика (темп/деньги/maxUp/звёзды/события) живут в табе
+         «Сложность» (de-*) — здесь их не дублируем. «Уровни» правит только
+         кампанию (ed-*). -->
+  </div>
+
+  <!-- Tab 1: Motion Lab — per-level runway overrides (static) + #groups (appended via JS) -->
+  <div id="motion-view" class="lab-view" style="display:none">
+    <div class="lab-section motion-runway-section" style="display:none">
+      <h3>Движение на ВПП <span class="h3-sub">· × от базовой, 1 = дефолт</span></h3>
+      <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Посадка · до касания ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-landbefore" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Посадка · после касания ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-landafter" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Взлёт · разбег ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-takeoffroll" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Взлёт · набор высоты ×</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-mot-climb" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+      </div>
+      <p class="lab-hint">Множители фаз движения по полосе (× к базовой скорости): посадка — до и после касания земли; взлёт — разбег по полосе и набор высоты после отрыва. Зашиваются в экспорт уровня и применяются после импорта.</p>
+    </div>
+  </div>
+
+  <!-- Tab 4: Difficulty Lab ─────────────────────────────────────────────── -->
+  <div id="difficulty-view" class="lab-view">
+    <div class="lab-section">
+      <h3>Источник анализа</h3>
+      <div class="lab-chips" id="diff-source" style="margin-bottom:8px">
+        <label class="lab-chip on" data-src="draft"><input type="radio" name="diffsrc" value="draft" checked> ✏ Черновик (Разметка)</label>
+        <label class="lab-chip" data-src="campaign"><input type="radio" name="diffsrc" value="campaign"> 🗺 Уровень кампании</label>
+      </div>
+      <div class="lab-params-grid" id="diff-level-row" style="display:none">
+      <div class="lab-row">
+        <span class="lbl-main">Карта кампании</span>
+        <select id="diff-level-sel" class="lab-select" style="grid-column:2 / 4"><option>Ждём запуска игры…</option></select>
+      </div>
+      </div>
+      <p class="lab-hint" id="diff-src-hint" style="margin-top:0">Анализируется твой черновик из «Разметки». Меняй поле/темп там — здесь обновится.</p>
+    </div>
+
+    <!-- ✏ РЕДАКТОР СЛОЖНОСТИ — всё пишет в черновик «Разметки» (LE) -->
+    <div class="lab-section">
+      <h3>✨ Авто-сложность <span class="h3-sub">· один регулятор → набор факторов</span></h3>
+      <div class="lab-row" style="gap:10px;align-items:center;margin-bottom:8px">
+        <input type="range" id="de-auto" min="0" max="100" step="1" value="40" style="flex:1">
+        <span class="lab-stat-val" id="de-auto-val" style="min-width:46px;text-align:right">40%</span>
+      </div>
+      <div class="lab-btn-row"><button class="p-btn" id="de-auto-apply">Сгенерировать в черновик</button></div>
+      <p class="lab-hint">Подбирает темп, события, среду и пороги звёзд под целевую сложность по формуле
+        <code>levelDifficulty</code>, затем ослабляет до проходимости 1★/2★/3★. Перезаписывает ручки черновика «Разметки».</p>
+    </div>
+
+    <div class="lab-section">
+      <h3>Темп и события <span class="h3-sub">· черновик «Разметки»</span></h3>
+      <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Темп <small style="color:var(--muted)">pace 0…1</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-pace" type="number" min="0" max="1" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+      </div>
+      <div style="margin-top:8px"><div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">События / спецборты (вес в сложности)</div>
+        <div class="lab-chips" id="de-events"></div></div>
+    </div>
+
+    <div class="lab-section">
+      <h3>Время · среда · штрафы</h3>
+      <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Лимит времени <small style="color:var(--muted)">сек · 0 = нет</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-time" type="number" min="0" max="1800" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Спокойный мир <small style="color:var(--muted)">calm × · 0 = нет</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-calm" type="number" min="0" max="3" step="0.1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Штраф за крушение <small style="color:var(--muted)">0…1</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-crash" type="number" min="0" max="1" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Штраф за просрочку <small style="color:var(--muted)">0…1</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-late" type="number" min="0" max="1" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+      </div>
+      <div class="lab-chips" id="de-modes" style="margin-top:8px">
+        <label class="lab-chip" data-mode="race"><input type="checkbox"> 🏁 Гонка (за время)</label>
+        <label class="lab-chip" data-mode="weather"><input type="checkbox"> 🌧 Погода</label>
+        <label class="lab-chip" data-mode="deice"><input type="checkbox"> ❄ Деайсинг</label>
+      </div>
+    </div>
+
+    <div class="lab-section">
+      <h3>Цель и звёзды</h3>
+      <div class="lab-row"><span class="lbl-main">Метрика</span>
+        <select id="de-metric" class="lab-select" style="grid-column:2 / 4">
+          <option value="served">борта (served)</option>
+          <option value="upgrades">апгрейды</option>
+          <option value="survival">выживание (сек)</option></select></div>
+      <div style="margin-top:8px"><div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px" id="de-stars-lbl">Пороги 1★ / 2★ / 3★ (по возрастанию)</div>
+        <div style="display:flex;gap:6px">
+          <input class="lab-num" type="number" id="de-s1" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="de-s2" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="de-s3" min="1" step="1" style="flex:1;text-align:center"></div>
+        <div id="de-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div></div>
+      <div style="margin-top:10px"><div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Доп-условия звёзд <small>· вкл → пороги 1★/2★/3★</small></div>
+        <div id="de-cond"></div></div>
+    </div>
+
+    <div class="lab-section">
+      <h3>Экономика набора <span class="h3-sub">· 0 = дефолт движка</span></h3>
+      <div class="lab-params-grid">
+        <div class="lab-row"><span class="lbl-main">Старт. деньги <small id="de-money-hint" style="color:var(--muted)">0 = дефолт</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-money" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Цена открытия бокса</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-open" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Цена апгрейда (1 ур.)</span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-upg" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Цена открытия полосы <small style="color:var(--muted)">с двух сторон</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-rwcost" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Апгрейд: мин уровень <small style="color:var(--muted)">minUp 0…5</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-minup" type="number" min="0" max="5" step="1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+        <div class="lab-row"><span class="lbl-main">Апгрейд: макс уровень <small style="color:var(--muted)">maxUp 0…5</small></span>
+          <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
+            <input class="lab-num" id="de-maxup" type="number" min="0" max="5" step="1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
+      </div>
+      <p class="lab-hint">Цены штампуются на боксы/полосы черновика; «мин уровень» — экон-ручка (набор считается от minUp до maxUp).</p>
+    </div>
+
+    <div class="lab-section">
+      <h3>Сводка</h3>
+      <div class="lab-stat-grid" id="diff-stats">
+        <div class="lab-stat"><div class="lab-stat-label">Сложность</div><div class="lab-stat-val" id="diff-total">—</div><div class="lab-stat-sub">0…1 (analyzeLevel)</div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Темп pace</div><div class="lab-stat-val" id="diff-pace">—</div><div class="lab-stat-sub" id="diff-pace-sub">—</div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Балл econ</div><div class="lab-stat-val" id="diff-econ-score">—</div><div class="lab-stat-sub">levelDifficulty · 0…<span id="diff-cap">1.2</span></div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Звёзды</div><div class="lab-stat-val" id="diff-stars" style="font-size:18px">—</div><div class="lab-stat-sub">1★ / 2★ / 3★</div></div>
+      </div>
+    </div>
+    <div class="lab-section">
+      <h3>Факторы сложности <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">· вклад в итог (вес × балл)</span></h3>
+      <div id="diff-factors"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+    <div class="lab-section">
+      <h3>Экономика <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">· выводится из сложности (levelEconomy)</span></h3>
+      <div id="diff-econ"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+    <div class="lab-section">
+      <h3>Предупреждения</h3>
+      <div id="diff-warnings"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+    <div class="lab-section">
+      <h3>🎯 Проходимость черновика <span class="h3-sub">· достижимы ли 1★ / 2★ / 3★</span></h3>
+      <div id="diff-pass"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+  </div>
+
+  <!-- Tab: Layout / Field Designer ─────────────────────────────────────── -->
+  <div id="layout-view" class="lab-view">
+
+    <!-- field templates (create / pick / manage) -->
+    <div class="lab-section" id="ly-tpl-sec">
+      <h3>Шаблон поля <span class="h3-sub">· создать с нуля / выбрать</span></h3>
+      <div class="lab-btn-row">
+        <select class="lab-select" id="ly-tpl-sel" style="flex:1;min-width:130px"></select>
+        <button class="p-btn" id="ly-tpl-new" title="Пустое поле — собрать с нуля">＋ Новый</button>
+        <button class="p-btn" id="ly-tpl-dup" title="Копия текущего поля">⧉ Копия</button>
+        <button class="p-btn" id="ly-tpl-rename" title="Переименовать">✎</button>
+        <button class="p-btn" id="ly-tpl-del" title="Удалить шаблон">🗑</button>
+      </div>
+      <p class="lab-hint">«Новый» создаёт пустой холст (апрон + зона прилёта, без ангаров и ВПП) — собирай поле с нуля.
+        Шаблоны хранятся в браузере; для уровня экспортируй JSON.</p>
+    </div>
+
+    <!-- editor stage (top): drag objects, resize zones -->
+    <div class="ly-stage-wrap">
+      <canvas id="ly-canvas"></canvas>
+      <div class="ly-stage-hint" id="ly-hint">Тащи объекты · зоны тяни за уголки рамки</div>
+    </div>
+
+    <!-- layers: visibility toggles + grid / snap -->
+    <div class="lab-section" id="ly-layers-sec" style="padding:8px 12px">
+      <div class="lab-chips" id="ly-layers"></div>
+    </div>
+
+    <!-- add / delete objects -->
+    <div class="lab-section">
+      <h3>Объекты <span class="h3-sub">· добавить / удалить</span></h3>
+      <div class="lab-btn-row">
+        <button class="p-btn" data-add-hangar="fuel">＋ Ангар · топливо</button>
+        <button class="p-btn" data-add-hangar="board">＋ Ангар · борт</button>
+        <button class="p-btn" data-add-hangar="repair">＋ Ангар · ремонт</button>
+        <button class="p-btn" id="ly-add-runway">＋ ВПП</button>
+        <button class="p-btn" id="ly-del" title="Удалить выбранный (Del / Backspace)">🗑 Удалить выбранный</button>
+      </div>
+      <p class="lab-hint">Размер ангаров и ВПП фиксированный — на холсте их можно только двигать.
+        Менять размер можно только у зон (апрон, прилёт) — тяни за уголки рамки выделенной зоны.</p>
+    </div>
+
+    <!-- selected object props -->
+    <div class="lab-section" id="ly-sel-sec">
+      <h3>Выбранный объект <span class="h3-sub" id="ly-sel-name">—</span></h3>
+      <div id="ly-sel-body" class="lab-params-grid"><span class="lab-empty">Кликни объект на холсте.</span></div>
+    </div>
+
+    <!-- zones (numeric) -->
+    <div class="lab-section">
+      <h3>Зоны <span class="h3-sub">· границы, % экрана</span></h3>
+      <div id="ly-zones" class="lab-params-grid"></div>
+    </div>
+
+    <!-- actions -->
+    <div class="lab-section">
+      <h3>Действия</h3>
+      <div class="lab-btn-row" style="margin-bottom:6px">
+        <span class="lab-empty" style="flex:1">▶ Чтобы сыграть разметку — переключатель «Тестовая игра» слева от превью.</span>
+      </div>
+      <div class="lab-btn-row">
+        <button class="p-btn" id="ly-reset">↺ Сброс</button>
+      </div>
+      <p class="lab-hint"><b>Сыграть черновик</b> — переключатель «Тестовая игра» слева от превью загружает уровень в игру
+        и сразу стартует его. <b>Экспорт/импорт</b> всего настроенного — в верхнем меню «📂 Файл»: выгруженный JSON можно
+        импортировать обратно или вставить в массив <code>LEVELS</code> (<code>src/game/04-config-levels.ts</code>).
+        Поля <code>apron</code>/<code>zones</code> движок пока не отрисовывает (геометрия апрона процедурная).</p>
+      <div id="ly-warn" style="margin-top:6px;font-size:11px;color:#e3c522"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Тест-драйв черновика ─────────────────────────────────────────── -->
+  <div id="test-view" class="lab-view">
+    <div class="lab-section">
+      <h3>Тест-драйв <span class="h3-sub" id="test-draft-name">черновик</span></h3>
+      <p class="lab-hint" style="margin-top:0">Переключатель <b>«Тестовая игра»</b> слева от превью запускает текущую
+        разметку с её настройками сложности — играй сам, проверь проходимость и баланс. Авто-бота нет: это ручной
+        тест-драйв. «Разметка» возвращает к редактированию поля.</p>
+      <div class="lab-btn-row">
+        <button class="p-btn" id="test-play" style="flex:1;color:var(--accent);border-color:rgba(34,227,198,.45);background:rgba(34,227,198,.06)">▶ Тестовая игра</button>
+        <button class="p-btn" id="test-stop">✎ К разметке</button>
+      </div>
+      <div id="test-status" style="margin-top:6px;font-size:11px;color:var(--muted)"></div>
+    </div>
+    <div class="lab-section">
+      <h3>Готовность <span class="h3-sub">· предполётная проверка</span></h3>
+      <div id="test-checklist"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+  </div>
+
+  <!-- Tab: Ресурсы (оформление уровня) ───────────────────────────────────── -->
+  <div id="asset-view" class="lab-view">
+    <div class="lab-section">
+      <p class="lab-hint" style="margin-top:0">🎨 Примерь оформление к уровню. Скины ангаров и фона <b>появятся позже</b> —
+        сейчас выбор просто сохраняется в черновике (поле <code>skins</code> в JSON) и поедет в экспорт.
+        Движок их пока не отрисовывает.</p>
+    </div>
+    <div class="lab-section">
+      <h3>Скин ангаров <span class="h3-sub" id="skin-hangar-cur">default</span></h3>
+      <div class="lab-chips" id="skin-hangar"></div>
+    </div>
+    <div class="lab-section">
+      <h3>Фон поля <span class="h3-sub" id="skin-bg-cur">default</span></h3>
+      <div class="lab-chips" id="skin-bg"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/*__BUILD_TUNING_JS__*/
+</script>
+</body>
+</html>

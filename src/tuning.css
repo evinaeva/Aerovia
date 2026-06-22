@@ -1,0 +1,1088 @@
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #040810;
+      --panel-bg:   rgba(6,11,26,.98);
+      --border:     rgba(58,210,255,.18);
+      --accent:     #22e3c6;
+      --accent2:    #3ad2ff;
+      --text:       #eaf7ff;
+      --muted:      #7fa4b8;
+      --row-sep:    rgba(127,155,176,.10);
+      --btn-bg:     #101a36;
+      --input-bg:   #070e22;
+    }
+
+    html, body {
+      /* Dynamic viewport height: on iOS, height:100% / 100vh resolve against the
+         *layout* viewport (taller than the visible area when Safari's bars show),
+         which made the body exceed the screen so #groups never became a bounded
+         scroll box and content was cut off instead of scrolling. dvh tracks the
+         actually-visible height. */
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.45 system-ui, 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOP PANE — Live Preview ─────────────────────────────────────────── */
+    #top-pane {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      padding: 8px 10px;
+      background: #020609;
+      border-bottom: 1px solid var(--border);
+      overflow: visible;
+      flex: none;
+      min-height: 80px;
+      position: relative;
+    }
+
+    /* ── Toolbar: horizontal icon row above phone ─────────────────────────── */
+    #toolbar-wrap { position: relative; flex: none; }
+
+    #toolbar {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+
+    .tb-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .tb-btn:hover { background: #1a2a48; }
+    .tb-btn.tb-active { border-color: var(--accent); background: rgba(34,227,198,.08); color: var(--accent); }
+    .tb-icon { font-size: 15px; line-height: 1; flex: none; }
+
+    /* Size button inside popup */
+    .sz-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .sz-btn:hover { background: #1a2a48; }
+    .sz-btn.active { border-color: var(--accent); background: rgba(34,227,198,.08); }
+    .sz-btn .sz-name { font-size: 11px; font-weight: 700; }
+    .sz-btn.active .sz-name { color: var(--accent); }
+    .sz-btn .sz-dims { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Floating popups (centered in viewport) ─────────────────────────── */
+    #popup-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 199;
+    }
+    .tb-popup {
+      display: none;
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(6,11,26,.98);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      z-index: 200;
+      min-width: 160px;
+      max-width: min(300px, 90vw);
+      box-shadow: 0 8px 32px rgba(0,0,0,.8);
+    }
+    .tb-popup.open { display: block; }
+
+    #popup-size { min-width: 240px; }
+    #size-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+
+    .popup-body { display: flex; flex-direction: column; gap: 6px; }
+    .popup-body .p-btn, .popup-body .p-input, .popup-body select { width: 100%; text-align: left; }
+    .popup-body .btn-row { display: flex; gap: 4px; }
+    .popup-body .btn-row .p-btn { flex: 1; }
+
+
+    /* ── Preview row: mode rail (left) + phone preview ───────────────────────
+       The preview (markup canvas ↔ game iframe) is always present; the left
+       rail toggles which surface is shown — «Разметка» (edit) ↔ «Тестовая
+       игра» (play). The active mode is independent of the bottom-pane tab. */
+    #preview-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+    }
+    #mode-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: none;
+      align-self: center;
+    }
+    .mode-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      width: 88px;
+      padding: 12px 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--btn-bg);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-align: center;
+      cursor: pointer;
+      transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mode-btn .mode-ic { font-size: 18px; line-height: 1; }
+    .mode-btn:hover:not(.active) { background: rgba(58,210,255,.10); color: var(--text); }
+    .mode-btn.active {
+      color: #061018;
+      border-color: transparent;
+      background: linear-gradient(180deg, var(--accent2), var(--accent));
+      box-shadow: 0 4px 18px rgba(34,227,198,.30);
+    }
+    @media (max-height: 560px) {
+      .mode-btn { width: 74px; padding: 8px 6px; font-size: 10px; }
+      .mode-btn .mode-ic { font-size: 15px; }
+    }
+    /* Узкие/портретные экраны: компактный рельс, чтобы не выпирал рядом с превью. */
+    @media (max-width: 560px) {
+      #preview-row { gap: 8px; }
+      .mode-btn { width: 64px; padding: 8px 5px; font-size: 10px; }
+      .mode-btn .mode-ic { font-size: 15px; }
+    }
+
+
+    /* ── Phone column ───────────────────────────────────────────────────── */
+    #phone-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-height: 0;
+    }
+
+    #phone-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* wrapper holds the visual (scaled) footprint */
+    #phone-wrapper {
+      position: relative;
+      flex: none;
+    }
+
+    /* phone-shell is positioned absolute so wrapper sets visual size */
+    #phone-shell {
+      position: absolute;
+      top: 0; left: 0;
+      border-radius: 46px;
+      border: 7px solid #172237;
+      box-shadow:
+        inset 0 0 0 1px #0c1930,
+        0 0 0 1px rgba(58,210,255,.12),
+        0 0 60px rgba(34,227,198,.06),
+        0 20px 70px rgba(0,0,0,.7);
+      overflow: hidden;
+      background: #000;
+      transform-origin: top left;
+    }
+
+    /* notch pill (landscape: left side) */
+    #phone-shell::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 10px;
+      transform: translateY(-50%);
+      width: 28px; height: 90px;
+      background: #000;
+      border-radius: 18px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* ── Resize handle (bottom-right corner of phone-wrapper) ────────────── */
+    #resize-handle {
+      position: absolute;
+      bottom: -4px; right: -4px;
+      width: 28px; height: 28px;
+      cursor: se-resize;
+      z-index: 30;
+      display: flex; align-items: flex-end; justify-content: flex-end;
+      opacity: 0;
+      transition: opacity .2s;
+      touch-action: none;
+    }
+    #phone-wrapper:hover #resize-handle { opacity: 1; }
+    #resize-handle.dragging { opacity: 1; }
+    /* Touch devices have no hover — keep the resize handle visible */
+    @media (hover: none) { #resize-handle { opacity: 1; } }
+    #resize-handle svg { display: block; }
+
+    #game-frame {
+      width: 100%; height: 100%;
+      border: none; display: block;
+    }
+
+    /* (pt-panel/preview-tools removed — now using toolbar popups) */
+
+    /* ── SPLITTER ────────────────────────────────────────────────────────── */
+    #splitter {
+      flex: none;
+      height: 7px;
+      background: rgba(58,210,255,.10);
+      cursor: ns-resize;
+      position: relative;
+      transition: background .15s;
+      user-select: none;
+      touch-action: none;            /* let pointer-drag work on touch (no scroll hijack) */
+    }
+    #splitter:hover, #splitter.dragging {
+      background: rgba(58,210,255,.28);
+    }
+    #splitter-grip {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex; gap: 5px;
+    }
+    #splitter-grip span {
+      display: block;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--muted);
+      opacity: .5;
+    }
+
+    /* ── BOTTOM PANE — Designer Workbench ───────────────────────────────── */
+    #bottom-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--panel-bg);
+      overflow: hidden;
+      min-height: 0;            /* shrink with the splitter; #groups scrolls inside
+                                   (a fixed min-height overflows the clipped body on
+                                   short screens → content gets cut/squished instead
+                                   of scrolling). The splitter clamp guards the floor. */
+    }
+
+    /* sticky header */
+    #panel-head {
+      flex: none;
+      padding: 0;
+      background: rgba(8,14,32,.99);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .p-btn {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--btn-bg);
+      color: var(--text);
+      padding: 6px 11px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background .15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .p-btn:hover { background: #1a2a48; }
+
+    .p-input {
+      border: 1px solid rgba(127,155,176,.28);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    /* ── Tab bar: tabs + inline search ─────────────────────────────────── */
+    #tab-bar {
+      display: flex;
+      align-items: stretch;
+      border-bottom: 1px solid var(--border);
+    }
+    #tab-nav {
+      flex: 1;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    #tab-nav::-webkit-scrollbar { display: none; }
+
+    .t-tab {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 9px 14px 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      font-family: inherit;
+      white-space: nowrap;
+      flex: none;
+      margin-bottom: -1px;
+    }
+    .t-tab .tab-icon { font-size: 14px; line-height: 1; }
+    .t-tab:hover:not(.active) { color: var(--text); }
+    .t-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .t-tab.stub { opacity: .55; }
+    .t-tab.stub:hover:not(.active) { opacity: .8; }
+
+    /* ── Sub-tab bar (inside the Motion tab — splits ~20 groups by domain) ── */
+    #subtab-bar {
+      display: none;                 /* shown once buildSubtabs() populates it */
+      gap: 4px;
+      padding: 6px 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      border-bottom: 1px solid var(--row-sep);
+      background: rgba(8,14,32,.6);
+    }
+    #subtab-bar::-webkit-scrollbar { display: none; }
+    #subtab-bar.searching { opacity: .4; pointer-events: none; }
+    .s-tab {
+      flex: none;
+      display: flex; align-items: center; gap: 5px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--btn-bg);
+      color: var(--muted);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: color .15s, background .15s, border-color .15s;
+    }
+    .s-tab:hover:not(.active) { color: var(--text); background: #1a2a48; }
+    .s-tab.active { color: var(--accent); border-color: var(--accent); background: rgba(34,227,198,.1); }
+    .s-tab .s-count { font-size: 10px; opacity: .6; font-weight: 400; }
+
+    /* Inline search (right of tab bar) */
+    #search-wrap {
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      flex: none;
+      border-left: 1px solid var(--border);
+    }
+    #search {
+      border: 1px solid rgba(127,155,176,.22);
+      border-radius: 8px;
+      background: var(--input-bg);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      width: 120px;
+      transition: width .2s;
+    }
+    #search:focus { width: 180px; outline: none; border-color: var(--accent2); }
+    #search::placeholder { color: var(--muted); }
+
+    /* ── Groups: 2-col card grid ─────────────────────────────────────────── */
+    #groups {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;   /* momentum scroll on iOS */
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+      gap: 6px;
+      align-content: start;   /* pack rows at top → overflow scrolls, not stretches */
+      align-items: start;     /* cards keep natural height (never squished to a track) */
+      /* Size each implicit row to its content. Without this the auto tracks come
+         out equal-height, so a tall card (e.g. «События») overflows its track and
+         the next card («Погода») is drawn on top of it. */
+      grid-auto-rows: min-content;
+    }
+
+    /* When embedded under the «Сложность» editor, #groups flows inside that view's
+       single scroll instead of being its own flex:1 scroll pane. */
+    #groups.groups-embedded {
+      flex: none;
+      min-height: 0;
+      overflow: visible;
+      padding: 8px 0 0;
+    }
+
+    #groups details {
+      border: 1px solid rgba(127,155,176,.14);
+      border-radius: 10px;
+      background: rgba(14,22,48,.5);
+      overflow: hidden;
+    }
+
+    /* Full-width card for large or boolean groups */
+    #groups details.wide { grid-column: 1 / -1; }
+
+    #groups summary {
+      padding: 8px 10px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--accent);
+      user-select: none;
+      letter-spacing: .02em;
+      background: rgba(8,14,32,.35);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      list-style: none;
+    }
+    #groups summary::-webkit-details-marker { display: none; }
+    .sum-arrow { font-size: 9px; opacity: .5; display: inline-block; transition: transform .15s; }
+    #groups details[open] .sum-arrow { transform: rotate(90deg); }
+    .sum-count { margin-left: auto; font-size: 9px; font-weight: 400; color: var(--muted); }
+
+    /* ── Param rows grid inside a card ──────────────────────────────────── */
+    /* .mt-params-grid is the generated motion/demo tabs; .lab-params-grid is the
+       same flow for the hand-built «lab» tabs (Уровни / Разметка / Сложность),
+       whose .lab-row / .ly-prop-row / .ed-bay-row used to stretch one row across
+       the whole card just like the motion rows once did. */
+    .mt-params-grid,
+    .lab-params-grid {
+      display: grid;
+      /* Flow rows into as many ~300px columns as fit. On a narrow card this is a
+         single column; on a wide card (full-width «.wide» group, or a big desktop
+         window) the rows split into 2+ columns instead of stretching one row
+         across the whole screen — which is what pushed the value miles away from
+         its label. column-gap keeps a sane, scalable distance between the two. */
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+      column-gap: 18px;
+    }
+    /* placeholders / hints inside a flow grid span the full width, not one cell */
+    .lab-params-grid > .lab-empty,
+    .lab-params-grid > .grid-note { grid-column: 1 / -1; }
+
+    .mt-row {
+      display: grid;
+      grid-template-columns: 1fr auto;   /* label · number-stepper (sliders removed) */
+      align-items: center;
+      gap: 6px;
+      padding: 0 10px;
+      min-height: 36px;        /* min-height (not height) so rows never squish */
+      border-top: 1px solid var(--row-sep);
+      cursor: default;
+    }
+    .mt-row:hover { background: rgba(58,210,255,.04); }
+
+    .mt-row .lbl {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .mt-row .lbl small { color: var(--muted); font-size: 10px; font-weight: 400; margin-left: 2px; }
+
+    /* ── Number stepper: −  [ value ]  +  (replaces the range sliders).
+       Native spin buttons are hidden so the custom −/+ buttons show
+       identically on desktop and iOS (where native spinners don't render). */
+    .mt-stepper { display: flex; align-items: center; gap: 4px; flex: none; }
+    .mt-step {
+      flex: none; width: 30px; height: 30px;
+      display: grid; place-items: center;
+      border: 1px solid var(--border); border-radius: 7px;
+      background: var(--btn-bg); color: var(--text);
+      font-size: 18px; line-height: 1; font-family: inherit;
+      cursor: pointer; padding: 0;
+      transition: background .12s, border-color .12s;
+      /* no text-selection / iOS «copy» callout on long-press — long-press auto-repeats */
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    .mt-step:hover  { background: #1a2a48; border-color: var(--accent); }
+    .mt-step:active { background: rgba(34,227,198,.16); }
+    .mt-row .mt-num {
+      width: 64px;
+      border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
+      background: var(--input-bg); color: #fff;
+      padding: 4px 6px; font-size: 12px; text-align: center; font-family: inherit;
+    }
+    .mt-stepper input[type=number]::-webkit-outer-spin-button,
+    .mt-stepper input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .mt-stepper input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+    .mt-stepper .lab-num { flex: none; }
+
+    .mt-row.mt-bool { grid-template-columns: 1fr auto; gap: 8px; }
+    .mt-row.mt-bool .lbl { white-space: normal; font-size: 11px; line-height: 1.3; overflow: visible; }
+
+    .mt-row.mt-string { grid-template-columns: minmax(80px, 140px) 1fr; gap: 6px; }
+    .mt-row.mt-string .mt-text {
+      width: 100%;
+      border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
+      background: var(--input-bg); color: #fff;
+      padding: 3px 6px; font-size: 11px; font-family: inherit;
+    }
+    .mt-row.mt-string select.mt-text { cursor: pointer; height: 28px; }
+
+    .mt-toggle {
+      position: relative;
+      width: 36px; height: 20px;
+      flex: none;
+    }
+    .mt-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .mt-toggle .track {
+      position: absolute; inset: 0;
+      border-radius: 10px;
+      background: #1a2a48;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .18s;
+    }
+    .mt-toggle input:checked + .track { background: var(--accent); border-color: var(--accent); }
+    .mt-toggle .track::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform .18s;
+    }
+    .mt-toggle input:checked + .track::after { transform: translateX(16px); }
+
+    /* ── Placeholder labs ───────────────────────────────────────────────── */
+    .lab-view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 12px 14px;
+    }
+    .lab-section {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(14,22,48,.5);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .lab-section h3 {
+      font-size: 10px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--accent); margin-bottom: 10px;
+    }
+    /* ── Collapsible lab sections (click the h3 to fold/unfold) ──────────── */
+    .lab-section.collapsible > h3 {
+      cursor: pointer; user-select: none;
+      display: flex; align-items: center; gap: 7px; margin-bottom: 0;
+    }
+    .lab-section.collapsible > h3::before {
+      content: '▸'; flex: none; font-size: 11px; color: var(--muted);
+      transition: transform .15s; transform: translateY(-1px);
+    }
+    .lab-section.collapsible:not(.collapsed) > h3 { margin-bottom: 10px; }
+    .lab-section.collapsible:not(.collapsed) > h3::before { transform: translateY(-1px) rotate(90deg); }
+    .lab-section.collapsible.collapsed > *:not(h3) { display: none !important; }
+    /* a small live badge can sit on the right of a folded header */
+    .lab-section.collapsible > h3 .h3-fold-tail { margin-left: auto; }
+    .lab-row {
+      display: grid;
+      grid-template-columns: 1fr auto;   /* label · number-stepper (slider removed) */
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+      min-height: 32px;
+      border-top: 1px solid var(--row-sep);
+    }
+    .lab-row:first-of-type { border-top: none; }
+    .lab-row .lbl-main { font-size: 12px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lab-row .lbl-sub  { display: none; }
+    .lab-row .lab-num {
+      width: 64px;
+      border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
+      background: var(--input-bg); color: #fff;
+      padding: 4px 6px; font-size: 12px; text-align: center; font-family: inherit;
+    }
+    .lab-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0 2px; }
+    .lab-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--btn-bg); color: var(--muted);
+      padding: 5px 10px; font-size: 12px; cursor: pointer;
+      transition: all .15s; font-family: inherit; user-select: none;
+    }
+    .lab-chip input[type=checkbox] { accent-color: var(--accent); pointer-events: none; }
+    .lab-chip.on { border-color: var(--accent); color: var(--accent); background: rgba(34,227,198,.1); }
+    .lab-btn-row { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 12px; }
+    .lab-hint { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+    .lab-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+    .lab-stat {
+      background: rgba(8,14,32,.6); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px;
+    }
+    .lab-stat-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }
+    .lab-stat-val   { font-size: 22px; font-weight: 800; color: var(--accent); line-height: 1; }
+    .lab-stat-sub   { font-size: 10px; color: var(--muted); margin-top: 3px; }
+    .lab-bar-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-top: 1px solid var(--row-sep); }
+    .lab-bar-label { flex: none; width: 140px; font-size: 12px; color: var(--muted); }
+    .lab-bar-track { flex: 1; height: 6px; border-radius: 3px; background: rgba(58,210,255,.12); overflow: hidden; }
+    .lab-bar-fill  { height: 100%; border-radius: 3px; background: var(--accent); }
+    .lab-bar-val   { flex: none; width: 36px; text-align: right; font-size: 11px; color: var(--text); font-weight: 600; }
+    .lab-coming {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex: 1; gap: 8px; color: var(--muted); font-size: 12px; text-align: center; padding: 32px 24px;
+    }
+    .lab-coming .big { font-size: 36px; }
+    .lab-coming strong { font-size: 14px; font-weight: 700; color: var(--text); display: block; margin-bottom: 4px; }
+
+    /* ── Layout designer (field / zone editor) ──────────────────────────── */
+    .ly-stage-wrap {
+      position: relative; width: 100%; aspect-ratio: 20 / 9; max-height: 48vh;
+      flex: none;            /* don't let the column flex shrink the stage to 0 */
+      margin-bottom: 10px; border: 1px solid var(--border); border-radius: 12px;
+      background: #020609; overflow: hidden; touch-action: none;
+    }
+    #ly-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    /* «Разметка» editing: the canvas is moved into the phone shell, so the in-tab
+       stage box is empty — hide it. The canvas (and its hint) fill the shell, with
+       crosshair cursor to signal it's a drawing surface. */
+    .ly-stage-wrap { display: none; }
+    #phone-shell.ly-editing #ly-canvas { cursor: crosshair; }
+    .ly-stage-hint {
+      position: absolute; left: 8px; bottom: 6px; font-size: 10px; color: var(--muted);
+      pointer-events: none; background: rgba(2,6,9,.65); padding: 2px 6px; border-radius: 6px;
+    }
+    .ly-prop-row {
+      display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px;
+      padding: 5px 0; min-height: 30px; border-top: 1px solid var(--row-sep);
+    }
+    .ly-prop-row:first-child { border-top: none; }
+    .ly-prop-row .lbl-main { font-size: 12px; font-weight: 600; color: var(--text); }
+    .ly-seg { display: flex; gap: 4px; flex-wrap: wrap; }
+    .ly-seg .p-btn { padding: 4px 9px; }
+    .ly-seg .p-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(34,227,198,.1); }
+    .ly-prop-num {
+      width: 70px; border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
+      background: var(--input-bg); color: #fff; padding: 4px 6px; font-size: 12px;
+      text-align: center; font-family: inherit;
+    }
+    /* ── Level / Difficulty lab (data-driven) ───────────────────────────── */
+    .lab-empty { color: var(--muted); font-size: 11px; }
+    .lab-section h3 .h3-sub { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+    .ed-bay-row { display: grid; grid-template-columns: 1fr 64px 64px; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--row-sep); }
+    .ed-bay-row:first-child { border-top: none; }
+    .ed-bay-row .ed-bay-lbl { font-size: 12px; color: var(--text); }
+    .mt-stepper:has(input:disabled) .mt-step { opacity: .35; pointer-events: none; }
+    .mt-stepper input:disabled { opacity: .5; }
+    .ed-bay-row input { width: 100%; border: 1px solid rgba(127,155,176,.22); border-radius: 6px; background: var(--input-bg); color: #fff; padding: 3px 5px; font-size: 11px; text-align: center; font-family: inherit; }
+    .lab-select {
+      width: 100%; border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
+      background: var(--input-bg); color: #fff; padding: 5px 7px; font-size: 12px; font-family: inherit;
+    }
+    .lab-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .lab-table th, .lab-table td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--row-sep); white-space: nowrap; }
+    .lab-table th { color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    /* Campaign curve list — bounded box so hundreds of levels don't grow the
+       page forever; scroll inside, with a sticky header that stays visible. */
+    #level-table-wrap { max-height: 46vh; overflow-y: auto; overflow-x: auto; border-radius: 8px; }
+    #level-table-wrap .lab-table thead th {
+      position: sticky; top: 0; z-index: 2;
+      background: #0c1330; box-shadow: inset 0 -1px 0 var(--row-sep);
+    }
+    #level-table-wrap .lab-table tbody tr.hidden { display: none; }
+    .level-list-tools { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .level-list-tools input {
+      flex: 1; min-width: 0; border: 1px solid rgba(127,155,176,.22); border-radius: 6px;
+      background: var(--input-bg); color: #fff; padding: 5px 9px; font-size: 12px; font-family: inherit;
+    }
+    .level-list-tools .level-count { flex: none; font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .lab-table th:nth-child(2), .lab-table td:nth-child(2) { text-align: left; }
+    .lab-table tbody tr { cursor: pointer; transition: background .12s; }
+    .lab-table tbody tr:hover { background: rgba(58,210,255,.07); }
+    .lab-table tbody tr.sel { background: rgba(34,227,198,.13); }
+    .lab-table tbody tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+    .lab-table .cell-cons { color: var(--accent2); font-weight: 700; }
+    .lab-table .diff-cell { font-weight: 700; }
+    /* pace profile sparkline */
+    .pace-chart { display: flex; align-items: flex-end; gap: 3px; height: 70px; padding-top: 4px; }
+    .pace-bar {
+      flex: 1; min-width: 0; background: linear-gradient(180deg, var(--accent2), var(--accent));
+      border-radius: 2px 2px 0 0; opacity: .8; cursor: pointer; transition: opacity .12s, outline .12s;
+      position: relative;
+    }
+    .pace-bar:hover { opacity: 1; }
+    .pace-bar.sel { opacity: 1; outline: 1px solid var(--accent); }
+    .pace-axis { display: flex; gap: 3px; margin-top: 3px; }
+    .pace-axis span { flex: 1; min-width: 0; text-align: center; font-size: 8px; color: var(--muted); }
+
+    /* ── Status bar ─────────────────────────────────────────────────────── */
+    #status-bar {
+      flex: none;
+      padding: 5px 18px;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--row-sep);
+      background: rgba(4,8,18,.9);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Loading ─────────────────────────────────────────────────────────── */
+    #loading-msg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 120px;
+      color: var(--muted);
+      font-size: 13px;
+      grid-column: 1 / -1;
+    }
+
+    /* ── Field view ─────────────────────────────────────────────────────── */
+    #field-view {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .f-sec {
+      border: 1px solid rgba(127,155,176,.14);
+      border-radius: 12px;
+      background: rgba(14,22,48,.5);
+      padding: 10px 14px;
+    }
+    .f-sec h3 {
+      font-size: 10px; font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase; letter-spacing: .08em;
+      margin-bottom: 8px;
+    }
+    .f-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+    .f-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+    .f-dot  { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+    .f-line { width: 18px; height: 2px; flex: none; }
+    .f-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .f-table th, .f-table td { padding: 3px 6px; text-align: left; border-bottom: 1px solid var(--row-sep); }
+    .f-table th { color: var(--muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+    .tag-ok  { color: #22e3c6; }
+    .tag-bad { color: #e35c22; }
+    .tag-occ { color: #e3c522; }
+
+    /* ── Safe-zone legend panel (docked under the top-right toolbar buttons) ── */
+    #zones-panel {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 120;
+      width: 248px;
+      max-width: min(280px, 92vw);
+      background: rgba(6,11,26,.98);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+      padding: 8px;
+      max-height: calc(100dvh - 120px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #zones-panel.open { display: block; }
+    .zp-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 2px 2px 8px;
+      border-bottom: 1px solid var(--row-sep);
+      margin-bottom: 4px;
+    }
+    .zp-title {
+      font-size: 10px; font-weight: 800; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--accent);
+    }
+    .zp-close {
+      flex: none; width: 22px; height: 22px; line-height: 1;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--btn-bg); color: var(--muted);
+      font-size: 12px; cursor: pointer; font-family: inherit;
+      transition: background .12s, color .12s;
+    }
+    .zp-close:hover { background: #1a2a48; color: var(--text); }
+    .zp-list { display: flex; flex-direction: column; }
+    .zp-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 4px;
+      border-top: 1px solid var(--row-sep);
+      cursor: pointer;
+    }
+    .zp-row:first-child { border-top: none; }
+    .zp-label { flex: 1; font-size: 11px; color: var(--muted); line-height: 1.25; }
+    .zp-row .z-sw, .zp-row .mt-toggle { flex: none; }
+    .zp-master {
+      padding-top: 0; padding-bottom: 8px; margin-bottom: 2px;
+      border-top: none; border-bottom: 1px solid var(--row-sep);
+    }
+    .zp-master .zp-label { font-weight: 700; color: var(--text); font-size: 12px; }
+    /* dim per-zone rows while the master overlay is off — and make them
+       non-interactive so toggles don't silently change a hidden overlay */
+    #zones-panel.zones-off #zones-list { opacity: .45; pointer-events: none; }
+
+    /* sub-section header inside the panel (e.g. «Вырез / навигация») */
+    .zp-sub {
+      font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); padding: 2px 4px 3px;
+    }
+
+    /* row wrapper (kept around the row so the first-row border rule still works) */
+    .zp-row-wrap { }
+    .zp-list .zp-row-wrap:first-child > .zp-row { border-top: none; }
+
+    /* «?» info button — click/tap opens a small floating popup with the
+       explanation (see .hint-pop). It floats over the layout instead of
+       expanding inline, so it never pushes the rows below it down.
+       .zp-info keeps the round look inside the «Зоны» panel; .hint-q is the
+       same affordance reused on the motion/difficulty parameter rows. */
+    .zp-info,
+    .hint-q {
+      flex: none; width: 18px; height: 18px; line-height: 1; padding: 0;
+      border: 1px solid var(--border); border-radius: 50%;
+      background: var(--btn-bg); color: var(--muted);
+      font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: color .12s, border-color .12s, background .12s;
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .zp-info:hover,
+    .hint-q:hover { color: var(--text); border-color: var(--accent); }
+    .zp-info[aria-expanded="true"],
+    .hint-q[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); background: rgba(34,227,198,.12); }
+
+    /* Floating explanation popup — one shared bubble, anchored to whichever «?»
+       was tapped. position:fixed → laid out against the viewport, matching the
+       getBoundingClientRect() coordinates used to place it. */
+    .hint-pop {
+      position: fixed;
+      display: none;
+      z-index: 2000;
+      max-width: min(260px, 86vw);
+      background: rgba(6,11,26,.98);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+      padding: 8px 10px;
+      font-size: 11px; line-height: 1.45;
+      color: var(--text);
+    }
+    .hint-pop.open { display: block; }
+
+    /* label + its «?» share the first grid column of a parameter row; min-width:0
+       lets the label keep its ellipsis while the «?» stays fully visible. */
+    .lbl-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .lbl-wrap .lbl { min-width: 0; }
+
+    /* cutout/navigation presets rendered as panel rows (reuse .zp-row layout, drop
+       the old button-strip look) */
+    #zones-panel .co-btn {
+      border: none; border-radius: 0; background: none;
+      padding: 5px 4px; font-size: 11px; white-space: normal; color: var(--muted);
+    }
+    #zones-panel .co-btn:hover { background: rgba(58,210,255,.05); }
+    #zones-panel .co-btn.active { background: rgba(34,227,198,.06); color: var(--accent); }
+    /* square (not round) — these are independent multi-select toggles, not radios */
+    .co-dot {
+      flex: none; width: 12px; height: 12px; border-radius: 3px;
+      border: 1px solid var(--border); background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; line-height: 1; color: #04080f;
+    }
+    .co-btn.active .co-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px rgba(34,227,198,.5); }
+    .co-btn.active .co-dot::after { content: '✓'; }
+    .co-btn .zp-label { flex: 1; }
+    .co-btn.active .zp-label { color: var(--accent); font-weight: 700; }
+
+    /* ── Safe-zone warning modal (shown on map export) ───────────────────── */
+    #zone-warn-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(4,8,18,.6);
+    }
+    .zwm-box {
+      width: min(420px, calc(100vw - 32px));
+      background: var(--panel, #0f1830);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    }
+    .zwm-title { font-size: 15px; font-weight: 700; color: #ffd23b; margin-bottom: 6px; }
+    .zwm-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .zwm-list { max-height: 40vh; overflow-y: auto; margin-bottom: 14px; }
+    .zwm-item { font-size: 12px; color: #ffa060; padding: 3px 0; border-bottom: 1px solid var(--row-sep); }
+    .zwm-ok {
+      display: block;
+      margin-left: auto;
+      padding: 7px 22px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: rgba(34,227,198,.10);
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .zwm-ok:hover { background: rgba(34,227,198,.18); }
+    .zwm-btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .zwm-btns .p-btn { padding: 7px 16px; }
+    .zwm-go { border-color: rgba(255,210,59,.6); color: #ffd23b; background: rgba(255,210,59,.08); }
+    .zwm-go:hover { background: rgba(255,210,59,.16); }
+    .zwm-item.err { color: #ff7a7a; }
+    .zwm-item.warn { color: #ffc14d; }
+    #ly-validate-modal { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; background: rgba(4,8,18,.6); }
+
+    /* ── Cutout strip (inside preview-tools dock) ───────────────────────── */
+    #cutout-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .co-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--btn-bg);
+      color: var(--muted);
+      padding: 3px 8px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .co-btn:hover { background: #1a2a48; }
+    .co-btn.active { background: rgba(34,227,198,.10); border-color: var(--accent); color: var(--accent); }
+
+    /* ── Cutout simulation overlay (in phone-wrapper, above phone-shell) ── */
+    #cutout-sim {
+      position: absolute;
+      pointer-events: none;
+      z-index: 20;
+      background: rgba(255,50,50,.22);
+      border: 2px dashed rgba(255,80,80,.95);
+      display: none;
+    }
+
+    /* ── Zone legend swatches (used in the «Зоны» legend panel) ───────────── */
+    .z-sw { width: 18px; height: 3px; flex: none; border-radius: 2px; }
+    .z-sw.fill { height: 10px; border-radius: 3px; }
+
+    /* co-btn inside pt-body: full-width */
+    .pt-body .co-btn { width: 100%; text-align: left; }
+
+    /* ── Toggle-grid for all-bool groups ─────────────────────────────────── */
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 3px;
+      padding: 5px 8px 8px;
+    }
+
+    .toggle-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 5px 9px;
+      border-radius: 6px;
+      background: rgba(14,22,48,.6);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .toggle-card:hover { background: rgba(22,34,68,.8); }
+    .toggle-card .lbl { font-size: 11px; flex: 1; font-weight: 600; line-height: 1.2; }
+
+    /* ── Responsive: small screens ──────────────────────────────────────── */
+    @media (max-width: 600px) {
+      #toolbar { flex-wrap: wrap; }
+      #search { width: 90px; }
+      #search:focus { width: 130px; }
+    }
+
+    /* Short / landscape-phone viewports: the fixed 300px bottom-pane minimum
+       (tuned for desktop) overflows the screen and pushes the workbench out of
+       view. Relax the minimums so the splitter has real travel and the tab
+       bar + rows stay on-screen and tappable. */
+    @media (max-height: 560px) {
+      #top-pane { min-height: 60px; }
+    }
+
+    /* Touch devices: fatten the splitter into a real finger-sized grab target
+       and enlarge the tab tap targets. */
+    @media (hover: none) {
+      #splitter { height: 18px; }
+      .t-tab    { padding: 12px 16px; font-size: 14px; }
+      #groups summary { padding: 12px 12px; }
+      .mt-step  { width: 36px; height: 36px; font-size: 20px; }   /* finger-sized −/+ */
+      .mt-row .mt-num, .lab-row .lab-num { width: 70px; }
+    }
+
+    /* Snappier taps on iOS — no 300ms delay, no grey flash.
+       (#splitter / #resize-handle keep touch-action:none for dragging.) */
+    .tb-btn, .p-btn, .co-btn, .sz-btn, .t-tab, .s-tab, .mt-step, #groups summary,
+    .toggle-card, .lab-chip {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
