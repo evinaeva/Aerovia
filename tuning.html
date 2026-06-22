@@ -863,28 +863,51 @@
       color: var(--muted); padding: 2px 4px 3px;
     }
 
-    /* row wrapper holds the row + its collapsible hint */
+    /* row wrapper (kept around the row so the first-row border rule still works) */
     .zp-row-wrap { }
     .zp-list .zp-row-wrap:first-child > .zp-row { border-top: none; }
 
-    /* «?» info button — click/tap toggles the inline hint (touch-friendly) */
-    .zp-info {
+    /* «?» info button — click/tap opens a small floating popup with the
+       explanation (see .hint-pop). It floats over the layout instead of
+       expanding inline, so it never pushes the rows below it down.
+       .zp-info keeps the round look inside the «Зоны» panel; .hint-q is the
+       same affordance reused on the motion/difficulty parameter rows. */
+    .zp-info,
+    .hint-q {
       flex: none; width: 18px; height: 18px; line-height: 1; padding: 0;
       border: 1px solid var(--border); border-radius: 50%;
       background: var(--btn-bg); color: var(--muted);
       font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
       transition: color .12s, border-color .12s, background .12s;
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
     }
-    .zp-info:hover { color: var(--text); border-color: var(--accent); }
-    .zp-info[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); background: rgba(34,227,198,.12); }
+    .zp-info:hover,
+    .hint-q:hover { color: var(--text); border-color: var(--accent); }
+    .zp-info[aria-expanded="true"],
+    .hint-q[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); background: rgba(34,227,198,.12); }
 
-    /* collapsible Russian explanation */
-    .zp-hint {
+    /* Floating explanation popup — one shared bubble, anchored to whichever «?»
+       was tapped. position:fixed → laid out against the viewport, matching the
+       getBoundingClientRect() coordinates used to place it. */
+    .hint-pop {
+      position: fixed;
       display: none;
-      font-size: 10px; line-height: 1.45; color: var(--muted);
-      padding: 0 6px 7px 8px;
+      z-index: 2000;
+      max-width: min(260px, 86vw);
+      background: rgba(6,11,26,.98);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.6);
+      padding: 8px 10px;
+      font-size: 11px; line-height: 1.45;
+      color: var(--text);
     }
-    .zp-hint.open { display: block; }
+    .hint-pop.open { display: block; }
+
+    /* label + its «?» share the first grid column of a parameter row; min-width:0
+       lets the label keep its ellipsis while the «?» stays fully visible. */
+    .lbl-wrap { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .lbl-wrap .lbl { min-width: 0; }
 
     /* cutout/navigation presets rendered as panel rows (reuse .zp-row layout, drop
        the old button-strip look) */
@@ -1881,25 +1904,76 @@
     } catch (e) { /* iframe not ready yet */ }
   }
 
-  // Click/tap a row's «?» to toggle its inline Russian explanation. Works on touch
-  // (unlike title= tooltips). Each «?» lives in a .zp-row; the hint is the .zp-hint
-  // sibling inside the shared .zp-row-wrap.
-  function wireHints(container) {
-    container.querySelectorAll('.zp-info').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.preventDefault(); e.stopPropagation();
-        const wrap = btn.closest('.zp-row-wrap');
-        const hint = wrap && wrap.querySelector('.zp-hint');
-        if (!hint) return;
-        const open = hint.classList.toggle('open');
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      });
+  // ── Floating explanation popup ─────────────────────────────────────────
+  // One shared bubble for every «?» button (the «Зоны» panel rows AND the
+  // motion/difficulty parameter rows). Tapping a «?» anchors the popup to that
+  // button; the explanation text rides on the button's data-hint attribute.
+  // Works on touch (unlike title= tooltips) and — unlike the old inline hint —
+  // floats over the layout instead of expanding a row, so nothing below shifts.
+  // Tapping the same «?» again, tapping elsewhere, scrolling or resizing hides it.
+  const hintPop = (function () {
+    const el = document.createElement('div');
+    el.className = 'hint-pop';
+    el.setAttribute('role', 'tooltip');
+    document.body.appendChild(el);
+    let anchor = null;
+
+    function hide() {
+      if (!anchor) return;
+      el.classList.remove('open');
+      anchor.setAttribute('aria-expanded', 'false');
+      anchor = null;
+    }
+
+    function place(btn) {
+      const r = btn.getBoundingClientRect();
+      const pw = el.offsetWidth, ph = el.offsetHeight, gap = 6, margin = 8;
+      // Prefer below the button; flip above if it would overflow the viewport.
+      let top = r.bottom + gap;
+      if (top + ph > window.innerHeight - margin) {
+        const above = r.top - gap - ph;
+        top = above >= margin ? above : Math.max(margin, window.innerHeight - margin - ph);
+      }
+      // Centre on the button horizontally, clamped to the viewport.
+      let left = r.left + r.width / 2 - pw / 2;
+      left = Math.max(margin, Math.min(left, window.innerWidth - margin - pw));
+      el.style.top = top + 'px';
+      el.style.left = left + 'px';
+    }
+
+    function toggle(btn) {
+      if (anchor === btn) { hide(); return; }
+      hide();
+      const text = btn.getAttribute('data-hint');
+      if (!text) return;
+      el.textContent = text;
+      el.classList.add('open');         // visible first so offsetWidth/Height read
+      anchor = btn;
+      btn.setAttribute('aria-expanded', 'true');
+      place(btn);
+    }
+
+    // A «?» anywhere toggles the popup; any other interaction dismisses it.
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.hint-q, .zp-info');
+      if (!btn) return;
+      e.preventDefault(); e.stopPropagation();
+      toggle(btn);
     });
-  }
+    document.addEventListener('pointerdown', e => {
+      if (!anchor) return;
+      if (el.contains(e.target) || e.target.closest('.hint-q, .zp-info')) return;
+      hide();
+    }, true);
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', hide);
+    return { hide };
+  })();
 
   // Cutout/navigation options live as rows inside the «Зоны» panel. Each row TOGGLES
-  // one option (several can be on at once); its «?» toggles an inline Russian
-  // explanation (click/tap — so it works on touch, where title= tooltips never show).
+  // one option (several can be on at once); its «?» opens a floating popup with a
+  // Russian explanation (click/tap — so it works on touch, where title= tooltips
+  // never show, and without pushing the rows below it down).
   (function buildCutoutList() {
     const host = document.getElementById('cutout-list');
     if (!host) return;
@@ -1909,9 +1983,8 @@
         '<div class="zp-row co-btn" data-co="' + k + '">' +
           '<span class="co-dot"></span>' +
           '<span class="zp-label">' + escHtml(T.cutoutLabels[k]) + '</span>' +
-          '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false">?</button>' +
+          '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="' + escHtml(T.cutoutHints[k]) + '">?</button>' +
         '</div>' +
-        '<div class="zp-hint">' + escHtml(T.cutoutHints[k]) + '</div>' +
       '</div>'
     ).join('');
     host.querySelectorAll('.co-btn').forEach(row => {
@@ -1920,7 +1993,6 @@
         toggleCutout(row.dataset.co);
       });
     });
-    wireHints(host);
     syncCutoutButtons();
   })();
 
@@ -2016,11 +2088,10 @@
         '<div class="zp-row">' +
           '<span class="' + it[1] + '" style="' + it[2] + '"></span>' +
           '<span class="zp-label">' + it[3] + '</span>' +
-          '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false">?</button>' +
+          '<button class="zp-info" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="' + escHtml(T.zoneHints[it[0]] || '') + '">?</button>' +
           '<label class="mt-toggle"><input type="checkbox" data-zone="' + it[0] + '"' +
             (window._zoneVis[it[0]] !== false ? ' checked' : '') + '><span class="track"></span></label>' +
         '</div>' +
-        '<div class="zp-hint">' + escHtml(T.zoneHints[it[0]] || '') + '</div>' +
       '</div>'
     ).join('');
     host.querySelectorAll('input[data-zone]').forEach(inp => {
@@ -2038,7 +2109,6 @@
         if (cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change', { bubbles: true })); }
       });
     });
-    wireHints(host);
   })();
 
   /* ── Workbench logic (unchanged) ─────────────────────────────────────── */
@@ -2188,6 +2258,14 @@
     const s = p.label.replace(/^Отключить\s+/i, '');
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
+  // «?» button for a parameter row — tap opens the floating explanation popup
+  // (the same affordance as the «Зоны» panel). The Russian note rides on
+  // data-hint. Omitted when a param has no description.
+  function hintBtn(p) {
+    if (!p || !p.description) return '';
+    return '<button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="' +
+      escHtml(p.description) + '">?</button>';
+  }
 
   function buildUI() {
     groupsEl.innerHTML = '';
@@ -2222,7 +2300,7 @@
           const on  = inv ? !v : v;          // displayed state
           card.title = p.key + (p.description ? ' — ' + p.description : '');
           card.innerHTML =
-            '<span class="lbl">' + escHtml(posLabel(p)) + '</span>' +
+            '<span class="lbl">' + escHtml(posLabel(p)) + '</span>' + hintBtn(p) +
             '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (inv ? ' data-invert="1"' : '') + (on ? ' checked' : '') + '><span class="track"></span></span>';
           grid.appendChild(card);
         });
@@ -2254,7 +2332,7 @@
           row.title = tipParts.join(' ');
 
           const unitHtml = p.unit ? ' <small>' + escHtml(p.unit) + '</small>' : '';
-          const lblHtml = '<span class="lbl">' + escHtml(posLabel(p)) + unitHtml + '</span>';
+          const lblHtml = '<span class="lbl-wrap"><span class="lbl">' + escHtml(posLabel(p)) + unitHtml + '</span>' + hintBtn(p) + '</span>';
 
           if (typeof p.def === 'boolean') {
             const inv = isDisableFlag(p);
