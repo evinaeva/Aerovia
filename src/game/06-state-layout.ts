@@ -214,7 +214,8 @@
     // n полос симметрично по центру (старая неон-композиция, центральная не пропускается).
     let cys: number[];
     if(LV.layout && LV.layout.runways){
-      cys = LV.layout.runways.map(rd => Math.max(top0+rh/2, Math.min(bot0-rh/2, top0 + rd.y*(bot0-top0))));
+      // rd.y = доля высоты апрона (как в редакторе «Разметка»), не экрана
+      cys = LV.layout.runways.map(rd => Math.max(top0+rh/2, Math.min(bot0-rh/2, fy0 + rd.y*(fy1-fy0))));
     } else {
       const n = Math.max(1, LV.runways || 1);
       const rwY0 = top0 + Math.max(0, ((bot0-top0) - (rh*n + gap*(n-1))) / 2);
