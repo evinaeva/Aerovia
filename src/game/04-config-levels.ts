@@ -91,15 +91,15 @@
     // перед входом — на столько px·ui левее кромки апрона (field.x1).
     LAND_ROLLOUT: 40,
     // (бывш. TAKEOFF_HOLD удалён — борт больше не замирает на старте; см. 08b взлёт)
-    DISABLE_VIP:       true as boolean,  // отключить VIP-борты (для отладки скорости)
-    DISABLE_EMERGENCY: true as boolean,  // отключить аварийные борты
-    DISABLE_MEDICAL:   true as boolean,  // отключить медицинские борты
-    DISABLE_RUSH:      true as boolean,  // отключить часы пик
-    DISABLE_WEATHER:   true as boolean,  // отключить погодные условия
-    DISABLE_SLOWMO:    true as boolean,  // отключить slowmo при near-miss
-    DISABLE_FOREST:    true as boolean,  // отключить лесные помехи (елки, птицы, олени, снег)
-    DISABLE_DEICE:     true as boolean,  // не добавлять деайсинг в список услуг
-    DISABLE_BAY:       true as boolean,  // пропустить все услуги в боксах → сразу к вылету
+    DISABLE_VIP:       false as boolean,  // отключить VIP-борты (для отладки скорости)
+    DISABLE_EMERGENCY: false as boolean,  // отключить аварийные борты
+    DISABLE_MEDICAL:   false as boolean,  // отключить медицинские борты
+    DISABLE_RUSH:      false as boolean,  // отключить часы пик
+    DISABLE_WEATHER:   false as boolean,  // отключить погодные условия
+    DISABLE_SLOWMO:    false as boolean,  // отключить slowmo при near-miss
+    DISABLE_FOREST:    false as boolean,  // отключить лесные помехи (елки, птицы, олени, снег)
+    DISABLE_DEICE:     false as boolean,  // не добавлять деайсинг в список услуг
+    DISABLE_BAY:       false as boolean,  // пропустить все услуги в боксах → сразу к вылету
     APRON_SPAWN:       false as boolean, // демо: у левого края апрона всегда стоит готовый к взлёту борт (replaces when taken/crashed)
     BAY_DOCK_SPEED:  0.85, // скорость движения в боксе (доля от SPEED_TAXI)
     BAY_ALIGN_SPEED: 6,    // lerp-скорость бокового выравнивания по оси ворот
@@ -223,6 +223,17 @@
     REWARD: 12,            // премия за устранённую помеху
   };
 
+  // ---- арктический биом: обледенение ВПП и деайсинг-бригады ----
+  // Полоса периодически покрывается льдом → закрывается до приезда деайсинг-грузовика.
+  // Де-айсинг обязателен для КАЖДОГО борта перед вылетом (не только в снегопад).
+  const ARC = {
+    SPAWN_FIRST: 12,
+    SPAWN_MIN: 15, SPAWN_MAX: 26,
+    CREW_SPEED: 230,       // медленнее из-за мороза
+    WORK_TIME: 2.5,        // разморозка занимает дольше
+    REWARD: 15,
+  };
+
   // ---- level config ----
   // КАЖДЫЙ уровень — один шаг кривой «медленного нарастания сложности» (паттерн —
   // в docs/design/game-design/level-pattern.md). По нему же делаем будущие карты.
@@ -339,7 +350,10 @@
       level:{ biome:'forest', weather:true, deice:true, objective:{ metric:'served', stars:[10,12,14] },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
         runways:3 } },
-    { id:'arctic',   emoji:'❄️', ready:false },
+    { id:'arctic', emoji:'❄️', ready:true,
+      level:{ biome:'arctic', weather:true, deice:true, objective:{ metric:'served', stars:[8,10,12] },
+        sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
+        runways:3 } },
     { id:'tropical', emoji:'🏝️', ready:false },
     { id:'desert',   emoji:'🐪', ready:false },
     { id:'mountain', emoji:'🏔️', ready:false },
