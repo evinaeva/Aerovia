@@ -72,3 +72,59 @@
   // (главный экран не мелькает). Хуки зон уже определены к этому моменту.
   if (window._enterMarkupSurface) window._enterMarkupSurface();
 
+  // ── Zoom: крупный план ВПП → Ангар → Сброс ──────────────────────────────
+  (function () {
+    const ZOOM_STATES = [null, 'runway', 'bay'];
+    const ZOOM_LABELS = {
+      null:    'Крупный план — ВПП / Ангар / Сброс',
+      runway:  'Крупный план: ВПП  (клик → Ангар)',
+      bay:     'Крупный план: Ангар  (клик → Сброс)',
+    };
+    let zi = 0;
+    const btn   = document.getElementById('btn-zoom');
+    const shell = document.getElementById('phone-shell');
+    if (!btn || !shell) return;
+
+    function applyZoom(target) {
+      if (!target) {
+        shell.style.transform = '';
+        shell.style.transformOrigin = '';
+        btn.classList.remove('tb-active');
+        btn.title = ZOOM_LABELS[null];
+        return;
+      }
+      try {
+        const fd = gameFrame.contentWindow && gameFrame.contentWindow.__FIELD;
+        if (!fd || !fd.W) { zi = 0; applyZoom(null); return; }
+        let cx, cy, sc;
+        if (target === 'runway' && fd.runways && fd.runways.length) {
+          const r = fd.runways[0];
+          cx = (r.x + r.w * 0.5) / fd.W;
+          cy = r.cy / fd.H;
+          sc = 3;
+        } else if (target === 'bay' && fd.bays && fd.bays.length) {
+          const b = fd.bays.find(function(b) { return b.open; }) || fd.bays[0];
+          cx = (b.x + b.w * 0.5) / fd.W;
+          cy = (b.y + b.h * 0.5) / fd.H;
+          sc = 4;
+        } else {
+          zi = 0; applyZoom(null); return;
+        }
+        shell.style.transformOrigin = (cx * 100) + '% ' + (cy * 100) + '%';
+        shell.style.transform = 'scale(' + sc + ')';
+        btn.classList.add('tb-active');
+        btn.title = ZOOM_LABELS[target];
+      } catch (e) { zi = 0; applyZoom(null); }
+    }
+
+    btn.addEventListener('click', function () {
+      zi = (zi + 1) % ZOOM_STATES.length;
+      applyZoom(ZOOM_STATES[zi]);
+    });
+
+    // Сброс зума при смене режима (Разметка / Тестовая игра)
+    window._previewZoomReset = function () { zi = 0; applyZoom(null); };
+    const origReturnToMarkup = window._returnToMarkup;
+    window._returnToMarkup = function () { if (window._previewZoomReset) window._previewZoomReset(); if (origReturnToMarkup) origReturnToMarkup(); };
+  })();
+

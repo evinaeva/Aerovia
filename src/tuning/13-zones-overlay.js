@@ -367,11 +367,13 @@
       const ax = kind === 'rwtd' ? r.stopX + PL : kind === 'rwlift' ? r.exitX : (r.x + r.w);
       return { x: ax, y: r.cy, ux: 1, uy: 0, ui, r };
     }
+    const MP_PT_VIS = { rwtd: 'MT.SHOW_TD_PT', rwlift: 'MT.SHOW_LIFT_PT', rwalign: 'MT.SHOW_ALIGN_PT' };
     function motionPointsSvg(snap, fd) {
       if (snap['MT.DEBUG_MOTION_POINTS'] !== true) return '';
       let out = '';
       const r = repRunway(fd);
       if (r) ['rwtd', 'rwlift', 'rwalign'].forEach(kind => {
+        if (snap[MP_PT_VIS[kind]] === false) return;   // per-point visibility toggle
         const a = mpAnchor(kind, fd); if (!a) return;
         const off = +(snap[MP_PARAM[kind]] || 0), col = MP_COL[kind];
         const x = a.x + a.ux * off * a.ui;

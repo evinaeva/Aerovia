@@ -107,6 +107,7 @@
 
     wireInputs();
     buildSubtabs();
+    if (typeof syncScenarioBar === 'function') syncScenarioBar();
   }
 
   // Params that feed the field LAYOUT (bay/runway/plane geometry) rather than a

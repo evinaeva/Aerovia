@@ -664,6 +664,7 @@
   function land(pl: any, r: any){            // начать посадку на полосу r
     pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
     pl.landing=true; pl.moving=true; pl.path=[]; pl.touched=false; pl.approachR=null;
+    pl.rollSpeed = undefined;   // сбросить скорость пробега для нового захода
   }
   // момент касания (за корпус до полевого торца): толчок + визг резины.
   // FX касания живут здесь, а не в startGround, — это и есть «приземление».

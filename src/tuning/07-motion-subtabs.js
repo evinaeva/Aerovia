@@ -30,6 +30,24 @@
 
   gameFrame.addEventListener('load', () => { setTimeout(pollMT, 80); setTimeout(pollGame, 80); });
 
+  // ── Scenario bar (floating top-left of preview): sync with MT on load/change ──
+  (function() {
+    const sel = document.getElementById('scenario-sel');
+    if (!sel) return;
+    sel.addEventListener('change', function() {
+      if (!MT) return;
+      MT.apply({ 'MT.SCENARIO': sel.value }, true);
+    });
+    // syncScenarioBar() is called from buildUI() to keep the select in sync
+  })();
+
+  function syncScenarioBar() {
+    const sel = document.getElementById('scenario-sel');
+    if (!sel || !MT) return;
+    const v = MT.snapshot()['MT.SCENARIO'];
+    sel.value = (v != null ? String(v) : 'none');
+  }
+
   /* ── Sub-tabs for the «Движение» & «Сложность» tabs ────────────────────────
      ~20 parameter groups in one list is unreadable, so we bucket them by domain
      and show one bucket at a time. Each <details> card is tagged data-subtab.
@@ -122,6 +140,7 @@
       ['square',     'Квадрат'],
     ],
     'MT.SCENARIO': [
+      ['none',           'Выкл'],
       ['complete_cycle', 'Полный цикл'],
       ['landing',        'Посадка'],
       ['takeoff',        'Взлёт'],

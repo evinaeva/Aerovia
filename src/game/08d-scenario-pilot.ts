@@ -76,7 +76,8 @@
   }
 
   function scenarioPilot(dt: number){
-    const scen = (MT_META_VALUES.SCENARIO as string) || 'complete_cycle';
+    const scen = (MT_META_VALUES.SCENARIO as string) || 'none';
+    if(scen === 'none'){ _spKill(); _spLastScen = 'none'; return; }
     if(scen !== _spLastScen){ _spKill(); _spLastScen = scen; _spDelay = 0.5; }
     if(_spPlane && _spPlane.dead) _spClear();
     // While managing a plane, hold the auto-spawn timer back so no extra planes appear.
