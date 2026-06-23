@@ -1,0 +1,12 @@
+{
+  "id": "hangar-arctic",
+  "label": "Arctic",
+  "base": "assets/sprites/arctic",
+  "states": {
+    "fuel": "bay-fuel.png",
+    "board": "bay-board.png",
+    "repair": "bay-repair.png",
+    "deice": "bay-deice.png",
+    "locked": "bay-locked.png"
+  }
+}
