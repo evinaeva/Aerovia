@@ -64,6 +64,7 @@
 
   window._runTest = runTest;
   window._returnToMarkup = returnToMarkup;
+  window._getPreviewMode = () => previewMode;
 
   { const mk = document.getElementById('mode-markup'); if (mk) mk.addEventListener('click', returnToMarkup); }
   { const ts = document.getElementById('mode-test');   if (ts) ts.addEventListener('click', runTest); }

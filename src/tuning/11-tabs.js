@@ -48,6 +48,8 @@
       if (window._skinPreviewOn) window._skinPreviewOn(false);
       if (tab === 'layout' && window._enterMarkupSurface) window._enterMarkupSurface();
       if (tab === 'assets' && window._exitMarkupSurface)  window._exitMarkupSurface();
+      // Авто-запуск теста при первом входе в «Ресурсы» (иначе видим стартовый экран без бэев)
+      if (tab === 'assets' && window._getPreviewMode && window._getPreviewMode() !== 'test' && window._runTest) window._runTest();
       if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
       if (tab === 'test'    && window._testSync)      window._testSync();
     }
