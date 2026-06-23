@@ -1,7 +1,9 @@
 // ===== 14-level-analysis — static difficulty analysis for level configs =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: DifficultyComponent, DifficultyReport, analyzeLevel, countOpenHangars, countTotalHangars, countOpenRunwayDirections.
-// Reads: 04 (K, Level, HangarDef, RunwayDef, LevelLayout, levelPace, levelDifficulty, levelEconomy, levelEffects, levelEvents, sidesToLayout, SVC_TYPES).
+// Provides: DifficultyComponent, DifficultyReport, analyzeLevel, countOpenHangars, countTotalHangars,
+//   countOpenRunwayDirections, validatePassable, campaignTarget, archetypeForIndex, ARCHETYPES, autoDifficulty.
+// Reads: 04 (K, Level, Objective, HangarDef, RunwayDef, LevelLayout, levelPace, levelEconomy, levelServices,
+//   levelMaxUp, paceInterval, SVC_TYPES). autoDifficulty НЕ генерирует events/weather — их ставит оператор.
 
   interface DifficultyComponent {
     label: string;
@@ -186,6 +188,12 @@
       }
       // жизни: нельзя требовать больше стартовых
       if(o.lives && o.lives[i] > K.START_LIVES) reasons.push('требует жизней больше стартовых ('+K.START_LIVES+')');
+      // апгрейды: не больше, чем всего возможно на карте (апгрейдируемые ангары × maxUp)
+      if(o.upg && o.upg[i] > 0){
+        const hs = (lv.layout && lv.layout.hangars) || [];
+        const totalPossUpg = hs.filter((h: HangarDef)=>h.up!==false).length * levelMaxUp(lv);
+        if(o.upg[i] > totalPossUpg) reasons.push('апгрейдов '+o.upg[i]+' больше возможных на карте ('+totalPossUpg+')');
+      }
       tiers.push({ star:i+1, ok: reasons.length===0, reasons });
     }
     const globalReasons: string[] = [];
@@ -195,46 +203,227 @@
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // АВТО-СЛОЖНОСТЬ — один регулятор target∈[0,1] → согласованный набор факторов.
-  // Инвертирует levelDifficulty(): раскладывает целевую сложность (target·CAP) на
-  // события (ступенчато, по одному), среду и темп (pace добираем под формулу), плюс
-  // выводит скромный спред порогов звёзд. Возвращает ТОЛЬКО ручки сложности/цели —
-  // их мержат на геометрию черновика. Затем ослабляет пороги, пока validatePassable
-  // не станет зелёным. Правила кривой — docs/design/game-design/difficulty_curve.md.
-  function autoDifficulty(target: number): Partial<Level> {
-    const tg = Math.max(0, Math.min(1, target || 0));
-    const d  = tg * K.ECON_DIFF_CAP;                     // желаемый levelDifficulty (0..CAP)
-    // события вводим ступенчато (по одному) с ростом target — как «введение → консолидация»
-    const events: Events = {};
-    if(tg >= 0.30) events.vip = true;
-    if(tg >= 0.50) events.emergency = true;
-    if(tg >= 0.68) events.rush = true;
-    if(tg >= 0.84) events.medical = true;
-    // среда — только на высоком target
-    const weather = tg >= 0.92;
-    // таймерное давление — в верхней половине (даёт «гонку»)
-    const timed = tg >= 0.60;
-    const EVENT_DIFF: Record<string, number> = { vip:0.5, rush:1.0, medical:1.0, emergency:0.8, fog:0.8, wind:0.8 };
-    let eventScore = 0; for(const k in EVENT_DIFF) if(events[k]) eventScore += EVENT_DIFF[k];
-    const timeScore = timed ? 0.5 : 0;
-    const envScore  = weather ? 1 : 0;
-    // решаем pace под формулу levelDifficulty (см. 04): добираем недостающее темпом
-    const paceRaw = (d * K.ECON_DIFF_NORM - K.ECON_W_EVENT*eventScore - K.ECON_W_TIME*timeScore - K.ECON_W_ENV*envScore) / K.ECON_W_DENS;
-    const pace = +Math.max(0, Math.min(1, paceRaw)).toFixed(2);
-    // пороги звёзд из потока: скромный спред 70%/85%/100% (1★ достижима, 3★ — вызов)
-    const base = Math.round(6 + tg * 26);               // 6..32 бортов
-    const stars = [Math.max(1, Math.round(base*0.70)), Math.max(1, Math.round(base*0.85)), base];
-    const objective: Objective = { metric:'served', stars, target: stars[2] };
-    const out: Partial<Level> = { pace, events, objective };
-    if(weather) out.weather = true;
-    if(timed){ objective.time = Math.max(60, Math.ceil(base * paceInterval(pace) * 1.6)); }
-    // гарантия проходимости: ослабляем пороги, пока все тиры не зелёные
-    for(let guard=0; guard<10; guard++){
-      const rep = validatePassable(out as Level);
+  // КРИВАЯ СЛОЖНОСТИ КАМПАНИИ — номер уровня → target∈[0,1] насыщающейся кривой.
+  // Обучение (пологий низ) → подъём (ease-out) → плато < 1.0; капстоны каждый
+  // capstoneEvery-й уровень добиваются до ~1.0. Расширение кампании = больше уровней
+  // на том же плато (raw-сложность НЕ растёт выше «предела компетентного игрока»).
+  // Правила — docs/design/game-design/difficulty_curve.md. Дефолты ручек — K.CURVE.
+  interface CurveOpts { tutorialLen?: number; rampEnd?: number; plateauHeight?: number; capstoneEvery?: number; }
+  function campaignTarget(index: number, o: CurveOpts = {}): number {
+    const T = o.tutorialLen   ?? K.CURVE.tutorialLen;    // длина обучения
+    const R = o.rampEnd       ?? K.CURVE.rampEnd;        // уровень выхода на плато
+    const H = o.plateauHeight ?? K.CURVE.plateauHeight;  // высота плато (< 1.0)
+    const C = o.capstoneEvery ?? K.CURVE.capstoneEvery;  // период капстонов (0 = выкл)
+    const i = Math.max(1, Math.floor(index || 1));
+    let t: number;
+    if(i <= T){
+      t = 0.04 + (0.18 - 0.04) * (i - 1) / Math.max(1, T - 1);          // пологое обучение
+    } else if(i <= R){
+      const p = (i - T) / Math.max(1, R - T);                          // 0..1
+      t = 0.20 + (H - 0.20) * (1 - (1 - p) * (1 - p));                 // ease-out, насыщается к H
+    } else {
+      t = H;                                                            // плато
+    }
+    if(C > 0 && i % C === 0) t = Math.min(1.0, Math.max(t, H + 0.08));  // капстон
+    return +Math.max(0, Math.min(1, t)).toFixed(3);
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // АКЦЕНТЫ ФАКТОРОВ — все факторы победы активны ВСЕГДА; архетип лишь смещает
+  // «строгость» групп при заданном target (суммарная сложность ≈ target, проходимость
+  // гарантирует validatePassable). Это даёт разнообразие на плато без роста raw-сложности.
+  interface Archetype { key: string; traffic: number; money: number; time: number; quality: number; upg: number; }
+  const ARCHETYPES: Archetype[] = [
+    { key:'mixed',    traffic:1.0, money:1.0, time:1.0, quality:1.0, upg:1.0 },  // баланс (дефолт)
+    { key:'economy',  traffic:0.9, money:1.4, time:0.8, quality:1.2, upg:1.0 },  // деньги + безаварийность
+    { key:'speed',    traffic:1.1, money:0.8, time:1.4, quality:0.8, upg:0.9 },  // время / timeTier
+    { key:'flawless', traffic:0.9, money:1.0, time:0.9, quality:1.5, upg:1.0 },  // 0 просрочек/аварий
+    { key:'upgrades', traffic:0.9, money:0.9, time:1.2, quality:1.0, upg:1.5 },  // гонка апгрейдов
+    { key:'traffic',  traffic:1.4, money:0.8, time:1.0, quality:0.8, upg:0.9 },  // поток у предела ёмкости
+  ];
+  // ротация акцентов по номеру уровня; капстон → 'flawless'
+  function archetypeForIndex(index: number, capstoneEvery: number = K.CURVE.capstoneEvery): string {
+    const i = Math.max(1, Math.floor(index || 1));
+    if(capstoneEvery > 0 && i % capstoneEvery === 0) return 'flawless';
+    return ARCHETYPES[(i - 1) % ARCHETYPES.length].key;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // АВТО-ГЕНЕРАТОР УРОВНЯ — target∈[0,1] (+ опц. акцент) → согласованный набор ВСЕХ
+  // факторов победы и экономики. ЧИТАЕТ разметку и ручные настройки оператора (через
+  // opts.locked их НЕ перезаписывает, но учитывает как вход), события/погоду НЕ трогает.
+  // Затем ослабляет пороги, пока validatePassable не станет зелёным.
+  interface AutoResult {
+    pace: number; objective: Objective;
+    openCost?: number; upgCost?: number; rwOpenCost?: number;
+    maxUp?: number; minUp?: number; startMoney?: number;
+    crashPenalty?: number; latePenalty?: number;
+  }
+  interface AutoOpts { archetype?: string; locked?: string[]; }
+  function autoDifficulty(target: number, lv: Partial<Level> = {}, opts: AutoOpts = {}): AutoResult {
+    const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+    const r = (v: number) => Math.round(v);
+    const tg = clamp(target || 0, 0, 1);
+    const pace = +tg.toFixed(2);
+    const lvRef = lv as Level;
+
+    // — чтение карты (вход; ручные настройки не перезаписываем) —
+    const openH    = countOpenHangars(lvRef);
+    const totalH   = countTotalHangars(lvRef);
+    const openDirs = countOpenRunwayDirections(lvRef);
+    const hangars  = (lv.layout && lv.layout.hangars) || [];
+    const upgH     = hangars.filter((h: HangarDef) => h.up !== false).length;
+    let lockedDirs = 0;
+    const rws = (lv.layout && lv.layout.runways) || [];
+    for(const rw of rws){ if(rw.landingOpen === false) lockedDirs++; if(rw.takeoffOpen === false) lockedDirs++; }
+    const interval = paceInterval(pace);
+    const lockedSet = new Set(opts.locked || []);
+    // итоговый потолок апгрейда (генерируем, если оператор не задал/не залочил) — от него
+    // считаем и пропускную, и totalPossUpg, чтобы они совпали с тем, что увидит валидатор.
+    const maxUpV = lockedSet.has('maxUp') ? levelMaxUp(lvRef) : ((lv.maxUp != null) ? lv.maxUp : Math.max(1, r(tg*K.BAY_MAX_LVL)));
+    const totalPossUpg = upgH * maxUpV;                  // всего возможных апгрейдов на карте
+    const fullUpgThroughput = 1 + maxUpV * K.UP_SPEED;  // ×2.25 при maxUp=5 (реальная формула serveTimeFor)
+
+    // — акцент факторов —
+    const A = ARCHETYPES.find(a => a.key === (opts.archetype || lvRef.archetype)) || ARCHETYPES[0];
+
+    // — число бортов (ёмкость карты + полная прокачка) —
+    const capFactor = clamp(
+      (clamp(openH/3, 0.3, 1.8)*0.5 + clamp(openDirs/3, 0.3, 1.5)*0.3) * fullUpgThroughput * 0.6 + 0.4,
+      0.4, 2.4);
+    const base = Math.max(4, r((4 + tg*28) * capFactor * A.traffic));
+    const stars = [Math.max(1, r(base*0.70)), Math.max(1, r(base*0.85)), Math.max(1, base)];
+
+    // — время на тир (timeTier, ≤; 3★ строже). Низкий tg → очень щедро (необязательно) —
+    const tc = Math.max(stars[2], 1) * interval;         // «естественное» время добежать до 3★
+    const timePress = clamp(tg * A.time, 0, 1.4);
+    const mul3 = 2.6 - 1.5*timePress, mul2 = mul3 + 0.4, mul1 = mul3 + 0.9;
+    const timeTier = [Math.max(30, Math.ceil(tc*mul1)), Math.max(30, Math.ceil(tc*mul2)), Math.max(30, Math.ceil(tc*mul3))];
+
+    // — разметочные цены/экономика (единые на карту); считаем ДО денег, чтобы привязать
+    //   денежную цель к экономике с этими ценами (как увидит validatePassable). Locked-поля
+    //   оператора не трогаем — берём его значения из уже стамплённого layout. —
+    const openCostV   = lockedSet.has('openCost')   ? null : r(K.BAY_OPEN_COST * (0.5 + tg));        // 50..200
+    const upgCostV    = lockedSet.has('upgCost')    ? null : r(K.BAY_UP_COST[0] * (0.75 + tg*2.25)); // ~60..240
+    const rwOpenCostV = lockedSet.has('rwOpenCost') ? null : (lockedDirs > 0 ? r(80 + tg*120) : null);// 80..200
+    const minUpV      = lockedSet.has('minUp') ? (lvRef.minUp || 0) : (tg > 0.5 ? 1 : 0);   // maxUpV — выше
+
+    // «как при экспорте»: клонируем layout, штампуем сгенерированные цены и target —
+    // levelEconomy здесь даёт те же svcReward/kitCost, что увидит валидатор после экспорта.
+    function simLevel(starArr: number[], startMoneyArg?: number): Level {
+      const lay = lv.layout ? JSON.parse(JSON.stringify(lv.layout)) : (lvRef as any).layout;
+      if(lay && lay.hangars){
+        lay.hangars.forEach((h: any) => {
+          if(openCostV != null && h.open === false) h.openCost = openCostV;
+          if(upgCostV  != null) h.upgCost = upgCostV;
+        });
+        if(rwOpenCostV != null && lay.runways) lay.runways.forEach((rw: any) => {
+          if(rw.landingOpen === false) rw.landingCost = rwOpenCostV;
+          if(rw.takeoffOpen === false) rw.takeoffCost = rwOpenCostV;
+        });
+      }
+      const out: any = { ...lvRef, layout: lay, pace, maxUp: maxUpV, minUp: minUpV,
+                         objective: { metric:'served', stars: starArr, target: starArr[starArr.length-1] } };
+      if(startMoneyArg != null) out.startMoney = startMoneyArg;
+      return out as Level;
+    }
+
+    // — стартовые деньги: доля стоимости набора (помощь на старте, убывает с tg).
+    //   Для money-акцентов (A.money>1) поднимаем до ~0.32·kit, иначе на уровне без событий
+    //   нет излишка и денежная цель невыполнима (нужен бюджет, чтобы было что копить). —
+    const kitCostNow = levelEconomy(simLevel(stars)).kitCost;
+    let startMoneyV: number;
+    if(lockedSet.has('startMoney')) startMoneyV = (lvRef.startMoney as number) || 0;
+    else {
+      startMoneyV = Math.max(0, r(kitCostNow * Math.max(0, 0.4 - tg*0.38)));
+      if(A.money > 1.0) startMoneyV = Math.max(startMoneyV, Math.ceil(0.32 * kitCostNow));
+    }
+
+    // — деньги (≥): доля РЕАЛЬНО зарабатываемого. Выполнимость проверяем по ХУДШЕЙ из двух
+    //   экономик — со сгенерированными ценами (как после экспорта) и с исходными ценами карты —
+    //   чтобы цель была достижима независимо от того, заштампует ли потребитель цены. Если
+    //   даже нулевая цель недостижима (kit дороже заработка) — деньги опускаем. —
+    const avgNSvc = 1 + (levelServices(lvRef).length >= 2 ? K.TWO_SVC_CHANCE : 0);
+    const moneyFrac = clamp((0.3 + tg*0.5) * A.money, 0.15, 0.95);
+    function origLevel(starArr: number[]): Level {
+      return { ...lvRef, pace, maxUp: maxUpV, minUp: minUpV, startMoney: startMoneyV,
+               objective: { metric:'served', stars: starArr, target: starArr[starArr.length-1] } } as Level;
+    }
+    function moneyMaxFor(s: number, e: ReturnType<typeof levelEconomy>): number {
+      return e.startMoney + e.svcReward * avgNSvc * Math.max(s, 1) * e.skillMult - e.kitCost;
+    }
+    function calcMoney(starArr: number[]): number[] | undefined {
+      const eS = levelEconomy(simLevel(starArr, startMoneyV));   // сгенерированные (штампованные) цены
+      const eO = levelEconomy(origLevel(starArr));               // исходные цены карты
+      const rows = starArr.map(s => {
+        const mm = Math.min(moneyMaxFor(s, eS), moneyMaxFor(s, eO));
+        return { v: Math.max(0, Math.floor(Math.max(0, mm) * moneyFrac)), max: mm };
+      });
+      if(rows.some(x => x.v > x.max)) return undefined;   // даже 0 недостижим ⇒ нет денежной цели
+      return rows.map(x => x.v);
+    }
+    let money = lockedSet.has('money') ? undefined : calcMoney(stars);
+
+    // — жизни (≥), растут с акцентом качества —
+    const q = clamp(tg * A.quality, 0, 1.3);
+    const lives = [1, Math.min(K.START_LIVES, 1 + r(q)), Math.min(K.START_LIVES, 1 + r(q*2))];
+
+    // — качество (≤): просрочки/крушения, от щедрых к нулю —
+    const maxLate  = [Math.max(0, r(25*(1-q))), Math.max(0, r(18*(1-q))), Math.max(0, r(12*(1-q)))];
+    const maxCrash = [Math.max(0, r(15*(1-q))), Math.max(0, r(10*(1-q))), Math.max(0, r(6*(1-q)))];
+
+    // — апгрейды (≥), если на карте есть апгрейдируемые ангары —
+    let upg: number[] | undefined;
+    if(totalPossUpg > 0){
+      upg = [Math.max(1, r(totalPossUpg*clamp(tg*0.30*A.upg, 0.05, 0.40))),
+             Math.max(1, r(totalPossUpg*clamp(tg*0.55*A.upg, 0.10, 0.70))),
+             Math.max(1, r(totalPossUpg*clamp(tg*0.85*A.upg, 0.15, 1.00)))];
+      if(upg[1] < upg[0]) upg[1] = upg[0];
+      if(upg[2] < upg[1]) upg[2] = upg[1];               // монотонность после round
+    }
+
+    // — objective (заданные условия длиной 3) —
+    const objective: Objective = { metric:'served', stars, target: stars[2], timeTier, lives, maxLate, maxCrash };
+    if(money) objective.money = money;
+    if(upg)   objective.upg = upg;
+
+    // — итог: ручки экономики/цен (единые на карту) —
+    const out: AutoResult = {
+      pace, objective,
+      maxUp: maxUpV, minUp: minUpV, startMoney: startMoneyV,
+      crashPenalty: +(0.20 + tg*0.60).toFixed(2),
+      latePenalty:  +(0.20 + tg*0.40).toFixed(2),
+    };
+    if(openCostV   != null) out.openCost   = openCostV;
+    if(upgCostV    != null) out.upgCost    = upgCostV;
+    if(rwOpenCostV != null) out.rwOpenCost = rwOpenCostV;
+
+    // — respect-manual: убрать поля, заданные оператором (НЕ включаем их в результат) —
+    const objLocked = new Set(['stars','time','timeTier','money','lives','maxLate','maxCrash','upg','metric','race']);
+    for(const key of lockedSet){
+      if(objLocked.has(key)) delete (objective as any)[key];
+      else delete (out as any)[key];
+    }
+    if(lockedSet.has('startMoney')) delete (out as any).startMoney;
+    if(lockedSet.has('crashPenalty')) delete (out as any).crashPenalty;
+    if(lockedSet.has('latePenalty')) delete (out as any).latePenalty;
+
+    // — гарантия проходимости: ослабляем пороги, пока все тиры не зелёные —
+    // валидируем тот же стамплённый уровень + locked-значения оператора (baseObj).
+    const baseObj = (lvRef && (lvRef as any).objective) || {};
+    function validationLevel(): Level {
+      const sl = simLevel(objective.stars || stars, startMoneyV) as any;
+      sl.objective = { ...baseObj, ...objective };
+      return sl as Level;
+    }
+    for(let guard=0; guard<12; guard++){
+      const rep = validatePassable(validationLevel());
       if(rep.ok) break;
-      objective.stars = objective.stars.map(n=>Math.max(1, Math.floor(n*0.9)));
-      objective.target = objective.stars[2];
-      if(objective.time) objective.time = Math.ceil(objective.time * 1.1);
+      if(objective.timeTier) objective.timeTier = objective.timeTier.map(n => Math.ceil(n*1.15));
+      if(objective.upg)      objective.upg      = objective.upg.map(n => Math.max(1, Math.floor(n*0.9)));
+      if(objective.stars){ objective.stars = objective.stars.map(n => Math.max(1, Math.floor(n*0.95))); objective.target = objective.stars[2]; }
+      // деньги пересчитываем под изменившиеся stars (тот же ec, что у валидатора)
+      if(objective.money !== undefined){ const m = calcMoney(objective.stars || stars); if(m) objective.money = m; else delete (objective as any).money; }
     }
     return out;
   }

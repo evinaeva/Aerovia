@@ -290,14 +290,48 @@
 
     <!-- ✏ РЕДАКТОР СЛОЖНОСТИ — всё пишет в черновик «Разметки» (LE) -->
     <div class="lab-section">
-      <h3>✨ Авто-сложность <span class="h3-sub">· один регулятор → набор факторов</span></h3>
+      <h3>✨ Авто-генератор <span class="h3-sub">· сложность → все факторы</span></h3>
       <div class="lab-row" style="gap:10px;align-items:center;margin-bottom:8px">
+        <span class="lbl-main" style="white-space:nowrap">Сложность</span>
         <input type="range" id="de-auto" min="0" max="100" step="1" value="40" style="flex:1">
         <span class="lab-stat-val" id="de-auto-val" style="min-width:46px;text-align:right">40%</span>
       </div>
+      <div class="lab-row" style="gap:8px;align-items:center;margin-bottom:8px">
+        <span class="lbl-main" style="white-space:nowrap">Акцент</span>
+        <select id="de-arch" class="lab-select" style="flex:1">
+          <option value="auto">Авто (по № уровня)</option>
+          <option value="mixed">Баланс</option>
+          <option value="economy">Экономика (деньги + безаварийность)</option>
+          <option value="speed">Время</option>
+          <option value="flawless">Безаварийность</option>
+          <option value="upgrades">Апгрейды</option>
+          <option value="traffic">Трафик</option>
+        </select>
+      </div>
+      <div class="lab-row" style="gap:14px;align-items:center;margin-bottom:8px">
+        <label class="lab-chip" style="flex:none"><input type="checkbox" id="de-apply-econ" checked><span>Темп + экономика</span></label>
+        <label class="lab-chip" style="flex:none"><input type="checkbox" id="de-apply-obj" checked><span>Условия победы</span></label>
+      </div>
       <div class="lab-btn-row"><button class="p-btn" id="de-auto-apply">Сгенерировать в черновик</button></div>
-      <p class="lab-hint">Подбирает темп, события, среду и пороги звёзд под целевую сложность по формуле
-        <code>levelDifficulty</code>, затем ослабляет до проходимости 1★/2★/3★. Перезаписывает ручки черновика «Разметки».</p>
+      <p class="lab-hint">Все факторы победы активны всегда — сложность задаёт их <b>параметры и сочетание</b>.
+        Читает разметку и ручные настройки оператора. Снятая галочка = раздел не трогать (ручные значения сохраняются).
+        События и погоду НЕ трогает. Затем ослабляет пороги до проходимости 1★/2★/3★.</p>
+
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1)">
+        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:6px">Кривая кампании <small>· № уровня → сложность (плато не растёт выше предела)</small></div>
+        <div class="lab-params-grid">
+          <div class="lab-row"><span class="lbl-main">Обучение до</span><input class="lab-num" id="de-curve-tut" type="number" min="0" step="1" style="width:64px;text-align:center"></div>
+          <div class="lab-row"><span class="lbl-main">Плато с</span><input class="lab-num" id="de-curve-ramp" type="number" min="1" step="1" style="width:64px;text-align:center"></div>
+          <div class="lab-row"><span class="lbl-main">Высота плато</span><input class="lab-num" id="de-curve-plateau" type="number" min="0" max="1" step="0.05" style="width:64px;text-align:center"></div>
+          <div class="lab-row"><span class="lbl-main">Капстон кажд.</span><input class="lab-num" id="de-curve-cap" type="number" min="0" step="1" style="width:64px;text-align:center"></div>
+        </div>
+        <div class="lab-row" style="gap:8px;align-items:center;margin-top:6px">
+          <span class="lbl-main" style="white-space:nowrap">№ уровня</span>
+          <input class="lab-num" id="de-curve-idx" type="number" min="1" step="1" value="1" style="width:64px;text-align:center">
+          <button class="p-btn" id="de-curve-apply" style="flex:1">Сложность из кривой →</button>
+        </div>
+        <canvas id="de-curve-canvas" width="320" height="72" style="width:100%;height:72px;margin-top:6px;display:block"></canvas>
+      </div>
     </div>
 
     <div class="lab-section">
