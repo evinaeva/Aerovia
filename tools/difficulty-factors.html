@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Факторы сложности — autoDifficulty (зеркало src/game/14-level-analysis.ts)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;background:#f5f4f0;color:#1a1a1a;padding:26px 22px}
+h1{font-size:20px;font-weight:500;margin-bottom:4px}
+.sub0{font-size:12px;color:#888;margin-bottom:20px}
+.sub0 code{background:#e9e7e1;padding:1px 5px;border-radius:4px}
+
+.top-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:16px;margin-bottom:22px}
+.panel{background:#fff;border:1px solid #e0deda;border-radius:12px;padding:16px 18px}
+.panel-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:12px}
+.sub-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:#bbb;margin:12px 0 7px}
+
+.ctrl-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.ctrl-row:last-child{margin-bottom:0}
+.ctrl-label{font-size:12px;color:#555;min-width:96px;flex-shrink:0}
+.ctrl-row input[type=range]{flex:1;accent-color:#378ADD;cursor:pointer}
+.ctrl-val{font-size:13px;font-weight:500;min-width:42px;text-align:right}
+.pct-big{font-size:26px;font-weight:500;min-width:60px;text-align:right}
+select,input[type=number]{border:1px solid #d8d5d0;border-radius:6px;padding:4px 6px;font-size:12px;background:#fff}
+input[type=number]{width:52px;text-align:center;-moz-appearance:textfield}
+select{flex:1}
+
+.hg-table,.rw-table{width:100%;border-collapse:collapse;font-size:12px}
+.hg-table th,.rw-table th{color:#888;font-weight:500;padding:2px 5px 6px;text-align:center;font-size:11px}
+.hg-table th.left,.rw-table th.left{text-align:left;color:#aaa}
+.hg-table td,.rw-table td{padding:4px 5px;text-align:center}
+.hg-table td.lrow,.rw-table td.lrow{text-align:left;color:#555}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.df{background:#378ADD}.db{background:#D4537E}.dr{background:#BA7517}
+.col-land{background:#f0f7ff;border-radius:4px}.col-take{background:#f0faf5;border-radius:4px}
+.chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin:2px 3px 2px 0;background:#f0eeea;color:#555;border:1px solid #d8d5d0}
+
+.section{margin-bottom:18px}
+.section-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:#888;padding:0 14px;margin-bottom:4px}
+.section-body{background:#fff;border:1px solid #e0deda;border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:210px 1fr 150px;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid #f0eeea}
+.row:last-child{border-bottom:none}.row:hover{background:#faf9f6}
+.lbl{font-weight:500;font-size:13px}.subt{font-size:11px;color:#888;margin-top:2px}
+.val{font-size:13px;font-weight:500;text-align:right;white-space:nowrap}
+.bar-wrap{height:6px;background:#eeece8;border-radius:3px;overflow:hidden}
+.bar{height:6px;border-radius:3px;min-width:2px;transition:width .2s}
+.b-blue{background:#378ADD}.b-teal{background:#1D9E75}.b-amber{background:#BA7517}.b-coral{background:#D85A30}.b-purple{background:#7F77DD}.b-pink{background:#D4537E}
+.tiers{display:flex;gap:5px}
+.tier{flex:1;border:1px solid #e0deda;border-radius:6px;padding:4px 5px;font-size:12px;text-align:center;background:#f5f4f0;color:#555}
+.tier .sl{font-size:10px;color:#aaa;display:block;margin-bottom:1px}
+.t1{background:#e6f1fb;color:#185fa5;border-color:#b5d4f4}.t2{background:#e1f5ee;color:#0f6e56;border-color:#9fe1cb}.t3{background:#eaf3de;color:#3b6d11;border-color:#c0dd97}
+.warn{background:#faeeda;color:#854f0b;border-color:#fac775}.strict{background:#fcebeb;color:#a32d2d;border-color:#f7c1c1}
+.na{font-size:12px;color:#c4c1ba;font-style:italic}
+@media(max-width:820px){.top-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<h1>Факторы сложности — авто-генератор</h1>
+<p class="sub0">Зеркало <code>src/game/14-level-analysis.ts</code> (<code>campaignTarget</code> · <code>ARCHETYPES</code> · <code>autoDifficulty</code>). Все факторы активны всегда; сложность задаёт их параметры, акцент смещает строгость.</p>
+
+<div class="top-grid">
+  <div class="panel">
+    <div class="panel-title">Сложность и акцент</div>
+    <div class="ctrl-row">
+      <label class="ctrl-label">Сложность</label>
+      <input type="range" id="slTg" min="0" max="100" value="60" step="1">
+      <span class="pct-big" id="outTg">60%</span>
+    </div>
+    <div class="ctrl-row">
+      <label class="ctrl-label">Акцент</label>
+      <select id="arch">
+        <option value="mixed">Баланс</option>
+        <option value="economy" selected>Экономика</option>
+        <option value="speed">Время</option>
+        <option value="flawless">Безаварийность</option>
+        <option value="upgrades">Апгрейды</option>
+        <option value="traffic">Трафик</option>
+      </select>
+    </div>
+    <div class="ctrl-row">
+      <label class="ctrl-label">Геометрия</label>
+      <input type="range" id="slGeo" min="0" max="100" value="60" step="5">
+      <span class="ctrl-val" id="outGeo">60%</span>
+    </div>
+
+    <div class="sub-title">Кривая кампании</div>
+    <div class="ctrl-row"><label class="ctrl-label">Обучение до</label><input type="number" id="cTut" value="10" min="0"><span style="flex:1"></span><label class="ctrl-label" style="min-width:64px">Плато с</label><input type="number" id="cRamp" value="30" min="1"></div>
+    <div class="ctrl-row"><label class="ctrl-label">Высота плато</label><input type="number" id="cPlat" value="0.9" min="0" max="1" step="0.05"><span style="flex:1"></span><label class="ctrl-label" style="min-width:64px">Капстон</label><input type="number" id="cCap" value="10" min="0"></div>
+    <div class="ctrl-row"><label class="ctrl-label">№ уровня</label><input type="number" id="cIdx" value="20" min="1"><button id="fromCurve" style="flex:1;border:1px solid #c9c6bf;border-radius:6px;padding:5px;background:#fff;cursor:pointer">Сложность из кривой →</button></div>
+    <canvas id="curve" width="360" height="78" style="width:100%;height:78px;margin-top:8px;display:block"></canvas>
+    <div id="curveInfo" style="font-size:11px;color:#888;margin-top:4px"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Параметры карты (входные)</div>
+    <div class="sub-title">Ангары</div>
+    <table class="hg-table">
+      <thead><tr><th class="left">Параметр</th><th><span class="dot df"></span>Fuel</th><th><span class="dot db"></span>Board</th><th><span class="dot dr"></span>Repair</th></tr></thead>
+      <tbody>
+        <tr><td class="lrow">Всего</td><td><input type="number" id="fT" min="0" max="8" value="2"></td><td><input type="number" id="bT" min="0" max="8" value="3"></td><td><input type="number" id="rT" min="0" max="8" value="2"></td></tr>
+        <tr><td class="lrow">Открыто</td><td><input type="number" id="fO" min="0" max="8" value="1"></td><td><input type="number" id="bO" min="0" max="8" value="2"></td><td><input type="number" id="rO" min="0" max="8" value="1"></td></tr>
+        <tr><td class="lrow">Апгрейдируемых</td><td><input type="number" id="fU" min="0" max="8" value="2"></td><td><input type="number" id="bU" min="0" max="8" value="3"></td><td><input type="number" id="rU" min="0" max="8" value="2"></td></tr>
+      </tbody>
+    </table>
+    <div class="ctrl-row" style="margin-top:8px"><label class="ctrl-label">Макс. апгрейд</label><input type="number" id="maxUp" min="0" max="5" value="5"><span style="font-size:11px;color:#aaa;margin-left:8px">один на карту (1 апгр = +25% скорости; 5 → ×2.25 поток)</span></div>
+    <div style="font-size:11px;color:#aaa;margin-top:4px" id="hgSum"></div>
+
+    <div class="sub-title">ВПП (макс. 4 на карту)</div>
+    <table class="rw-table">
+      <thead><tr><th class="left"></th><th class="col-land">Посадка</th><th class="col-take">Взлёт</th></tr></thead>
+      <tbody id="rwBody"></tbody>
+    </table>
+    <div class="ctrl-row" style="margin-top:8px"><label class="ctrl-label">Число ВПП</label><input type="number" id="nRw" min="1" max="4" value="2"><span style="flex:1"></span><label class="ctrl-label" style="min-width:120px">Цена открытия конца</label><span class="ctrl-val" id="rwCostOut">—</span></div>
+    <div style="font-size:11px;color:#aaa;margin-top:4px" id="rwSum"></div>
+  </div>
+</div>
+
+<div id="table"></div>
+
+<script>
+var BAY_MAX_LVL=5,BAY_OPEN_COST=100,BAY_UP0=80,START_LIVES=3,UP_SPEED=0.25;
+var IVL_SLOW=4.6,IVL_FAST=2.4,CAP_LOW=4,CAP_HIGH=10,SVC_MIN=10,SVC_MAX=32,TWO_SVC=0.45;
+// акценты — точная копия ARCHETYPES
+var ARCH={ mixed:{traffic:1,money:1,time:1,quality:1,upg:1},
+  economy:{traffic:.9,money:1.4,time:.8,quality:1.2,upg:1},
+  speed:{traffic:1.1,money:.8,time:1.4,quality:.8,upg:.9},
+  flawless:{traffic:.9,money:1,time:.9,quality:1.5,upg:1},
+  upgrades:{traffic:.9,money:.9,time:1.2,quality:1,upg:1.5},
+  traffic:{traffic:1.4,money:.8,time:1,quality:.8,upg:.9} };
+var n=function(id){return +(document.getElementById(id)||{}).value||0;};
+var clamp=function(v,a,b){return Math.max(a,Math.min(b,v));};
+var ivl=function(p){return IVL_SLOW+(IVL_FAST-IVL_SLOW)*p;};
+var capN=function(p){return Math.round(CAP_LOW+(CAP_HIGH-CAP_LOW)*p);};
+var fmtT=function(s){if(s==null)return null;var m=Math.floor(s/60),x=s%60;return m+':'+String(x).padStart(2,'0');};
+
+// campaignTarget — копия
+function campaignTarget(i,o){var T=o.tut,R=o.ramp,H=o.plat,C=o.cap;i=Math.max(1,Math.floor(i||1));var t;
+  if(i<=T)t=0.04+(0.18-0.04)*(i-1)/Math.max(1,T-1);
+  else if(i<=R){var p=(i-T)/Math.max(1,R-T);t=0.20+(H-0.20)*(1-(1-p)*(1-p));}
+  else t=H;
+  if(C>0&&i%C===0)t=Math.min(1,Math.max(t,H+0.08));
+  return +Math.max(0,Math.min(1,t)).toFixed(3);}
+function archForIndex(i,C){i=Math.max(1,Math.floor(i||1));if(C>0&&i%C===0)return'flawless';var ks=Object.keys(ARCH);return ks[(i-1)%ks.length];}
+
+// упрощённая экономика (иллюстративно, в духе levelEconomy): kit = закрытые·openCost + апгрейды·upgCost·0.6 + закрытые концы·rwCost; svcReward ~ kit·generosity/(avgN·flow·skill)
+function economy(m,tg){
+  var openCost=Math.round(BAY_OPEN_COST*(0.5+tg)), upgCost=Math.round(BAY_UP0*(0.75+tg*2.25));
+  var rwCost=m.lockedDirs>0?Math.round(80+tg*120):0;
+  var kit=m.lockedH*openCost + m.upgH*upgCost*0.6 + m.lockedDirs*rwCost;
+  var avgN=1+(3>=2?TWO_SVC:0);
+  var diff=0.5*tg/2; var gen=1+0.35*diff; var skill=1.4;
+  var flow=Math.max(1,m.flow||10);
+  var svc=clamp(Math.round(kit*gen/(avgN*flow*skill))||SVC_MIN,SVC_MIN,SVC_MAX);
+  return {openCost:openCost,upgCost:upgCost,rwCost:rwCost,kit:kit,svc:svc,avgN:avgN,skill:skill,gen:gen};
+}
+
+function getMap(){
+  var fT=n('fT'),bT=n('bT'),rT=n('rT');
+  var fO=Math.min(n('fO'),fT),bO=Math.min(n('bO'),bT),rO=Math.min(n('rO'),rT);
+  var fU=Math.min(n('fU'),fT),bU=Math.min(n('bU'),bT),rU=Math.min(n('rU'),rT);
+  var maxUp=clamp(n('maxUp'),0,BAY_MAX_LVL);
+  var totalH=fT+bT+rT,openH=fO+bO+rO,lockedH=totalH-openH,upgH=fU+bU+rU;
+  var totalPossUpg=upgH*maxUp;
+  var nRw=clamp(n('nRw'),1,4);
+  var openDirs=0,lockedDirs=0;
+  for(var i=0;i<nRw;i++){var lo=n('rw'+i+'l'),to=n('rw'+i+'t');openDirs+=lo+to;lockedDirs+=(1-lo)+(1-to);}
+  return {fT:fT,bT:bT,rT:rT,fO:fO,bO:bO,rO:rO,fU:fU,bU:bU,rU:rU,maxUp:maxUp,totalH:totalH,openH:openH,lockedH:lockedH,upgH:upgH,totalPossUpg:totalPossUpg,nRw:nRw,openDirs:openDirs,lockedDirs:lockedDirs,geo:n('slGeo')/100};
+}
+
+// generate — копия логики autoDifficulty
+function generate(tg,A,m){
+  var pace=tg, interval=ivl(pace);
+  var fullUp=1+m.maxUp*UP_SPEED;
+  var capF=clamp((clamp(m.openH/3,0.3,1.8)*0.5+clamp(m.openDirs/3,0.3,1.5)*0.3)*fullUp*0.6+0.4,0.4,2.4);
+  var base=Math.max(4,Math.round((4+tg*28)*capF*A.traffic));
+  var stars=[Math.max(1,Math.round(base*0.70)),Math.max(1,Math.round(base*0.85)),Math.max(1,base)];
+  var tc=Math.max(stars[2],1)*interval, tp=clamp(tg*A.time,0,1.4);
+  var m3=2.6-1.5*tp,m2=m3+0.4,m1=m3+0.9;
+  var timeTier=[Math.max(30,Math.ceil(tc*m1)),Math.max(30,Math.ceil(tc*m2)),Math.max(30,Math.ceil(tc*m3))];
+  m.flow=stars[2];
+  var ec=economy(m,tg);
+  var startMoney=Math.max(0,Math.round(ec.kit*Math.max(0,0.4-tg*0.38)));
+  if(A.money>1) startMoney=Math.max(startMoney,Math.ceil(0.32*ec.kit));
+  var frac=clamp((0.3+tg*0.5)*A.money,0.15,0.95);
+  var feasible=true, money=stars.map(function(s){var mm=startMoney+ec.svc*ec.avgN*s*ec.skill-ec.kit;var v=Math.max(0,Math.floor(Math.max(0,mm)*frac));if(v>mm)feasible=false;return v;});
+  if(!feasible) money=null;
+  var q=clamp(tg*A.quality,0,1.3);
+  var lives=[1,Math.min(START_LIVES,1+Math.round(q)),Math.min(START_LIVES,1+Math.round(q*2))];
+  var maxLate=[Math.max(0,Math.round(25*(1-q))),Math.max(0,Math.round(18*(1-q))),Math.max(0,Math.round(12*(1-q)))];
+  var maxCrash=[Math.max(0,Math.round(15*(1-q))),Math.max(0,Math.round(10*(1-q))),Math.max(0,Math.round(6*(1-q)))];
+  var upg=null;
+  if(m.totalPossUpg>0){upg=[Math.max(1,Math.round(m.totalPossUpg*clamp(tg*0.30*A.upg,0.05,0.40))),Math.max(1,Math.round(m.totalPossUpg*clamp(tg*0.55*A.upg,0.10,0.70))),Math.max(1,Math.round(m.totalPossUpg*clamp(tg*0.85*A.upg,0.15,1.00)))];if(upg[1]<upg[0])upg[1]=upg[0];if(upg[2]<upg[1])upg[2]=upg[1];}
+  return {pace:pace,interval:interval,cap:capN(pace),capF:capF,base:base,stars:stars,timeTier:timeTier,money:money,lives:lives,maxLate:maxLate,maxCrash:maxCrash,upg:upg,startMoney:startMoney,ec:ec};
+}
+
+function bar(v,mx,c){var w=Math.max(2,Math.min(100,Math.round(v/mx*100)));return '<div class="bar-wrap"><div class="bar '+c+'" style="width:'+w+'%"></div></div>';}
+function tiers(arr,fmt,mode){if(!arr)return '<span class="na">не применяется (опускается)</span>';return '<div class="tiers">'+arr.map(function(v,i){var cls=mode==='desc'?(v===0?'strict':v<=3?'warn':''):['t1','t2','t3'][i];return '<div class="tier '+cls+'"><span class="sl">'+(i+1)+'★</span>'+(fmt?fmt(v):v)+'</div>';}).join('')+'</div>';}
+
+function drawCurve(){
+  var cv=document.getElementById('curve'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+  var o={tut:n('cTut'),ramp:n('cRamp'),plat:+document.getElementById('cPlat').value||0.9,cap:n('cCap')};
+  var N=50;
+  ctx.strokeStyle='rgba(0,0,0,.12)';ctx.beginPath();ctx.moveTo(0,H-1);ctx.lineTo(W,H-1);ctx.stroke();
+  ctx.strokeStyle='#1D9E75';ctx.lineWidth=2;ctx.beginPath();
+  for(var i=1;i<=N;i++){var x=(i-1)/(N-1)*(W-4)+2,y=H-3-campaignTarget(i,o)*(H-8);if(i===1)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  ctx.stroke();
+  var idx=clamp(n('cIdx'),1,N),x=(idx-1)/(N-1)*(W-4)+2,y=H-3-campaignTarget(idx,o)*(H-8);
+  ctx.fillStyle='#D85A30';ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fill();
+  document.getElementById('curveInfo').textContent='Уровень '+idx+': сложность '+Math.round(campaignTarget(idx,o)*100)+'% · авто-акцент «'+archForIndex(idx,o.cap)+'»';
+}
+
+function buildRwRows(){
+  var nRw=clamp(n('nRw'),1,4),host=document.getElementById('rwBody'),h='';
+  for(var i=0;i<nRw;i++){h+='<tr><td class="lrow">ВПП '+(i+1)+'</td><td class="col-land"><input type="number" id="rw'+i+'l" min="0" max="1" value="1"></td><td class="col-take"><input type="number" id="rw'+i+'t" min="0" max="1" value="'+(i===0?1:0)+'"></td></tr>';}
+  host.innerHTML=h;
+  host.querySelectorAll('input').forEach(function(el){el.addEventListener('input',render);});
+}
+
+function render(){
+  var tg=n('slTg')/100;document.getElementById('outTg').textContent=Math.round(tg*100)+'%';
+  document.getElementById('outGeo').textContent=n('slGeo')+'%';
+  var A=ARCH[document.getElementById('arch').value]||ARCH.mixed;
+  var m=getMap();var c=generate(tg,A,m);
+  document.getElementById('rwCostOut').textContent=(m.lockedDirs>0?c.ec.rwCost+'₽':'—');
+  document.getElementById('hgSum').innerHTML='<span class="chip">Всего '+m.totalH+' · открыто '+m.openH+' · апгрейдируемых '+m.upgH+'</span><span class="chip">Возможных апгрейдов: '+m.totalPossUpg+' (= '+m.upgH+' × '+m.maxUp+')</span>';
+  document.getElementById('rwSum').innerHTML='<span class="chip">Открытых направлений: '+m.openDirs+'/'+(m.nRw*2)+' · заблокировано: '+m.lockedDirs+'</span>';
+  drawCurve();
+  var typePills=function(f,b,r){return '<div>'+[['df','F',f],['db','B',b],['dr','R',r]].map(function(x){return '<span class="chip"><span class="dot '+x[0]+'"></span>'+x[1]+' '+x[2]+'</span>';}).join('')+'</div>';};
+  var S=[
+    {t:'Базовый поток',r:[
+      {l:'Темп (pace)',s:'интервал '+c.interval.toFixed(1)+'с · одновременно ≤'+c.cap,m:bar(tg,1,'b-blue'),v:c.pace.toFixed(2)},
+      {l:'Борта на звезду',s:'capFactor='+c.capF.toFixed(2)+' (ангары+ВПП+апгрейды×'+(1+m.maxUp*UP_SPEED).toFixed(2)+')',m:tiers(c.stars,null,'asc'),v:''}]},
+    {t:'Ангары (вход)',r:[
+      {l:'Всего / открыто',s:'по типу услуги',m:typePills(m.fO+'/'+m.fT,m.bO+'/'+m.bT,m.rO+'/'+m.rT),v:m.openH+'/'+m.totalH},
+      {l:'Заблокировано',s:'купить openCost '+c.ec.openCost+'₽',m:bar(m.lockedH,Math.max(1,m.totalH),'b-coral'),v:m.lockedH+' шт'},
+      {l:'Апгрейдируемых',s:'единый макс. ур. = '+m.maxUp+' на карту',m:typePills(m.fU,m.bU,m.rU),v:m.upgH+' шт'}]},
+    {t:'ВПП (вход)',r:[
+      {l:'Открытых направлений',s:'посадка+взлёт на старте',m:bar(m.openDirs,Math.max(1,m.nRw*2),'b-teal'),v:m.openDirs+'/'+(m.nRw*2)},
+      {l:'Цена открытия конца',s:'rwOpenCost — единая на карту',m:bar(c.ec.rwCost,200,'b-amber'),v:(m.lockedDirs>0?c.ec.rwCost+'₽':'—')}]},
+    {t:'Время (генерируется)',r:[
+      {l:'Скорость тира (timeTier)',s:'≤ сек · 3★ строже; акцент «время» жмёт',m:tiers(c.timeTier,fmtT,'asc'),v:''}]},
+    {t:'Деньги (генерируется)',r:[
+      {l:'Деньги (money)',s:'svcReward '+c.ec.svc+'₽ · kit ≈'+c.ec.kit+'₽ · акцент «экономика» жмёт',m:tiers(c.money,function(v){return v+'₽';},'asc'),v:''},
+      {l:'Цена апгрейда',s:'upgCost ур.1 — единая',m:bar(c.ec.upgCost,240,'b-pink'),v:c.ec.upgCost+'₽'},
+      {l:'Стартовые деньги',s:'startMoney (для money-акцента ≥0.32·kit)',m:bar(Math.max(1,c.startMoney),600,'b-teal'),v:c.startMoney+'₽'}]},
+    {t:'Качество (генерируется)',r:[
+      {l:'Макс. просрочек',s:'≤ · акцент «безаварийность» → к 0',m:tiers(c.maxLate,null,'desc'),v:''},
+      {l:'Макс. крушений',s:'≤ · акцент «безаварийность» → к 0',m:tiers(c.maxCrash,null,'desc'),v:''},
+      {l:'Жизни',s:'≥ осталось в конце',m:tiers(c.lives,function(v){return v+'♥';},'asc'),v:''}]},
+    {t:'Апгрейды (генерируется)',r:[
+      {l:'Порог апгрейдов (upg)',s:'из '+m.totalPossUpg+' возможных · акцент «апгрейды» жмёт',m:tiers(c.upg,null,'asc'),v:''}]}
+  ];
+  var html='';
+  for(var i=0;i<S.length;i++){html+='<div class="section"><div class="section-title">'+S[i].t+'</div><div class="section-body">';
+    for(var j=0;j<S[i].r.length;j++){var r=S[i].r[j];html+='<div class="row"><div><div class="lbl">'+r.l+'</div><div class="subt">'+r.s+'</div></div><div>'+r.m+'</div><div class="val">'+r.v+'</div></div>';}
+    html+='</div></div>';}
+  document.getElementById('table').innerHTML=html;
+}
+
+document.getElementById('nRw').addEventListener('input',function(){buildRwRows();render();});
+document.getElementById('fromCurve').addEventListener('click',function(){
+  var o={tut:n('cTut'),ramp:n('cRamp'),plat:+document.getElementById('cPlat').value||0.9,cap:n('cCap')};
+  var idx=clamp(n('cIdx'),1,50);var t=campaignTarget(idx,o);
+  document.getElementById('slTg').value=Math.round(t*100);
+  var a=archForIndex(idx,o.cap);if(ARCH[a])document.getElementById('arch').value=a;
+  render();
+});
+['slTg','slGeo','arch','maxUp','fT','bT','rT','fO','bO','rO','fU','bU','rU','cTut','cRamp','cPlat','cCap','cIdx'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('input',render);});
+buildRwRows();render();
+</script>
+</body>
+</html>

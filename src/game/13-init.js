@@ -88,7 +88,7 @@
       VERSION, LEVELS, BIOMES, BONUS, K, MT, I18N, SVC, DEFAULT_LANG, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS,
       t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, recordResult, goalRowsHTML, bayUpCost, bayMaxLvl,
       levelEconomy, levelEffects, levelDifficulty, levelPace, paceInterval, paceCap, airPatience, levelServices, levelMaxUp, levelMinUp, sidesToLayout, levelToEditorObj,
-      analyzeLevel, countOpenHangars, countTotalHangars, countOpenRunwayDirections, autoDifficulty, validatePassable,
+      analyzeLevel, countOpenHangars, countTotalHangars, countOpenRunwayDirections, autoDifficulty, validatePassable, campaignTarget, archetypeForIndex,
       dayCycle, weatherTaxiMult, neededCrew, planePrimaryState, fmtNum, fmtMoney,
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },

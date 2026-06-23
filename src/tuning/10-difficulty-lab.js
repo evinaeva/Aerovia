@@ -1,6 +1,6 @@
   /* ───── РЕДАКТОР СЛОЖНОСТИ — все контролы пишут в черновик «Разметки» (window.Draft) ───── */
   const DE_EVENTS = [['vip','VIP'],['emergency','авария'],['medical','медицина'],['rush','час пик'],['fog','туман'],['wind','ветер']];
-  const DE_COND   = [['money','💰 Деньги','≥',100],['lives','♥ Жизни','≥',1],['timeTier','⏱ За время, с','≤',120],['maxLate','⌛ Просрочек','≤',0],['maxCrash','💥 Крушений','≤',0]];
+  const DE_COND   = [['money','💰 Деньги','≥',100],['lives','♥ Жизни','≥',1],['upg','🔧 Апгрейды','≥',1],['timeTier','⏱ За время, с','≤',120],['maxLate','⌛ Просрочек','≤',0],['maxCrash','💥 Крушений','≤',0]];
   const _clamp01 = v => Math.max(0, Math.min(1, v));
   function draftLE()    { return (window.Draft && window.Draft.raw) ? window.Draft.raw() : null; }
   function draftCommit(){ if (window.Draft && window.Draft.commit) window.Draft.commit(); }
@@ -52,17 +52,89 @@
     if (auto) auto.addEventListener('input', () => { autoVal.textContent = auto.value + '%'; });
     const apply = document.getElementById('de-auto-apply');
     if (apply) apply.addEventListener('click', () => applyAuto(+((auto&&auto.value)||40) / 100));
+    // акцент: запоминаем, что оператор трогал селектор (чтобы render не сбрасывал)
+    const arch = document.getElementById('de-arch');
+    if (arch) arch.addEventListener('change', () => { arch.dataset.touched = '1'; });
+    // кривая кампании: дефолты ручек из K.CURVE, перерисовка превью на ввод, кнопка «из кривой»
+    const cc = (GAME && GAME.K && GAME.K.CURVE) || { tutorialLen:10, rampEnd:30, plateauHeight:0.9, capstoneEvery:10 };
+    const setIf = (id,v) => { const el = document.getElementById(id); if (el && el.value === '') el.value = v; };
+    setIf('de-curve-tut', cc.tutorialLen); setIf('de-curve-ramp', cc.rampEnd);
+    setIf('de-curve-plateau', cc.plateauHeight); setIf('de-curve-cap', cc.capstoneEvery);
+    ['de-curve-tut','de-curve-ramp','de-curve-plateau','de-curve-cap','de-curve-idx'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.addEventListener('input', drawCurvePreview); });
+    const cApply = document.getElementById('de-curve-apply');
+    if (cApply) cApply.addEventListener('click', () => {
+      const idx = Math.max(1, Math.round(+(document.getElementById('de-curve-idx')||{}).value || 1));
+      const t = (GAME && GAME.campaignTarget) ? GAME.campaignTarget(idx, curveOpts()) : 0.4;
+      if (auto) auto.value = Math.round(t*100);
+      if (autoVal) autoVal.textContent = Math.round(t*100) + '%';
+      if (arch) { arch.value = 'auto'; arch.dataset.touched = ''; }   // следовать ротации по уровню
+      drawCurvePreview();
+      const a = (GAME && GAME.archetypeForIndex) ? GAME.archetypeForIndex(idx) : '?';
+      setStatus('Уровень ' + idx + ': сложность из кривой = ' + Math.round(t*100) + '% · акцент ' + a);
+    });
+    drawCurvePreview();
     diffEditorBuilt = true;
+  }
+  // ручки кривой → объект опций для GAME.campaignTarget / archetypeForIndex
+  function curveOpts() {
+    const num = (id,d) => { const el = document.getElementById(id); const v = el ? +el.value : NaN; return isFinite(v) ? v : d; };
+    return { tutorialLen:num('de-curve-tut',10), rampEnd:num('de-curve-ramp',30),
+             plateauHeight:num('de-curve-plateau',0.9), capstoneEvery:num('de-curve-cap',10) };
+  }
+  // мини-график кривой сложности по уровням (canvas; цвета хардкод — CSS-переменные в canvas не работают)
+  function drawCurvePreview() {
+    const cv = document.getElementById('de-curve-canvas'); if (!cv || !cv.getContext) return;
+    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height; ctx.clearRect(0,0,W,H);
+    const N = Math.max(2, (GAME && GAME.LEVELS && GAME.LEVELS.length) || 50);
+    const opts = curveOpts();
+    const ct = (GAME && GAME.campaignTarget) ? (i)=>GAME.campaignTarget(i,opts) : ()=>0.4;
+    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.moveTo(0,H-1); ctx.lineTo(W,H-1); ctx.stroke();
+    ctx.strokeStyle = '#4ad6c0'; ctx.lineWidth = 2; ctx.beginPath();
+    for (let i=1;i<=N;i++){ const x=(i-1)/(N-1)*(W-4)+2, y=H-3-ct(i)*(H-8); if(i===1)ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+    ctx.stroke();
+    const idx = Math.max(1, Math.min(N, Math.round(+(document.getElementById('de-curve-idx')||{}).value || 1)));
+    const x = (idx-1)/(N-1)*(W-4)+2, y = H-3-ct(idx)*(H-8);
+    ctx.fillStyle = '#ffd64a'; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
   }
   function applyAuto(target) {
     const le = draftLE(); if (!le || !GAME || !GAME.autoDifficulty) return;
-    const k = GAME.autoDifficulty(target);
-    le.pace = k.pace;
-    le.events = Object.assign({ vip:false, emergency:false, medical:false, rush:false, fog:false, wind:false }, k.events || {});
-    if (k.objective) { le.metric = k.objective.metric || 'served'; le.stars = (k.objective.stars || le.stars).slice(0,3); le.time = k.objective.time || 0; le.race = !!k.objective.race; }
-    le.weather = !!k.weather; le.deice = false;
+    const chk = id => { const e = document.getElementById(id); return e ? e.checked : true; };
+    const applyEcon = chk('de-apply-econ'), applyObj = chk('de-apply-obj');
+    // акцент: «Авто» → ротация по № уровня (archetypeForIndex), иначе явный выбор
+    const archSel = document.getElementById('de-arch');
+    let arch = archSel ? archSel.value : 'auto';
+    if (arch === 'auto') {
+      const idx = Math.max(1, Math.round(+(document.getElementById('de-curve-idx')||{}).value || 1));
+      arch = (GAME.archetypeForIndex ? GAME.archetypeForIndex(idx) : 'mixed');
+    }
+    // respect-manual: снятый раздел = его поля не генерируем и не перезаписываем
+    const ECON = ['pace','openCost','upgCost','rwOpenCost','maxUp','minUp','startMoney','crashPenalty','latePenalty'];
+    const OBJ  = ['stars','time','timeTier','money','lives','upg','maxLate','maxCrash','metric','race'];
+    const locked = [].concat(applyEcon ? [] : ECON, applyObj ? [] : OBJ);
+    // геометрию/настройки читаем из ЭКСПОРТА (правильный Level с layout), а не из
+    // плоского черновика редактора (там hangars/runways — массивы верхнего уровня).
+    let lvRead; try { lvRead = window.Draft.export(); } catch (_) { lvRead = le; }
+    const k = GAME.autoDifficulty(target, lvRead, { archetype: arch, locked });
+    if (applyEcon) {
+      if (k.pace != null) le.pace = k.pace;
+      ['openCost','upgCost','rwOpenCost','maxUp','minUp','startMoney','crashPenalty','latePenalty']
+        .forEach(f => { if (k[f] != null) le[f] = k[f]; });
+    }
+    if (applyObj && k.objective) {
+      const o = k.objective;
+      if (o.metric) le.metric = o.metric;
+      if (Array.isArray(o.stars)) le.stars = o.stars.slice(0,3);
+      le.time = o.time || 0; le.race = false;
+      le.cond = le.cond || {};
+      // сгенерированное условие → в cond; не сгенерированное (locked) оставляем как было
+      ['money','lives','upg','timeTier','maxLate','maxCrash'].forEach(c => {
+        if (Array.isArray(o[c])) le.cond[c] = o[c].slice(0,3);
+      });
+    }
+    // события / погоду НЕ трогаем
     draftCommit(); renderDiffEditor(); afterDiffEdit();
-    setStatus('Авто-сложность ' + Math.round(target*100) + '% → черновик обновлён');
+    setStatus('Авто-сложность ' + Math.round(target*100) + '% · акцент ' + arch + ' → черновик обновлён');
   }
   function renderDiffEditor() {
     const le = draftLE(); if (!le) return;
@@ -85,6 +157,12 @@
       row.querySelectorAll('.de-cond-v').forEach(inp => { inp.disabled = !on; inp.value = on ? arr[+inp.dataset.i] : ''; }); });
     const s = le.stars || [], w = document.getElementById('de-stars-warn');
     if (w) w.textContent = (s[0]>0 && s[0]<=s[1] && s[1]<=s[2]) ? '' : '⚠ пороги должны идти по возрастанию';
+    // акцент (если оператор не трогал — следуем le.archetype/«Авто») и № уровня = выбранный
+    const archEl = document.getElementById('de-arch');
+    if (archEl && archEl.dataset.touched !== '1') archEl.value = le.archetype || 'auto';
+    const idxEl = document.getElementById('de-curve-idx');
+    if (idxEl && typeof labSel === 'number' && document.activeElement !== idxEl) idxEl.value = labSel + 1;
+    drawCurvePreview();
   }
   function renderPass() {
     const host = document.getElementById('diff-pass'); if (!host || !GAME || !GAME.validatePassable) return;

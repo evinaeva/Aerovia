@@ -55,6 +55,9 @@
     // Задаются в конструкторе (tuning.html), зашиваются в экспорт уровня и
     // применяются движением посадки/взлёта (см. 08b-gameplay-step).
     motion?: { landBefore?: number; landAfter?: number; takeoffRoll?: number; climb?: number };
+    // авто-генератор (см. 14-level-analysis): target — точечный override кривой сложности
+    // (0..1, иначе берётся campaignTarget(index)); archetype — акцент факторов уровня.
+    target?: number; archetype?: string;
   }
   interface Biome { id: string; emoji: string; ready: boolean; level?: Level; }
   interface Bonus { id: number; after: number; emoji: string; level: Level; }
@@ -140,8 +143,12 @@
     BAY_OPEN_COST: 100,
     BAY_UP_COST: [80,160,320,640,1280], // апгрейд до ур.1/2/3/4/5 (глобальный потолок BAY_MAX_LVL)
     BAY_MAX_LVL: 5,                    // абсолютный потолок прокачки; per-level maxUp может срезать ниже
-    RUNWAY_MAX: 5,                  // потолок числа ВПП на карте (layout): вертикально больше не помещается
+    RUNWAY_MAX: 4,                  // потолок числа ВПП на карте (layout): мин. 1, макс. 4
     UP_SPEED: 0.25,       // +25% скорости за уровень
+    // кривая сложности кампании (см. campaignTarget в 14-level-analysis): обучение →
+    // подъём → насыщающееся плато < 1.0; капстоны каждый capstoneEvery-й уровень на ~1.0.
+    // Расширение кампании = больше уровней на том же плато (raw-сложность не растёт выше).
+    CURVE: { tutorialLen: 10, rampEnd: 30, plateauHeight: 0.9, capstoneEvery: 10 },
     // --- экономика: оплата за услугу и стартовая касса ВЫВОДЯТСЯ из самого уровня
     //     функцией levelEconomy() (см. docs/design/game-design/economy.md). Константы
     //     ниже — настроечные ручки модели, а не деньги напрямую. ---

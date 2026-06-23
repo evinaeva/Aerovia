@@ -45,7 +45,7 @@
       weather: false, deice: false, calm: 0,
       crashPenalty: 0, latePenalty: 0,
       openCost: 0, upgCost: 0, rwOpenCost: 0,         // цена бокса / апгрейда / открытия полосы (0 = дефолт)
-      cond: { money: null, lives: null, timeTier: null, maxLate: null, maxCrash: null },  // доп-условия звёзд (null = выкл)
+      cond: { money: null, lives: null, upg: null, timeTier: null, maxLate: null, maxCrash: null },  // доп-условия звёзд (null = выкл)
       // оформление (таб «Ресурсы»): движок пока скины не рисует — выбор едет в JSON
       skins: { hangar: 'default', background: 'default' },
     });
@@ -452,6 +452,8 @@
       renderSide(); save(); draw();
     }
     function addRunway() {
+      const MAX = 4;   // K.RUNWAY_MAX — на карте мин. 1, макс. 4 ВПП
+      if (LE.runways.length >= MAX) { setStatus('Максимум ' + MAX + ' ВПП на карте.'); return; }
       const ys = LE.runways.map(r => r.y);
       let y = 0.5; for (let k = 1; k <= 9; k++) { const c = k / 10; if (!ys.some(v => Math.abs(v - c) < 0.05)) { y = c; break; } }
       LE.runways.push({ y, landingOpen: true, takeoffOpen: true });
@@ -637,7 +639,7 @@
       const O = o.objective;
       if (LE.metric && LE.metric !== 'served') O.metric = LE.metric;     // upgrades / survival
       if (LE.time > 0) { O.time = Math.round(LE.time); if (LE.race) O.race = true; }
-      ['money', 'lives', 'timeTier', 'maxLate', 'maxCrash'].forEach(k => {
+      ['money', 'lives', 'upg', 'timeTier', 'maxLate', 'maxCrash'].forEach(k => {
         const a = LE.cond && LE.cond[k];
         if (Array.isArray(a) && a.length === 3) O[k] = a.map(n => Math.round(+n) || 0);
       });
@@ -776,7 +778,8 @@
       ['minUp', 'metric', 'time', 'race', 'weather', 'deice', 'calm', 'crashPenalty', 'latePenalty', 'openCost', 'upgCost', 'rwOpenCost']
         .forEach(k => { if (LE[k] === undefined) LE[k] = d[k]; });
       if (!LE.events) LE.events = {}; ['fog', 'wind'].forEach(k => { if (LE.events[k] === undefined) LE.events[k] = false; });
-      if (!LE.cond) LE.cond = { money: null, lives: null, timeTier: null, maxLate: null, maxCrash: null };
+      if (!LE.cond) LE.cond = { money: null, lives: null, upg: null, timeTier: null, maxLate: null, maxCrash: null };
+      else if (LE.cond.upg === undefined) LE.cond.upg = null;   // миграция: добавлено поле upg
       if (!LE.motion) LE.motion = {};   // фазовые множители скорости на ВПП (пусто = все ×1)
       return LE;
     }
