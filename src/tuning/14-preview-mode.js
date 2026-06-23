@@ -16,7 +16,8 @@
 
   // Запустить (или перезапустить) тестовую игру из текущей разметки.
   // Перезапуск важен: даёт «применить» свежие правки сложности/событий/уровня.
-  function runTest() {
+  // skipConfirm=true — пропускает модалку валидации (для авто-запуска из вкладки «Ресурсы»).
+  function runTest(skipConfirm) {
     const w = gameFrame.contentWindow;
     if (!w || !w.__PLAY || !window.Draft) { setStatus(T.testNotLoaded); return; }
     const start = () => {
@@ -45,7 +46,7 @@
       } catch (e) { setStatus('Test: ' + e.message); }
     };
     // валидируем как «Сыграть»: при ошибках — модалка с подтверждением
-    if (window._confirmPlay) window._confirmPlay(start); else start();
+    if (!skipConfirm && window._confirmPlay) window._confirmPlay(start); else start();
   }
 
   // Вернуться к разметке: остановить игру и снова показать холст.
@@ -65,6 +66,16 @@
   window._runTest = runTest;
   window._returnToMarkup = returnToMarkup;
   window._getPreviewMode = () => previewMode;
+  // Авто-запуск с ретраями: ждём пока __PLAY будет готов (iframe мог ещё не загрузиться).
+  // skipConfirm=true — без модалки валидации, бесконечные жизни/деньги включаются как обычно.
+  window._runTestWhenReady = function () {
+    let n = 0;
+    (function tryStart() {
+      const w = gameFrame && gameFrame.contentWindow;
+      if (w && w.__PLAY && window.Draft) { runTest(true); return; }
+      if (n++ < 20) setTimeout(tryStart, 500);   // до 10 секунд
+    })();
+  };
 
   { const mk = document.getElementById('mode-markup'); if (mk) mk.addEventListener('click', returnToMarkup); }
   { const ts = document.getElementById('mode-test');   if (ts) ts.addEventListener('click', runTest); }
