@@ -127,8 +127,12 @@ function drawMenuScene(tm: number){
     } else {
       drawField(ts);
       drawRunways(ts);
-      if(LV.biome==='forest') drawForest(ts);
-      else if(LV.biome==='arctic') drawArctic(ts);
+      if(LV.biome==='forest')   drawForest(ts);
+      else if(LV.biome==='arctic')   drawArctic(ts);
+      else if(LV.biome==='tropical') drawTropical(ts);
+      else if(LV.biome==='desert')   drawDesert(ts);
+      else if(LV.biome==='mountain') drawMountain(ts);
+      else if(LV.biome==='megacity') drawCity(ts);
       bays.forEach(drawBay);
       drawBaySnapZones();
       drawRunwaySnapZones();

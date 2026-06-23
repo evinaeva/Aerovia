@@ -1,6 +1,6 @@
-// ===== 09-render — draw primitives, the neon field/runways and biome decor (forest/arctic/butterfly/bonus) =====
+// ===== 09-render — draw primitives, the neon field/runways and biome decor (forest/arctic/tropical/desert/mountain/megacity/butterfly/bonus) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, emoji, drawForest, drawArctic, drawBonusDecor, BSP/BTYPE/bSpec.
+// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, emoji, drawForest, drawArctic, drawTropical, drawDesert, drawMountain, drawCity, drawBonusDecor, BSP/BTYPE/bSpec.
 // Reads: 01 (ctx); 02 (COL, SPRITES); 06 (field, runways, hazards, crews, W/H, ui, save); 04 (K, LV); 03 (t); 08 (neededCrew).
 
   function rr(x: number,y: number,w: number,h: number,r: number){
@@ -244,8 +244,12 @@
       ctx.beginPath(); ctx.arc(lx,fy,1.7*ui,0,7); ctx.fill();
       ctx.beginPath(); ctx.arc(lx,fy+fh,1.7*ui,0,7); ctx.fill(); }
 
-    if(LV.biome==='forest') drawForestDecor(tm, ax, ay, field.rwR!, ab);
-    if(LV.biome==='arctic') drawArcticDecor(tm, ax, ay, field.rwR!, ab);
+    if(LV.biome==='forest')   drawForestDecor(tm, ax, ay, field.rwR!, ab);
+    if(LV.biome==='arctic')   drawArcticDecor(tm, ax, ay, field.rwR!, ab);
+    if(LV.biome==='tropical') drawTropicalDecor(tm, ax, ay, field.rwR!, ab);
+    if(LV.biome==='desert')   drawDesertDecor(tm, ax, ay, field.rwR!, ab);
+    if(LV.biome==='mountain') drawMountainDecor(tm, ax, ay, field.rwR!, ab);
+    if(LV.biome==='megacity') drawCityDecor(tm, ax, ay, field.rwR!, ab);
     if(LV.bonus) drawBonusDecor(tm, ax, ay, field.rwR!, ab);
   }
 
@@ -442,6 +446,93 @@
     ctx.restore();
   }
   // зелёный лесной антураж поверх фона апрона (вода справа → лесная кромка)
+  function drawTropicalDecor(tm: number, ax: number, ay: number, aR: number, ab: number){
+    // тропическое море справа от ВПП
+    ctx.fillStyle='#061a28'; ctx.fillRect(aR,0,W-aR,H);
+    for(let i=0;i<5;i++){
+      const wy=10*ui+i*(H-20*ui)/5;
+      ctx.beginPath();
+      for(let x=aR;x<=W;x+=3){
+        const y=wy+Math.sin(x*0.07+tm*0.002+i*0.7)*3*ui;
+        x===aR ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle=hexa(COL.teal,.10+.05*(i%2)); ctx.lineWidth=1.5; ctx.stroke();
+    }
+    const cols=Math.max(2, Math.round((W-aR)/(32*ui)));
+    for(let r2=0;r2<3;r2++) for(let c2=0;c2<cols;c2++){
+      const tx=aR+14*ui+c2*((W-aR-22*ui)/Math.max(1,cols-1));
+      const ty=16*ui+r2*(H-32*ui)/3+(c2%2)*8*ui;
+      emoji('🌴', tx, ty+Math.sin(tm*0.0004+c2)*2, 18*ui);
+    }
+    ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
+    ctx.fillStyle=hexa(COL.teal,.03); ctx.fillRect(ax,ay,aR-ax,ab-ay); ctx.restore();
+  }
+  function drawDesertDecor(tm: number, ax: number, ay: number, aR: number, ab: number){
+    // пустынные барханы справа от ВПП
+    ctx.fillStyle='#1a1208'; ctx.fillRect(aR,0,W-aR,H);
+    for(let i=0;i<6;i++){
+      const bx=aR+(i*(W-aR)/6);
+      const by=10*ui+i*(H-20*ui)/6+(i%2)*12*ui;
+      const br=(20+i*4)*ui;
+      ctx.beginPath(); ctx.ellipse(bx+8*ui, by, br, br*0.45, 0.2, 0, Math.PI*2);
+      ctx.fillStyle=hexa('#c8872a', 0.10+0.04*(i%2)); ctx.fill();
+    }
+    const cols=Math.max(2, Math.round((W-aR)/(36*ui)));
+    for(let r2=0;r2<2;r2++) for(let c2=0;c2<cols;c2++){
+      const tx=aR+16*ui+c2*((W-aR-24*ui)/Math.max(1,cols-1));
+      const ty=18*ui+r2*(H-36*ui)/2+(c2%3)*9*ui;
+      emoji('🌵', tx, ty, 16*ui);
+    }
+    ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
+    ctx.fillStyle=hexa('#c8872a',.03); ctx.fillRect(ax,ay,aR-ax,ab-ay); ctx.restore();
+  }
+  function drawMountainDecor(tm: number, ax: number, ay: number, aR: number, ab: number){
+    // горные силуэты справа от ВПП
+    ctx.fillStyle='#0d1018'; ctx.fillRect(aR,0,W-aR,H);
+    for(let i=0;i<4;i++){
+      const mx=aR+(i+0.5)*(W-aR)/4;
+      const mh=(H*0.4+i*(H*0.07))*(0.9+0.2*(i%2));
+      ctx.beginPath(); ctx.moveTo(mx-22*ui,H); ctx.lineTo(mx,H-mh); ctx.lineTo(mx+22*ui,H);
+      ctx.closePath(); ctx.fillStyle=hexa('#2a3555', 0.35+0.1*(i%2)); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(mx-6*ui,H-mh+10*ui); ctx.lineTo(mx,H-mh); ctx.lineTo(mx+6*ui,H-mh+10*ui);
+      ctx.closePath(); ctx.fillStyle=hexa(COL.ice,.35); ctx.fill();
+    }
+    for(let i=0;i<3;i++){
+      const cx=aR+10*ui+((i*73*ui+tm*0.01)%(Math.max(1,W-aR-20*ui)));
+      const cy=H*0.15+i*(H*0.12);
+      ctx.fillStyle=hexa(COL.ice,.07);
+      ctx.beginPath(); ctx.ellipse(cx, cy, 16*ui, 7*ui, 0, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
+    ctx.fillStyle=hexa(COL.ice,.025); ctx.fillRect(ax,ay,aR-ax,ab-ay); ctx.restore();
+  }
+  function drawCityDecor(tm: number, ax: number, ay: number, aR: number, ab: number){
+    // городские небоскрёбы справа от ВПП
+    ctx.fillStyle='#080c18'; ctx.fillRect(aR,0,W-aR,H);
+    const blds=6;
+    for(let i=0;i<blds;i++){
+      const bx=aR+(i*(W-aR)/blds);
+      const bw=(W-aR)/blds*0.6;
+      const bh=(H*0.3+i*(H*0.06))*(1+(i%3)*0.2);
+      ctx.fillStyle=hexa('#1a2540', 0.55+0.1*(i%2));
+      ctx.fillRect(bx+(W-aR)/blds*0.2, H-bh, bw, bh);
+      const rows=Math.floor(bh/(8*ui));
+      for(let row=0;row<rows;row++) for(let col=0;col<2;col++){
+        const wx=bx+(W-aR)/blds*0.2+col*bw*0.45+bw*0.1;
+        const wy=H-bh+6*ui+row*8*ui;
+        ctx.fillStyle=hexa(COL.amber, Math.sin(i*7+row*3+col*11)<0.3?0:.35);
+        ctx.fillRect(wx, wy, 3*ui, 4*ui);
+      }
+    }
+    for(let i=0;i<8;i++){
+      const lx=aR+8*ui+((i*61*ui)%(Math.max(1,W-aR-16*ui)));
+      const ly=8*ui+((i*41*ui)%(H*0.3));
+      ctx.fillStyle=hexa(COL.amber,.2+.1*(i%2));
+      ctx.beginPath(); ctx.arc(lx,ly,1.5*ui,0,7); ctx.fill();
+    }
+    ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
+    ctx.fillStyle=hexa(COL.amber,.025); ctx.fillRect(ax,ay,aR-ax,ab-ay); ctx.restore();
+  }
   function drawArcticDecor(tm: number, ax: number, ay: number, aR: number, ab: number){
     // ледяная тундра справа от ВПП
     ctx.fillStyle='#0d1e2e'; ctx.fillRect(aR,0,W-aR,H);
@@ -577,6 +668,180 @@
       if(c.phase==='work'){
         const pulse=Math.abs(Math.sin(tm*0.018));
         ctx.fillStyle=hexa(COL.ice,.5+0.4*pulse);
+        ctx.beginPath(); ctx.arc(c.x+8*ui, c.y-6*ui, 2*ui*(1+pulse), 0, 7); ctx.fill();
+      }
+    }
+  }
+  // тропический биом: штормовые волны на ВПП + насосная бригада
+  function drawTropical(tm: number){
+    const sv=field.service;
+    if(sv){
+      rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.fillStyle='#0d2c1e'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.teal,.6); rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.stroke();
+      ctx.fillStyle=hexa(COL.teal,.4);
+      ctx.beginPath(); ctx.moveTo(sv.x-2*ui,sv.y); ctx.lineTo(sv.x+sv.w/2,sv.y-7*ui); ctx.lineTo(sv.x+sv.w+2*ui,sv.y); ctx.closePath(); ctx.fill();
+      const dw=sv.w*0.4, dh=sv.h*0.5;
+      rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#061a10'; ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.teal,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
+      emoji('🌊', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      ctx.fillStyle=hexa(COL.teal,.8); ctx.font=`${7*ui}px ${MONO}`;
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
+    }
+    for(const h of hazards){
+      if(h.kind==='storm_wave'){
+        const pulse=0.5+0.35*Math.abs(Math.sin(tm*0.004));
+        const iw=h.runway.w*0.6, ih=h.runway.h*0.75;
+        ctx.save(); rr(h.x-iw/2, h.y-ih/2, iw, ih, 6*ui);
+        ctx.fillStyle=hexa(COL.teal, pulse*0.45); ctx.fill();
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.teal,.65); ctx.stroke(); ctx.restore();
+        emoji('🌊', h.x, h.y, 18*ui);
+        // таймер самоликвидации
+        const frac=Math.min(1, h.t/TROP.WAVE_LIFE);
+        ctx.fillStyle=hexa(COL.teal,.2+.15*(1-frac));
+        ctx.fillRect(h.x-12*ui, h.y-ih/2-5*ui, 24*ui*(1-frac), 3*ui);
+      }
+      if(!h.dispatched){
+        const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
+        ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.teal,.3+0.4*pulse);
+        ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
+        emoji('🚛', h.x, h.y-32*ui, 14*ui, hexa(COL.teal,.5));
+      }
+    }
+    for(const c of crews){
+      emoji('🚛', c.x, c.y, 16*ui, hexa(COL.teal,.6));
+      if(c.phase==='work'){
+        const pulse=Math.abs(Math.sin(tm*0.018));
+        ctx.fillStyle=hexa(COL.teal,.5+0.4*pulse);
+        ctx.beginPath(); ctx.arc(c.x+8*ui, c.y-6*ui, 2*ui*(1+pulse), 0, 7); ctx.fill();
+      }
+    }
+  }
+  // пустынный биом: песчаные бури на ВПП + пескоочиститель
+  function drawDesert(tm: number){
+    const SAND='#c8872a';
+    const sv=field.service;
+    if(sv){
+      rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.fillStyle='#2a1a08'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(SAND,.6); rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.stroke();
+      ctx.fillStyle=hexa(SAND,.4);
+      ctx.beginPath(); ctx.moveTo(sv.x-2*ui,sv.y); ctx.lineTo(sv.x+sv.w/2,sv.y-7*ui); ctx.lineTo(sv.x+sv.w+2*ui,sv.y); ctx.closePath(); ctx.fill();
+      const dw=sv.w*0.4, dh=sv.h*0.5;
+      rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#1a0e04'; ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=hexa(SAND,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
+      emoji('🌪️', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      ctx.fillStyle=hexa(SAND,.8); ctx.font=`${7*ui}px ${MONO}`;
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
+    }
+    for(const h of hazards){
+      if(h.kind==='sandstorm'){
+        const pulse=0.5+0.35*Math.abs(Math.sin(tm*0.005));
+        const iw=h.runway.w*0.65, ih=h.runway.h*0.8;
+        ctx.save(); rr(h.x-iw/2, h.y-ih/2, iw, ih, 6*ui);
+        ctx.fillStyle=hexa(SAND, pulse*0.4); ctx.fill();
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(SAND,.6); ctx.stroke(); ctx.restore();
+        emoji('🌪️', h.x, h.y, 20*ui);
+      }
+      if(!h.dispatched){
+        const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
+        ctx.lineWidth=2; ctx.strokeStyle=hexa(SAND,.3+0.4*pulse);
+        ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
+        emoji('🚛', h.x, h.y-32*ui, 14*ui, hexa(SAND,.5));
+      }
+    }
+    for(const c of crews){
+      emoji('🚛', c.x, c.y, 16*ui, hexa(SAND,.5));
+      if(c.phase==='work'){
+        const pulse=Math.abs(Math.sin(tm*0.018));
+        ctx.fillStyle=hexa(SAND,.5+0.4*pulse);
+        ctx.beginPath(); ctx.arc(c.x+8*ui, c.y-6*ui, 2*ui*(1+pulse), 0, 7); ctx.fill();
+      }
+    }
+  }
+  // горный биом: камнепады на ВПП + бульдозер
+  function drawMountain(tm: number){
+    const ROCK='#7099cc';
+    const sv=field.service;
+    if(sv){
+      rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.fillStyle='#121830'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(ROCK,.6); rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.stroke();
+      ctx.fillStyle=hexa(ROCK,.4);
+      ctx.beginPath(); ctx.moveTo(sv.x-2*ui,sv.y); ctx.lineTo(sv.x+sv.w/2,sv.y-7*ui); ctx.lineTo(sv.x+sv.w+2*ui,sv.y); ctx.closePath(); ctx.fill();
+      const dw=sv.w*0.4, dh=sv.h*0.5;
+      rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#0a0e1e'; ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=hexa(ROCK,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
+      emoji('⛰️', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      ctx.fillStyle=hexa(ROCK,.8); ctx.font=`${7*ui}px ${MONO}`;
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
+    }
+    for(const h of hazards){
+      if(h.kind==='rockslide'){
+        const iw=h.runway.w*0.45, ih=h.runway.h*0.75;
+        ctx.save(); rr(h.x-iw/2, h.y-ih/2, iw, ih, 6*ui);
+        const pulse=0.4+0.2*Math.abs(Math.sin(tm*0.003));
+        ctx.fillStyle=hexa(ROCK, pulse*0.35); ctx.fill();
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(ROCK,.6); ctx.stroke(); ctx.restore();
+        emoji('🪨', h.x, h.y, 20*ui);
+      }
+      if(!h.dispatched){
+        const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
+        ctx.lineWidth=2; ctx.strokeStyle=hexa(ROCK,.3+0.4*pulse);
+        ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
+        emoji('🚜', h.x, h.y-32*ui, 14*ui, hexa(ROCK,.5));
+      }
+    }
+    for(const c of crews){
+      emoji('🚜', c.x, c.y, 16*ui, hexa(ROCK,.5));
+      if(c.phase==='work'){
+        const pulse=Math.abs(Math.sin(tm*0.018));
+        ctx.fillStyle=hexa(ROCK,.5+0.4*pulse);
+        ctx.beginPath(); ctx.arc(c.x+8*ui, c.y-6*ui, 2*ui*(1+pulse), 0, 7); ctx.fill();
+      }
+    }
+  }
+  // биом мегаполиса: VIP-кортежи на ВПП + полицейский эскорт
+  function drawCity(tm: number){
+    const sv=field.service;
+    if(sv){
+      rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.fillStyle='#12182a'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.amber,.6); rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.stroke();
+      ctx.fillStyle=hexa(COL.amber,.4);
+      ctx.beginPath(); ctx.moveTo(sv.x-2*ui,sv.y); ctx.lineTo(sv.x+sv.w/2,sv.y-7*ui); ctx.lineTo(sv.x+sv.w+2*ui,sv.y); ctx.closePath(); ctx.fill();
+      const dw=sv.w*0.4, dh=sv.h*0.5;
+      rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#08101e'; ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.amber,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
+      emoji('🚔', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      ctx.fillStyle=hexa(COL.amber,.8); ctx.font=`${7*ui}px ${MONO}`;
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
+    }
+    for(const h of hazards){
+      if(h.kind==='vip_motorcade'){
+        const pulse=0.5+0.35*Math.abs(Math.sin(tm*0.006));
+        const iw=h.runway.w*0.6, ih=h.runway.h*0.7;
+        ctx.save(); rr(h.x-iw/2, h.y-ih/2, iw, ih, 6*ui);
+        ctx.fillStyle=hexa(COL.amber, pulse*0.35); ctx.fill();
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.amber,.6); ctx.stroke(); ctx.restore();
+        emoji('🚗', h.x-10*ui, h.y, 14*ui); emoji('🚗', h.x+4*ui, h.y, 14*ui); emoji('🚗', h.x-3*ui, h.y, 14*ui);
+        // таймер самоликвидации кортежа
+        const frac=Math.min(1, h.t/CITY.MOTORCADE_LIFE);
+        ctx.fillStyle=hexa(COL.amber,.2+.1*(1-frac));
+        ctx.fillRect(h.x-12*ui, h.y-ih/2-5*ui, 24*ui*(1-frac), 3*ui);
+      }
+      if(!h.dispatched){
+        const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
+        ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.amber,.3+0.4*pulse);
+        ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
+        emoji('🚔', h.x, h.y-32*ui, 14*ui, hexa(COL.amber,.5));
+      }
+    }
+    for(const c of crews){
+      emoji('🚔', c.x, c.y, 16*ui, hexa(COL.amber,.6));
+      if(c.phase==='work'){
+        const pulse=Math.abs(Math.sin(tm*0.025));
+        ctx.fillStyle=hexa(COL.amber,.5+0.4*pulse);
         ctx.beginPath(); ctx.arc(c.x+8*ui, c.y-6*ui, 2*ui*(1+pulse), 0, 7); ctx.fill();
       }
     }

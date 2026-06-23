@@ -78,7 +78,7 @@
 
     updateTutorial();
     ACH.onTick(dt);
-    if(LV.biome==='forest' || LV.biome==='arctic') updateForest(dt);
+    if(LV.biome) updateForest(dt);
 
     for(const pl of planes){
       if(pl.dead) continue;
