@@ -143,8 +143,8 @@
     // Какие из SHEETS реально есть у скина как SVG-лист; остальное у neon приходит из
     // PNG-атласа (manifest) и базовых листов. Без этого loadSkin дёргал все 5 и ловил
     // 404 на neon/planeflow-{hud,effects,brand}.svg. Держать в синхроне с precache в sw.js.
-    // neon: SVG-листы aircraft+field; arctic: только PNG-манифест, SVG-листов нет (иначе 404)
-    const SKIN_SHEETS: Record<string, string[]> = { neon: ['aircraft', 'field'], arctic: [] };
+    // neon: SVG-листы aircraft+field; arctic/neon2: только PNG-манифест, SVG-листов нет (иначе 404)
+    const SKIN_SHEETS: Record<string, string[]> = { neon: ['aircraft', 'field'], arctic: [], neon2: [] };
     const loadedSkins = new Set();
     // загрузить пер-скиновый набор листов из assets/sprites/<skin>/planeflow-*.svg.
     // Символы в них должны быть с id-префиксом `<skin>-` (напр. `neon-bay-repair`),
