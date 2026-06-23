@@ -64,10 +64,8 @@
     { owner:'motion',     key:'plane',   icon:'✈',  label:'Самолёт',       groups:['movement','turns','routing','collisions','effects','weather','mobile_preview'] },
     { owner:'motion',     key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','rollout_stop','aircraft_scale','flight_overlay'] },
     { owner:'motion',     key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones','debug_overlays'] },
-    // «Сложность» tab — движковые ручки тест/демо-сессии.
-    { owner:'difficulty', key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl'] },
-    { owner:'difficulty', key:'flow',    icon:'🌊', label:'Поток',          groups:['spawn','timing'] },
-    { owner:'difficulty', key:'events',  icon:'🎲', label:'События',        groups:['events'] },
+    // «Сложность» tab — движковые ручки тест/демо-сессии (один подтаб).
+    { owner:'difficulty', key:'control', icon:'⚙',  label:'Настройки',      groups:['ctrl','spawn','timing','events'] },
     // 'zones' (safe_areas) intentionally not surfaced — see HIDDEN_GROUPS below.
     // Those params describe a target device's reserved screen regions for the
     // layout-overlay / export-warning diagnostics; the operator can't (and needn't)
@@ -116,7 +114,7 @@
       b.addEventListener('click', () => applySubtab(st.key));
       subtabBar.appendChild(b);
     });
-    subtabBar.style.display = (available.length && SUBTAB_TABS.has(tab)) ? 'flex' : 'none';
+    subtabBar.style.display = (available.length > 1 && SUBTAB_TABS.has(tab)) ? 'flex' : 'none';
     let want = lastSubtab[tab];
     if (!want || !available.some(st => st.key === want)) want = available.length ? available[0].key : null;
     if (want) applySubtab(want);
