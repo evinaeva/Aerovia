@@ -27,17 +27,23 @@
     // assets/sprites/<skin>/<id>.png. PNG имеет наивысший приоритет в img().
     const pngCache = new Map<string, HTMLImageElement>();   // 'skin/id' -> Image
     const pngIds = new Map();     // skin -> Set<id>
+    // Скины-переопределения (для tuning-превью): проверяются до neon, каждый id берётся
+    // из первого скина, у которого он есть, иначе фолбэк на neon. Пустой список = только neon.
+    let skinOverrides: string[] = [];
     function pngImg(id: string): HTMLImageElement | null {
-      const set = pngIds.get('neon');
-      if(!set || !set.has(id)) return null;
-      const key = 'neon/' + id;
-      let im = pngCache.get(key);
-      if(!im){
-        im = new Image(); im.decoding = 'async';
-        im.src = 'assets/sprites/neon/' + id + '.png';
-        pngCache.set(key, im);
+      for (const skin of [...skinOverrides, 'neon']) {
+        const set = pngIds.get(skin);
+        if (!set || !set.has(id)) continue;
+        const key = skin + '/' + id;
+        let im = pngCache.get(key);
+        if (!im) {
+          im = new Image(); im.decoding = 'async';
+          im.src = 'assets/sprites/' + skin + '/' + id + '.png';
+          pngCache.set(key, im);
+        }
+        return im;   // может ещё грузиться — ok() ниже это учитывает (фолбэк до загрузки)
       }
-      return im;   // может ещё грузиться — ok() ниже это учитывает (фолбэк до загрузки)
+      return null;
     }
     function img(id: string, w: number, h: number, color?: any): HTMLImageElement | null {
       // PNG-арт neon — высший приоритет (рисуется как есть, без темы)
@@ -94,6 +100,7 @@
       blit(id: string, dx: number, dy: number, dw: number, dh: number, color?: any): boolean;
       pattern(id: string, tile: number): CanvasPattern | null;
       loadSkin?: (skin: string) => void;
+      setSkinOverrides?: (skins: string[]) => void;
     }
     const A: SpriteApi = {
       ready: false,
@@ -142,6 +149,10 @@
     // чтобы не конфликтовать с базовыми и резолвиться через img() при активном скине.
     // Когда хотя бы один символ доехал — A.skinReady=true и режим спрайтов
     // пересчитывается (см. refreshSpriteMode), так что нарисованный арт включается сам.
+    A.setSkinOverrides = function(skins: string[]){
+      skinOverrides = (skins || []).filter((s: string) => s !== 'neon');
+      skinOverrides.forEach((s: string) => A.loadSkin!(s));
+    };
     A.loadSkin = function(skin: string){
       if (!skin || loadedSkins.has(skin)) return;
       loadedSkins.add(skin);

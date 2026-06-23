@@ -43,10 +43,11 @@
       // освежаем вкладки, которые читают черновик (он мог измениться в «Разметке»)
       if (tab === 'motion'     && GAME) renderDiffEditor();
       if (tab === 'difficulty' && GAME) { renderDiffEditor(); renderDiff(); }
-      // «Скины»: примерка рисуется на холсте «Разметки» (геометрия 1:1 с игрой), поэтому
-      // на входе монтируем холст в шелл и включаем оверлей скинов; на выходе — гасим.
-      if (tab === 'assets' && window._enterMarkupSurface) window._enterMarkupSurface();
-      if (window._skinPreviewOn) window._skinPreviewOn(tab === 'assets');
+      // «Скины»: скины применяются в game-iframe (pushSkinToGame), а не оверлеем на холсте.
+      // При «Ресурсах» показываем game-preview; при «Разметке» — возвращаем холст.
+      if (window._skinPreviewOn) window._skinPreviewOn(false);
+      if (tab === 'layout' && window._enterMarkupSurface) window._enterMarkupSurface();
+      if (tab === 'assets' && window._exitMarkupSurface)  window._exitMarkupSurface();
       if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
       if (tab === 'test'    && window._testSync)      window._testSync();
     }
