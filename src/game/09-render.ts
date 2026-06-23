@@ -1,6 +1,6 @@
-// ===== 09-render — draw primitives, the neon field/runways and biome decor (forest/butterfly/bonus) =====
+// ===== 09-render — draw primitives, the neon field/runways and biome decor (forest/arctic/butterfly/bonus) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, emoji, drawForest, drawBonusDecor, BSP/BTYPE/bSpec.
+// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, emoji, drawForest, drawArctic, drawBonusDecor, BSP/BTYPE/bSpec.
 // Reads: 01 (ctx); 02 (COL, SPRITES); 06 (field, runways, hazards, crews, W/H, ui, save); 04 (K, LV); 03 (t); 08 (neededCrew).
 
   function rr(x: number,y: number,w: number,h: number,r: number){
@@ -245,6 +245,7 @@
       ctx.beginPath(); ctx.arc(lx,fy+fh,1.7*ui,0,7); ctx.fill(); }
 
     if(LV.biome==='forest') drawForestDecor(tm, ax, ay, field.rwR!, ab);
+    if(LV.biome==='arctic') drawArcticDecor(tm, ax, ay, field.rwR!, ab);
     if(LV.bonus) drawBonusDecor(tm, ax, ay, field.rwR!, ab);
   }
 
@@ -441,6 +442,30 @@
     ctx.restore();
   }
   // зелёный лесной антураж поверх фона апрона (вода справа → лесная кромка)
+  function drawArcticDecor(tm: number, ax: number, ay: number, aR: number, ab: number){
+    // ледяная тундра справа от ВПП
+    ctx.fillStyle='#0d1e2e'; ctx.fillRect(aR,0,W-aR,H);
+    // снежные сугробы — неровная белая кромка
+    const cols=Math.max(2, Math.round((W-aR)/(28*ui)));
+    for(let r2=0;r2<5;r2++) for(let c2=0;c2<cols;c2++){
+      const tx=aR+14*ui+c2*((W-aR-20*ui)/Math.max(1,cols-1));
+      const ty=14*ui + r2*(H-28*ui)/5 + (c2%3)*7*ui + Math.sin(tm*0.0004+c2*1.3)*2;
+      // сугроб — белый полуэллипс
+      ctx.beginPath(); ctx.ellipse(tx, ty, 10*ui, 5*ui, 0, Math.PI, 0);
+      ctx.fillStyle=hexa(COL.ice, 0.10+0.05*(r2%2)); ctx.fill();
+    }
+    // редкие точки-снежинки
+    for(let i=0;i<12;i++){
+      const sx=aR+8*ui + ((i*79*ui) % Math.max(1,W-aR-16*ui));
+      const sy=8*ui + ((i*53*ui) % Math.max(1,H-16*ui));
+      ctx.fillStyle=hexa(COL.ice,.35+.15*(i%2));
+      ctx.font=`${8*ui}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('*', sx, sy+Math.sin(tm*0.003+i)*3);
+    }
+    // лёгкий ледяной налёт на тармак
+    ctx.save(); rr(ax,ay,aR-ax,ab-ay,9*ui); ctx.clip();
+    ctx.fillStyle=hexa(COL.ice,.04); ctx.fillRect(ax,ay,aR-ax,ab-ay); ctx.restore();
+  }
   function drawForestDecor(tm: number, ax: number, ay: number, aR: number, ab: number){
     // лесная кромка вместо воды за полосами
     ctx.fillStyle=FCOL.edge; ctx.fillRect(aR,0,W-aR,H);

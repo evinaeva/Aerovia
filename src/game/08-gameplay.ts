@@ -23,13 +23,13 @@
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
     // атмосфера: «часы» суток идут всегда; погода — опциональный движок (флаг weather)
-    dayPhase=0; nightAmount=0; weather='clear'; weatherUntil=0;
-    nextWeather = LV.weather ? K.WEATHER_PERIOD : Infinity;
+    dayPhase=0; nightAmount=0; weatherUntil=0;
     hazards=[]; crews=[]; hazardSeq=0;
     const forest = LV.biome==='forest';
     const arctic = LV.biome==='arctic';
-    // Арктика всегда в снегу: де-айсинг обязателен без перерывов
+    // Арктика всегда в снегу: постоянное обледенение, де-айсинг обязателен без перерывов
     if(arctic){ weather='snow'; weatherUntil=Infinity; nextWeather=Infinity; }
+    else { weather='clear'; nextWeather = LV.weather ? K.WEATHER_PERIOD : Infinity; }
     if(LV.biome){
       // биом-карты (Survival) сохраняют динамику час-пика; у леса/арктики — свои помехи на
       // полосах вместо «ветра/тумана»
