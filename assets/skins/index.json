@@ -58,6 +58,19 @@
         "deice": "assets/skins/hangar/neon/bay-deice.png",
         "locked": "assets/skins/hangar/neon/bay-locked.png"
       }
+    },
+    {
+      "id": "hangar-neon2",
+      "name": "neon2",
+      "label": "Неон 2",
+      "dir": "assets/sprites/neon2",
+      "states": {
+        "fuel": "assets/sprites/neon2/bay-fuel.png",
+        "board": "assets/sprites/neon2/bay-board.png",
+        "repair": "assets/sprites/neon2/bay-repair.png",
+        "deice": "assets/sprites/neon2/bay-deice.png",
+        "locked": "assets/sprites/neon2/bay-locked.png"
+      }
     }
   ],
   "plane": [
@@ -80,6 +93,15 @@
       "dir": "assets/skins/plane/neon",
       "states": {
         "default": "assets/skins/plane/neon/plane.png"
+      }
+    },
+    {
+      "id": "plane-neon2",
+      "name": "neon2",
+      "label": "Неон 2",
+      "dir": "assets/sprites/neon2",
+      "states": {
+        "default": "assets/sprites/neon2/plane.png"
       }
     }
   ],
