@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:tuning": "node scripts/build-tuning.mjs",
+    "scan:skins": "node scripts/scan-skins.mjs",
     "build:www": "node scripts/build-www.mjs",
     "setup:android": "node scripts/setup-android.mjs",
     "typecheck": "tsc --noEmit",

@@ -527,20 +527,27 @@
     </div>
   </div>
 
-  <!-- Tab: Ресурсы (оформление уровня) ───────────────────────────────────── -->
+  <!-- Tab: Ресурсы (примерка скинов зон на превью) ──────────────────────────── -->
   <div id="asset-view" class="lab-view">
     <div class="lab-section">
-      <p class="lab-hint" style="margin-top:0">🎨 Примерь оформление к уровню. Скины ангаров и фона <b>появятся позже</b> —
-        сейчас выбор просто сохраняется в черновике (поле <code>skins</code> в JSON) и поедет в экспорт.
-        Движок их пока не отрисовывает.</p>
+      <p class="lab-hint" style="margin-top:0">🎨 Примеряй скины зон прямо на превью — геометрия <b>1:1 с игрой</b>.
+        ТЗ для дизайнера: <a href="docs/design/skins/ZONES.md" target="_blank"><code>docs/design/skins/ZONES.md</code></a>.
+        Новые скины кладутся в <code>assets/skins/</code> (<code>npm run scan:skins</code>). Превью видно в режиме
+        <b>«Разметка»</b> (левый рельс). Выбор едет в экспорт черновика (поле <code>skins</code>).</p>
+      <div id="skin-warn" style="font-size:11px;color:#e3c522"></div>
     </div>
     <div class="lab-section">
-      <h3>Скин ангаров <span class="h3-sub" id="skin-hangar-cur">default</span></h3>
-      <div class="lab-chips" id="skin-hangar"></div>
+      <h3>Размеры зон <span class="h3-sub" id="skin-spec-sub">— открой «Разметку»</span></h3>
+      <div id="skin-spec" class="skin-spec"><span class="lab-empty">Открой превью в режиме «Разметка».</span></div>
     </div>
     <div class="lab-section">
-      <h3>Фон поля <span class="h3-sub" id="skin-bg-cur">default</span></h3>
-      <div class="lab-chips" id="skin-bg"></div>
+      <h3>Состояние ангара <span class="h3-sub" id="skin-state-cur">по типу</span></h3>
+      <div class="lab-chips" id="skin-hangar-state"></div>
+      <div class="ly-prop-row" style="margin-top:6px"><span class="lbl-main">Точки апгрейда</span><div class="ly-seg" id="skin-hangar-pips"></div></div>
+    </div>
+    <div class="lab-section">
+      <h3>Скины зон</h3>
+      <div id="skin-zones"><span class="lab-empty">Загрузка реестра…</span></div>
     </div>
   </div>
 
