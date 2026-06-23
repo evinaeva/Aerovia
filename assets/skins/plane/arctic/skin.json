@@ -1,0 +1,11 @@
+{
+  "id": "plane-arctic",
+  "label": "Arctic",
+  "base": "assets/sprites/arctic",
+  "states": {
+    "default": "plane.png",
+    "emergency": "plane-emergency.png",
+    "medevac": "plane-medevac.png",
+    "vip": "plane-vip.png"
+  }
+}

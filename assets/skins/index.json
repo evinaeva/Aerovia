@@ -1,6 +1,19 @@
 {
   "hangar": [
     {
+      "id": "hangar-arctic",
+      "name": "arctic",
+      "label": "Arctic",
+      "dir": "assets/sprites/arctic",
+      "states": {
+        "fuel": "assets/sprites/arctic/bay-fuel.png",
+        "board": "assets/sprites/arctic/bay-board.png",
+        "repair": "assets/sprites/arctic/bay-repair.png",
+        "deice": "assets/sprites/arctic/bay-deice.png",
+        "locked": "assets/sprites/arctic/bay-locked.png"
+      }
+    },
+    {
       "id": "hangar-neon",
       "name": "neon",
       "label": "Неон (текущий)",
@@ -11,6 +24,32 @@
         "repair": "assets/sprites/neon/bay-repair.png",
         "deice": "assets/sprites/neon/bay-deice.png",
         "locked": "assets/sprites/neon/bay-locked.png"
+      }
+    }
+  ],
+  "plane": [
+    {
+      "id": "plane-arctic",
+      "name": "arctic",
+      "label": "Arctic",
+      "dir": "assets/sprites/arctic",
+      "states": {
+        "default": "assets/sprites/arctic/plane.png",
+        "emergency": "assets/sprites/arctic/plane-emergency.png",
+        "medevac": "assets/sprites/arctic/plane-medevac.png",
+        "vip": "assets/sprites/arctic/plane-vip.png"
+      }
+    }
+  ],
+  "runway": [
+    {
+      "id": "runway-arctic",
+      "name": "arctic",
+      "label": "Arctic",
+      "dir": "assets/sprites/arctic",
+      "states": {
+        "open": "assets/sprites/arctic/runway-open.png",
+        "closed": "assets/sprites/arctic/runway-closed.png"
       }
     }
   ]
