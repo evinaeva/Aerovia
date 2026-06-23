@@ -89,14 +89,9 @@
       <button class="mode-btn" id="mode-test" type="button" title="Тестовая игра — сыграй текущую разметку с её настройками сложности">
         <span class="mode-ic">▶</span><span id="mode-test-label">Тестовая&nbsp;игра</span>
       </button>
-    </div>
-
-  <!-- Phone preview -->
-  <div id="phone-col">
-    <div id="phone-wrapper">
-      <!-- Floating scenario picker — always visible over the preview -->
+      <!-- Scenario picker moved from floating overlay to rail -->
       <div id="scenario-bar">
-        <span class="sc-lbl">Сценарий</span>
+        <span class="sc-lbl">Превью</span>
         <select id="scenario-sel">
           <option value="none">Выкл</option>
           <option value="complete_cycle">Полный цикл</option>
@@ -106,6 +101,11 @@
           <option value="service">Обслуживание</option>
         </select>
       </div>
+    </div>
+
+  <!-- Phone preview -->
+  <div id="phone-col">
+    <div id="phone-wrapper">
       <div id="phone-shell">
         <iframe id="game-frame" src="index.html?test=1" title="Game" allow="autoplay"></iframe>
         <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"
