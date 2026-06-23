@@ -48,6 +48,23 @@
     function pushPreview() {
       if (window._setSkinPreview) window._setSkinPreview({ images: buildImages(), hangarState, pips, maxUp });
     }
+    // Проброс активных скинов в игровой iframe: arctic-PNG получают приоритет над neon.
+    function pushSkinToGame() {
+      try {
+        const gw = document.getElementById('game-frame')?.contentWindow;
+        if (!gw || !gw.__SPRITES) return;
+        const sk = window.Draft ? window.Draft.getSkins() : {};
+        const folders = new Set();
+        ZONES.forEach(([zone]) => {
+          const sel = sk[zone]; if (!sel || sel === 'default') return;
+          const skin = skinById(zone, sel); if (!skin) return;
+          const parts = (skin.dir || '').split('/');
+          const folder = parts[parts.length - 1];
+          if (folder && folder !== 'neon') folders.add(folder);
+        });
+        gw.__SPRITES.setSkinOverrides([...folders]);
+      } catch (_) {}
+    }
 
     /* ---- UI: селекторы скинов по зонам ---- */
     function buildZones() {
@@ -128,6 +145,7 @@
       buildPips();
       renderSpec();
       pushPreview();
+      pushSkinToGame();
     }
 
     function loadRegistry() {
