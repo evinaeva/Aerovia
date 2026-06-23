@@ -29,6 +29,8 @@
       <button class="tb-btn" id="btn-frames-toggle" title="Зоны и вырез экрана — рамки поверх превью + пресеты выреза/навигации">
         <span class="tb-icon">📐</span><span>Зоны</span>
       </button>
+      <!-- Zoom: cycle Normal → ВПП → Ангар → Normal -->
+      <button class="tb-btn" id="btn-zoom" title="Крупный план — ВПП / Ангар / Сброс">🔍</button>
     </div>
 
     <!-- Popup backdrop -->
@@ -92,6 +94,18 @@
   <!-- Phone preview -->
   <div id="phone-col">
     <div id="phone-wrapper">
+      <!-- Floating scenario picker — always visible over the preview -->
+      <div id="scenario-bar">
+        <span class="sc-lbl">Сценарий</span>
+        <select id="scenario-sel">
+          <option value="none">Выкл</option>
+          <option value="complete_cycle">Полный цикл</option>
+          <option value="landing">Посадка</option>
+          <option value="takeoff">Взлёт</option>
+          <option value="taxi">Руление</option>
+          <option value="service">Обслуживание</option>
+        </select>
+      </div>
       <div id="phone-shell">
         <iframe id="game-frame" src="index.html?test=1" title="Game" allow="autoplay"></iframe>
         <svg id="field-overlay" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"

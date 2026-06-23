@@ -136,8 +136,15 @@
           const alignX = (r.x + r.w) + K.RW_ALIGN_OFF*ui;                        // с какого места выравниваемся по оси
           const aligned = pl.x <= alignX;
           // до точки выравнивания держим текущий курс по высоте полосы, после — на осевую
-          steer(pl, r.stopX, aligned ? r.cy : pl.y, K.SPEED_AIR * K.APPROACH_SPEED_MULT * landMult, dt);
+          const landSpeed = K.SPEED_AIR * K.APPROACH_SPEED_MULT * landMult;
           if(!pl.touched && pl.x <= tdX) touchdown(pl);
+          if(pl.touched){
+            // замедление при пробеге после касания
+            pl.rollSpeed = Math.max(landSpeed * 0.1,
+              (((pl.rollSpeed as number) ?? landSpeed) - K.LAND_ROLLOUT_DECEL * dt));
+          }
+          const curLandSpd = pl.touched ? (pl.rollSpeed as number) : landSpeed;
+          steer(pl, r.stopX, aligned ? r.cy : pl.y, curLandSpd, dt);
           if(pl.touched && aligned) pl.y += (r.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
           if(pl.x <= r.stopX+2){ pl.x=r.stopX; pl.y=r.cy; startGround(pl); }
           continue;
@@ -157,7 +164,16 @@
           const liftX = pl.runway.exitX + K.RW_LIFTOFF_OFF*ui;
           const climbing = pl.x > liftX;
           const toMult = climbing ? (LV.motion?.climb ?? 1) : (LV.motion?.takeoffRoll ?? 1);
-          steer(pl, liftX + K.TAKEOFF_OVERSHOOT, pl.runway.cy, K.SPEED_TAKEOFF * toMult, dt);
+          // постепенный разгон: от нуля до SPEED_TAKEOFF при разбеге,
+          // затем до SPEED_CLIMB в наборе высоты (pl.rollSpeed — текущая скорость)
+          if (!climbing) {
+            pl.rollSpeed = Math.min(K.SPEED_TAKEOFF * toMult,
+              ((pl.rollSpeed as number) ?? K.TAKEOFF_INIT_SPEED) + K.TAKEOFF_ACCEL * dt);
+          } else {
+            pl.rollSpeed = Math.min(K.SPEED_CLIMB * toMult,
+              ((pl.rollSpeed as number) ?? K.SPEED_TAKEOFF) + K.TAKEOFF_CLIMB_ACCEL * dt);
+          }
+          steer(pl, liftX + K.TAKEOFF_OVERSHOOT, pl.runway.cy, pl.rollSpeed as number, dt);
           if(pl.x > W+30){ depart(pl); }
           continue;
         }
@@ -207,6 +223,7 @@
               // подруливаем к точке старта по оси полосы (у полевого торца) и тут же
               // разгоняемся — борт выходит на ВПП уже центрированным, без паузы
               pl.takeoff=true; pl.moving=true; pl.path=[{x:r.stopX + 8*ui, y:r.cy}]; pl.autoPath=true;
+              pl.rollSpeed = K.TAKEOFF_INIT_SPEED;
               break;
             }
           }

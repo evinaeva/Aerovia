@@ -210,7 +210,43 @@
     #phone-wrapper {
       position: relative;
       flex: none;
+      overflow: hidden;   /* clips zoom transform so it stays inside the phone border */
     }
+
+    /* Floating scenario picker — top-left of the phone preview */
+    #scenario-bar {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(10, 16, 32, .88);
+      border: 1px solid rgba(58, 210, 255, .3);
+      border-radius: 6px;
+      font-size: 11px;
+      pointer-events: auto;
+      white-space: nowrap;
+    }
+    .sc-lbl {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    #scenario-sel {
+      background: #0d1933;
+      color: #fff;
+      border: 1px solid rgba(58, 210, 255, .25);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    #scenario-sel:focus { outline: none; border-color: var(--accent); }
 
     /* phone-shell is positioned absolute so wrapper sets visual size */
     #phone-shell {
