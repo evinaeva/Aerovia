@@ -1,4 +1,37 @@
 {
+  "apron": [
+    {
+      "id": "apron-neon",
+      "name": "neon",
+      "label": "Неон",
+      "dir": "assets/skins/apron/neon",
+      "states": {
+        "default": "assets/skins/apron/neon/apron.png"
+      }
+    }
+  ],
+  "arrival": [
+    {
+      "id": "arrival-neon",
+      "name": "neon",
+      "label": "Неон",
+      "dir": "assets/skins/arrival/neon",
+      "states": {
+        "default": "assets/skins/arrival/neon/arrival.png"
+      }
+    }
+  ],
+  "background": [
+    {
+      "id": "background-neon",
+      "name": "neon",
+      "label": "Неон",
+      "dir": "assets/skins/background/neon",
+      "states": {
+        "default": "assets/skins/background/neon/background.png"
+      }
+    }
+  ],
   "hangar": [
     {
       "id": "hangar-arctic",
@@ -16,14 +49,14 @@
     {
       "id": "hangar-neon",
       "name": "neon",
-      "label": "Неон (текущий)",
-      "dir": "assets/sprites/neon",
+      "label": "Неон",
+      "dir": "assets/skins/hangar/neon",
       "states": {
-        "fuel": "assets/sprites/neon/bay-fuel.png",
-        "board": "assets/sprites/neon/bay-board.png",
-        "repair": "assets/sprites/neon/bay-repair.png",
-        "deice": "assets/sprites/neon/bay-deice.png",
-        "locked": "assets/sprites/neon/bay-locked.png"
+        "fuel": "assets/skins/hangar/neon/bay-fuel.png",
+        "board": "assets/skins/hangar/neon/bay-board.png",
+        "repair": "assets/skins/hangar/neon/bay-repair.png",
+        "deice": "assets/skins/hangar/neon/bay-deice.png",
+        "locked": "assets/skins/hangar/neon/bay-locked.png"
       }
     }
   ],
@@ -39,6 +72,15 @@
         "medevac": "assets/sprites/arctic/plane-medevac.png",
         "vip": "assets/sprites/arctic/plane-vip.png"
       }
+    },
+    {
+      "id": "plane-neon",
+      "name": "neon",
+      "label": "Неон",
+      "dir": "assets/skins/plane/neon",
+      "states": {
+        "default": "assets/skins/plane/neon/plane.png"
+      }
     }
   ],
   "runway": [
@@ -50,6 +92,15 @@
       "states": {
         "open": "assets/sprites/arctic/runway-open.png",
         "closed": "assets/sprites/arctic/runway-closed.png"
+      }
+    },
+    {
+      "id": "runway-neon",
+      "name": "neon",
+      "label": "Неон",
+      "dir": "assets/skins/runway/neon",
+      "states": {
+        "default": "assets/skins/runway/neon/runway.png"
       }
     }
   ]

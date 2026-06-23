@@ -1,0 +1,7 @@
+{
+  "id": "background-neon",
+  "label": "Неон",
+  "states": {
+    "default": "background.png"
+  }
+}
