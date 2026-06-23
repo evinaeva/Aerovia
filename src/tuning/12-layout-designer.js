@@ -363,6 +363,38 @@
         runways: LE.runways.map(r => ({ rect: R(runwayPx(r)) })),
       };
     }
+    // Экспортирует геометрию холста разметки в формате window.__FIELD (как игра),
+    // чтобы 13-zones-overlay мог показывать зоны захвата и ручки даже в режиме «Разметка».
+    window._layoutField = function () {
+      const { W, H } = dims();
+      if (W <= 1 || H <= 1) return null;
+      const gm = gameGeom();
+      const ui = Math.max(0.7, Math.min(1.5, Math.min(W / 1100, H / 620)));
+      function autoGate(h) {
+        if (h.gate && h.gate !== 'auto') return h.gate;
+        const d = [['up', h.y], ['down', 1 - h.y], ['left', h.x], ['right', 1 - h.x]];
+        d.sort(function (a, b) { return a[1] - b[1]; });
+        return d[0][0];
+      }
+      return {
+        W: W, H: H, ui: ui, planeLen: gm.plane,
+        runways: LE.runways.map(function (r) {
+          const b = runwayPx(r);
+          return { x: b.x, y: b.y, w: b.w, h: b.h, cy: b.cy,
+                   stopX: b.x + 26 * ui, exitX: b.x + b.w + 10 * ui,
+                   closed: false,
+                   landingOpen:  r.landingOpen  !== false,
+                   takeoffOpen: r.takeoffOpen !== false };
+        }),
+        bays: LE.hangars.filter(function (h) { return h.open !== false; }).map(function (h) {
+          const b = hangarPx(h);
+          return { x: b.x, y: b.y, w: b.w, h: b.h, cx: b.cx, cy: b.cy,
+                   open: true, gate: autoGate(h) };
+        }),
+        planes: [],
+      };
+    };
+
     const imgOk = im => im && im.complete && im.naturalWidth > 0;
     function drawBgSkin() {
       const im = skinOverlay.images.background;
