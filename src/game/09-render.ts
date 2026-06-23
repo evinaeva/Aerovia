@@ -494,17 +494,64 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        const ic = ({truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'} as Record<string, string>)[neededCrew(h)];
+        const ic = ({truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜', deice_truck:'🚒'} as Record<string, string>)[neededCrew(h)];
         emoji(ic, h.x, h.y-32*ui, 14*ui, hexa(COL.teal,.5));
       }
     }
     // спец-авто в пути / за работой
     for(const c of crews){
-      const ic = ({truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜'} as Record<string, string>)[c.kind];
+      const ic = ({truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜', deice_truck:'🚒'} as Record<string, string>)[c.kind];
       emoji(ic, c.x, c.y, 16*ui, hexa(COL.amber,.4));
       if(c.phase==='work'){               // искорки работы
         const pulse=Math.abs(Math.sin(tm*0.02));
         ctx.fillStyle=hexa(COL.gold,.4+0.4*pulse);
+        ctx.beginPath(); ctx.arc(c.x+8*ui, c.y-6*ui, 2*ui*(1+pulse), 0, 7); ctx.fill();
+      }
+    }
+  }
+  // арктический биом: снежный антураж + обледенение ВПП + деайсинг-бригады
+  function drawArctic(tm: number){
+    const sv=field.service;
+    if(sv){
+      // здание с арктической отделкой (синеватый оттенок вместо зелёного)
+      rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.fillStyle='#1a2a3a'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.ice,.6); rr(sv.x,sv.y,sv.w,sv.h,6*ui); ctx.stroke();
+      ctx.fillStyle=hexa(COL.ice,.4);
+      ctx.beginPath(); ctx.moveTo(sv.x-2*ui,sv.y); ctx.lineTo(sv.x+sv.w/2,sv.y-7*ui); ctx.lineTo(sv.x+sv.w+2*ui,sv.y); ctx.closePath(); ctx.fill();
+      const dw=sv.w*0.4, dh=sv.h*0.5;
+      rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#0e1a26'; ctx.fill();
+      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.ice,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
+      emoji('❄️', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      ctx.fillStyle=hexa(COL.ice,.8); ctx.font=`${7*ui}px ${MONO}`;
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
+    }
+    // ледяные пятна на полосах
+    for(const h of hazards){
+      if(h.kind==='icing'){
+        // ледяная плёнка — голубоватый прямоугольник на полосе
+        const iw=h.runway.w*0.55, ih=h.runway.h*0.7;
+        ctx.save();
+        rr(h.x-iw/2, h.y-ih/2, iw, ih, 6*ui);
+        const pulse=0.45+0.35*Math.abs(Math.sin(tm*0.004));
+        ctx.fillStyle=hexa(COL.ice, pulse*0.55); ctx.fill();
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.ice,.7); ctx.stroke();
+        ctx.restore();
+        emoji('🧊', h.x, h.y, 18*ui, hexa(COL.ice,.7));
+      }
+      if(!h.dispatched){
+        const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
+        ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.ice,.3+0.4*pulse);
+        ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
+        emoji('🚒', h.x, h.y-32*ui, 14*ui, hexa(COL.ice,.5));
+      }
+    }
+    // деайсинг-грузовики в пути / за работой
+    for(const c of crews){
+      emoji('🚒', c.x, c.y, 16*ui, hexa(COL.ice,.5));
+      if(c.phase==='work'){
+        const pulse=Math.abs(Math.sin(tm*0.018));
+        ctx.fillStyle=hexa(COL.ice,.5+0.4*pulse);
         ctx.beginPath(); ctx.arc(c.x+8*ui, c.y-6*ui, 2*ui*(1+pulse), 0, 7); ctx.fill();
       }
     }

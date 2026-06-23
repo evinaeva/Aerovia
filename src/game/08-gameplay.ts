@@ -27,13 +27,16 @@
     nextWeather = LV.weather ? K.WEATHER_PERIOD : Infinity;
     hazards=[]; crews=[]; hazardSeq=0;
     const forest = LV.biome==='forest';
+    const arctic = LV.biome==='arctic';
+    // Арктика всегда в снегу: де-айсинг обязателен без перерывов
+    if(arctic){ weather='snow'; weatherUntil=Infinity; nextWeather=Infinity; }
     if(LV.biome){
-      // биом-карты (Survival) сохраняют динамику час-пика; у леса — свои помехи на
+      // биом-карты (Survival) сохраняют динамику час-пика; у леса/арктики — свои помехи на
       // полосах вместо «ветра/тумана»
       nextRush = K.RUSH_PERIOD;
-      nextWind = (forest||K.WEATHER_EVENTS_OFF)?Infinity:K.WIND_PERIOD;
-      nextFog  = (forest||K.WEATHER_EVENTS_OFF)?Infinity:K.FOG_PERIOD;
-      nextHazard = forest?FOR.SPAWN_FIRST:Infinity;
+      nextWind = (forest||arctic||K.WEATHER_EVENTS_OFF)?Infinity:K.WIND_PERIOD;
+      nextFog  = (forest||arctic||K.WEATHER_EVENTS_OFF)?Infinity:K.FOG_PERIOD;
+      nextHazard = forest ? FOR.SPAWN_FIRST : (arctic ? ARC.SPAWN_FIRST : Infinity);
     } else {
       // кампания: динамические события включаются только если разрешены уровнем
       const evs = levelEvents();
@@ -194,6 +197,7 @@
     if(h.kind==='tree') return h.fallen ? 'truck' : 'chainsaw';
     if(h.kind==='deer') return 'truck';
     if(h.kind==='snow') return 'plow';
+    if(h.kind==='icing') return 'deice_truck';
     return 'eagle';
   }
   // помеха под пальцем (для тапа): берём ближайшую ещё не обслуживаемую
@@ -208,11 +212,16 @@
     const free = runways.filter(r=>!r.closed && r.hazard==null);
     if(!free.length) return;
     const r = free[Math.floor(Math.random()*free.length)];
-    // снежный занос — только в снегопад (зимний геймплей поверх лесных помех)
-    const pool = weather==='snow' ? ['tree','deer','birds','snow'] : ['tree','deer','birds'];
+    const arctic = LV.biome==='arctic';
+    // арктика: только обледенение; лес: снег только в снегопад
+    const pool = arctic ? ['icing'] : (weather==='snow' ? ['tree','deer','birds','snow'] : ['tree','deer','birds']);
     const kind = pool[Math.floor(Math.random()*pool.length)];
     const h: any = { id:++hazardSeq, kind, runway:r, t:0, dispatched:false, done:false };
-    if(kind==='snow'){
+    if(kind==='icing'){
+      h.x = r.x + r.w*0.5; h.y = r.cy;
+      r.closed = true;                                  // лёд на полосе — закрыта до приезда деайсинг-грузовика
+      toast = {text:t('arctic.ice'), t:0, good:false};
+    } else if(kind==='snow'){
       h.x = r.x + r.w*0.5; h.y = r.cy;
       r.closed = true;                                  // занос на полосе — закрыта, пока не расчистит плуг
       toast = {text:t('forest.snow'), t:0, good:false};
@@ -243,7 +252,8 @@
     crews.push({ kind:neededCrew(h), hazard:h, phase:'out',
                  x:home.x, y:home.y, hx:home.x, hy:home.y,
                  tx:h.x, ty:h.y, workT:0, done:false });
-    addFloat(home.x, home.y-14*ui, t('forest.crew.'+neededCrew(h)), COL.teal);
+    const crewNameKey = (LV.biome==='arctic' ? 'arctic.crew.' : 'forest.crew.') + neededCrew(h);
+    addFloat(home.x, home.y-14*ui, t(crewNameKey), COL.teal);
     SND.build(); HAP.tap();
   }
   // помеха устранена: открыть полосу, убрать помеху, премия (если убрала бригада)
@@ -254,10 +264,12 @@
     h.runway.closed = false;
     hazards = hazards.filter(x=>x!==h);
     if(rewarded){
-      money += FOR.REWARD;
-      addFloat(h.x, h.y-18*ui, '+'+fmtMoney(FOR.REWARD), COL.coin);
+      const reward = LV.biome==='arctic' ? ARC.REWARD : FOR.REWARD;
+      money += reward;
+      addFloat(h.x, h.y-18*ui, '+'+fmtMoney(reward), COL.coin);
       SND.served(); HAP.ok();
-      toast = {text:t('forest.cleared'), t:0, good:true};
+      const clearedKey = LV.biome==='arctic' ? 'arctic.cleared' : 'forest.cleared';
+      toast = {text:t(clearedKey), t:0, good:true};
     }
   }
   function updateForest(dt: number){
@@ -266,7 +278,12 @@
       hazards=[]; crews=[];
       return;
     }
-    if(gameTime>=nextHazard){ spawnHazard(); nextHazard = gameTime + FOR.SPAWN_MIN + Math.random()*(FOR.SPAWN_MAX-FOR.SPAWN_MIN); }
+    const isArctic = LV.biome==='arctic';
+    const cfg = isArctic ? ARC : FOR;
+    if(gameTime>=nextHazard){
+      spawnHazard();
+      nextHazard = gameTime + cfg.SPAWN_MIN + Math.random()*(cfg.SPAWN_MAX-cfg.SPAWN_MIN);
+    }
     // помехи
     for(const h of hazards){
       if(h.done) continue;
@@ -278,9 +295,11 @@
       } else if(h.kind==='birds'){
         if(!h.dispatched && h.t>=FOR.BIRD_LIFE) resolveHazard(h, false);          // птицы улетели
       }
-      // снег (kind==='snow') сам не уходит — нужен плуг (создаёт «всегда есть дело»)
+      // снег (kind==='snow') и лёд (kind==='icing') сами не уходят — нужна бригада
     }
     // спец-авто: едут к помехе → работают → возвращаются домой
+    const workTime = isArctic ? ARC.WORK_TIME : FOR.WORK_TIME;
+    const crewSpeed = isArctic ? ARC.CREW_SPEED : FOR.CREW_SPEED;
     for(const c of crews){
       if(c.phase==='work'){
         c.workT -= dt;
@@ -289,10 +308,10 @@
       }
       const d = dist(c.x,c.y,c.tx,c.ty);
       if(d<=4){
-        if(c.phase==='out'){ c.phase='work'; c.workT=FOR.WORK_TIME; }
+        if(c.phase==='out'){ c.phase='work'; c.workT=workTime; }
         else c.done=true;
       } else {
-        const step = Math.min(FOR.CREW_SPEED*dt, d);
+        const step = Math.min(crewSpeed*dt, d);
         c.x += (c.tx-c.x)/d*step; c.y += (c.ty-c.y)/d*step;
       }
     }

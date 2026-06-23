@@ -131,6 +131,10 @@
       'forest.cleared':'Runway clear',
       'forest.crew.truck':'Maintenance', 'forest.crew.eagle':'Bird scare', 'forest.crew.chainsaw':'Chainsaw crew',
       'forest.crew.plow':'Snowplow',
+      'arctic.ice':'Runway icing! Send the de-icing truck.',
+      'arctic.cleared':'Ice cleared — runway open',
+      'arctic.crew.deice_truck':'De-icing truck',
+      'biome.arctic.hint':'Keep runways ice-free — tap an ice patch to dispatch the de-icing truck.',
       'canvas.service':'SERVICE',
       // --- медали / достижения ---
       'medals.btn':'Medals', 'medals.kicker':'Achievements', 'medals.title':'Medals', 'medals.back':'Back',
@@ -320,6 +324,10 @@
       'forest.cleared':'Полоса свободна',
       'forest.crew.truck':'Техслужба', 'forest.crew.eagle':'Орёл-разгон', 'forest.crew.chainsaw':'Бригада с пилой',
       'forest.crew.plow':'Снегоуборщик',
+      'arctic.ice':'Обледенение! Вышли деайсинг-грузовик.',
+      'arctic.cleared':'Лёд убран — полоса открыта',
+      'arctic.crew.deice_truck':'Деайсинг-грузовик',
+      'biome.arctic.hint':'Держи полосы без льда — тапни по ледяному пятну, чтобы выслать деайсинг-грузовик.',
       'canvas.service':'СЛУЖБА',
       // --- медали / достижения ---
       'medals.btn':'Медали', 'medals.kicker':'Достижения', 'medals.title':'Медали', 'medals.back':'Назад',
