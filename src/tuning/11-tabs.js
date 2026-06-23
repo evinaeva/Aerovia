@@ -43,6 +43,10 @@
       // освежаем вкладки, которые читают черновик (он мог измениться в «Разметке»)
       if (tab === 'motion'     && GAME) renderDiffEditor();
       if (tab === 'difficulty' && GAME) { renderDiffEditor(); renderDiff(); }
+      // «Скины»: примерка рисуется на холсте «Разметки» (геометрия 1:1 с игрой), поэтому
+      // на входе монтируем холст в шелл и включаем оверлей скинов; на выходе — гасим.
+      if (tab === 'assets' && window._enterMarkupSurface) window._enterMarkupSurface();
+      if (window._skinPreviewOn) window._skinPreviewOn(tab === 'assets');
       if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
       if (tab === 'test'    && window._testSync)      window._testSync();
     }

@@ -1,0 +1,17 @@
+{
+  "hangar": [
+    {
+      "id": "hangar-neon",
+      "name": "neon",
+      "label": "Неон (текущий)",
+      "dir": "assets/sprites/neon",
+      "states": {
+        "fuel": "assets/sprites/neon/bay-fuel.png",
+        "board": "assets/sprites/neon/bay-board.png",
+        "repair": "assets/sprites/neon/bay-repair.png",
+        "deice": "assets/sprites/neon/bay-deice.png",
+        "locked": "assets/sprites/neon/bay-locked.png"
+      }
+    }
+  ]
+}

@@ -19,6 +19,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { argv } from 'node:process';
 import ts from 'typescript';
+import { scanSkins } from './scan-skins.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -59,6 +60,7 @@ export const TUNING_ORDER = [
 ];
 
 export function build() {
+  scanSkins();   // keep assets/skins/index.json fresh (the «Скины» tab fetches it)
   const js  = TUNING_ORDER.map(tuningModule).join('\n');
   const css = bodyOf('src/tuning.css');
 

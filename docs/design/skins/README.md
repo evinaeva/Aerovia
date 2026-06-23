@@ -4,8 +4,12 @@ The game's single visual look — **neon** (glossy night air-traffic-control). T
 screen (`#startScreen`) and the in-game field share one DOM/canvas. This folder is the
 **design brief + assets** for that look:
 
-- [`neon/BRIEF.md`](neon/BRIEF.md) — style spec, references, engine integration,
-  mini-animation plans, full asset checklist. Hand the folder to the design agent.
+- [`ZONES.md`](ZONES.md) — **скиновые зоны (актуальный бриф):** точные размеры,
+  состояния и масштабирование каждой зоны (ангар / ВПП / апрон / прилёт / самолёт /
+  декор-фон). Это файл, который дают дизайн-агенту. Зоны примеряются в воркбенче
+  (`tuning.html`, вкладка «Скины»); набор скинов лежит в [`assets/skins/`](../../../assets/skins/).
+- [`neon/BRIEF.md`](neon/BRIEF.md) — ⚠️ **УСТАРЕЛ, не использовать** (числа/состав не
+  соответствуют текущему коду; оставлен только как история). Актуальный бриф — `ZONES.md`.
 - [`neon/SOURCING.md`](neon/SOURCING.md) — where to get each asset cheaply (free-first).
 - [`neon/handoff/`](neon/handoff/) — hi-fi HUD/field reference + changelog.
 

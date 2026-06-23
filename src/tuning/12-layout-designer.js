@@ -19,6 +19,9 @@
     // все типы событий (для вкладки «Сложность» и экспорта): + туман/ветер
     const ALL_EVENTS = ['vip','emergency','medical','rush','fog','wind'];
     const RW_COL = '#3ad2ff';
+    // зоны под скины (вкладка «Ресурсы»): порядок = порядок в UI и в экспорте
+    const SKIN_ZONES = ['hangar', 'apron', 'runway', 'plane', 'arrival', 'background'];
+    const defaultSkins = () => SKIN_ZONES.reduce((o, z) => (o[z] = 'default', o), {});
     const HANDLE = 9;                     // zone resize-handle hit size, px
     const Z_MIN  = 0.06;                  // smallest zone edge, normalized
     const LS_KEY  = 'pf_tuning_layout_v1';     // legacy single-layout (migrated → templates)
@@ -46,8 +49,9 @@
       crashPenalty: 0, latePenalty: 0,
       openCost: 0, upgCost: 0, rwOpenCost: 0,         // цена бокса / апгрейда / открытия полосы (0 = дефолт)
       cond: { money: null, lives: null, upg: null, timeTier: null, maxLate: null, maxCrash: null },  // доп-условия звёзд (null = выкл)
-      // оформление (таб «Ресурсы»): движок пока скины не рисует — выбор едет в JSON
-      skins: { hangar: 'default', background: 'default' },
+      // оформление (таб «Ресурсы»): примеряется на превью воркбенча, выбор едет в JSON.
+      // Имя = stable id скина из реестра assets/skins/index.json ('default' = без скина).
+      skins: defaultSkins(),
     });
 
     const BLANK = () => { const d = DEFAULTS(); d.hangars = []; d.runways = []; return d; };
@@ -60,6 +64,10 @@
     let templates = {};        // name → LE snapshot (field templates, in localStorage)
     let curTpl = '';           // active template name
     let layers = { apron: true, arrival: true, runways: true, hangars: true, gates: true, grid: false, snap: false };
+    // оверлей «примерка скинов» (вкладка «Ресурсы»): рисуется поверх редактора, когда
+    // вкладка «Скины» активна. images: zone→Image (для hangar — состояние→Image). Геометрия
+    // зон та же, что у редактора и игры (1:1) — скин ложится ровно туда, где будет в игре.
+    let skinOverlay = { on: false, images: {}, hangarState: 'auto', pips: 0, maxUp: 3, sim: true };
 
     /* ---- persistence ---- */
     function saveLayers() { try { localStorage.setItem(LAY_KEY, JSON.stringify(layers)); } catch (_) {} }
@@ -251,6 +259,7 @@
       g.clearRect(0, 0, W, H);
       // screen frame backdrop
       g.fillStyle = '#04080f'; g.fillRect(0, 0, W, H);
+      if (skinOverlay.on) drawBgSkin();   // декоративный фон-скин рисуется ПОД зонами
       if (layers.grid) drawGrid();
       g.strokeStyle = 'rgba(58,210,255,.18)'; g.lineWidth = 1; g.strokeRect(.5, .5, W - 1, H - 1);
 
@@ -325,6 +334,8 @@
         g.fillStyle = '#fff'; g.strokeStyle = 'rgba(34,227,198,.9)'; g.lineWidth = 1;
         Object.values(hs).forEach(p => { g.fillRect(p.x - HANDLE / 2, p.y - HANDLE / 2, HANDLE, HANDLE); g.strokeRect(p.x - HANDLE / 2, p.y - HANDLE / 2, HANDLE, HANDLE); });
       }
+
+      if (skinOverlay.on) drawSkinOverlay();   // примерка скинов зон поверх редактора
     }
     function gateDir(h) {
       const map = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
@@ -332,6 +343,68 @@
       // auto: point toward nearest apron edge
       const d = [['up', h.y], ['down', 1 - h.y], ['left', h.x], ['right', 1 - h.x]].sort((a, b) => a[1] - b[1]);
       return map[d[0][0]];
+    }
+
+    /* ---- skins preview (вкладка «Ресурсы») ----
+       Живая геометрия зон + отрисовка скинов в их прямоугольники. Та же геометрия, что
+       у редактора и игры (1:1), поэтому скин примеряется ровно на месте будущего объекта. */
+    function zoneSpec() {
+      const { W, H } = dims(), gm = gameGeom();
+      const ui = Math.max(0.7, Math.min(1.5, Math.min(W / 1100, H / 620)));
+      const R = r => ({ x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.w), h: Math.round(r.h) });
+      return {
+        canvas: { W: Math.round(W), H: Math.round(H) },
+        ui: +ui.toFixed(2),
+        planeLen: Math.round(gm.plane),
+        hangarSide: Math.round(hangarSidePx()), hangarRatio: gm.hr,
+        runwayH: Math.round(gm.plane * gm.rr), runwayRatio: gm.rr,
+        apron: R(rectPx(LE.apron)), arrival: R(rectPx(LE.arrival)),
+        hangars: LE.hangars.map(h => ({ type: h.type, open: !!h.open, rect: R(hangarPx(h)) })),
+        runways: LE.runways.map(r => ({ rect: R(runwayPx(r)) })),
+      };
+    }
+    const imgOk = im => im && im.complete && im.naturalWidth > 0;
+    function drawBgSkin() {
+      const im = skinOverlay.images.background;
+      if (!imgOk(im)) return;
+      const { W, H } = dims();
+      g.drawImage(im, 0, 0, W, H);   // фон растягивается на весь шелл
+    }
+    function drawHangarSim(b, st) {
+      // симуляция накладок движка, чтобы дизайнер видел, что НЕ запекать в панель:
+      // точки апгрейда (pips) по центру-низу + замок/цена у закрытого.
+      if (st !== 'locked') {
+        const total = Math.max(0, skinOverlay.maxUp | 0);
+        if (!total) return;
+        const dr = 3.2, gp = 4, plW = total * (dr * 2 + gp) + gp, plH = dr * 2 + 6;
+        const plX = b.x + b.w / 2 - plW / 2, plY = b.y + b.h - plH - 3;
+        roundRect(plX, plY, plW, plH, plH / 2); g.fillStyle = 'rgba(8,14,30,.72)'; g.fill();
+        for (let i = 0; i < total; i++) {
+          const dx = plX + gp + i * (dr * 2 + gp) + dr;
+          g.beginPath(); g.arc(dx, plY + plH / 2, dr, 0, 7);
+          g.fillStyle = i < skinOverlay.pips ? '#5de08a' : 'rgba(95,123,176,.35)'; g.fill();
+        }
+      } else {
+        g.fillStyle = 'rgba(245,200,66,.92)'; g.font = '10px system-ui';
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('🔒 100', b.x + b.w / 2, b.y + b.h / 2);
+        g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+      }
+    }
+    function drawSkinOverlay() {
+      const im = skinOverlay.images || {};
+      if (layers.apron && imgOk(im.apron)) { const r = rectPx(LE.apron); g.drawImage(im.apron, r.x, r.y, r.w, r.h); }
+      if (layers.arrival && imgOk(im.arrival)) { const r = rectPx(LE.arrival); g.drawImage(im.arrival, r.x, r.y, r.w, r.h); }
+      if (layers.runways && imgOk(im.runway)) LE.runways.forEach(r => { const b = runwayPx(r); g.drawImage(im.runway, b.x, b.y, b.w, b.h); });
+      if (layers.hangars) LE.hangars.forEach(h => {
+        const b = hangarPx(h);
+        const occ = skinOverlay.hangarState === 'occupied';
+        const st = !h.open ? 'locked' : (skinOverlay.hangarState === 'auto' || occ ? h.type : skinOverlay.hangarState);
+        const hi = im.hangar && im.hangar[st];
+        if (imgOk(hi)) g.drawImage(hi, b.x, b.y, b.w, b.h);
+        if (h.open && occ && imgOk(im.plane)) { const ps = b.w * 0.62; g.drawImage(im.plane, b.x + b.w / 2 - ps / 2, b.y + b.h / 2 - ps / 2, ps, ps); }
+        if (skinOverlay.sim) drawHangarSim(b, st);
+      });
     }
 
     /* ---- hit testing ---- */
@@ -662,11 +735,11 @@
         if (r.landingOpen === false) r.landingCost = Math.round(LE.rwOpenCost);
         if (r.takeoffOpen === false) r.takeoffCost = Math.round(LE.rwOpenCost);
       });
-      // оформление: пишем только не-дефолтные выборы (движок пока их игнорирует)
+      // оформление: пишем только не-дефолтные выборы скинов зон (по всем зонам).
+      // Так выбранные в воркбенче скины едут ВМЕСТЕ с экспортом черновика.
       const sk = LE.skins || {};
       const skOut = {};
-      if (sk.hangar && sk.hangar !== 'default') skOut.hangar = sk.hangar;
-      if (sk.background && sk.background !== 'default') skOut.background = sk.background;
+      SKIN_ZONES.forEach(z => { if (sk[z] && sk[z] !== 'default') skOut[z] = sk[z]; });
       if (Object.keys(skOut).length) o.skins = skOut;
       return o;
     }
@@ -757,7 +830,7 @@
         if (o.maxUp != null) next.maxUp = +o.maxUp;
         if (o.objective && Array.isArray(o.objective.stars)) next.stars = o.objective.stars.slice(0, 3);
         if (o.events) EVENTS.forEach(([k]) => { next.events[k] = !!o.events[k]; });
-        if (o.skins) { if (o.skins.hangar) next.skins.hangar = o.skins.hangar; if (o.skins.background) next.skins.background = o.skins.background; }
+        if (o.skins) SKIN_ZONES.forEach(z => { if (o.skins[z]) next.skins[z] = o.skins[z]; });   // back-compat: старый JSON с hangar/background импортируется как есть
         if (o.motion && typeof o.motion === 'object') {
           next.motion = {};
           ['landBefore', 'landAfter', 'takeoffRoll', 'climb'].forEach(k => {
@@ -771,7 +844,7 @@
 
     /* ---- единый доступ к черновику для других вкладок (Сложность / Ресурсы / Тест / мастер).
        Черновик = текущий шаблон «Разметки» (LE), он же автосохраняется в localStorage. ---- */
-    function ensureSkins() { if (!LE.skins) LE.skins = { hangar: 'default', background: 'default' }; return LE.skins; }
+    function ensureSkins() { LE.skins = Object.assign(defaultSkins(), LE.skins || {}); return LE.skins; }
     // дозаполнить старый черновик новыми полями вкладки «Сложность» (миграция на лету)
     function ensureDiffFields() {
       const d = DEFAULTS();
@@ -791,8 +864,9 @@
       name:     () => curTpl || 'черновик',
       raw:      () => ensureDiffFields(),                 // живая ссылка на LE (для вкладки «Сложность»)
       commit:   () => { save(); refreshAll(); },          // сохранить + пересинхронить контролы «Разметки»
-      getSkins: () => Object.assign({ hangar: 'default', background: 'default' }, LE.skins || {}),
+      getSkins: () => Object.assign(defaultSkins(), LE.skins || {}),
       setSkins: (patch) => { Object.assign(ensureSkins(), patch || {}); save(); },
+      zoneSpec: () => zoneSpec(),                         // живая геометрия зон для вкладки «Скины»
     };
 
     /* ---- param controls ----
@@ -871,6 +945,12 @@
     //   markup-surface = холст в шелле, iframe скрыт;  test-surface = iframe виден.
     window._enterMarkupSurface = function () { window._layoutActivate(true); };
     window._exitMarkupSurface  = function () { window._layoutActivate(false); };
+
+    // Превью скинов (вкладка «Ресурсы») рисуется поверх ЭТОГО же холста разметки
+    // (геометрия 1:1 с игрой). Вкладка управляет им через эти хуки.
+    window._zoneSpec      = function () { return zoneSpec(); };
+    window._setSkinPreview = function (st) { Object.assign(skinOverlay, st || {}); if (active && skinOverlay.on) draw(); };
+    window._skinPreviewOn  = function (on) { skinOverlay.on = !!on; if (active) draw(); };
 
     // boot (начальную активацию режима «Разметка» делает контроллер левого рельса —
     // он идёт ниже, когда уже определены хуки зон _enterEditorZones/_fieldActivate)
