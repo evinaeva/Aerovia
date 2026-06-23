@@ -1,7 +1,7 @@
 // ===== 10-scene-loop — the rAF loop (frame), scene dispatch, level-end, menu/share/timeline renderers & the neon main-screen landing animation (_q*) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: frame, endLevel, drawMenuScene, drawMenuLanding, drawTimeline, drawShareCard.
-// Reads: 01 (cv, ctx); 08b (update); 08 (computeStars, metricValue, recordResult); 09 (drawField, drawRunways, drawForest, starfield, vignette…); 09b (drawBay, drawBaySnapZones, drawRunwaySnapZones, drawPlane, drawHUD, drawEffects, drawFloaters, drawToast, drawTutorial); 06 (state); 04 (K, LV, LEVELS, levelName, objectiveDesc); 03 (t, fmt*); 07 (Analytics, Leaderboard); 12 (ACH); 11 (SVGIC).
+// Reads: 01 (cv, ctx); 08b (update); 08 (computeStars, metricValue, recordResult); 09 (drawField, drawRunways, drawForest, starfield, vignette…); 09b (drawBay, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawPlane, drawHUD, drawEffects, drawFloaters, drawToast, drawTutorial); 06 (state); 04 (K, LV, LEVELS, levelName, objectiveDesc); 03 (t, fmt*); 07 (Analytics, Leaderboard); 12 (ACH); 11 (SVGIC).
 
   const _qss=(a: number,b: number,x: number)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
   const _qlerp=(a: number,b: number,t: number)=>a+(b-a)*t;
@@ -131,6 +131,7 @@ function drawMenuScene(tm: number){
       bays.forEach(drawBay);
       drawBaySnapZones();
       drawRunwaySnapZones();
+      drawMotionPoints();
       planes.forEach(p=>{ if(!p.dead) drawPlane(p); });
       drawEffects(dt);
       vignette();

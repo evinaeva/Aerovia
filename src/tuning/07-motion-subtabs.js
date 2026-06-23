@@ -44,7 +44,7 @@
   const SUBTABS = [
     // «Движение» tab — plane physics / flight / ground tuning.
     { owner:'motion',     key:'plane',   icon:'✈',  label:'Самолёт',       groups:['movement','turns','routing','collisions','effects','weather','mobile_preview'] },
-    { owner:'motion',     key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','rollout_stop','aircraft_scale'] },
+    { owner:'motion',     key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','rollout_stop','aircraft_scale','flight_overlay'] },
     { owner:'motion',     key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones','debug_overlays'] },
     // «Сложность» tab — движковые ручки тест/демо-сессии.
     { owner:'difficulty', key:'control', icon:'⚙',  label:'Контроль',       groups:['ctrl'] },
