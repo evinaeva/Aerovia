@@ -95,7 +95,7 @@
   // ---- layout: bays, runways, hover slots ----
   interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; up?: boolean; gate?: string; gx?: number; gy?: number; openCost: number; upgCost?: number; }
   interface Runway { occupied: any; closed: boolean; hazard?: any; x: number; y: number; w: number; h: number; cy: number; stopX: number; exitX: number; landingOpen: boolean; takeoffOpen: boolean; landingOpen0: boolean; takeoffOpen0: boolean; landingCost: number; takeoffCost: number; }
-  interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; rwL?: number; rwR?: number; service?: any; }
+  interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; arrivalY0?: number; arrivalY1?: number; rwL?: number; rwR?: number; service?: any; }
   interface Rect { x: number; y: number; w: number; h: number; }
   let bays: Bay[] = [], runways: Runway[] = [], field: Field = {x0:0,y0:0,x1:0,y1:0}, pauseBtn: Rect = {} as Rect;
   // Единый масштаб «крупности» техники: размеры борта, ВПП и бокса выводятся из него
@@ -240,6 +240,14 @@
     });
     // hover x для прилетающих
     field.hoverX = W*0.93;
+    field.arrivalY0 = undefined; field.arrivalY1 = undefined;
+    { const az = LV.layout && LV.layout.zones && LV.layout.zones.arrival;
+      if(az){
+        field.hoverX = (az.x + az.w/2) * W;
+        field.arrivalY0 = az.y * H;
+        field.arrivalY1 = (az.y + az.h) * H;
+      }
+    }
     field.rwL = rwL; field.rwR = rwR;
 
     // кнопка паузы отодвинута от правого края на запас + safe-area, чтобы не

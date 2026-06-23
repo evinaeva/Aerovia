@@ -114,8 +114,9 @@
     const airBase = airPatience({vip, emergency, medical}, calmMult);
     const bonus = (vip?2:1) * (emergency?K.EMERGENCY_BONUS:1) * (medical?K.MEDICAL_BONUS:1);
     const reward = Math.round(nSvc * econ.svcReward * bonus);
-    // вертикальная позиция зависания — у одной из полос/между ними
-    const y = field.y0 + 30*ui + Math.random()*(field.y1 - field.y0 - 60*ui);
+    // вертикальная позиция зависания — в зоне прилёта (из разметки) или по всему апрону
+    const ay0 = field.arrivalY0 ?? field.y0, ay1 = field.arrivalY1 ?? field.y1;
+    const y = ay0 + 30*ui + Math.random()*(ay1 - ay0 - 60*ui);
     spawnedTotal++;
     planes.push({
       id: ++planeSeq,
