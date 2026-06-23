@@ -87,6 +87,10 @@
     let   editorOnly = false;   // «Разметка» mode: draw only the danger zones, not the live game's field
 
     function getField() {
+      if (editorOnly && window._layoutField) {
+        var lf = window._layoutField();
+        if (lf) return lf;
+      }
       try { const fw = gameFrame.contentWindow; return fw && fw.__FIELD ? fw.__FIELD : null; } catch(_) { return null; }
     }
     function gateEntr(b) {
@@ -294,12 +298,10 @@
       // Раздельно: бокс, ВПП-посадка, ВПП-взлёт (у каждой свои radius/offset; форма —
       // на тип). Рисуем у репрезентативного объекта. Ручка-центр двигает зону (OFFSET
       // вдоль оси захода), ручка-апекс масштабирует (RADIUS). Тянем → пишем MT-параметр.
-      if (!editorOnly) {
-        s += grabZoneSvg('bay', snap, fd);
-        s += grabZoneSvg('rwland', snap, fd);
-        s += grabZoneSvg('rwtake', snap, fd);
-        s += motionPointsSvg(snap, fd);
-      }
+      s += grabZoneSvg('bay', snap, fd);
+      s += grabZoneSvg('rwland', snap, fd);
+      s += grabZoneSvg('rwtake', snap, fd);
+      s += motionPointsSvg(snap, fd);
 
       overlay.innerHTML = s;
     }
