@@ -101,6 +101,7 @@
       pattern(id: string, tile: number): CanvasPattern | null;
       loadSkin?: (skin: string) => void;
       setSkinOverrides?: (skins: string[]) => void;
+      hasOverrides?: () => boolean;
     }
     const A: SpriteApi = {
       ready: false,
@@ -142,7 +143,8 @@
     // Какие из SHEETS реально есть у скина как SVG-лист; остальное у neon приходит из
     // PNG-атласа (manifest) и базовых листов. Без этого loadSkin дёргал все 5 и ловил
     // 404 на neon/planeflow-{hud,effects,brand}.svg. Держать в синхроне с precache в sw.js.
-    const SKIN_SHEETS: Record<string, string[]> = { neon: ['aircraft', 'field'] };
+    // neon: SVG-листы aircraft+field; arctic: только PNG-манифест, SVG-листов нет (иначе 404)
+    const SKIN_SHEETS: Record<string, string[]> = { neon: ['aircraft', 'field'], arctic: [] };
     const loadedSkins = new Set();
     // загрузить пер-скиновый набор листов из assets/sprites/<skin>/planeflow-*.svg.
     // Символы в них должны быть с id-префиксом `<skin>-` (напр. `neon-bay-repair`),
@@ -153,6 +155,7 @@
       skinOverrides = (skins || []).filter((s: string) => s !== 'neon');
       skinOverrides.forEach((s: string) => A.loadSkin!(s));
     };
+    A.hasOverrides = () => skinOverrides.length > 0;
     A.loadSkin = function(skin: string){
       if (!skin || loadedSkins.has(skin)) return;
       loadedSkins.add(skin);

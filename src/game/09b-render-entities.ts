@@ -169,14 +169,16 @@
   }
 
   function drawBay(b: any){
-    if(!b.deice && !LV.bonus){ drawNeonBay(b); return; }
+    // Без активного скин-оверрайда обычные боксы рисует drawNeonBay (полная neon-отрисовка).
+    // При активном скине — пробуем спрайт; спрайт не загружен ещё → neon-fallback.
+    if(!SPRITES.hasOverrides?.() && !b.deice && !LV.bonus){ drawNeonBay(b); return; }
     const col=LV.bonus ? BSP[bSpec(b.type)].petal : (SVC as Record<string, {color: string}>)[b.type].color;   // бонус: цвет цветка по виду
     const busy=!!b.occupied;
     ctx.save();
-    // нарисованная цельная панель бокса (пер-скиновый арт, напр. neon): bay-<type>
-    // для открытого, bay-locked для закрытого — заменяет процедурную «стойло»-форму.
-    // По контракту спрайт НЕ запекает иконку/ценник/прогресс — движок рисует их поверх.
+    // пер-скиновый арт: bay-<type> / bay-locked; иконка/прогресс рисуются поверх.
     const panelDrawn = ATLAS && SPRITES.blitC(b.open ? ('bay-'+b.type) : 'bay-locked', b.x+b.w/2, b.y+b.h/2, b.w, b.h);
+    // Спрайт ещё не загружен → откат на процедурный neon для обычных боксов
+    if(!panelDrawn && !b.deice && !LV.bonus){ ctx.restore(); drawNeonBay(b); return; }
     if(!b.open){
       const enough = money>=K.BAY_OPEN_COST;
       if(!panelDrawn){
