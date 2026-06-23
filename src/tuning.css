@@ -1136,3 +1136,16 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
+
+    /* ── Analysis divider in Difficulty tab ────────────────────────────────── */
+    .lab-analysis-sep {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 9px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--muted); padding: 2px 0 4px; opacity: .6;
+    }
+    .lab-analysis-sep::before, .lab-analysis-sep::after {
+      content: ''; flex: 1; height: 1px; background: rgba(127,155,176,.18);
+    }
+
+    /* hint-q inside lbl-wrap works with lbl-main (needs min-width:0 for truncation) */
+    .lab-row .lbl-wrap .lbl-main { min-width: 0; }
