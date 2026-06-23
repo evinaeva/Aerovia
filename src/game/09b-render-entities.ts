@@ -1,6 +1,6 @@
 // ===== 09b-render-entities — draw bays, planes, the HUD, transient FX and the tutorial overlay =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: drawBay, drawBaySnapZones, drawRunwaySnapZones, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
+// Provides: drawBay, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
 // Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 04b (MT_META_VALUES); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
@@ -124,6 +124,46 @@
       if(g>0){ rr(r.x-g, r.y-g, r.w+2*g, r.h+2*g, rad); ctx.stroke(); }
       strokeGrabZone(runwayGrabZone(r,'land'));
       strokeGrabZone(runwayGrabZone(r,'takeoff'));
+    }
+    ctx.restore();
+  }
+
+  function drawMotionPoints(){
+    if(MT_META_VALUES.DEBUG_MOTION_POINTS!==true || LV.bonus) return;
+    ctx.save();
+    ctx.font=(9*ui)+'px ui-monospace,"SF Mono",Menlo,Consolas,monospace';
+    ctx.textBaseline='top';
+    for(const r of runways){
+      if(r.closed) continue;
+      const pts:[number,string,string][]=[
+        [r.stopX+PLANE_LEN()+K.RW_TOUCHDOWN_OFF*ui, '#f5c842', 'касание'],
+        [r.exitX+K.RW_LIFTOFF_OFF*ui,               '#60d060', 'отрыв'  ],
+        [(r.x+r.w)+K.RW_ALIGN_OFF*ui,               '#3ad2ff', 'выравн.'],
+      ];
+      for(const [x,col,lbl] of pts){
+        ctx.strokeStyle=col; ctx.lineWidth=1.5*ui; ctx.setLineDash([3*ui,3*ui]);
+        ctx.beginPath(); ctx.moveTo(x,r.y); ctx.lineTo(x,r.y+r.h); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle=hexa(col,.9);
+        ctx.beginPath(); ctx.arc(x,r.cy,4*ui,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle=col; ctx.fillText(lbl,x+3*ui,r.y+r.h+2*ui);
+      }
+    }
+    for(const b of bays){
+      if(!b.open || !b.gate) continue;
+      const o=dirOut(b);
+      const half=(Math.abs(o.dy)>Math.abs(o.dx)?b.h:b.w)/2;
+      const gx=b.x+b.w/2+o.dx*half, gy=b.y+b.h/2+o.dy*half;
+      const d=K.BAY_APPROACH_DIST*ui;
+      if(d<=0) continue;
+      const apx=gx+o.dx*d, apy=gy+o.dy*d;
+      const col='#b060f0';
+      ctx.strokeStyle=col; ctx.lineWidth=1.5*ui; ctx.setLineDash([3*ui,3*ui]);
+      ctx.beginPath(); ctx.moveTo(gx,gy); ctx.lineTo(apx,apy); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle=hexa(col,.9);
+      ctx.beginPath(); ctx.arc(apx,apy,4*ui,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=col; ctx.fillText('подъезд',apx+3*ui,apy+2*ui);
     }
     ctx.restore();
   }
