@@ -221,13 +221,13 @@
       </div>
       </div>
       <div style="margin-top:10px">
-        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию; 3★ = target)</div>
+        <div class="lbl-main" style="font-size:13px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию; 3★ = target)</div>
         <div style="display:flex;gap:6px">
           <input class="lab-num" type="number" id="ed-s1" min="1" step="1" style="flex:1;text-align:center">
           <input class="lab-num" type="number" id="ed-s2" min="1" step="1" style="flex:1;text-align:center">
           <input class="lab-num" type="number" id="ed-s3" min="1" step="1" style="flex:1;text-align:center">
         </div>
-        <div id="ed-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div>
+        <div id="ed-stars-warn" style="margin-top:5px;font-size:13px;color:#e3c522"></div>
       </div>
     </div>
 
@@ -365,17 +365,17 @@
         </select>
       </div>
       <div style="margin-top:8px">
-        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px" id="de-stars-lbl">Пороги 1★ / 2★ / 3★ (по возрастанию)</div>
+        <div class="lbl-main" style="font-size:13px;color:var(--muted);margin-bottom:5px" id="de-stars-lbl">Пороги 1★ / 2★ / 3★ (по возрастанию)</div>
         <div style="display:flex;gap:6px">
           <input class="lab-num" type="number" id="de-s1" min="1" step="1" style="flex:1;text-align:center">
           <input class="lab-num" type="number" id="de-s2" min="1" step="1" style="flex:1;text-align:center">
           <input class="lab-num" type="number" id="de-s3" min="1" step="1" style="flex:1;text-align:center">
         </div>
-        <div id="de-stars-warn" style="margin-top:5px;font-size:11px;color:#e3c522"></div>
+        <div id="de-stars-warn" style="margin-top:5px;font-size:13px;color:#e3c522"></div>
         <p class="lab-hint" style="margin-top:4px;margin-bottom:0">Пороги должны строго возрастать. Авто-генератор ослабляет их до проходимости — проверь «Проходимость» ниже.</p>
       </div>
       <div style="margin-top:10px">
-        <div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">Доп-условия звёзд <small>· вкл → пороги 1★/2★/3★</small></div>
+        <div class="lbl-main" style="font-size:13px;color:var(--muted);margin-bottom:5px">Доп-условия звёзд <small>· вкл → пороги 1★/2★/3★</small></div>
         <div id="de-cond"></div>
       </div>
     </div>
@@ -390,7 +390,7 @@
             <input class="lab-num" id="de-pace" type="number" min="0" max="1" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
         </div>
       </div>
-      <div style="margin-top:8px"><div class="lbl-main" style="font-size:11px;color:var(--muted);margin-bottom:5px">События / спецборты (вес в сложности)</div>
+      <div style="margin-top:8px"><div class="lbl-main" style="font-size:13px;color:var(--muted);margin-bottom:5px">События / спецборты (вес в сложности)</div>
         <div class="lab-chips" id="de-events"></div></div>
     </div>
 
@@ -474,7 +474,7 @@
         <div class="lab-stat"><div class="lab-stat-label">Сложность</div><div class="lab-stat-val" id="diff-total">—</div><div class="lab-stat-sub">0…1 (analyzeLevel)</div></div>
         <div class="lab-stat"><div class="lab-stat-label">Темп pace</div><div class="lab-stat-val" id="diff-pace">—</div><div class="lab-stat-sub" id="diff-pace-sub">—</div></div>
         <div class="lab-stat"><div class="lab-stat-label">Балл econ</div><div class="lab-stat-val" id="diff-econ-score">—</div><div class="lab-stat-sub">levelDifficulty · 0…<span id="diff-cap">1.2</span></div></div>
-        <div class="lab-stat"><div class="lab-stat-label">Звёзды</div><div class="lab-stat-val" id="diff-stars" style="font-size:18px">—</div><div class="lab-stat-sub">1★ / 2★ / 3★</div></div>
+        <div class="lab-stat"><div class="lab-stat-label">Звёзды</div><div class="lab-stat-val" id="diff-stars" style="font-size:20px">—</div><div class="lab-stat-sub">1★ / 2★ / 3★</div></div>
       </div>
     </div>
 
@@ -571,7 +571,7 @@
         и сразу стартует его. <b>Экспорт/импорт</b> всего настроенного — в верхнем меню «📂 Файл»: выгруженный JSON можно
         импортировать обратно или вставить в массив <code>LEVELS</code> (<code>src/game/04-config-levels.ts</code>).
         Поля <code>apron</code>/<code>zones</code> движок пока не отрисовывает (геометрия апрона процедурная).</p>
-      <div id="ly-warn" style="margin-top:6px;font-size:11px;color:#e3c522"></div>
+      <div id="ly-warn" style="margin-top:6px;font-size:13px;color:#e3c522"></div>
     </div>
   </div>
 
@@ -586,7 +586,7 @@
         <button class="p-btn" id="test-play" style="flex:1;color:var(--accent);border-color:rgba(34,227,198,.45);background:rgba(34,227,198,.06)">▶ Тестовая игра</button>
         <button class="p-btn" id="test-stop">✎ К разметке</button>
       </div>
-      <div id="test-status" style="margin-top:6px;font-size:11px;color:var(--muted)"></div>
+      <div id="test-status" style="margin-top:6px;font-size:13px;color:var(--muted)"></div>
     </div>
     <div class="lab-section">
       <h3>Готовность <span class="h3-sub">· предполётная проверка</span></h3>
@@ -601,7 +601,7 @@
         ТЗ для дизайнера: <a href="docs/design/skins/ZONES.md" target="_blank"><code>docs/design/skins/ZONES.md</code></a>.
         Новые скины кладутся в <code>assets/skins/</code> (<code>npm run scan:skins</code>). Превью видно в режиме
         <b>«Разметка»</b> (левый рельс). Выбор едет в экспорт черновика (поле <code>skins</code>).</p>
-      <div id="skin-warn" style="font-size:11px;color:#e3c522"></div>
+      <div id="skin-warn" style="font-size:13px;color:#e3c522"></div>
     </div>
     <div class="lab-section">
       <h3>Размеры зон <span class="h3-sub" id="skin-spec-sub">— открой «Разметку»</span></h3>
