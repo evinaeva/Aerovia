@@ -25,18 +25,24 @@
     // атмосфера: «часы» суток идут всегда; погода — опциональный движок (флаг weather)
     dayPhase=0; nightAmount=0; weatherUntil=0;
     hazards=[]; crews=[]; hazardSeq=0;
-    const forest = LV.biome==='forest';
-    const arctic = LV.biome==='arctic';
+    const forest   = LV.biome==='forest';
+    const arctic   = LV.biome==='arctic';
+    const tropical = LV.biome==='tropical';
+    const desert   = LV.biome==='desert';
+    const mountain = LV.biome==='mountain';
+    const megacity = LV.biome==='megacity';
+    const biomHazard = forest||arctic||tropical||desert||mountain||megacity;
     // Арктика всегда в снегу: постоянное обледенение, де-айсинг обязателен без перерывов
     if(arctic){ weather='snow'; weatherUntil=Infinity; nextWeather=Infinity; }
     else { weather='clear'; nextWeather = LV.weather ? K.WEATHER_PERIOD : Infinity; }
     if(LV.biome){
-      // биом-карты (Survival) сохраняют динамику час-пика; у леса/арктики — свои помехи на
-      // полосах вместо «ветра/тумана»
+      // биом-карты (Survival) сохраняют динамику час-пика; помехи на полосах вместо ветра/тумана
       nextRush = K.RUSH_PERIOD;
-      nextWind = (forest||arctic||K.WEATHER_EVENTS_OFF)?Infinity:K.WIND_PERIOD;
-      nextFog  = (forest||arctic||K.WEATHER_EVENTS_OFF)?Infinity:K.FOG_PERIOD;
-      nextHazard = forest ? FOR.SPAWN_FIRST : (arctic ? ARC.SPAWN_FIRST : Infinity);
+      nextWind = (biomHazard||K.WEATHER_EVENTS_OFF)?Infinity:K.WIND_PERIOD;
+      nextFog  = (biomHazard||K.WEATHER_EVENTS_OFF)?Infinity:K.FOG_PERIOD;
+      nextHazard = forest ? FOR.SPAWN_FIRST : arctic   ? ARC.SPAWN_FIRST  :
+                   tropical ? TROP.SPAWN_FIRST : desert ? DSRT.SPAWN_FIRST :
+                   mountain ? MNTN.SPAWN_FIRST : megacity ? CITY.SPAWN_FIRST : Infinity;
     } else {
       // кампания: динамические события включаются только если разрешены уровнем
       const evs = levelEvents();
@@ -198,6 +204,10 @@
     if(h.kind==='deer') return 'truck';
     if(h.kind==='snow') return 'plow';
     if(h.kind==='icing') return 'deice_truck';
+    if(h.kind==='storm_wave') return 'pump';
+    if(h.kind==='sandstorm') return 'sweeper';
+    if(h.kind==='rockslide') return 'bulldozer';
+    if(h.kind==='vip_motorcade') return 'police';
     return 'eagle';
   }
   // помеха под пальцем (для тапа): берём ближайшую ещё не обслуживаемую
@@ -212,15 +222,35 @@
     const free = runways.filter(r=>!r.closed && r.hazard==null);
     if(!free.length) return;
     const r = free[Math.floor(Math.random()*free.length)];
-    const arctic = LV.biome==='arctic';
-    // арктика: только обледенение; лес: снег только в снегопад
-    const pool = arctic ? ['icing'] : (weather==='snow' ? ['tree','deer','birds','snow'] : ['tree','deer','birds']);
+    const biome = LV.biome;
+    const pool = biome==='arctic'     ? ['icing'] :
+                 biome==='tropical'   ? ['storm_wave'] :
+                 biome==='desert'     ? ['sandstorm'] :
+                 biome==='mountain'   ? ['rockslide'] :
+                 biome==='megacity'   ? ['vip_motorcade'] :
+                 (weather==='snow' ? ['tree','deer','birds','snow'] : ['tree','deer','birds']);
     const kind = pool[Math.floor(Math.random()*pool.length)];
     const h: any = { id:++hazardSeq, kind, runway:r, t:0, dispatched:false, done:false };
     if(kind==='icing'){
       h.x = r.x + r.w*0.5; h.y = r.cy;
-      r.closed = true;                                  // лёд на полосе — закрыта до приезда деайсинг-грузовика
+      r.closed = true;
       toast = {text:t('arctic.ice'), t:0, good:false};
+    } else if(kind==='storm_wave'){
+      h.x = r.x + r.w*0.5; h.y = r.cy;
+      r.closed = true;
+      toast = {text:t('tropical.wave'), t:0, good:false};
+    } else if(kind==='sandstorm'){
+      h.x = r.x + r.w*0.5; h.y = r.cy;
+      r.closed = true;
+      toast = {text:t('desert.sand'), t:0, good:false};
+    } else if(kind==='rockslide'){
+      h.x = r.x + r.w*0.35; h.y = r.cy;
+      r.closed = true;
+      toast = {text:t('mountain.rocks'), t:0, good:false};
+    } else if(kind==='vip_motorcade'){
+      h.x = r.x + r.w*0.5; h.y = r.cy;
+      r.closed = true;
+      toast = {text:t('megacity.vip'), t:0, good:false};
     } else if(kind==='snow'){
       h.x = r.x + r.w*0.5; h.y = r.cy;
       r.closed = true;                                  // занос на полосе — закрыта, пока не расчистит плуг
@@ -252,7 +282,8 @@
     crews.push({ kind:neededCrew(h), hazard:h, phase:'out',
                  x:home.x, y:home.y, hx:home.x, hy:home.y,
                  tx:h.x, ty:h.y, workT:0, done:false });
-    const crewNameKey = (LV.biome==='arctic' ? 'arctic.crew.' : 'forest.crew.') + neededCrew(h);
+    const biomePfx: Record<string,string> = {arctic:'arctic',tropical:'tropical',desert:'desert',mountain:'mountain',megacity:'megacity'};
+    const crewNameKey = (biomePfx[LV.biome!] || 'forest') + '.crew.' + neededCrew(h);
     addFloat(home.x, home.y-14*ui, t(crewNameKey), COL.teal);
     SND.build(); HAP.tap();
   }
@@ -264,22 +295,23 @@
     h.runway.closed = false;
     hazards = hazards.filter(x=>x!==h);
     if(rewarded){
-      const reward = LV.biome==='arctic' ? ARC.REWARD : FOR.REWARD;
+      const biomeRewards: Record<string,number> = {arctic:ARC.REWARD,tropical:TROP.REWARD,desert:DSRT.REWARD,mountain:MNTN.REWARD,megacity:CITY.REWARD};
+      const reward = biomeRewards[LV.biome!] ?? FOR.REWARD;
       money += reward;
       addFloat(h.x, h.y-18*ui, '+'+fmtMoney(reward), COL.coin);
       SND.served(); HAP.ok();
-      const clearedKey = LV.biome==='arctic' ? 'arctic.cleared' : 'forest.cleared';
+      const clearedKey = LV.biome && LV.biome!=='forest' ? LV.biome+'.cleared' : 'forest.cleared';
       toast = {text:t(clearedKey), t:0, good:true};
     }
   }
+  function biomeCfg(){ const b=LV.biome; return b==='arctic'?ARC:b==='tropical'?TROP:b==='desert'?DSRT:b==='mountain'?MNTN:b==='megacity'?CITY:FOR; }
   function updateForest(dt: number){
     if(K.DISABLE_FOREST){
       for(const h of [...hazards]) resolveHazard(h, false);
       hazards=[]; crews=[];
       return;
     }
-    const isArctic = LV.biome==='arctic';
-    const cfg = isArctic ? ARC : FOR;
+    const cfg = biomeCfg();
     if(gameTime>=nextHazard){
       spawnHazard();
       nextHazard = gameTime + cfg.SPAWN_MIN + Math.random()*(cfg.SPAWN_MAX-cfg.SPAWN_MIN);
@@ -289,17 +321,21 @@
       if(h.done) continue;
       h.t += dt;
       if(h.kind==='tree'){
-        if(!h.fallen && h.t>=h.fallTime){ h.fallen=true; h.runway.closed=true; } // легло поперёк полосы
+        if(!h.fallen && h.t>=h.fallTime){ h.fallen=true; h.runway.closed=true; }
       } else if(h.kind==='deer'){
-        if(!h.dispatched && h.t>=FOR.DEER_LIFE) resolveHazard(h, false);          // олень сам ушёл
+        if(!h.dispatched && h.t>=FOR.DEER_LIFE) resolveHazard(h, false);
       } else if(h.kind==='birds'){
-        if(!h.dispatched && h.t>=FOR.BIRD_LIFE) resolveHazard(h, false);          // птицы улетели
+        if(!h.dispatched && h.t>=FOR.BIRD_LIFE) resolveHazard(h, false);
+      } else if(h.kind==='storm_wave'){
+        if(!h.dispatched && h.t>=TROP.WAVE_LIFE) resolveHazard(h, false);   // волна уходит сама
+      } else if(h.kind==='vip_motorcade'){
+        if(!h.dispatched && h.t>=CITY.MOTORCADE_LIFE) resolveHazard(h, false); // кортеж рассасывается
       }
-      // снег (kind==='snow') и лёд (kind==='icing') сами не уходят — нужна бригада
+      // icing / sandstorm / rockslide сами не уходят — только бригада
     }
     // спец-авто: едут к помехе → работают → возвращаются домой
-    const workTime = isArctic ? ARC.WORK_TIME : FOR.WORK_TIME;
-    const crewSpeed = isArctic ? ARC.CREW_SPEED : FOR.CREW_SPEED;
+    const workTime = cfg.WORK_TIME;
+    const crewSpeed = cfg.CREW_SPEED;
     for(const c of crews){
       if(c.phase==='work'){
         c.workT -= dt;

@@ -234,6 +234,50 @@
     REWARD: 15,
   };
 
+  // ---- тропический биом: штормовые волны на ВПП ----
+  // Волна периодически захлёстывает полосу → закрывается; уходит сама через WAVE_LIFE сек
+  // либо насосная бригада откачивает воду быстрее.
+  const TROP = {
+    SPAWN_FIRST: 10,
+    SPAWN_MIN: 12, SPAWN_MAX: 22,
+    WAVE_LIFE: 10,         // волна уходит сама — можно подождать или выслать насосы
+    CREW_SPEED: 255,
+    WORK_TIME: 1.8,
+    REWARD: 13,
+  };
+
+  // ---- пустынный биом: песчаные бури на ВПП ----
+  // Песчаная буря засыпает полосу → закрыта до прибытия пескоочистителя (не уходит сама).
+  const DSRT = {
+    SPAWN_FIRST: 11,
+    SPAWN_MIN: 14, SPAWN_MAX: 24,
+    CREW_SPEED: 240,
+    WORK_TIME: 2.2,
+    REWARD: 14,
+  };
+
+  // ---- горный биом: камнепады на ВПП ----
+  // Камни с горы перекрывают полосу → нужен бульдозер. Медленная бригада — горный рельеф.
+  const MNTN = {
+    SPAWN_FIRST: 14,
+    SPAWN_MIN: 18, SPAWN_MAX: 32,
+    CREW_SPEED: 210,       // медленнее — горный рельеф
+    WORK_TIME: 3.2,        // тяжёлые камни убирать дольше
+    REWARD: 16,
+  };
+
+  // ---- биом мегаполиса: VIP-кортежи на ВПП ----
+  // Кортеж перекрывает полосу; рассасывается сам через MOTORCADE_LIFE сек или
+  // игрок высылает полицейский эскорт для быстрого разгона.
+  const CITY = {
+    SPAWN_FIRST: 8,
+    SPAWN_MIN: 10, SPAWN_MAX: 20,
+    MOTORCADE_LIFE: 12,    // кортеж рассасывается сам, если не реагировать
+    CREW_SPEED: 300,       // полиция реагирует быстро
+    WORK_TIME: 1.2,
+    REWARD: 11,
+  };
+
   // ---- level config ----
   // КАЖДЫЙ уровень — один шаг кривой «медленного нарастания сложности» (паттерн —
   // в docs/design/game-design/level-pattern.md). По нему же делаем будущие карты.
@@ -354,10 +398,22 @@
       level:{ biome:'arctic', weather:true, deice:true, objective:{ metric:'served', stars:[8,10,12] },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
         runways:3 } },
-    { id:'tropical', emoji:'🏝️', ready:false },
-    { id:'desert',   emoji:'🐪', ready:false },
-    { id:'mountain', emoji:'🏔️', ready:false },
-    { id:'megacity', emoji:'🌆', ready:false },
+    { id:'tropical', emoji:'🏝️', ready:true,
+      level:{ biome:'tropical', weather:true, deice:false, objective:{ metric:'served', stars:[9,11,13] },
+        sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
+        runways:3 } },
+    { id:'desert',   emoji:'🐪', ready:true,
+      level:{ biome:'desert', weather:false, deice:false, objective:{ metric:'served', stars:[9,11,13] },
+        sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
+        runways:3 } },
+    { id:'mountain', emoji:'🏔️', ready:true,
+      level:{ biome:'mountain', weather:false, deice:false, objective:{ metric:'served', stars:[7,9,11] },
+        sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
+        runways:3 } },
+    { id:'megacity', emoji:'🌆', ready:true,
+      level:{ biome:'megacity', weather:false, deice:false, objective:{ metric:'served', stars:[11,13,15] },
+        sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
+        runways:3 } },
   ];
   // ---- бонус-уровни (шуточный «другой мир» каждые 5 уровней) ----
   // Открывается после прохождения каждого 5-го уровня кампании (after=5,10,…) и
