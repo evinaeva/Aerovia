@@ -63,6 +63,7 @@
     const taxiSpeed = K.SPEED_TAXI * Math.min(fog?K.FOG_TAXI:1, weatherTaxiMult(weather));
     // spawn — ТЕМП уровня (pace) задаёт и частоту прилёта, и лимит одновременных бортов:
     // чем выше pace, тем короче интервал и больше бортов в небе разом → меньше «простоя».
+    if((window as any).__SUPPRESS_GOALS) scenarioPilot(dt);
     spawnTimer-=dt;
     const campaign = !LV.biome && !LV.bonus;
     // survival: темп (и потолок неба) растёт со временем; кампания — фикс. pace уровня; бонус — спокойный фон
