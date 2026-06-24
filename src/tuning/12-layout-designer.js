@@ -653,7 +653,7 @@
 
     /* ---- field templates + view layers ---- */
     const LAYER_DEFS = [
-      ['apron', '🟢 Безопасная'], ['arrival', '🟡 Опасная'],
+      ['apron', '🟢 Земля'], ['arrival', '🟡 Небо'],
       ['runways', '✈ ВПП'], ['hangars', '🏠 Ангары'], ['gates', '➤ Ворота'],
       ['grid', '▦ Сетка'], ['snap', '🧲 Привязка'],
     ];
