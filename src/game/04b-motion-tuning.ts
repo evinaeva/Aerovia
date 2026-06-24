@@ -243,7 +243,22 @@
   }
 
   function mtLoad(): void {
-    try { const raw = localStorage.getItem(MT_STORE_KEY); if (raw) mtApply(JSON.parse(raw), false); } catch (_) {}
+    try {
+      const raw = localStorage.getItem(MT_STORE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      // Tuning workbench (iframe, ?test=1): restore everything including ctrl/debug flags.
+      // Main game: skip debug-only overlays, workbench ctrl toggles (K.DISABLE_*,
+      // K.APRON_SPAWN) and MT.SCENARIO — they must never leak into real sessions.
+      const isTuning = typeof location !== 'undefined' && /[?&]test=1(?:&|$)/.test(location.search);
+      if (isTuning) { mtApply(saved, false); return; }
+      const skipKeys = new Set(
+        MT_PARAMS.filter(p => p.debugOnly || p.group === 'ctrl' || p.key === 'MT.SCENARIO').map(p => p.key)
+      );
+      const filtered: Record<string, any> = {};
+      Object.keys(saved).forEach((k: string) => { if (!skipKeys.has(k)) filtered[k] = saved[k]; });
+      mtApply(filtered, false);
+    } catch (_) {}
   }
 
   function mtPresets(): Record<string, any> {
