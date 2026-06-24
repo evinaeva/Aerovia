@@ -189,10 +189,13 @@
         b.side = b.gate==='down' ? 'top' : b.gate==='up' ? 'bottom' : 'free';
       });
     } else {
-      // СТАРАЯ РАСКЛАДКА: две сплошные ангары — стойла встык по всей ширине апрона
+      // СТАРАЯ РАСКЛАДКА: две сплошные ангары — стойла встык по всей ширине апрона.
+      // Правая граница — fx1-8*ui (rwL): ВПП заходит на 8*ui внутрь апрона (мостик),
+      // боксы не должны попадать в эту зону мостика.
+      const bayRight = fx1 - 8*ui;
       const packRow = (arr: Bay[], yTop: number) => {
         const n=arr.length; if(!n) return;
-        const cellW=(fx1-fx0)/n;
+        const cellW=(bayRight-fx0)/n;
         arr.forEach((b,i)=>{ b.w=cellW; b.h=hangH; b.x=fx0+i*cellW; b.y=yTop; });
       };
       packRow(bySide('top'), fy0);
