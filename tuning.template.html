@@ -279,16 +279,16 @@
     <div class="lab-section motion-runway-section" style="display:none">
       <h3>Движение на ВПП <span class="h3-sub">· × от базовой, 1 = дефолт</span></h3>
       <div class="lab-params-grid">
-        <div class="lab-row"><span class="lbl-main">Посадка · до касания ×</span>
+        <div class="lab-row"><span class="lbl-wrap"><span class="lbl-main">Посадка · до касания ×</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Множитель скорости этапа планирования до момента касания ВПП (× к базовой воздушной скорости движка). 1 = дефолт; 0.5 = вдвое медленнее — борт дольше держится в воздухе перед полосой.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-mot-landbefore" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
-        <div class="lab-row"><span class="lbl-main">Посадка · после касания ×</span>
+        <div class="lab-row"><span class="lbl-wrap"><span class="lbl-main">Посадка · после касания ×</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Множитель скорости пробега по ВПП после касания земли (× к базовой скорости движка). 1 = дефолт; больше — борт быстрее освобождает полосу и откатывается на апрон.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-mot-landafter" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
-        <div class="lab-row"><span class="lbl-main">Взлёт · разбег ×</span>
+        <div class="lab-row"><span class="lbl-wrap"><span class="lbl-main">Взлёт · разбег ×</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Множитель скорости разбега по ВПП до момента отрыва (× к базовой скорости движка). 1 = дефолт; больше — укорачивает разбег и быстрее освобождает полосу.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-mot-takeoffroll" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
-        <div class="lab-row"><span class="lbl-main">Взлёт · набор высоты ×</span>
+        <div class="lab-row"><span class="lbl-wrap"><span class="lbl-main">Взлёт · набор высоты ×</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Множитель скорости набора высоты после отрыва от полосы (× к базовой воздушной скорости движка). 1 = дефолт; больше — борт быстрее уходит за край экрана.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-mot-climb" type="number" min="0.1" max="3" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div></div>
       </div>

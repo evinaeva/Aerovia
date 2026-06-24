@@ -129,8 +129,8 @@
     {key:'K.GROUND_BASE', group:'timing', label:'Наземное терпение база',     target:'K',  name:'GROUND_BASE',  def:K.GROUND_BASE,  min:10,  max:180, step:1,    note:'Базовый таймер после посадки.',                             impact:'Ниже — меньше времени на обслуживание.'},
     {key:'K.GROUND_STEP', group:'timing', label:'Терпение за услугу',         target:'K',  name:'GROUND_STEP',  def:K.GROUND_STEP,  min:0,   max:90,  step:1,    note:'Добавка таймера за оставшуюся услугу.',                      impact:'Компенсирует длинные цепочки услуг.'},
     // ── обслуживание ──────────────────────────────────────────────────────────
-    {key:'K.SERVE_BASE',    group:'service', label:'Время обслуживания',      target:'K',  name:'SERVE_BASE',   def:K.SERVE_BASE,   min:.3,  max:12,  step:.1,   note:'Секунды базовой услуги до апгрейдов.',                      impact:'Определяет длительность стоянки в боксе.'},
-    {key:'K.UP_SPEED',      group:'service', label:'Бонус скорости апгрейда', target:'K',  name:'UP_SPEED',     def:K.UP_SPEED,     min:0,   max:1,   step:.01,  note:'+скорость за уровень ангара.',                              impact:'Выше — апгрейды сильнее ускоряют поток.'},
+    {key:'K.SERVE_BASE',    group:'service', label:'Время обслуживания',      target:'K',  name:'SERVE_BASE',   def:K.SERVE_BASE,   min:.3,  max:12,  step:.1,   note:'Базовое время одной услуги в боксе (секунды) до покупки апгрейдов. Меньше — быстрее поток, выше нагрузка на игрока.',             impact:'Определяет длительность стоянки в боксе.'},
+    {key:'K.UP_SPEED',      group:'service', label:'Бонус скорости апгрейда', target:'K',  name:'UP_SPEED',     def:K.UP_SPEED,     min:0,   max:1,   step:.01,  note:'Ускорение обслуживания за каждый уровень апгрейда ангара (0…1). Выше — каждый купленный апгрейд сильнее сокращает время стоянки.', impact:'Выше — апгрейды сильнее ускоряют поток.'},
     {key:'K.TWO_SVC_CHANCE',group:'events', label:'Шанс двух услуг',         target:'K',  name:'TWO_SVC_CHANCE',def:K.TWO_SVC_CHANCE,min:0, max:1,   step:.01,  note:'Вероятность, что у борта при появлении будет сразу два запроса на обслуживание.',                     impact:'Выше — длиннее маршруты и больше чек.'},
     // ── поток (spawn) ─────────────────────────────────────────────────────────
     {key:'K.PACE_IVL_SLOW',group:'spawn', label:'Интервал появления (спокойно)', target:'K',  name:'PACE_IVL_SLOW',def:K.PACE_IVL_SLOW,min:1,   max:12,  step:.1,   note:'Пауза между появлением бортов при самом спокойном темпе.',                                      impact:'Выше — спокойнее ранние уровни.'},
@@ -178,6 +178,7 @@
     {key:'K.APRON_SPAWN',       group:'ctrl', label:'Готовый борт на апроне', target:'K', name:'APRON_SPAWN',       def:false,note:'Демо: у левого края апрона всегда стоит готовый к взлёту борт; заменяется при взятии/крушении.', impact:'Постоянный готовый борт для теста руления и взлёта.'},
   ];
 
+  MT_PLANNED_PARAMS.forEach(p => { MT_META_VALUES[p.name] = p.def; MT_PARAMS.push(p); });
   MT_PARAMS.forEach(p => {
     p.category = p.category || MT_GROUP_CATEGORY[p.group] || p.group;
     p.description = p.description || p.note;
@@ -189,7 +190,6 @@
     p.exportable = p.exportable ?? true;
     p.debugOnly = p.debugOnly ?? false;
   });
-  MT_PLANNED_PARAMS.forEach(p => { MT_META_VALUES[p.name] = p.def; MT_PARAMS.push(p); });
 
   const MT_GROUPS: Record<string, string> = {
     input_touch:'Ввод и касания', route_drawing:'Маршрутизация', route_smoothing:'Сглаживание маршрута', snap_zones:'Зоны захвата', runway_geometry:'Геометрия ВПП',
