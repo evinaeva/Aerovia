@@ -5,9 +5,12 @@
      рисует их модуль 12 в точные прямоугольники зон (см. _zoneSpec / drawSkinOverlay). */
   (function () {
     const ZONES = [
-      ['hangar', 'Ангар'], ['apron', 'Апрон'], ['runway', 'ВПП'],
-      ['plane', 'Самолёт'], ['arrival', 'Прилёт'], ['background', 'Фон'],
+      ['apron', 'Апрон'],
+      ['hangar', 'Ангар'], ['runway', 'ВПП'], ['plane', 'Самолёт'],
+      ['arrival', 'Зона ожидания'],
+      ['background', 'Декоративный фон'],
     ];
+    const ZONE_GROUP = ['hangar', 'runway', 'plane'];   // эти три зоны — в одну строку парами «лейбл + селект»
     // состояния ангара для примерки (id движка + RU-подпись); 'auto' = по типу ангара
     const HANGAR_STATES = [
       ['auto', 'по типу'], ['fuel', 'заправка'], ['board', 'посадка'],
@@ -79,25 +82,31 @@
       } catch (_) {}
     }
 
-    /* ---- UI: селекторы скинов по зонам ---- */
+    /* ---- UI: селекторы скинов по зонам (C27–C29: <select> вместо чипов) ---- */
+    function makeZoneSel(zone) {
+      const sel = document.createElement('select');
+      sel.className = 'lab-select skin-zone-sel'; sel.style.maxWidth = '30ch'; sel.dataset.zone = zone;
+      const opts = [['default', 'дефолт']].concat((registry[zone] || []).map(s => [s.id, s.label]));   // значение = стабильный id скина (едет в экспорт); 'default' = базовый неон (движок рисует сам)
+      opts.forEach(([val, txt]) => { const o = document.createElement('option'); o.value = val; o.textContent = txt; sel.appendChild(o); });
+      sel.addEventListener('change', () => { if (!window.Draft) return; const p = {}; p[zone] = sel.value; window.Draft.setSkins(p); syncResources(); });
+      return sel;
+    }
     function buildZones() {
       const host = document.getElementById('skin-zones'); if (!host) return;
       host.innerHTML = '';
+      let groupRow = null;
       ZONES.forEach(([zone, label]) => {
-        const row = document.createElement('div'); row.className = 'skin-zone-row';
-        const lab = document.createElement('div'); lab.className = 'skin-zone-lab'; lab.textContent = label; row.appendChild(lab);
-        const chips = document.createElement('div'); chips.className = 'lab-chips';
-        const opts = [['default', 'Неон']].concat((registry[zone] || []).map(s => [s.id, s.label]));   // значение чипа = стабильный id; 'default' = базовый неон (движок рисует его сам, без оверлея)
-        opts.forEach(([val, txt]) => {
-          const c = document.createElement('label'); c.className = 'lab-chip'; c.dataset.zone = zone; c.dataset.skin = val; c.textContent = txt;
-          c.addEventListener('click', e => {
-            e.preventDefault();
-            if (!window.Draft) return;
-            const p = {}; p[zone] = val; window.Draft.setSkins(p); syncResources();
-          });
-          chips.appendChild(c);
-        });
-        row.appendChild(chips); host.appendChild(row);
+        if (ZONE_GROUP.includes(zone)) {   // ангар/ВПП/самолёт — пары «лейбл + селект» в одной строке
+          if (!groupRow) { groupRow = document.createElement('div'); groupRow.className = 'skin-zone-row'; host.appendChild(groupRow); }
+          const pair = document.createElement('div'); pair.style.cssText = 'display:flex;align-items:center;gap:5px;flex:none;';
+          const lbl = document.createElement('span'); lbl.className = 'skin-zone-lab'; lbl.style.width = 'auto'; lbl.style.whiteSpace = 'nowrap'; lbl.textContent = label;
+          pair.appendChild(lbl); pair.appendChild(makeZoneSel(zone)); groupRow.appendChild(pair);
+        } else {
+          groupRow = null;
+          const row = document.createElement('div'); row.className = 'skin-zone-row';
+          const lab = document.createElement('div'); lab.className = 'skin-zone-lab'; lab.textContent = label; row.appendChild(lab);
+          row.appendChild(makeZoneSel(zone)); host.appendChild(row);
+        }
       });
     }
     /* ---- UI: состояние ангара ---- */
@@ -143,8 +152,8 @@
       const nextMax = Math.max(0, ((window.Draft.raw && window.Draft.raw().maxUp) | 0) || 3);
       if (nextMax !== maxUp) { maxUp = nextMax; if (pips > maxUp) pips = maxUp; }
       const sk = window.Draft.getSkins();
-      document.querySelectorAll('#skin-zones .lab-chip').forEach(c =>
-        c.classList.toggle('on', (sk[c.dataset.zone] || 'default') === c.dataset.skin));
+      document.querySelectorAll('#skin-zones select.skin-zone-sel').forEach(sel =>
+        sel.value = sk[sel.dataset.zone] || 'default');
       document.querySelectorAll('#skin-hangar-state .lab-chip').forEach(c =>
         c.classList.toggle('on', c.dataset.state === hangarState));
       const sc = document.getElementById('skin-state-cur');

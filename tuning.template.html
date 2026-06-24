@@ -30,7 +30,7 @@
         <span class="tb-icon">📐</span><span>Зоны</span>
       </button>
       <!-- Zoom: cycle Normal → ВПП → Ангар → Normal -->
-      <button class="tb-btn" id="btn-zoom" title="Крупный план — ВПП / Ангар / Сброс">🔍</button>
+      <button class="tb-btn" id="btn-zoom" title="Крупный план — ВПП / Ангар / Сброс" style="display:none">🔍</button>
     </div>
 
     <!-- Popup backdrop -->
@@ -178,7 +178,7 @@
         + одновременность бортов; по кампании он не убывает. Правки идут по рабочей копии и не трогают кампанию в превью.
       </p>
       <div class="level-list-tools">
-        <input id="level-filter" placeholder="Фильтр: номер или имя…" autocomplete="off" spellcheck="false">
+        <input id="level-filter" placeholder="Фильтр: номер или имя…" autocomplete="off" spellcheck="false" style="max-width:30ch">
         <span class="level-count" id="level-count"></span>
       </div>
       <div id="level-table-wrap"><span class="lab-empty">Ждём запуска игры…</span></div>
@@ -187,7 +187,7 @@
     <div class="lab-section collapsible collapsed" id="level-edit-sec">
       <h3>Правка уровня <span class="h3-sub" id="ed-name">—</span></h3>
       <div class="lab-params-grid">
-      <div class="lab-row">
+      <div style="display:flex;gap:8px;align-items:center">
         <span class="lbl-main">Темп <small>pace 0…1</small></span>
         <div class="mt-stepper">
           <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
@@ -195,7 +195,7 @@
           <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
         </div>
       </div>
-      <div class="lab-row">
+      <div style="display:flex;gap:8px;align-items:center">
         <span class="lbl-main">ВПП <small>число полос</small></span>
         <div class="mt-stepper">
           <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
@@ -203,7 +203,7 @@
           <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
         </div>
       </div>
-      <div class="lab-row">
+      <div style="display:flex;gap:8px;align-items:center">
         <span class="lbl-main">Старт. деньги <small id="ed-money-hint">0 = дефолт (0)</small></span>
         <div class="mt-stepper">
           <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
@@ -211,7 +211,7 @@
           <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
         </div>
       </div>
-      <div class="lab-row">
+      <div style="display:flex;gap:8px;align-items:center">
         <span class="lbl-main">Лимит времени <small>сек, 0 = нет</small></span>
         <div class="mt-stepper">
           <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
@@ -223,9 +223,9 @@
       <div style="margin-top:10px">
         <div class="lbl-main" style="font-size:13px;color:var(--muted);margin-bottom:5px">Звёзды (порог 1★ / 2★ / 3★, по возрастанию; 3★ = target)</div>
         <div style="display:flex;gap:6px">
-          <input class="lab-num" type="number" id="ed-s1" min="1" step="1" style="flex:1;text-align:center">
-          <input class="lab-num" type="number" id="ed-s2" min="1" step="1" style="flex:1;text-align:center">
-          <input class="lab-num" type="number" id="ed-s3" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="ed-s1" min="1" step="1" style="width:calc(4ch + 14px);text-align:center">
+          <input class="lab-num" type="number" id="ed-s2" min="1" step="1" style="width:calc(4ch + 14px);text-align:center">
+          <input class="lab-num" type="number" id="ed-s3" min="1" step="1" style="width:calc(4ch + 14px);text-align:center">
         </div>
         <div id="ed-stars-warn" style="margin-top:5px;font-size:13px;color:#e3c522"></div>
       </div>
@@ -288,33 +288,22 @@
   <!-- Tab 4: Difficulty Lab ─────────────────────────────────────────────── -->
   <div id="difficulty-view" class="lab-view">
 
-    <!-- 1. Источник анализа -->
-    <div class="lab-section">
-      <h3>Источник анализа</h3>
-      <div class="lab-chips" id="diff-source" style="margin-bottom:8px">
-        <label class="lab-chip on" data-src="draft"><input type="radio" name="diffsrc" value="draft" checked> ✏ Черновик (Разметка)</label>
-        <label class="lab-chip" data-src="campaign"><input type="radio" name="diffsrc" value="campaign"> 🗺 Уровень кампании</label>
-      </div>
-      <div class="lab-params-grid" id="diff-level-row" style="display:none">
-        <div class="lab-row">
-          <span class="lbl-main">Карта кампании</span>
-          <select id="diff-level-sel" class="lab-select" style="grid-column:2 / 4"><option>Ждём запуска игры…</option></select>
-        </div>
-      </div>
-      <p class="lab-hint" id="diff-src-hint" style="margin-top:0">Анализируется твой черновик из «Разметки». Меняй поле/темп там — здесь обновится.</p>
-    </div>
-
-    <!-- 2. Авто-генератор -->
+    <!-- 1. Авто-генератор (M7: блок «Источник анализа» переехал в секцию «🎯 Цель и победа») -->
     <div class="lab-section">
       <h3>✨ Авто-генератор <span class="h3-sub">· сложность → все факторы</span></h3>
-      <div class="lab-row" style="gap:10px;align-items:center;margin-bottom:8px">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
         <span class="lbl-wrap" style="white-space:nowrap"><span class="lbl-main">Сложность</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Целевой уровень сложности 0–100%. Авто-генератор подбирает под него все параметры исходя из разметки и акцента.">?</button></span>
-        <input type="range" id="de-auto" min="0" max="100" step="1" value="40" style="flex:1;min-width:0">
-        <span class="lab-stat-val" id="de-auto-val" style="min-width:46px;text-align:right">40%</span>
+        <div class="mt-stepper">
+          <button type="button" class="mt-step" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>
+          <input class="lab-num" type="number" id="de-auto" min="0" max="100" step="1" value="40" style="width:calc(4ch + 14px);text-align:center">
+          <button type="button" class="mt-step" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>
+          <span style="font-size:13px;color:var(--muted);padding-left:2px">%</span>
+        </div>
+        <span id="de-auto-val" style="display:none">40%</span>
       </div>
-      <div class="lab-row" style="gap:8px;align-items:center;margin-bottom:8px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
         <span class="lbl-wrap" style="white-space:nowrap"><span class="lbl-main">Акцент</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Стратегия авто-генератора: «Авто» — меняет акцент по номеру уровня (tutorialLen/rampEnd). «Трафик» — плотный поток, дешёвый набор. «Экономика» — дорогой набор + безаварийность. «Время» — жёсткий лимит секунд.">?</button></span>
-        <select id="de-arch" class="lab-select" style="flex:1">
+        <select id="de-arch" class="lab-select" style="flex:none;max-width:30ch">
           <option value="auto">Авто (по № уровня)</option>
           <option value="mixed">Баланс</option>
           <option value="economy">Экономика (деньги + безаварийность)</option>
@@ -324,8 +313,8 @@
           <option value="traffic">Трафик</option>
         </select>
       </div>
-      <div class="lab-row" style="gap:14px;align-items:center;margin-bottom:4px">
-        <label class="lab-chip" style="flex:none"><input type="checkbox" id="de-apply-econ" checked><span>Темп + экономика</span></label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+        <label class="lab-chip" style="flex:none;width:fit-content;font-size:12px;padding:4px 7px"><input type="checkbox" id="de-apply-econ" checked><span>Темп + экономика</span></label>
         <label class="lab-chip" style="flex:none"><input type="checkbox" id="de-apply-obj" checked><span>Условия победы</span></label>
       </div>
       <p class="lab-hint" style="margin-top:4px;margin-bottom:8px">Снятая галочка — этот раздел авто-генератор не трогает, ручные значения сохраняются.</p>
@@ -353,23 +342,33 @@
       <canvas id="de-curve-canvas" width="320" height="72" style="width:100%;height:72px;margin-top:6px;display:block"></canvas>
     </div>
 
-    <!-- 4. Цель и победа (moved up) -->
+    <!-- 4. Цель и победа (moved up) — C9/C10/C11: «Метрика» + источник анализа в одной строке -->
     <div class="lab-section">
       <h3>🎯 Цель и победа</h3>
-      <div class="lab-row">
-        <span class="lbl-wrap"><span class="lbl-main">Метрика</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Что засчитывается игроку: обслуженные борта, суммарный уровень апгрейдов или секунды выживания без Game Over.">?</button></span>
-        <select id="de-metric" class="lab-select" style="grid-column:2 / 4">
-          <option value="served">борта (served)</option>
-          <option value="upgrades">апгрейды</option>
-          <option value="survival">выживание (сек)</option>
-        </select>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:8px;flex:none">
+          <span class="lbl-wrap"><span class="lbl-main">Метрика</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Что засчитывается игроку: обслуженные борта, суммарный уровень апгрейдов или секунды выживания без Game Over.">?</button></span>
+          <select id="de-metric" class="lab-select">
+            <option value="served">борта (served)</option>
+            <option value="upgrades">апгрейды</option>
+            <option value="survival">выживание (сек)</option>
+          </select>
+        </div>
+        <div class="lab-chips" id="diff-source" style="margin:0;padding:0">
+          <label class="lab-chip on" data-src="draft"><input type="radio" name="diffsrc" value="draft" checked> ✏ Черновик</label>
+          <label class="lab-chip" data-src="campaign"><input type="radio" name="diffsrc" value="campaign"> 🗺 Уровень кампании</label>
+        </div>
       </div>
+      <div id="diff-level-row" style="display:none;margin-bottom:4px">
+        <select id="diff-level-sel" class="lab-select"><option>Ждём запуска игры…</option></select>
+      </div>
+      <p class="lab-hint" id="diff-src-hint" style="margin-top:0;margin-bottom:8px">Анализируется черновик из «Разметки».</p>
       <div style="margin-top:8px">
         <div class="lbl-main" style="font-size:13px;color:var(--muted);margin-bottom:5px" id="de-stars-lbl">Пороги 1★ / 2★ / 3★ (по возрастанию)</div>
         <div style="display:flex;gap:6px">
-          <input class="lab-num" type="number" id="de-s1" min="1" step="1" style="flex:1;text-align:center">
-          <input class="lab-num" type="number" id="de-s2" min="1" step="1" style="flex:1;text-align:center">
-          <input class="lab-num" type="number" id="de-s3" min="1" step="1" style="flex:1;text-align:center">
+          <input class="lab-num" type="number" id="de-s1" min="1" step="1" style="width:calc(4ch + 14px);text-align:center">
+          <input class="lab-num" type="number" id="de-s2" min="1" step="1" style="width:calc(4ch + 14px);text-align:center">
+          <input class="lab-num" type="number" id="de-s3" min="1" step="1" style="width:calc(4ch + 14px);text-align:center">
         </div>
         <div id="de-stars-warn" style="margin-top:5px;font-size:13px;color:#e3c522"></div>
         <p class="lab-hint" style="margin-top:4px;margin-bottom:0">Пороги должны строго возрастать. Авто-генератор ослабляет их до проходимости — проверь «Проходимость» ниже.</p>
@@ -398,22 +397,22 @@
     <div class="lab-section">
       <h3>⏱ Время и штрафы</h3>
       <div class="lab-params-grid">
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Лимит времени <small style="color:var(--muted)">сек · 0 = нет</small></span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Секунды на прохождение уровня. 0 = без лимита. При режиме 🏁 Гонка — игроку важно вложиться в отведённое время.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-time" type="number" min="0" max="1800" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
         </div>
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Спокойный мир <small style="color:var(--muted)">calm × · 0 = нет</small></span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Множитель пауз между волнами. 0 = нет пауз. 2–3 = игрок получает передышку. Снижает напряжение без изменения pace.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-calm" type="number" min="0" max="3" step="0.1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
         </div>
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Штраф за крушение <small style="color:var(--muted)">0…1</small></span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Доля прогресса, списываемая при каждом крушении (0…1). 0 = крушение бесплатно. 1 = максимальный штраф.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-crash" type="number" min="0" max="1" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
         </div>
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Штраф за просрочку <small style="color:var(--muted)">0…1</small></span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Доля прогресса, списываемая за каждый просроченный борт (0…1). Низкое значение прощает редкие ошибки.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-late" type="number" min="0" max="1" step="0.05"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
@@ -430,32 +429,32 @@
     <div class="lab-section">
       <h3>💰 Экономика набора <span class="h3-sub">· 0 = дефолт движка</span></h3>
       <div class="lab-params-grid">
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Стартовые деньги</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Деньги в кошельке на старте уровня. 0 = дефолт движка (зависит от набора апгрейдов).">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-money" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
         </div>
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Цена открытия бокса</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Стоимость разблокировки ангара. 0 = дефолт. Штампуется на каждый закрытый бокс в черновике.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-open" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
         </div>
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Цена апгрейда (1 ур.)</span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Стоимость одного уровня апгрейда. Итог = upgCost × уровень. 0 = дефолт.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-upg" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
         </div>
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Цена открытия полосы <small style="color:var(--muted)">с двух сторон</small></span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Стоимость открытия ВПП для вылетающих (оба конца). 0 = дефолт.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-rwcost" type="number" min="0" max="2000" step="10"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
         </div>
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Апгрейд: мин уровень <small style="color:var(--muted)">minUp 0…5</small></span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Стартовый уровень всех боксов. minUp=2 → игрок начинает с уже улучшенными боксами.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-minup" type="number" min="0" max="5" step="1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
         </div>
-        <div class="lab-row">
+        <div style="display:flex;gap:8px;align-items:center">
           <span class="lbl-wrap"><span class="lbl-main">Апгрейд: макс уровень <small style="color:var(--muted)">maxUp 0…5</small></span><button class="hint-q" type="button" aria-label="Пояснение" aria-expanded="false" data-hint="Потолок улучшений на уровне. maxUp=1 → купить можно только первый апгрейд.">?</button></span>
           <div class="mt-stepper"><button type="button" class="mt-step" data-dir="-1" tabindex="-1">−</button>
             <input class="lab-num" id="de-maxup" type="number" min="0" max="5" step="1"><button type="button" class="mt-step" data-dir="1" tabindex="-1">+</button></div>
@@ -511,7 +510,7 @@
     <div class="lab-section" id="ly-tpl-sec">
       <h3>Шаблон поля <span class="h3-sub">· создать с нуля / выбрать</span></h3>
       <div class="lab-btn-row">
-        <select class="lab-select" id="ly-tpl-sel" style="flex:1;min-width:130px"></select>
+        <select class="lab-select" id="ly-tpl-sel" style="flex:1;min-width:130px;max-width:30ch"></select>
         <button class="p-btn" id="ly-tpl-new" title="Пустое поле — собрать с нуля">＋ Новый</button>
         <button class="p-btn" id="ly-tpl-dup" title="Копия текущего поля">⧉ Копия</button>
         <button class="p-btn" id="ly-tpl-rename" title="Переименовать">✎</button>
@@ -552,8 +551,8 @@
       <div id="ly-sel-body" class="lab-params-grid"><span class="lab-empty">Кликни объект на холсте.</span></div>
     </div>
 
-    <!-- zones (numeric) -->
-    <div class="lab-section">
+    <!-- zones (numeric) — секция скрыта (M6) -->
+    <div class="lab-section" style="display:none">
       <h3>Зоны <span class="h3-sub">· границы, % экрана</span></h3>
       <div id="ly-zones" class="lab-params-grid"></div>
     </div>
@@ -579,11 +578,11 @@
   <div id="test-view" class="lab-view">
     <div class="lab-section">
       <h3>Тест-драйв <span class="h3-sub" id="test-draft-name">черновик</span></h3>
-      <p class="lab-hint" style="margin-top:0">Переключатель <b>«Тестовая игра»</b> слева от превью запускает текущую
+      <p class="lab-hint" style="margin-top:0;display:none">Переключатель <b>«Тестовая игра»</b> слева от превью запускает текущую
         разметку с её настройками сложности — играй сам, проверь проходимость и баланс. Авто-бота нет: это ручной
         тест-драйв. «Разметка» возвращает к редактированию поля.</p>
       <div class="lab-btn-row">
-        <button class="p-btn" id="test-play" style="flex:1;color:var(--accent);border-color:rgba(34,227,198,.45);background:rgba(34,227,198,.06)">▶ Тестовая игра</button>
+        <button class="p-btn" id="test-play" style="flex:none;width:fit-content;color:var(--accent);border-color:rgba(34,227,198,.45);background:rgba(34,227,198,.06)">▶ Тестовая игра</button>
         <button class="p-btn" id="test-stop">✎ К разметке</button>
       </div>
       <div id="test-status" style="margin-top:6px;font-size:13px;color:var(--muted)"></div>
@@ -596,25 +595,28 @@
 
   <!-- Tab: Ресурсы (примерка скинов зон на превью) ──────────────────────────── -->
   <div id="asset-view" class="lab-view">
-    <div class="lab-section">
-      <p class="lab-hint" style="margin-top:0">🎨 Примеряй скины зон прямо на превью — геометрия <b>1:1 с игрой</b>.
+    <!-- C23: первая секция (ТЗ + skin-warn) скрыта целиком -->
+    <div class="lab-section" style="display:none">
+      <p class="lab-hint" style="margin-top:0;display:none">🎨 Примеряй скины зон прямо на превью — геометрия <b>1:1 с игрой</b>.
         ТЗ для дизайнера: <a href="docs/design/skins/ZONES.md" target="_blank"><code>docs/design/skins/ZONES.md</code></a>.
         Новые скины кладутся в <code>assets/skins/</code> (<code>npm run scan:skins</code>). Превью видно в режиме
         <b>«Разметка»</b> (левый рельс). Выбор едет в экспорт черновика (поле <code>skins</code>).</p>
       <div id="skin-warn" style="font-size:13px;color:#e3c522"></div>
     </div>
-    <div class="lab-section">
+    <!-- C22: «Размеры зон» скрыта -->
+    <div class="lab-section" style="display:none">
       <h3>Размеры зон <span class="h3-sub" id="skin-spec-sub">— открой «Разметку»</span></h3>
       <div id="skin-spec" class="skin-spec"><span class="lab-empty">Открой превью в режиме «Разметка».</span></div>
     </div>
     <div class="lab-section">
-      <h3>Состояние ангара <span class="h3-sub" id="skin-state-cur">по типу</span></h3>
-      <div class="lab-chips" id="skin-hangar-state"></div>
-      <div class="ly-prop-row" style="margin-top:6px"><span class="lbl-main">Точки апгрейда</span><div class="ly-seg" id="skin-hangar-pips"></div></div>
-    </div>
-    <div class="lab-section">
       <h3>Скины зон</h3>
       <div id="skin-zones"><span class="lab-empty">Загрузка реестра…</span></div>
+    </div>
+    <!-- C24: «Состояние ангара» переехало после «Скинов зон» -->
+    <div class="lab-section">
+      <h3>Состояние ангара <span class="h3-sub" id="skin-state-cur">по типу</span></h3>
+      <div class="lab-chips" id="skin-hangar-state"></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px"><span class="lbl-main">Точки апгрейда</span><div class="ly-seg" id="skin-hangar-pips"></div></div>
     </div>
   </div>
 
