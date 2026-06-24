@@ -35,7 +35,7 @@
   // Только проверяет наличие обновления, не применяет. Возвращает 'available' /
   // 'up-to-date' / 'offline'. Вызывается по кнопке «Проверить обновления».
   window.pwaCheckForUpdateAvailable = async () => {
-    if (!swReg) return 'offline';
+    if (!swReg) return 'up-to-date';
     try { await swReg.update(); } catch { return 'offline'; }
     return (swReg.installing || swReg.waiting) ? 'available' : 'up-to-date';
   };
