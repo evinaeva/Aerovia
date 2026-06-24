@@ -412,11 +412,7 @@
   }
   // открытый бокс под точкой (для фиксации конца маршрута)
   function openBayAt(p: any){
-    // конец маршрута «прилипает» к боксу не только внутри его прямоугольника, но и в
-    // запасе MT.BAY_HIT_PADDING вокруг (настраивается в tuning.html, по умолчанию 0;
-    // зону рисует слой MT.DEBUG_BAY_SNAP_ZONES — тоже только в Workbench)
-    const pad=(MT_META_VALUES.BAY_HIT_PADDING as number)||0;
-    for(const b of bays) if(b.open && (rectPad(p.x,p.y,b,pad) || inGrabZone(p.x,p.y,bayGrabZone(b)))) return b;
+    for(const b of bays) if(b.open && (rectHit(p.x,p.y,b) || inGrabZone(p.x,p.y,bayGrabZone(b)))) return b;
     return null;
   }
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
@@ -473,8 +469,10 @@
     pl.path.push({x:tx, y:ty});
     pl.moving=true;
     // воздушный заход: запоминаем целевую полосу, чтобы добрать борт до рубежа ВПП,
-    // даже если большой «захват точки» съест последний waypoint раньше времени
+    // даже если большой «захват точки» съест последний waypoint раньше времени.
+    // взлёт: запоминаем ВПП для предварительного выравнивания по оси в апроне.
     if(pl.zone==='air') pl.approachR = r;
+    else pl.takeoffR = r;
     pulseFx(tx, ty, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
@@ -571,6 +569,7 @@
       drag.drew=true;
       drag.plane.path=[];            // начинаем новый маршрут
       drag.plane.approachR=null;     // новый маршрут — старый воздушный заход сбрасываем
+      drag.plane.takeoffR=null;      // новый маршрут — старый взлётный заход сбрасываем
       drag.plane.moving=true;        // борт трогается сразу, как пошла линия
       drag.plane.autoPath=false;     // это нарисованный игроком маршрут — его показываем
     }

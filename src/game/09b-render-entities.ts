@@ -86,8 +86,7 @@
   }
 
   // Отладочный слой «Зоны захвата боксов» (MT.DEBUG_BAY_SNAP_ZONES) — настройка геометрии
-  // в tuning.html. Когда слой включён, у каждого открытого бокса рисуется прямоугольник
-  // зоны «прилипания» конца маршрута (тело бокса + MT.BAY_HIT_PADDING). Без пульсации и
+  // в tuning.html. Рисует прямоугольник тела бокса и зону захвата у ворот. Без пульсации и
   // подсветки — ровная пунктирная рамка. По умолчанию слой выключен → в игре ничего не видно.
   // Зона захвата: z.square — квадрат со стороной 2r (центр в z); иначе полукруг
   // (дуга купола по +u + плоская хорда через центр).
@@ -99,12 +98,10 @@
   }
   function drawBaySnapZones(){
     if(MT_META_VALUES.DEBUG_BAY_SNAP_ZONES!==true || LV.bonus) return;
-    const g=(MT_META_VALUES.BAY_HIT_PADDING as number)||0, rad=Math.min(8*ui, 6*ui+g*0.2);
     ctx.save();
     ctx.lineWidth=1.5*ui; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([6*ui,4*ui]);
     for(const b of bays){
       if(!b.open) continue;
-      if(g>0){ rr(b.x-g, b.y-g, b.w+2*g, b.h+2*g, rad); ctx.stroke(); }
       strokeGrabZone(bayGrabZone(b));
     }
     ctx.restore();
@@ -133,9 +130,10 @@
     for(const r of runways){
       if(r.closed) continue;
       const pts:[number,string,string][]=[
-        [r.stopX+PLANE_LEN()+K.RW_TOUCHDOWN_OFF*ui, '#f5c842', 'касание'],
-        [r.exitX+K.RW_LIFTOFF_OFF*ui,               '#60d060', 'отрыв'  ],
-        [(r.x+r.w)+K.RW_ALIGN_OFF*ui,               '#3ad2ff', 'выравн.'],
+        [r.stopX+PLANE_LEN()+K.RW_TOUCHDOWN_OFF*ui, '#f5c842', 'касание' ],
+        [r.exitX+K.RW_LIFTOFF_OFF*ui,               '#60d060', 'отрыв'   ],
+        [(r.x+r.w)+K.RW_ALIGN_OFF*ui,               '#3ad2ff', 'выравн.' ],
+        [r.x-K.TAKEOFF_ALIGN_OFF*ui,                '#f08060', 'выравн.↑'],
       ];
       for(const [x,col,lbl] of pts){
         ctx.strokeStyle=col; ctx.lineWidth=1.5*ui; ctx.setLineDash([3*ui,3*ui]);

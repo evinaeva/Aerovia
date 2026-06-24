@@ -358,9 +358,9 @@
     // ── Перетаскиваемые точки ВПП/ангара (геймплейные K.RW_* / K.BAY_APPROACH_DIST) ──
     // В отличие от «зон захвата» (только Workbench), эти точки РЕАЛЬНО управляют игрой:
     // место касания/отрыва/начала выравнивания на ВПП и точку подъезда к ангару.
-    const MP_COL   = { rwtd:'#f5c842', rwlift:'#60d060', rwalign:'#3ad2ff', bayapp:'#b060f0' };
-    const MP_PARAM = { rwtd:'K.RW_TOUCHDOWN_OFF', rwlift:'K.RW_LIFTOFF_OFF', rwalign:'K.RW_ALIGN_OFF', bayapp:'K.BAY_APPROACH_DIST' };
-    const MP_LABEL = { rwtd:'касание', rwlift:'отрыв', rwalign:'выравн.', bayapp:'подъезд' };
+    const MP_COL   = { rwtd:'#f5c842', rwlift:'#60d060', rwalign:'#3ad2ff', rwtkalign:'#f08060', bayapp:'#b060f0' };
+    const MP_PARAM = { rwtd:'K.RW_TOUCHDOWN_OFF', rwlift:'K.RW_LIFTOFF_OFF', rwalign:'K.RW_ALIGN_OFF', rwtkalign:'K.TAKEOFF_ALIGN_OFF', bayapp:'K.BAY_APPROACH_DIST' };
+    const MP_LABEL = { rwtd:'касание', rwlift:'отрыв', rwalign:'выравн.', rwtkalign:'выравн.↑', bayapp:'подъезд' };
     function repRunway(fd) { return (fd.runways || []).find(x => !x.closed) || (fd.runways || [])[0]; }
     function repBay(fd)    { return (fd.bays || []).find(x => x.open && x.gate); }
     function mpAnchor(kind, fd) {
@@ -371,15 +371,16 @@
         return { x: ge.x, y: ge.y, ux: u[0], uy: u[1], ui };
       }
       const r = repRunway(fd); if (!r) return null;
-      const ax = kind === 'rwtd' ? r.stopX + PL : kind === 'rwlift' ? r.exitX : (r.x + r.w);
-      return { x: ax, y: r.cy, ux: 1, uy: 0, ui, r };
+      const ax = kind === 'rwtd' ? r.stopX + PL : kind === 'rwlift' ? r.exitX : kind === 'rwalign' ? (r.x + r.w) : r.x;
+      const ux = kind === 'rwtkalign' ? -1 : 1;
+      return { x: ax, y: r.cy, ux, uy: 0, ui, r };
     }
-    const MP_PT_VIS = { rwtd: 'MT.SHOW_TD_PT', rwlift: 'MT.SHOW_LIFT_PT', rwalign: 'MT.SHOW_ALIGN_PT' };
+    const MP_PT_VIS = { rwtd: 'MT.SHOW_TD_PT', rwlift: 'MT.SHOW_LIFT_PT', rwalign: 'MT.SHOW_ALIGN_PT', rwtkalign: 'MT.SHOW_TAKEOFF_ALIGN_PT' };
     function motionPointsSvg(snap, fd) {
       if (snap['MT.DEBUG_MOTION_POINTS'] !== true) return '';
       let out = '';
       const r = repRunway(fd);
-      if (r) ['rwtd', 'rwlift', 'rwalign'].forEach(kind => {
+      if (r) ['rwtd', 'rwlift', 'rwalign', 'rwtkalign'].forEach(kind => {
         if (snap[MP_PT_VIS[kind]] === false) return;   // per-point visibility toggle
         const a = mpAnchor(kind, fd); if (!a) return;
         const off = +(snap[MP_PARAM[kind]] || 0), col = MP_COL[kind];
