@@ -650,7 +650,6 @@
     }
     lossLog.push({t:gameTime, reason});
     if(lossLog.length>12) lossLog.shift();
-    toast={text:(debug.infiniteLives?'✈ ':'−1 ✈ ')+t(reason), t:0, good:false};
     console.log('[PlaneFlow] '+(debug.infiniteLives?'(∞) ':'-1 ✈ ')+t(reason)+' | t='+fmtTime(gameTime)+' | lives='+lives);
   }
   function killAir(pl: any){ logLoss(pl, 'loss.airTimeout'); }

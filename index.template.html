@@ -122,12 +122,11 @@
             <div style="display:flex;gap:8px">
               <button class="icon-btn" id="optSoundBtn" aria-label="Sound"><span class="mic" data-mic="sound"></span></button>
               <button class="icon-btn" id="optVibroBtn" aria-label="Vibration"><span class="mic" data-mic="vibro"></span></button>
-              <button class="icon-btn" id="optEcoBtn" aria-label="Battery saver"><span class="mic" data-mic="leaf"></span></button>
+              <button class="icon-btn" id="optEcoBtn" aria-label="Battery saver"><span class="mic" data-mic="battery"></span></button>
             </div>
             <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
           </div>
           <div class="set-row" id="ecoRow">
-            <span class="set-row__hint" data-i18n="settings.eco"></span>
             <span class="set-row__hint hidden" id="ecoSlowHint" style="color:#f4cf5e"></span>
           </div>
           <div class="set-row">
@@ -167,6 +166,18 @@
     </div>
   </div>
 
+  <div class="overlay hidden" id="againConfirmScreen">
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:400px;text-align:center">
+        <div class="m-head"><h1 class="m-title m-title--lg" data-i18n="again.title"></h1></div>
+        <div class="m-actions"><div class="m-actions__row">
+          <button class="m-btn m-btn--ghost" id="againCancelBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="again.no"></span></button>
+          <button class="m-btn m-btn--primary" id="againConfirmBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="again.yes"></span></button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Модалка «актуальная версия / нет сети» -->
   <div class="overlay hidden" id="updToDateModal">
     <div class="screen screen--center">
@@ -174,6 +185,19 @@
         <p class="m-subtitle" id="updToDateMsg" style="margin:18px 0 14px;font-size:16px"></p>
         <div class="m-actions__row">
           <button class="m-btn m-btn--primary" id="updToDateOk" style="min-width:110px"><span class="m-btn__t" data-i18n="goals.ok"></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка «есть обновление» — промежуточный шаг перед прогресс-баром -->
+  <div class="overlay hidden" id="updAvailModal">
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:340px;text-align:center">
+        <p class="m-subtitle" style="margin:18px 0 14px;font-size:16px" data-i18n="upd.available"></p>
+        <div class="m-actions__row">
+          <button class="m-btn m-btn--ghost" id="updAvailCancel" style="min-width:110px"><span class="m-btn__t" data-i18n="again.no"></span></button>
+          <button class="m-btn m-btn--primary" id="updAvailOk" style="min-width:110px"><span class="m-btn__t" data-i18n="upd.doUpdate"></span></button>
         </div>
       </div>
     </div>
@@ -193,6 +217,10 @@
             <div class="upd-bar__fill" id="updBarFill"></div>
             <span class="upd-bar__plane" id="updPlane">✈</span>
           </div>
+        </div>
+        <div class="hidden" id="updDoneSection" style="margin-top:14px">
+          <p class="m-subtitle" data-i18n="upd.done" style="margin:0 0 14px"></p>
+          <button class="m-btn m-btn--primary" id="updDoneOk" style="min-width:110px"><span class="m-btn__t" data-i18n="goals.ok"></span></button>
         </div>
       </div>
     </div>
