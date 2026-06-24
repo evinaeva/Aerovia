@@ -50,6 +50,7 @@
 
     applyCutout();
     if (window._layoutResize) window._layoutResize();   // editor canvas follows the shell size
+    if (window._onPhoneApplied) window._onPhoneApplied();   // zoom re-applies after resize/size-change
   }
 
   // Size strip buttons (inside popup)

@@ -85,59 +85,105 @@
   // (главный экран не мелькает). Хуки зон уже определены к этому моменту.
   if (window._enterMarkupSurface) window._enterMarkupSurface();
 
-  // ── Zoom: крупный план ВПП → Ангар → Сброс ──────────────────────────────
+  // ── Zoom: крупный план ВПП / Ангар со слайдером и точным центрированием ──
   (function () {
-    const ZOOM_STATES = [null, 'runway', 'bay'];
-    const ZOOM_LABELS = {
-      null:    'Крупный план — ВПП / Ангар / Сброс',
-      runway:  'Крупный план: ВПП  (клик → Ангар)',
-      bay:     'Крупный план: Ангар  (клик → Сброс)',
-    };
-    let zi = 0;
-    const btn   = document.getElementById('btn-zoom');
-    const shell = document.getElementById('phone-shell');
-    if (!btn || !shell) return;
+    const shell   = document.getElementById('phone-shell');
+    const wrapper = document.getElementById('phone-wrapper');
+    const slider  = document.getElementById('zoom-slider');
+    const valLbl  = document.getElementById('zoom-val');
+    if (!shell || !wrapper || !slider || !valLbl) return;
 
-    function applyZoom(target) {
-      if (!target) {
-        shell.style.transform = '';
-        shell.style.transformOrigin = '';
-        btn.classList.remove('tb-active');
-        btn.title = ZOOM_LABELS[null];
+    let zoneKey = '';   // '' | 'runway' | 'bay'
+
+    // Текущий базовый масштаб (fit-scale, выставленный applyPhone).
+    // wrapper.offsetWidth = round(ph.w * baseScale), shell.style.width = ph.w.
+    function getBaseScale() {
+      const pW = parseFloat(shell.style.width);
+      return pW > 0 ? wrapper.offsetWidth / pW : 1;
+    }
+
+    function fmtScale(v) {
+      const s = (Math.round(v * 4) / 4).toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+      return '×' + s;
+    }
+
+    function applyZoom() {
+      const userZoom = parseFloat(slider.value);
+      valLbl.textContent = fmtScale(userZoom);
+
+      const bs = getBaseScale();
+
+      if (!zoneKey) {
+        shell.style.transformOrigin = 'top left';
+        shell.style.transform = 'scale(' + bs + ')';
         return;
       }
+
+      let cx, cy;
       try {
         const fd = gameFrame.contentWindow && gameFrame.contentWindow.__FIELD;
-        if (!fd || !fd.W) { zi = 0; applyZoom(null); return; }
-        let cx, cy, sc;
-        if (target === 'runway' && fd.runways && fd.runways.length) {
+        if (!fd || !fd.W) return;   // игра ещё не запущена — ждём
+        if (zoneKey === 'runway' && fd.runways && fd.runways.length) {
           const r = fd.runways[0];
           cx = (r.x + r.w * 0.5) / fd.W;
           cy = r.cy / fd.H;
-          sc = 3;
-        } else if (target === 'bay' && fd.bays && fd.bays.length) {
+        } else if (zoneKey === 'bay' && fd.bays && fd.bays.length) {
           const b = fd.bays.find(function(b) { return b.open; }) || fd.bays[0];
           cx = (b.x + b.w * 0.5) / fd.W;
           cy = (b.y + b.h * 0.5) / fd.H;
-          sc = 4;
-        } else {
-          zi = 0; applyZoom(null); return;
-        }
-        shell.style.transformOrigin = (cx * 100) + '% ' + (cy * 100) + '%';
-        shell.style.transform = 'scale(' + sc + ')';
-        btn.classList.add('tb-active');
-        btn.title = ZOOM_LABELS[target];
-      } catch (e) { zi = 0; applyZoom(null); }
+        } else { return; }
+      } catch (_) { return; }
+
+      // translate(tx,ty) scale(sc) с origin top left:
+      //   точка (cx*pW, cy*pH) в shell-пространстве → (cx*pW*sc + tx, cy*pH*sc + ty) в wrapper
+      //   хотим её в центре wrapper: cx*pW*sc + tx = wW/2  →  tx = wW/2 - cx*pW*sc
+      const sc  = bs * userZoom;
+      const pW  = parseFloat(shell.style.width)  || (wrapper.offsetWidth / bs);
+      const pH  = parseFloat(shell.style.height) || (wrapper.offsetHeight / bs);
+      const wW  = wrapper.offsetWidth;
+      const wH  = wrapper.offsetHeight;
+      const tx  = wW / 2 - cx * pW * sc;
+      const ty  = wH / 2 - cy * pH * sc;
+
+      shell.style.transformOrigin = 'top left';
+      shell.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + sc + ')';
     }
 
-    btn.addEventListener('click', function () {
-      zi = (zi + 1) % ZOOM_STATES.length;
-      applyZoom(ZOOM_STATES[zi]);
+    function resetZoom() {
+      zoneKey = '';
+      slider.disabled = true;
+      document.querySelectorAll('.zoom-zb').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.zone === '');
+      });
+      const bs = getBaseScale();
+      shell.style.transformOrigin = 'top left';
+      shell.style.transform = 'scale(' + bs + ')';
+    }
+
+    // Кнопки зоны
+    document.querySelectorAll('.zoom-zb').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        zoneKey = this.dataset.zone;
+        document.querySelectorAll('.zoom-zb').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.zone === zoneKey);
+        });
+        slider.disabled = !zoneKey;
+        applyZoom();
+      });
     });
 
-    // Сброс зума при смене режима (Разметка / Тестовая игра)
-    window._previewZoomReset = function () { zi = 0; applyZoom(null); };
+    // Слайдер
+    slider.addEventListener('input', applyZoom);
+
+    // Хук: переприменить зум после смены размера телефона (applyPhone → _onPhoneApplied)
+    window._onPhoneApplied = applyZoom;
+
+    // Сброс при переключении в «Разметку»
+    window._previewZoomReset = resetZoom;
     const origReturnToMarkup = window._returnToMarkup;
-    window._returnToMarkup = function () { if (window._previewZoomReset) window._previewZoomReset(); if (origReturnToMarkup) origReturnToMarkup(); };
+    window._returnToMarkup = function() {
+      resetZoom();
+      if (origReturnToMarkup) origReturnToMarkup();
+    };
   })();
 
