@@ -55,10 +55,10 @@
           if (p.category) tipParts.push('· ' + p.category);
           if (p.description) tipParts.push('— ' + p.description);
           const badges = [];
-          if (p.liveSafe) badges.push('live');
-          if (p.requiresReplay) badges.push('replay');
-          if (p.visualsOnly) badges.push('visual');
-          if (p.affectsGameplay && !p.visualsOnly) badges.push('gameplay');
+          if (p.liveSafe) badges.push('применяется сразу');
+          if (p.requiresReplay) badges.push('нужен перезапуск');
+          if (p.visualsOnly) badges.push('только вид');
+          if (p.affectsGameplay && !p.visualsOnly) badges.push('влияет на игру');
           if (badges.length) tipParts.push('[' + badges.join(', ') + ']');
           row.title = tipParts.join(' ');
 
