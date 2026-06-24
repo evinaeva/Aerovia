@@ -40,18 +40,17 @@
       el.setAttribute('aria-modal', 'true');
       el.innerHTML =
         '<div class="panel consent-panel">' +
-          '<p class="consent-title">Аналитика · Analytics</p>' +
+          '<p class="consent-title">' + t('consent.title') + '</p>' +
           '<p class="consent-body">' +
-            'PlaneFlow собирает анонимные данные: сессии и уровни.<br>' +
-            'Реклама не таргетируется, личность не определяется.<br><br>' +
-            '<em>Anonymous usage data (sessions, levels). No targeting.</em>' +
+            t('consent.body1') + '<br>' +
+            t('consent.body2') +
           '</p>' +
           '<p class="consent-privacy">' +
-            '<a href="privacy.html" target="_blank" rel="noopener">Политика&thinsp;·&thinsp;Privacy Policy</a>' +
+            '<a href="privacy.html" target="_blank" rel="noopener">' + t('consent.privacy') + '</a>' +
           '</p>' +
           '<div class="consent-btns">' +
-            '<button id="consent-no"  class="m-btn m-btn--ghost">Нет&thinsp;·&thinsp;No</button>' +
-            '<button id="consent-yes" class="m-btn m-btn--primary">Принять&thinsp;·&thinsp;Accept</button>' +
+            '<button id="consent-no"  class="m-btn m-btn--ghost">' + t('consent.no') + '</button>' +
+            '<button id="consent-yes" class="m-btn m-btn--primary">' + t('consent.yes') + '</button>' +
           '</div>' +
         '</div>';
       document.body.appendChild(el);

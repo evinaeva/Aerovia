@@ -222,6 +222,12 @@
       'ach.moneyneg.t':'In the Red', 'ach.moneyneg.d':'Go negative on money.',
       'ach.longshift.t':'Overstayed', 'ach.longshift.d':'Play a single shift longer than 30 minutes.',
       'ach.zoo.t':'Sky Zoo', 'ach.zoo.d':'Send off a normal, a VIP and an emergency plane in one shift.',
+      'consent.title':'Analytics',
+      'consent.body1':'PlaneFlow collects anonymous data: sessions and levels.',
+      'consent.body2':'No ad targeting. No personal identification.',
+      'consent.privacy':'Privacy Policy',
+      'consent.no':'No',
+      'consent.yes':'Accept',
     };
     type PhraseKey = Exclude<keyof typeof en, keyof LangMeta>;
     const ru: LangMeta & Record<PhraseKey, Phrase> = {
@@ -432,6 +438,12 @@
       'ach.moneyneg.t':'Минус на табло', 'ach.moneyneg.d':'Уйди в минус по деньгам.',
       'ach.longshift.t':'Засиделся', 'ach.longshift.d':'Сыграй одну смену дольше 30 минут.',
       'ach.zoo.t':'Зоопарк в небе', 'ach.zoo.d':'Обслужи обычный, вип и аварийный борт за одну смену.',
+      'consent.title':'Аналитика',
+      'consent.body1':'PlaneFlow собирает анонимные данные: сессии и уровни.',
+      'consent.body2':'Реклама не таргетируется, личность не определяется.',
+      'consent.privacy':'Политика конфиденциальности',
+      'consent.no':'Нет',
+      'consent.yes':'Принять',
     };
     return { en, ru } as unknown as Record<LangCode, LangDict>;
   })();
