@@ -157,6 +157,37 @@
   // (см. recordResult: unlocked растёт лишь при числовом levelKey). Так «Сыграть черновик»
   // и загрузка экспортированного JSON в игру не портят сейв.
   const CUSTOM_LEVEL_KEY = 'aerovia:customLevel';
+  // Уровень из последнего экспорта конструктора (aerovia-tuning.json → ключ "level").
+  // Показывается кнопкой «Свой уровень» если в localStorage нет перезаписи.
+  const BUILTIN_CUSTOM_LEVEL: any = {
+    pace: 0.35,
+    objective: {
+      metric: 'served',
+      stars: [13, 16, 19],
+      money: [70, 104, 138],
+      lives: [1, 1, 2],
+      upg: [1, 2, 3],
+      timeTier: [217, 181, 151],
+      maxLate: [16, 12, 8],
+      maxCrash: [10, 7, 4],
+    },
+    services: ['repair', 'board', 'fuel'],
+    maxUp: 3,
+    layout: {
+      apron: { x: 0.08, y: 0.18, w: 0.46, h: 0.66 },
+      zones: { arrival: { x: 0.8, y: 0.14, w: 0.12, h: 0.74 } },
+      hangars: [
+        { type: 'repair', x: 0.64, y: 0,    gate: 'down', upgCost: 123 },
+        { type: 'board',  x: 0.18, y: 0,    gate: 'down', upgCost: 123 },
+        { type: 'fuel',   x: 0.64, y: 0.98, gate: 'up',   upgCost: 123 },
+      ],
+      runways: [{ y: 0.76 }, { y: 0.3 }],
+    },
+    startMoney: 59,
+    motion: { landBefore: 1.15, landAfter: 0.95, takeoffRoll: 0.8 },
+    crashPenalty: 0.41,
+    latePenalty: 0.34,
+  };
   // привести произвольный JSON (экспорт конструктора) к форме Level с безопасными умолчаниями
   function normalizeCustomLevel(o: any): Level {
     o = (o && typeof o === 'object') ? o : {};
