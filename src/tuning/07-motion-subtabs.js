@@ -61,7 +61,7 @@
 
   const SUBTABS = [
     // «Движение» tab — plane physics / flight / ground tuning.
-    { owner:'motion',     key:'plane',   icon:'✈',  label:'Самолёт',       groups:['movement','turns','routing','collisions','effects','weather','mobile_preview'] },
+    { owner:'motion',     key:'plane',   icon:'✈',  label:'Самолёт',       groups:['movement','turns','routing','collisions','effects','weather'] },
     { owner:'motion',     key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','rollout_stop','aircraft_scale','flight_overlay'] },
     { owner:'motion',     key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones','debug_overlays'] },
     // «Сложность» tab — движковые ручки тест/демо-сессии (один подтаб).
@@ -125,7 +125,11 @@
   // 'safe_areas' = the Android cutout/gesture/inset zone params: they only feed
   // the layout overlay and export warnings (read-only device simulation), so the
   // operator has nothing to change — hidden from the panel.
-  const HIDDEN_GROUPS = new Set(['forest', 'safe_areas']);
+  // 'mobile_preview' = the single «Сценарий превью» knob (MT.SCENARIO). It is
+  // already driven by the scenario picker in the mode rail above the preview, so
+  // the duplicate row in the «Самолёт» sub-tab is hidden — the rail picker stays
+  // the one place to choose the preview scenario.
+  const HIDDEN_GROUPS = new Set(['forest', 'safe_areas', 'mobile_preview']);
 
   // Enum params shown as a dropdown instead of a free-text field.
   const SELECT_OPTIONS = {
