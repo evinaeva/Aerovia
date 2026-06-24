@@ -5,8 +5,10 @@
  * единоразовый reload через событие controllerchange. */
 (() => {
   if (!('serviceWorker' in navigator)) {
-    // Без service worker контент и так грузится network-first — «проверить
-    // обновления» сводится к обычной перезагрузке свежей страницы.
+    // Без service worker нельзя определить, есть ли обновление — считаем актуальным.
+    // Перезагрузку делает pwaApplyUpdate по явному запросу пользователя.
+    window.pwaCheckForUpdateAvailable = () => Promise.resolve('up-to-date');
+    window.pwaApplyUpdate = () => location.reload();
     window.pwaCheckForUpdates = () => { location.reload(); return Promise.resolve('updating'); };
     return;
   }
@@ -30,6 +32,21 @@
   // применится и перезагрузит страницу (sw.js делает skipWaiting на install);
   // 'refreshed' — версия актуальна, перекачали закэшированные ресурсы/PNG скинов
   // и перезагружаемся; 'offline' — проверка не удалась (нет сети).
+  // Только проверяет наличие обновления, не применяет. Возвращает 'available' /
+  // 'up-to-date' / 'offline'. Вызывается по кнопке «Проверить обновления».
+  window.pwaCheckForUpdateAvailable = async () => {
+    if (!swReg) return 'offline';
+    try { await swReg.update(); } catch { return 'offline'; }
+    return (swReg.installing || swReg.waiting) ? 'available' : 'up-to-date';
+  };
+
+  // Применяет уже найденное обновление (отправляет SKIP_WAITING waiting-воркеру).
+  // Страница перезагрузится сама через controllerchange.
+  window.pwaApplyUpdate = () => {
+    if (!swReg) { location.reload(); return; }
+    if (swReg.waiting) swReg.waiting.postMessage('SKIP_WAITING');
+  };
+
   window.pwaCheckForUpdates = async () => {
     if (!swReg) { location.reload(); return 'updating'; }
     try { await swReg.update(); } catch { return 'offline'; }

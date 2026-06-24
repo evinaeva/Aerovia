@@ -584,6 +584,9 @@
       if(verTo) verTo.textContent=t('pwa.updateTitle');
       if(progressModal) progressModal.classList.remove('hidden');
       startPlaneAnim();
+      // Применяем обновление после того как пользователь подтвердил.
+      // Страница перезагрузится сама через controllerchange.
+      if((window as any).pwaApplyUpdate) (window as any).pwaApplyUpdate();
     };
 
     btn.onclick=async()=>{
@@ -591,10 +594,10 @@
       btn.disabled=true;
       closeUpdModals();
       let status='offline';
-      try{ status=((window as any).pwaCheckForUpdates ? await (window as any).pwaCheckForUpdates() : 'offline'); }
+      try{ status=((window as any).pwaCheckForUpdateAvailable ? await (window as any).pwaCheckForUpdateAvailable() : 'offline'); }
       catch(e){ status='offline'; }
       btn.disabled=false;
-      if(status==='updating'){
+      if(status==='available'){
         if(availModal) availModal.classList.remove('hidden');
       } else {
         const msg=status==='offline' ? t('settings.updOffline') : t('settings.updUpToDate');
