@@ -178,6 +178,7 @@
     {key:'K.APRON_SPAWN',       group:'ctrl', label:'Готовый борт на апроне', target:'K', name:'APRON_SPAWN',       def:false,note:'Демо: у левого края апрона всегда стоит готовый к взлёту борт; заменяется при взятии/крушении.', impact:'Постоянный готовый борт для теста руления и взлёта.'},
   ];
 
+  MT_PLANNED_PARAMS.forEach(p => { MT_META_VALUES[p.name] = p.def; MT_PARAMS.push(p); });
   MT_PARAMS.forEach(p => {
     p.category = p.category || MT_GROUP_CATEGORY[p.group] || p.group;
     p.description = p.description || p.note;
@@ -189,7 +190,6 @@
     p.exportable = p.exportable ?? true;
     p.debugOnly = p.debugOnly ?? false;
   });
-  MT_PLANNED_PARAMS.forEach(p => { MT_META_VALUES[p.name] = p.def; MT_PARAMS.push(p); });
 
   const MT_GROUPS: Record<string, string> = {
     input_touch:'Ввод и касания', route_drawing:'Маршрутизация', route_smoothing:'Сглаживание маршрута', snap_zones:'Зоны захвата', runway_geometry:'Геометрия ВПП',
