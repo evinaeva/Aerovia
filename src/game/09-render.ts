@@ -28,10 +28,15 @@
       ctx.fillRect(x,y,1.5,1.5);
     }
   }
+  // Кэш виньетки: пересоздаём только при изменении размера экрана.
+  let _vigGrad: CanvasGradient|null=null, _vigW=0, _vigH=0;
   function vignette(){ // мягкое затемнение краёв
-    const g=ctx.createRadialGradient(W/2,H*0.4,H*0.2,W/2,H/2,W*0.7);
-    g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.42)');
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    if(!_vigGrad||_vigW!==W||_vigH!==H){
+      _vigGrad=ctx.createRadialGradient(W/2,H*0.4,H*0.2,W/2,H/2,W*0.7);
+      _vigGrad.addColorStop(0,'rgba(0,0,0,0)'); _vigGrad.addColorStop(1,'rgba(0,0,0,.42)');
+      _vigW=W; _vigH=H;
+    }
+    ctx.fillStyle=_vigGrad; ctx.fillRect(0,0,W,H);
   }
   function heart(x: number,y: number,r: number,fill?: string|null){ // жизни в HUD
     if(ATLAS && SPRITES.blitC(fill?'heart':'heart-empty', x, y, r*6, r*6)) return;
@@ -174,6 +179,10 @@
 
   // неоновое поле: тёмный фон + радарная сетка/кольца/развёртка вместо
   // металлического апрона, терминала, травы и воды (боксы рисуются поверх)
+  // Кэши для тяжёлых градиентов поля (зарево города + апрон) — пересоздаём при resize.
+  let _neonCityGrad: CanvasGradient|null=null, _neonApronGrad: CanvasGradient|null=null;
+  let _neonApronY0=0, _neonApronY1=0;   // запоминаем fy/fh, чтобы поймать смену layout
+  let _neonCacheW=0, _neonCacheH=0;
   function drawNeonField(tm: number){
     // НЕОН-ГЕЙМПЛЕЙ (handoff, docs/design/skins/neon/handoff/): спокойный ночной УВД.
     // Апрон — ОГРАНИЧЕННАЯ зона руления слева с неон-рамкой (верх/лево/низ сплошные,
@@ -193,10 +202,13 @@
       ctx.fillStyle=hexa('#cfeaff',.5*tw);
       ctx.beginPath(); ctx.arc(sx,sy,(i%3?1.4:2.2)*ui,0,7); ctx.fill();
     }
-    // зарево + силуэт небоскрёбов вдоль нижней правой кромки
-    const cg=ctx.createRadialGradient(W*0.9,H,0,W*0.9,H,Math.min(W,H)*0.55);
-    cg.addColorStop(0,hexa(COL.phosphor,.10)); cg.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=cg; ctx.fillRect(skyL,H*0.45,W-skyL,H*0.55);
+    // зарево + силуэт небоскрёбов вдоль нижней правой кромки (градиент кэшируется)
+    if(!_neonCityGrad||_neonCacheW!==W||_neonCacheH!==H){
+      _neonCityGrad=ctx.createRadialGradient(W*0.9,H,0,W*0.9,H,Math.min(W,H)*0.55);
+      _neonCityGrad.addColorStop(0,hexa(COL.phosphor,.10)); _neonCityGrad.addColorStop(1,'rgba(0,0,0,0)');
+      _neonCacheW=W; _neonCacheH=H; _neonApronGrad=null; // инвалидируем и апрон
+    }
+    ctx.fillStyle=_neonCityGrad; ctx.fillRect(skyL,H*0.45,W-skyL,H*0.55);
     const bn=8, bw=(W-skyL-14*ui)/bn;
     for(let i=0;i<bn;i++){
       const bx=skyL+8*ui+i*bw, bh=(16+((i*53)%34))*ui;
@@ -215,8 +227,12 @@
     // ===== панель апрона (ограниченная зона руления) =====
     const fx=ax-8*ui, fy=ay-8*ui, fw=(apR-ax)+16*ui, fh=(ab-ay)+16*ui;
     rr(fx,fy,fw,fh,16*ui);
-    const fg=ctx.createLinearGradient(0,fy,0,fy+fh); fg.addColorStop(0,'#0e1a40'); fg.addColorStop(1,'#070e26');
-    ctx.fillStyle=fg; ctx.fill();
+    if(!_neonApronGrad||_neonApronY0!==fy||_neonApronY1!==fy+fh){
+      _neonApronGrad=ctx.createLinearGradient(0,fy,0,fy+fh);
+      _neonApronGrad.addColorStop(0,'#0e1a40'); _neonApronGrad.addColorStop(1,'#070e26');
+      _neonApronY0=fy; _neonApronY1=fy+fh;
+    }
+    ctx.fillStyle=_neonApronGrad; ctx.fill();
     // лёгкая сетка + статичные кольца (БЕЗ вращающейся развёртки и креста)
     ctx.save(); rr(fx,fy,fw,fh,16*ui); ctx.clip();
     ctx.strokeStyle=hexa(COL.phosphor,.05); ctx.lineWidth=1;

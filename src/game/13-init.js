@@ -78,7 +78,7 @@
     get safe()         { return safe;              },
   };
   resize();
-  requestAnimationFrame(frame);
+  rafId = requestAnimationFrame(frame);
 
   // ---- тест-API (только при ?test=1) ----
   // Даёт тестам дотянуться до чистой логики и до путей завершения уровня без

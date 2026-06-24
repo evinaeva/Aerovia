@@ -3,6 +3,15 @@
 // Provides: frame, endLevel, drawMenuScene, drawMenuLanding, drawTimeline, drawShareCard.
 // Reads: 01 (cv, ctx); 08b (update); 08 (computeStars, metricValue, recordResult); 09 (drawField, drawRunways, drawForest, starfield, vignette…); 09b (drawBay, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawPlane, drawHUD, drawEffects, drawFloaters, drawToast, drawTutorial); 06 (state); 04 (K, LV, LEVELS, levelName, objectiveDesc); 03 (t, fmt*); 07 (Analytics, Leaderboard); 12 (ACH); 11 (SVGIC).
 
+  // Рендер не быстрее 60 fps — на 120-Гц экранах (Pixel 9 и т.п.) вдвое меньше GPU-нагрузки.
+  const FRAME_MS = 1000/60;
+  let lastRenderTs = 0;
+  // handle rAF — нужен, чтобы остановить цикл при скрытии вкладки и возобновить по visibilitychange.
+  let rafId = 0;
+  // Кэши градиентов для меню — пересоздаются только при изменении размера экрана.
+  let _menuBgGrad: CanvasGradient|null=null, _menuHgGrad: CanvasGradient|null=null;
+  let _menuGradW=0, _menuGradH=0;
+
   const _qss=(a: number,b: number,x: number)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
   const _qlerp=(a: number,b: number,t: number)=>a+(b-a)*t;
   const _qcub=(a: number,b: number,c: number,d: number,t: number)=>{const m=1-t;return m*m*m*a+3*m*m*t*b+3*m*t*t*c+t*t*t*d;};
@@ -68,11 +77,14 @@
     for(const bx of b.boxes){const act=pa>=1?0:Math.exp(-Math.pow((f-bx.sf)/0.02,2));_qbox(MX(bx.x),MY(bx.y),bx.kind,(1+0.2*act)*S);}
   }
 function drawMenuScene(tm: number){
-    // фон: радиальный градиент COL.core→tarmac→ink (как CSS --m-board) — вместо плоской заливки COL.ink («плоское тёмное»)
+    // фон: радиальный градиент COL.core→tarmac→ink — кэшируем, пересоздаём только при resize
     const bx=W*0.5, by=H*0.46, brad=Math.max(W,H)*0.8;
-    const bgGrad=ctx.createRadialGradient(bx,by,0, bx,by,brad);
-    bgGrad.addColorStop(0,COL.core); bgGrad.addColorStop(0.5,COL.tarmac); bgGrad.addColorStop(1,COL.ink);
-    ctx.fillStyle=bgGrad; ctx.fillRect(0,0,W,H);
+    if(!_menuBgGrad||_menuGradW!==W||_menuGradH!==H){
+      _menuBgGrad=ctx.createRadialGradient(bx,by,0, bx,by,brad);
+      _menuBgGrad.addColorStop(0,COL.core); _menuBgGrad.addColorStop(0.5,COL.tarmac); _menuBgGrad.addColorStop(1,COL.ink);
+      _menuHgGrad=null; _menuGradW=W; _menuGradH=H;
+    }
+    ctx.fillStyle=_menuBgGrad; ctx.fillRect(0,0,W,H);
     // «дышащее» ядро-свечение в центре (циан, ~120px, период 6s)
     const corePulse=0.5+0.5*Math.sin(tm*Math.PI*2/6000);
     const coreGlow=ctx.createRadialGradient(bx,by,0, bx,by,120);
@@ -103,15 +115,20 @@ function drawMenuScene(tm: number){
       ctx.fillStyle=hexa(COL.phosphor,f); ctx.beginPath(); ctx.arc(x,y,2.5,0,7); ctx.fill();
     });
     ctx.restore();
-    // бирюзовое свечение горизонта
-    const hg=ctx.createLinearGradient(0,H-120*ui,0,H);
-    hg.addColorStop(0,'rgba(16,48,58,0)'); hg.addColorStop(1,hexa(COL.teal,.10));
-    ctx.fillStyle=hg; ctx.fillRect(0,H-120*ui,W,120*ui);
+    // бирюзовое свечение горизонта — кэшируем (пересоздаётся вместе с bgGrad при resize)
+    if(!_menuHgGrad){
+      _menuHgGrad=ctx.createLinearGradient(0,H-120*ui,0,H);
+      _menuHgGrad.addColorStop(0,'rgba(16,48,58,0)'); _menuHgGrad.addColorStop(1,hexa(COL.teal,.10));
+    }
+    ctx.fillStyle=_menuHgGrad; ctx.fillRect(0,H-120*ui,W,120*ui);
     drawMenuLanding(tm);
     vignette();
   }
 
   function frame(ts: number){
+    // Вкладка скрыта — останавливаем цикл; visibilitychange его перезапустит.
+    if(document.visibilityState==='hidden'){ rafId=0; return; }
+
     if(!lastTs)lastTs=ts;
     let dt=(ts-lastTs)/1000; lastTs=ts;
     if(dt>0.05)dt=0.05;
@@ -121,6 +138,14 @@ function drawMenuScene(tm: number){
     let udt = dt;
     if(slowmo>0){ slowmo=Math.max(0, slowmo-dt); udt = dt*K.SLOWMO_SCALE; }
     if(running && !paused) update(udt);
+
+    // На паузе канвас статичен — HTML-оверлей паузы не требует перерисовки холста.
+    if(paused && !inMenu){ rafId=requestAnimationFrame(frame); return; }
+
+    // Кэп 60 fps: на 120-Гц дисплеях пропускаем лишние кадры отрисовки.
+    const sinceDraw=ts-lastRenderTs;
+    if(sinceDraw<FRAME_MS-1){ rafId=requestAnimationFrame(frame); return; }
+    lastRenderTs=ts;
 
     if(inMenu){
       drawMenuScene(ts);
@@ -145,8 +170,15 @@ function drawMenuScene(tm: number){
       if(tut) drawTutorial();
       if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
     }
-    requestAnimationFrame(frame);
+    rafId=requestAnimationFrame(frame);
   }
+
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState!=='hidden' && !rafId){
+      lastTs=0; // сбрасываем dt — иначе первый кадр после фона получит огромный прыжок
+      rafId=requestAnimationFrame(frame);
+    }
+  });
 
   function endLevel(reasonKey: string){          // reasonKey — ключ i18n (end.*)
     running=false; const prevBest = save.best[levelKey]||0; recordResult();
