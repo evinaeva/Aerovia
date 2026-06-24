@@ -577,7 +577,9 @@
       drag.plane.path.push({x:p.x,y:p.y});
       drag.last=p;
       // конец траектории доведён в цель → фиксируем маршрут (вспышка + щелчок)
-      if(!LV.bonus){
+      // Проверяем захватные зоны лишь начиная со 2-й точки (≥24 пикс. движения), чтобы
+      // первый отрезок не залетал в зону при старте от hoverX вблизи ВПП (custom level).
+      if(!LV.bonus && drag.plane.path.length >= 2){
         const pl=drag.plane;
         const b = (pl.zone!=='air') ? openBayAt(p) : null;   // бокс — только с земли
         if(b){ lockRouteToBay(pl, b); drag.locked=true; }
