@@ -235,12 +235,16 @@
     ctx.fillStyle=_neonApronGrad; ctx.fill();
     // лёгкая сетка + статичные кольца (БЕЗ вращающейся развёртки и креста)
     ctx.save(); rr(fx,fy,fw,fh,16*ui); ctx.clip();
-    ctx.strokeStyle=hexa(COL.phosphor,.05); ctx.lineWidth=1;
-    for(let gx=fx; gx<fx+fw; gx+=34*ui){ ctx.beginPath(); ctx.moveTo(gx,fy); ctx.lineTo(gx,fy+fh); ctx.stroke(); }
-    for(let gy=fy; gy<fy+fh; gy+=34*ui){ ctx.beginPath(); ctx.moveTo(fx,gy); ctx.lineTo(fx+fw,gy); ctx.stroke(); }
+    // Батч: все линии сетки — один beginPath/stroke вместо N отдельных GPU draw-call'ов.
+    ctx.strokeStyle=hexa(COL.phosphor,.05); ctx.lineWidth=1; ctx.beginPath();
+    for(let gx=fx; gx<fx+fw; gx+=34*ui){ ctx.moveTo(gx,fy); ctx.lineTo(gx,fy+fh); }
+    for(let gy=fy; gy<fy+fh; gy+=34*ui){ ctx.moveTo(fx,gy); ctx.lineTo(fx+fw,gy); }
+    ctx.stroke();
+    // Батч: все три кольца радара — один stroke.
     const rcx=fx+fw*0.42, rcy=fy+fh*0.5, rmax=Math.min(fw,fh)*0.5;
-    ctx.strokeStyle=hexa(COL.phosphor,.07); ctx.lineWidth=1.2;
-    for(let k=1;k<=3;k++){ ctx.beginPath(); ctx.arc(rcx,rcy,rmax*k/3,0,7); ctx.stroke(); }
+    ctx.strokeStyle=hexa(COL.phosphor,.07); ctx.lineWidth=1.2; ctx.beginPath();
+    for(let k=1;k<=3;k++){ ctx.moveTo(rcx+rmax*k/3,rcy); ctx.arc(rcx,rcy,rmax*k/3,0,Math.PI*2); }
+    ctx.stroke();
     ctx.restore();
 
     // ===== неон-рамка: верх/лево/низ сплошные, право — короткие стабы =====

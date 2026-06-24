@@ -3,11 +3,11 @@
 // Provides: showStart, showLevels, showBiomes, showGoals, showLeaderboard, openSettings, buildLevel/Biome/Bonus, startLevel, setPaused, loadGame, saveGame, resetProgress, SVGIC, applyMenuIcons, hideAllScreens, updateStartChips, goalRowsHTML.
 // Reads: 04 (LEVELS, LV, curBiome, curBonus, Biome, Bonus); 06 (save, bays, runways, layout, levelIdx/levelKey, survival, debug, SAVE_KEY); 03 (I18N, lang); 09 (heart).
 
-  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') || JSON.parse(localStorage.getItem(LEGACY_SAVE_KEY) || 'null'); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang as LangCode])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; save.tutorialDone=!!s.tutorialDone; } }catch(e){} }
+  function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') || JSON.parse(localStorage.getItem(LEGACY_SAVE_KEY) || 'null'); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang as LangCode])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; save.eco=!!s.eco; save.tutorialDone=!!s.tutorialDone; } }catch(e){} }
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} try{ (window as any).PFCloud && (window as any).PFCloud.onLocalSave(); }catch(e){} }
   // язык, медали (ach/stats) и звук/вибро — не прогресс уровней, сохраняем при сбросе
   // сброс прогресса заодно возвращает туториал — новый игрок снова увидит обучение
-  function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false,tutorialDone:false}; saveGame(); renderLevels(); }
+  function resetProgress(){ save={unlocked:1,best:{},stars:{},lang:save.lang,ach:save.ach||[],stats:save.stats||{},sound:save.sound!==false,vibro:save.vibro!==false,eco:save.eco||false,tutorialDone:false}; saveGame(); renderLevels(); }
   function buildLevel(idx: number){ curBiome=null; curBonus=null; levelIdx=idx; levelKey=idx; LV=LEVELS[idx]; bays=[]; runways=[]; layout(); }
   function buildBiome(b: Biome){ curBiome=b; curBonus=null; levelIdx=-1; levelKey='b_'+b.id; LV=b.level!; bays=[]; runways=[]; layout(); }
   // бонус-уровень: своя тема и строковый ключ сохранения (как биом — кампанию не двигает)
@@ -39,6 +39,7 @@
     expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
     globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
     door:'<path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+    leaf:'<path d="M2 22c4-9 10-14 18-14-4 8-10 13-18 14Z"/><path d="M2 22 12 12"/>',
     sound:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/>',
     mute:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
     vibro:'<rect x="9" y="7" width="6" height="10" rx="1.5"/><path d="M5 9.5 3 12l2 2.5M19 9.5l2 2.5-2 2.5"/>',
@@ -465,11 +466,16 @@
     }
     applyIconBtn('optSoundBtn', save.sound!==false, 'sound', 'mute');
     applyIconBtn('optVibroBtn', save.vibro!==false, 'vibro', 'vibro-off');
+    applyIconBtn('optEcoBtn', !!save.eco, 'leaf', 'leaf');
+    const hint=document.getElementById('ecoSlowHint');
+    if(hint){ hint.textContent=t('settings.ecoSlow'); hint.classList.toggle('hidden', !_slowDevice); }
   }
   function setSound(on: boolean){ save.sound=on; saveGame(); SND.setEnabled(on); syncSettingsUI(); Analytics.track('setting_changed', {key:'sound', value:!!on}); }
   function setVibro(on: boolean){ save.vibro=on; saveGame(); HAP.on=on; syncSettingsUI(); Analytics.track('setting_changed', {key:'vibro', value:!!on}); }
+  function setEco(on: boolean){ save.eco=on; saveGame(); syncSettingsUI(); Analytics.track('setting_changed', {key:'eco', value:!!on}); }
   { const b=document.getElementById('optSoundBtn'); if(b) b.onclick=()=>setSound(!(save.sound!==false)); }
   { const b=document.getElementById('optVibroBtn'); if(b) b.onclick=()=>setVibro(!(save.vibro!==false)); }
+  { const b=document.getElementById('optEcoBtn'); if(b) b.onclick=()=>setEco(!save.eco); }
 
   // настройки из стартового меню (звук / язык / сброс прогресса)
   function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns();

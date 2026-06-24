@@ -122,8 +122,13 @@
             <div style="display:flex;gap:8px">
               <button class="icon-btn" id="optSoundBtn" aria-label="Sound"><span class="mic" data-mic="sound"></span></button>
               <button class="icon-btn" id="optVibroBtn" aria-label="Vibration"><span class="mic" data-mic="vibro"></span></button>
+              <button class="icon-btn" id="optEcoBtn" aria-label="Battery saver"><span class="mic" data-mic="leaf"></span></button>
             </div>
             <button class="icon-btn icon-btn--danger" id="debugToggleBtn" aria-label="Debug"><span class="mic" data-mic="bug"></span></button>
+          </div>
+          <div class="set-row" id="ecoRow">
+            <span class="set-row__hint" data-i18n="settings.eco"></span>
+            <span class="set-row__hint hidden" id="ecoSlowHint" style="color:#f4cf5e"></span>
           </div>
           <div class="set-row">
             <button class="m-btn m-btn--ghost m-btn--sm" id="checkUpdatesBtn"><span class="mic" data-mic="refresh"></span><span class="m-btn__t" data-i18n="settings.checkUpdates"></span></button>
