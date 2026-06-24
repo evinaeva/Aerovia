@@ -113,7 +113,7 @@
   // Params that feed the field LAYOUT (bay/runway/plane geometry) rather than a
   // per-frame physics read. layout() only re-runs on resize, so after applying one
   // of these we poke the game with a 'resize' event to recompute the playfield live.
-  const LAYOUT_KEYS = new Set(['K.PLANE_SCALE', 'K.RUNWAY_RATIO', 'K.HANGAR_RATIO']);
+  const LAYOUT_KEYS = new Set(['K.PLANE_SCALE', 'K.RUNWAY_RATIO', 'K.RUNWAY_R', 'K.HANGAR_RATIO']);
   function nudgeLayout(key) {
     if (!LAYOUT_KEYS.has(key)) return;
     try { gameFrame.contentWindow.dispatchEvent(new Event('resize')); } catch (_) {}
