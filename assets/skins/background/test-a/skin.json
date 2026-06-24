@@ -1,0 +1,7 @@
+{
+  "id": "background-test-a",
+  "label": "Тест A",
+  "states": {
+    "default": "background.png"
+  }
+}

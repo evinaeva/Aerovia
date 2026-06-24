@@ -57,7 +57,23 @@
   { const _v=document.getElementById('ver'); if(_v) _v.textContent=VERSION; }  // #ver убран из neon-бренда — guard
   { const _mt=document.getElementById('motionTuningBtn'); if(_mt) _mt.onclick=()=>mtOpenPanel(); }
   window.__MT = MT;   // доступен из родительского tuning.html (same-origin iframe)
-  window.__SPRITES = { setSkinOverrides: (skins) => SPRITES.setSkinOverrides && SPRITES.setSkinOverrides(skins) };
+  window.__SPRITES = {
+    setSkinOverrides: (skins) => SPRITES.setSkinOverrides && SPRITES.setSkinOverrides(skins),
+    // Пер-зонные скины (assets/skins/…): воркбенч резолвит выбор в URL'ы и шлёт сюда.
+    setZoneSkins: (map) => SPRITES.setZoneSkins && SPRITES.setZoneSkins(map),
+    // read-back для проверки из tuning.html (preview_eval): карта + готовность по зонам
+    zoneSkins: () => ({
+      map: SPRITES.getZoneSkins ? SPRITES.getZoneSkins() : {},
+      ready: {
+        apron:      !!(SPRITES.hasZoneSkin && SPRITES.hasZoneSkin('apron')),
+        runway:     !!(SPRITES.hasZoneSkin && SPRITES.hasZoneSkin('runway')),
+        arrival:    !!(SPRITES.hasZoneSkin && SPRITES.hasZoneSkin('arrival')),
+        background: !!(SPRITES.hasZoneSkin && SPRITES.hasZoneSkin('background')),
+        plane:      !!(SPRITES.hasZoneSkin && SPRITES.hasZoneSkin('plane')),
+        hangar:     !!(SPRITES.hasZoneSkin && SPRITES.hasZoneSkin('hangar', 'fuel')),
+      },
+    }),
+  };
   // Конструктор уровней (tuning.html): сыграть произвольный уровень сразу (custom),
   // либо положить его в localStorage, чтобы стартовый экран предложил «Свой уровень».
   window.__PLAY = {

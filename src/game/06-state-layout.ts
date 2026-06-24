@@ -96,7 +96,7 @@
   // ---- layout: bays, runways, hover slots ----
   interface Bay { side: string; type: string; slot: number; open: boolean; open0?: boolean; lvl: number; occupied: any; x: number; y: number; w: number; h: number; deice?: boolean; up?: boolean; gate?: string; gx?: number; gy?: number; openCost: number; upgCost?: number; }
   interface Runway { occupied: any; closed: boolean; hazard?: any; x: number; y: number; w: number; h: number; cy: number; stopX: number; exitX: number; landingOpen: boolean; takeoffOpen: boolean; landingOpen0: boolean; takeoffOpen0: boolean; landingCost: number; takeoffCost: number; }
-  interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; arrivalY0?: number; arrivalY1?: number; rwL?: number; rwR?: number; service?: any; }
+  interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; arrivalY0?: number; arrivalY1?: number; arrivalX0?: number; arrivalX1?: number; rwL?: number; rwR?: number; service?: any; }
   interface Rect { x: number; y: number; w: number; h: number; }
   let bays: Bay[] = [], runways: Runway[] = [], field: Field = {x0:0,y0:0,x1:0,y1:0}, pauseBtn: Rect = {} as Rect;
   // Единый масштаб «крупности» техники: размеры борта, ВПП и бокса выводятся из него
@@ -246,11 +246,14 @@
     // hover x для прилетающих
     field.hoverX = rwR + W*0.09;  // зона ожидания: 9% экрана правее торца ВПП
     field.arrivalY0 = undefined; field.arrivalY1 = undefined;
+    field.arrivalX0 = undefined; field.arrivalX1 = undefined;
     { const az = LV.layout && LV.layout.zones && LV.layout.zones.arrival;
       if(az){
         field.hoverX = (az.x + az.w/2) * W;
         field.arrivalY0 = az.y * H;
         field.arrivalY1 = (az.y + az.h) * H;
+        field.arrivalX0 = az.x * W;             // X-границы — для отрисовки скина прилёта (09)
+        field.arrivalX1 = (az.x + az.w) * W;
       }
     }
     field.rwL = rwL; field.rwR = rwR;

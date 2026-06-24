@@ -1,0 +1,7 @@
+{
+  "id": "runway-test-b",
+  "label": "Тест B",
+  "states": {
+    "default": "runway.png"
+  }
+}

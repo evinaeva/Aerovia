@@ -75,6 +75,25 @@
       return im;
     }
     const ok = (im: HTMLImageElement | null): im is HTMLImageElement => !!(im && im.complete && im.naturalWidth > 0);
+
+    // ── Пер-зонные скины (примерка из tuning-воркбенча). Картинки адресуются по URL
+    // (assets/skins/<zone>/<name>/*.png), НЕ через манифест/атлас. Рисуются ВМЕСТО
+    // процедурной отрисовки зоны, когда готовы (см. гейты в 09/09b). Путь полностью
+    // отдельный от skinOverrides/pngImg/loadSkin: при пустой карте каждый аксессор
+    // отдаёт null → движок рисует как раньше, байт-в-байт (ATLAS/skinReady не трогаются).
+    type ZoneSkinMap = {
+      apron?: string | null; runway?: string | null; arrival?: string | null;
+      background?: string | null; plane?: string | null;
+      hangar?: { fuel?: string; board?: string; repair?: string; deice?: string; locked?: string } | null;
+    };
+    let zoneSkins: ZoneSkinMap = {};
+    const zoneImgCache = new Map<string, HTMLImageElement>();   // url -> Image
+    function zoneImg(url?: string | null): HTMLImageElement | null {
+      if (!url) return null;
+      let im = zoneImgCache.get(url);
+      if (!im) { im = new Image(); im.decoding = 'async'; im.crossOrigin = 'anonymous'; im.src = url; zoneImgCache.set(url, im); }
+      return im;   // может ещё грузиться — zoneSkin()/ok() это учитывают (фолбэк до загрузки)
+    }
     // объединяет активную тему (THEME.tokens) с per-call переопределением.
     // Строку (currentColor) пропускаем как есть. Без темы и без override —
     // возвращаем сам color, чтобы дефолтный путь не плодил пустые объекты в кэше.
@@ -102,6 +121,10 @@
       loadSkin?: (skin: string) => void;
       setSkinOverrides?: (skins: string[]) => void;
       hasOverrides?: () => boolean;
+      setZoneSkins?: (map: ZoneSkinMap) => void;
+      zoneSkin?: (zone: string, state?: string) => HTMLImageElement | null;
+      hasZoneSkin?: (zone: string, state?: string) => boolean;
+      getZoneSkins?: () => ZoneSkinMap;
     }
     const A: SpriteApi = {
       ready: false,
@@ -156,6 +179,23 @@
       skinOverrides.forEach((s: string) => A.loadSkin!(s));
     };
     A.hasOverrides = () => skinOverrides.length > 0;
+    // Пер-зонные скины: карта { zone: url } (ангар → { state: url }). Прогреваем декод,
+    // чтобы первый готовый кадр не мигнул процедуркой. zoneSkin() отдаёт картинку только
+    // когда она реально загружена (ok()), иначе null — вызывающий код падает в процедурку.
+    A.setZoneSkins = function (map) {
+      zoneSkins = (map && typeof map === 'object') ? map : {};
+      if (zoneSkins.hangar) Object.values(zoneSkins.hangar).forEach(u => zoneImg(u));
+      (['apron', 'runway', 'arrival', 'background', 'plane'] as const).forEach(z => zoneImg(zoneSkins[z]));
+    };
+    A.zoneSkin = function (zone, state) {
+      if (zone === 'hangar') {
+        const h = zoneSkins.hangar; if (!h) return null;
+        const im = zoneImg((h as Record<string, string>)[state || 'locked']); return ok(im) ? im : null;
+      }
+      const im = zoneImg((zoneSkins as Record<string, string | null>)[zone]); return ok(im) ? im : null;
+    };
+    A.hasZoneSkin = (zone, state) => !!A.zoneSkin!(zone, state);
+    A.getZoneSkins = () => zoneSkins;
     A.loadSkin = function(skin: string){
       if (!skin || loadedSkins.has(skin)) return;
       loadedSkins.add(skin);

@@ -1,0 +1,7 @@
+{
+  "id": "plane-test-b",
+  "label": "Тест B",
+  "states": {
+    "default": "plane.png"
+  }
+}

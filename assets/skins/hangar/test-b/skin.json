@@ -1,0 +1,11 @@
+{
+  "id": "hangar-test-b",
+  "label": "Тест B",
+  "states": {
+    "fuel": "bay-fuel.png",
+    "board": "bay-board.png",
+    "repair": "bay-repair.png",
+    "deice": "bay-deice.png",
+    "locked": "bay-locked.png"
+  }
+}

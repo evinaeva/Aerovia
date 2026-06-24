@@ -1,9 +1,0 @@
-{
-  "id": "runway-arctic",
-  "label": "Arctic",
-  "base": "assets/sprites/arctic",
-  "states": {
-    "open": "runway-open.png",
-    "closed": "runway-closed.png"
-  }
-}
