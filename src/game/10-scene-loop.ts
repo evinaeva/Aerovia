@@ -11,13 +11,17 @@
   // prefers-reduced-motion: убираем тяжёлые декоративные анимации (радар-развёртка, мигание).
   const REDUCED_MOTION = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   // Эко-режим: авто-включается при низком заряде без зарядки (Battery API, Chrome/Android).
-  let _ecoMode = false;
+  let _batteryLow = false;
   if(typeof navigator !== 'undefined' && typeof (navigator as any).getBattery === 'function'){
     ((navigator as any).getBattery() as Promise<any>).then((bat: any)=>{
-      const chk=()=>{ _ecoMode=!bat.charging&&bat.level<0.2; };
+      const chk=()=>{ _batteryLow=!bat.charging&&bat.level<0.2; };
       chk(); bat.onchargingchange=chk; bat.onlevelchange=chk;
     }).catch(()=>{});
   }
+  // Авто-определение медленного устройства: усредняем время рендера первых 60 кадров.
+  // Если среднее > 12ms — устройство слабое; показываем подсказку в настройках.
+  let _slowDevice = false;
+  let _perfFrames = 0, _perfMs = 0;
   // Кэши градиентов для меню — пересоздаются только при изменении размера экрана.
   let _menuBgGrad: CanvasGradient|null=null, _menuHgGrad: CanvasGradient|null=null;
   let _menuCoreGrad: CanvasGradient|null=null;
@@ -160,11 +164,13 @@ function drawMenuScene(tm: number){
     if(paused && !inMenu){ rafId=requestAnimationFrame(frame); return; }
 
     // Адаптивный FPS: 60 только если борты двигаются; меню/эко/бездействие → 30.
-    const _needFast=!_ecoMode&&!inMenu&&planes.some(p=>p.moving&&!p.dead);
+    const _ecoActive = save.eco || _batteryLow;
+    const _needFast=!_ecoActive&&!inMenu&&planes.some(p=>p.moving&&!p.dead);
     const sinceDraw=ts-lastRenderTs;
     if(sinceDraw<(_needFast?FAST_MS:SLOW_MS)-1){ rafId=requestAnimationFrame(frame); return; }
     lastRenderTs=ts;
 
+    const _t0 = _slowDevice ? 0 : performance.now();
     if(inMenu){
       drawMenuScene(ts);
     } else {
@@ -188,6 +194,7 @@ function drawMenuScene(tm: number){
       if(tut) drawTutorial();
       if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
     }
+    if(!_slowDevice){ _perfMs+=performance.now()-_t0; if(++_perfFrames>=60){ _slowDevice=_perfMs/_perfFrames>12; if(_slowDevice&&typeof syncSettingsUI!=='undefined') (syncSettingsUI as ()=>void)(); } }
     rafId=requestAnimationFrame(frame);
   }
 
