@@ -52,7 +52,9 @@ export const GAME_ORDER = [
 ];
 
 export function build() {
-  const game = GAME_ORDER.map(gameModule).join('\n');
+  const pkg = JSON.parse(read('package.json'));
+  const game = GAME_ORDER.map(gameModule).join('\n')
+    .replace("'__GAME_VERSION__'", () => `'${pkg.version}'`);
   const css  = bodyOf('src/styles.css');
   const boot = bodyOf('src/boot-sw.js');
 

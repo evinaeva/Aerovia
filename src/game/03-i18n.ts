@@ -228,6 +228,8 @@
       'consent.privacy':'Privacy Policy',
       'consent.no':'No',
       'consent.yes':'Accept',
+      'again.title':'Play again?', 'again.yes':'Play again', 'again.no':'Cancel',
+      'upd.available':'Update available', 'upd.doUpdate':'Update', 'upd.done':'App updated to the latest version',
     };
     type PhraseKey = Exclude<keyof typeof en, keyof LangMeta>;
     const ru: LangMeta & Record<PhraseKey, Phrase> = {
@@ -444,6 +446,8 @@
       'consent.privacy':'Политика конфиденциальности',
       'consent.no':'Нет',
       'consent.yes':'Принять',
+      'again.title':'Сыграть заново?', 'again.yes':'Заново', 'again.no':'Отмена',
+      'upd.available':'Доступно обновление', 'upd.doUpdate':'Обновить', 'upd.done':'Приложение обновлено до последней версии',
     };
     return { en, ru } as unknown as Record<LangCode, LangDict>;
   })();

@@ -40,6 +40,7 @@
     globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
     door:'<path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
     leaf:'<path d="M2 22c4-9 10-14 18-14-4 8-10 13-18 14Z"/><path d="M2 22 12 12"/>',
+    battery:'<rect x="2" y="7" width="16" height="10" rx="2" ry="2"/><line x1="22" y1="11" x2="22" y2="13"/>',
     sound:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 6a9 9 0 0 1 0 12"/>',
     mute:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>',
     vibro:'<rect x="9" y="7" width="6" height="10" rx="1.5"/><path d="M5 9.5 3 12l2 2.5M19 9.5l2 2.5-2 2.5"/>',
@@ -451,7 +452,13 @@
   // «Выживание» ведёт прямо на экран карт (карты-биомы = режим Survival)
   { const b=document.getElementById('survivalBtn'); if(b) b.onclick=showBiomes; }
   document.getElementById('backBtn')!.onclick=()=>{ showStart(); };
-  document.getElementById('againBtn')!.onclick=()=>{ document.getElementById('overScreen')!.classList.add('hidden'); reset(); };
+  document.getElementById('againBtn')!.onclick=()=>{ document.getElementById('againConfirmScreen')!.classList.remove('hidden'); };
+  document.getElementById('againCancelBtn')!.onclick=()=>{ document.getElementById('againConfirmScreen')!.classList.add('hidden'); };
+  document.getElementById('againConfirmBtn')!.onclick=()=>{
+    document.getElementById('againConfirmScreen')!.classList.add('hidden');
+    document.getElementById('overScreen')!.classList.add('hidden');
+    reset();
+  };
   function backToSelect(){ if(curBiome) showBiomes(); else showLevels(); }
   document.getElementById('toLevelsBtn')!.onclick=backToSelect;
   document.getElementById('biomesBackBtn')!.onclick=()=>{ showStart(); };
@@ -497,7 +504,7 @@
     }
     applyIconBtn('optSoundBtn', save.sound!==false, 'sound', 'mute');
     applyIconBtn('optVibroBtn', save.vibro!==false, 'vibro', 'vibro-off');
-    applyIconBtn('optEcoBtn', !!save.eco, 'leaf', 'leaf');
+    applyIconBtn('optEcoBtn', !!save.eco, 'battery', 'battery');
     const hint=document.getElementById('ecoSlowHint');
     if(hint){ hint.textContent=t('settings.ecoSlow'); hint.classList.toggle('hidden', !_slowDevice); }
   }
@@ -517,12 +524,14 @@
   document.getElementById('settingsBackBtn')!.onclick=()=>{ showStart(); };
 
   // «Проверить обновления»: модалки вместо статуса под кнопкой.
-  // Нет обновлений → маленькая модалка с OK (настройки остаются открытыми).
-  // Есть обновление → прогресс-бар с самолётиком; страница перезагрузится сама через controllerchange.
+  // Нет обновлений → updToDateModal с OK.
+  // Есть обновление → updAvailModal («Обновить» / «Отмена») → updProgressModal → updDoneSection.
   (function(){
     const btn=document.getElementById('checkUpdatesBtn') as HTMLButtonElement|null;
     const toDateModal=document.getElementById('updToDateModal');
+    const availModal=document.getElementById('updAvailModal');
     const progressModal=document.getElementById('updProgressModal');
+    const doneSection=document.getElementById('updDoneSection');
     const toDateMsg=document.getElementById('updToDateMsg');
     const barFill=document.getElementById('updBarFill') as HTMLElement|null;
     const planeEl=document.getElementById('updPlane') as HTMLElement|null;
@@ -531,27 +540,51 @@
     const verTo=document.getElementById('updVerTo');
     if(!btn) return;
 
-    function closeUpdModals(){ if(toDateModal) toDateModal.classList.add('hidden'); if(progressModal) progressModal.classList.add('hidden'); }
+    function closeUpdModals(){
+      if(toDateModal) toDateModal.classList.add('hidden');
+      if(availModal) availModal.classList.add('hidden');
+      if(progressModal) progressModal.classList.add('hidden');
+      if(doneSection) doneSection.classList.add('hidden');
+    }
 
     const ok=document.getElementById('updToDateOk');
     if(ok) ok.onclick=closeUpdModals;
 
+    const doneOk=document.getElementById('updDoneOk');
+    if(doneOk) doneOk.onclick=closeUpdModals;
+
+    const availCancel=document.getElementById('updAvailCancel');
+    if(availCancel) availCancel.onclick=closeUpdModals;
+
     let planeTimer: ReturnType<typeof setInterval>|null=null;
     function startPlaneAnim(){
       let pct=0;
+      if(doneSection) doneSection.classList.add('hidden');
       if(barFill) barFill.style.width='0%';
       if(planeEl) planeEl.style.left='6px';
       if(planeTimer) clearInterval(planeTimer);
       planeTimer=setInterval(()=>{
-        pct=Math.min(pct+1.8, 86);
+        pct=Math.min(pct+1.4, 100);
         if(barFill) barFill.style.width=pct+'%';
         if(planeEl && barEl){
           const w=barEl.offsetWidth||320;
           planeEl.style.left=Math.round((pct/100)*(w-44)+6)+'px';
         }
-        if(pct>=86 && planeTimer){ clearInterval(planeTimer); planeTimer=null; }
+        if(pct>=100 && planeTimer){
+          clearInterval(planeTimer); planeTimer=null;
+          if(doneSection) doneSection.classList.remove('hidden');
+        }
       }, 220);
     }
+
+    const availOk=document.getElementById('updAvailOk');
+    if(availOk) availOk.onclick=()=>{
+      if(availModal) availModal.classList.add('hidden');
+      if(verFrom) verFrom.textContent='v'+VERSION;
+      if(verTo) verTo.textContent=t('pwa.updateTitle');
+      if(progressModal) progressModal.classList.remove('hidden');
+      startPlaneAnim();
+    };
 
     btn.onclick=async()=>{
       if(btn.disabled) return;
@@ -562,10 +595,7 @@
       catch(e){ status='offline'; }
       btn.disabled=false;
       if(status==='updating'){
-        if(verFrom) verFrom.textContent='v'+VERSION;
-        if(verTo) verTo.textContent=t('pwa.updateTitle');
-        if(progressModal) progressModal.classList.remove('hidden');
-        startPlaneAnim();
+        if(availModal) availModal.classList.remove('hidden');
       } else {
         const msg=status==='offline' ? t('settings.updOffline') : t('settings.updUpToDate');
         if(toDateMsg) toDateMsg.textContent=msg;
