@@ -204,8 +204,8 @@
 
     // runways on right
     // полевой торец ВПП заходит на самую кромку апрона → «мост» апрон→небо (полосы не
-    // висят в пустоте); длина ВПП ≈0.21W (макет 318/1600≈0.20W), правый край ≈0.84W
-    const rwL = fx1 - 8*ui, rwR = W*0.84;
+    // висят в пустоте); длина ВПП ≈0.21W (макет 318/1600≈0.20W), правый край = K.RUNWAY_R×W
+    const rwL = fx1 - 8*ui, rwR = W * K.RUNWAY_R;
     const top0 = hud + M, bot0 = H - M;
     // ширина ВПП выводится из длины борта через K.RUNWAY_RATIO — масштаб борта
     // (K.PLANE_SCALE) масштабирует полосы на всех картах; просвет — доля ширины ВПП.
@@ -241,7 +241,7 @@
       r.exitX = rwR + 10*ui;   // правый (водный) край
     });
     // hover x для прилетающих
-    field.hoverX = W*0.93;
+    field.hoverX = rwR + W*0.09;  // зона ожидания: 9% экрана правее торца ВПП
     field.arrivalY0 = undefined; field.arrivalY1 = undefined;
     { const az = LV.layout && LV.layout.zones && LV.layout.zones.arrival;
       if(az){
