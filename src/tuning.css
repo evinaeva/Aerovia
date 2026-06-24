@@ -253,6 +253,67 @@
       #scenario-bar { width: 64px; padding: 7px 5px; }
     }
 
+    /* ── Zoom bar ────────────────────────────────────────────────────────── */
+    #zoom-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 100px;
+      padding: 10px 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--btn-bg);
+      font-size: 13px;
+    }
+    #zoom-zone-row {
+      display: flex;
+      gap: 3px;
+      width: 100%;
+    }
+    .zoom-zb {
+      flex: 1;
+      padding: 3px 2px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .zoom-zb:hover { background: rgba(58,210,255,.10); color: var(--text); }
+    .zoom-zb.active { background: rgba(34,227,198,.12); border-color: var(--accent); color: var(--accent); }
+    #zoom-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+    }
+    #zoom-slider {
+      flex: 1;
+      min-width: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    #zoom-slider:disabled { opacity: 0.35; cursor: default; }
+    #zoom-val {
+      font-size: 11px;
+      color: var(--muted);
+      min-width: 28px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    @media (max-height: 560px) {
+      #zoom-bar { width: 74px; padding: 7px 6px; }
+    }
+    @media (max-width: 560px) {
+      #zoom-bar { width: 64px; padding: 7px 5px; }
+    }
+
     /* phone-shell is positioned absolute so wrapper sets visual size */
     #phone-shell {
       position: absolute;

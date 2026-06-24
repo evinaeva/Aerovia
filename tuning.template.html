@@ -29,8 +29,6 @@
       <button class="tb-btn" id="btn-frames-toggle" title="Зоны и вырез экрана — рамки поверх превью + пресеты выреза/навигации">
         <span class="tb-icon">📐</span><span>Зоны</span>
       </button>
-      <!-- Zoom: cycle Normal → ВПП → Ангар → Normal -->
-      <button class="tb-btn" id="btn-zoom" title="Крупный план — ВПП / Ангар / Сброс" style="display:none">🔍</button>
     </div>
 
     <!-- Popup backdrop -->
@@ -100,6 +98,19 @@
           <option value="taxi">Руление</option>
           <option value="service">Обслуживание</option>
         </select>
+      </div>
+      <!-- Zoom: крупный план ВПП / Ангар со слайдером -->
+      <div id="zoom-bar">
+        <span class="sc-lbl">Zoom</span>
+        <div id="zoom-zone-row">
+          <button class="zoom-zb active" data-zone="" title="Без зума">—</button>
+          <button class="zoom-zb" data-zone="runway" title="Приблизить ВПП">ВПП</button>
+          <button class="zoom-zb" data-zone="bay" title="Приблизить ангар">Ангар</button>
+        </div>
+        <div id="zoom-slider-row">
+          <input type="range" id="zoom-slider" min="1" max="6" step="0.25" value="3" disabled>
+          <span id="zoom-val">×3</span>
+        </div>
       </div>
     </div>
 
