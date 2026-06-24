@@ -48,6 +48,7 @@
     window._enterEditorZones = function () {
       if (savedZones == null) savedZones = zonesOn;
       if (window._fieldSetEditorOnly) window._fieldSetEditorOnly(true);
+      if (window._fieldSetTestMode)   window._fieldSetTestMode(false);
       setZones(true);
     };
     window._exitEditorZones = function () {
@@ -56,6 +57,7 @@
       savedZones = null;
       setZones(restore);
       if (!restore) closePanel();   // don't strand the legend open over the live game
+      if (window._fieldSetTestMode)   window._fieldSetTestMode(true);
     };
 
     setZones(false);                   // initial: overlay off, panel closed
@@ -85,6 +87,7 @@
     let   fieldOn  = false;
     let   overlayTab = '';
     let   editorOnly = false;   // «Разметка» mode: draw only the danger zones, not the live game's field
+    let   testOn     = false;   // test mode: keep overlay ticking for draggable control points
 
     function getField() {
       if (editorOnly && window._layoutField) {
@@ -298,10 +301,12 @@
       // Раздельно: бокс, ВПП-посадка, ВПП-взлёт (у каждой свои radius/offset; форма —
       // на тип). Рисуем у репрезентативного объекта. Ручка-центр двигает зону (OFFSET
       // вдоль оси захода), ручка-апекс масштабирует (RADIUS). Тянем → пишем MT-параметр.
-      s += grabZoneSvg('bay', snap, fd);
-      s += grabZoneSvg('rwland', snap, fd);
-      s += grabZoneSvg('rwtake', snap, fd);
-      s += motionPointsSvg(snap, fd);
+      if (!editorOnly) {
+        s += grabZoneSvg('bay', snap, fd);
+        s += grabZoneSvg('rwland', snap, fd);
+        s += grabZoneSvg('rwtake', snap, fd);
+        s += motionPointsSvg(snap, fd);
+      }
 
       overlay.innerHTML = s;
     }
@@ -507,7 +512,7 @@
 
     let ticking = false;
     function tick() {
-      if (!fieldOn) { ticking = false; return; }
+      if (!fieldOn && !testOn) { ticking = false; return; }
       if (ticking && arguments[0] !== true) return;   // already looping — don't start a second
       ticking = true;
       drawOverlay();
@@ -517,8 +522,13 @@
     window._fieldActivate = function (on, tab) {
       fieldOn  = on;
       overlayTab = tab || '';
-      overlay.style.display = on ? '' : 'none';
+      overlay.style.display = (on || testOn) ? '' : 'none';
       if (on) tick();
+    };
+    window._fieldSetTestMode = function (on) {
+      testOn = !!on;
+      overlay.style.display = (fieldOn || testOn) ? '' : 'none';
+      if (testOn && !ticking) tick();
     };
     // immediate redraw (used by the «Зоны» legend toggles for snappy feedback)
     window._fieldRedraw = function () { if (fieldOn) drawOverlay(); };
