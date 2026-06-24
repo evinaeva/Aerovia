@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { boot } from './harness.mjs';
 
 const GEO_KEYS = [
-  'MT.BAY_HIT_PADDING', 'MT.RUNWAY_HIT_PADDING',
+  'MT.BAY_HIT_PADDING',
   'MT.BAY_GRAB_SHAPE', 'MT.BAY_GRAB_RADIUS', 'MT.BAY_GRAB_OFFSET',
   'MT.RUNWAY_GRAB_SHAPE',
   'MT.RUNWAY_LAND_GRAB_RADIUS', 'MT.RUNWAY_LAND_GRAB_OFFSET',
@@ -30,7 +30,6 @@ test('round-trip export→reset→import восстанавливает знач
   // выставляем нестандартные значения (числа + булевы тумблеры слоёв)
   game.MT.apply({
     'MT.BAY_HIT_PADDING': 44,
-    'MT.RUNWAY_HIT_PADDING': 30,
     'MT.BAY_GRAB_SHAPE': 'square',
     'MT.BAY_GRAB_RADIUS': 70,
     'MT.BAY_GRAB_OFFSET': -20,
@@ -54,7 +53,6 @@ test('round-trip export→reset→import восстанавливает знач
   game.MT.importText(json);                          // импортируем ранее экспортированный JSON
   snap = game.MT.snapshot();
   assert.equal(snap['MT.BAY_HIT_PADDING'], 44, 'бокс-падинг восстановлен из JSON');
-  assert.equal(snap['MT.RUNWAY_HIT_PADDING'], 30, 'ВПП-падинг восстановлен из JSON');
   assert.equal(snap['MT.BAY_GRAB_SHAPE'], 'square', 'форма зоны бокса восстановлена');
   assert.equal(snap['MT.BAY_GRAB_RADIUS'], 70, 'радиус зоны бокса восстановлен');
   assert.equal(snap['MT.BAY_GRAB_OFFSET'], -20, 'смещение зоны бокса восстановлено (отрицательное)');
@@ -77,8 +75,8 @@ test('импорт числового параметра клампится в [
 
 test('импорт принимает и «голый» объект значений (без обёртки values)', () => {
   const { game } = boot();
-  game.MT.importText(JSON.stringify({ 'MT.RUNWAY_HIT_PADDING': 25 }));
-  assert.equal(game.MT.snapshot()['MT.RUNWAY_HIT_PADDING'], 25, 'значение применено из голого объекта');
+  game.MT.importText(JSON.stringify({ 'MT.BAY_HIT_PADDING': 25 }));
+  assert.equal(game.MT.snapshot()['MT.BAY_HIT_PADDING'], 25, 'значение применено из голого объекта');
 });
 
 // Геймплейные точки ВПП/ангара — настраиваются глобально через K.* и должны
