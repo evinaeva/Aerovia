@@ -13,6 +13,11 @@ and `ATLAS` is just a flag for "sprite atlas loaded yet?". Keep gameplay logic,
 mechanics and geometry independent of the look (as before) — there's simply nothing
 to fork against now.
 
+> **Note on `assets/skins/`:** the folder with zone-based skin assets (`hangar/`,
+> `apron/`, `runway/`, `plane/`, `arrival/`) and arctic/neon/neon2 variants is the
+> **tuning workbench's** skin-preview system (`src/tuning/15-resources.js`). It is
+> developer tooling only — not the removed game skin selector.
+
 ## Source layout — edit `src/`, never edit `index.html`
 
 `index.html` is a **generated build artifact** (and is git-ignored). Run
@@ -21,12 +26,14 @@ to fork against now.
 
 The game source lives in `src/`:
 - `src/styles.css` — all CSS (the former `<style>` block).
-- `src/game/01..13-*.{js,ts}` — the game IIFE split into ordered modules. The
-  build concatenates them, in the order listed in `scripts/build.mjs`, into one
-  `<script>`. **Module 01 opens the IIFE and module 13 closes it**, so the files
-  are fragments of one shared closure scope — *not* ES modules. Do not add
-  `import`/`export`; just edit the relevant module. A module may be `.js` or
-  `.ts` (see "TypeScript" below); the build picks whichever file exists.
+- `src/game/` — the game IIFE split into ordered modules concatenated by
+  `scripts/build.mjs` (see `GAME_ORDER` there for the exact sequence). **Module
+  `01-bootstrap-theme.js` opens the IIFE and `13-init.js` closes it.** Core
+  modules are numbered `02`–`12`; sub-modules use suffixes (`04b`, `08b–08d`,
+  `09b`, `12b–12e`); `14-level-analysis.ts` is inserted between `05` and `06` in
+  the build order despite its number. Each file is a fragment of one shared closure
+  scope — *not* an ES module. Do not add `import`/`export`. A module may be `.js`
+  or `.ts`; the build picks whichever exists.
 - `src/boot-sw.js` — the PWA/service-worker registration (final `<script>`).
 - `index.template.html` — the HTML shell with `/*__BUILD_*__*/` placeholders the
   build fills in.
