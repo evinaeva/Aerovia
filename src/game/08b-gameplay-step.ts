@@ -215,12 +215,18 @@
         } else if(pl.exiting){
           pl.exiting=false; pl.moving=false;
         }
+        // выравнивание при выходе на взлёт: когда борт приближается к апронному торцу ВПП,
+        // плавно подтягиваем его к осевой — аналогично выравниванию при заходе на посадку.
+        if(pl.takeoffR && pl.x >= pl.takeoffR.x - K.TAKEOFF_ALIGN_OFF*ui){
+          pl.y += (pl.takeoffR.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
+        }
         // вылет: все услуги сделаны -> заезд на полосу
         if(need==='depart'){
           for(const r of runways){
             if(!r.closed && r.takeoffOpen && rectHit(pl.x,pl.y,r)){
               // выезд на полосу под взлёт (takeoffOpen=true; крушение — только при контакте на ВПП)
               pl.zone='runway'; pl.runway=r; if(!r.occupied) r.occupied=pl;
+              pl.takeoffR=null;   // въехали на ВПП — предварительное выравнивание отключаем
               // подруливаем к точке старта по оси полосы (у полевого торца) и тут же
               // разгоняемся — борт выходит на ВПП уже центрированным, без паузы
               pl.takeoff=true; pl.moving=true; pl.path=[{x:r.stopX + 8*ui, y:r.cy}]; pl.autoPath=true;

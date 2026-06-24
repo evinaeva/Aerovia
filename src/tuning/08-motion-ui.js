@@ -1,3 +1,23 @@
+  const LOCK_LS_KEY = 'aerovia_mt_locked';
+  let lockedKeys = (function() {
+    try { return new Set(JSON.parse(localStorage.getItem(LOCK_LS_KEY) || '[]')); } catch(_) { return new Set(); }
+  })();
+  function saveLocks() {
+    try { localStorage.setItem(LOCK_LS_KEY, JSON.stringify([...lockedKeys])); } catch(_) {}
+  }
+  function lockBtn(key) {
+    const locked = lockedKeys.has(key);
+    return '<button type="button" class="mt-lock-btn' + (locked ? ' locked' : '') +
+      '" data-lock-key="' + escHtml(key) +
+      '" tabindex="-1" title="' + (locked ? 'Разблокировать' : 'Заблокировать') +
+      '" aria-label="' + (locked ? 'Разблокировать' : 'Заблокировать') + '"></button>';
+  }
+  function applyLockRow(el, key) {
+    if (!lockedKeys.has(key)) return;
+    el.classList.add('locked');
+    el.querySelectorAll('input, select, button:not(.mt-lock-btn)').forEach(function(c) { c.disabled = true; });
+  }
+
   function buildUI() {
     groupsEl.innerHTML = '';
     const snap = MT.snapshot();
@@ -32,8 +52,10 @@
           card.title = p.key + (p.description ? ' — ' + p.description : '');
           card.innerHTML =
             '<span class="lbl">' + escHtml(posLabel(p)) + '</span>' + hintBtn(p) +
-            '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (inv ? ' data-invert="1"' : '') + (on ? ' checked' : '') + '><span class="track"></span></span>';
+            '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (inv ? ' data-invert="1"' : '') + (on ? ' checked' : '') + '><span class="track"></span></span>' +
+            lockBtn(p.key);
           grid.appendChild(card);
+          applyLockRow(card, p.key);
         });
         det.appendChild(grid);
 
@@ -70,7 +92,8 @@
             const on  = inv ? !v : v;
             row.className = 'mt-row mt-bool';
             row.innerHTML = lblHtml +
-              '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (inv ? ' data-invert="1"' : '') + (on ? ' checked' : '') + '><span class="track"></span></span>';
+              '<span class="mt-toggle"><input type="checkbox" data-key="' + p.key + '"' + (inv ? ' data-invert="1"' : '') + (on ? ' checked' : '') + '><span class="track"></span></span>' +
+              lockBtn(p.key);
           } else if (typeof p.def === 'string') {
             row.className = 'mt-row mt-string';
             const opts = SELECT_OPTIONS[p.key];
@@ -79,10 +102,12 @@
                 '<option value="' + escHtml(o[0]) + '"' + (String(v) === o[0] ? ' selected' : '') + '>' + escHtml(o[1]) + '</option>'
               ).join('');
               row.innerHTML = lblHtml +
-                '<select class="mt-text" data-key="' + p.key + '">' + optHtml + '</select>';
+                '<select class="mt-text" data-key="' + p.key + '">' + optHtml + '</select>' +
+                lockBtn(p.key);
             } else {
               row.innerHTML = lblHtml +
-                '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + escHtml(String(v)) + '">';
+                '<input class="mt-text" data-key="' + p.key + '" type="text" value="' + escHtml(String(v)) + '">' +
+                lockBtn(p.key);
             }
           } else {
             row.className = 'mt-row';
@@ -95,9 +120,11 @@
                 '<button type="button" class="mt-step" data-key="' + p.key + '" data-dir="-1" tabindex="-1" aria-label="Уменьшить">−</button>' +
                 '<input class="mt-num" data-key="' + p.key + '" type="number" inputmode="decimal"' + numAttrs + ' value="' + v + '">' +
                 '<button type="button" class="mt-step" data-key="' + p.key + '" data-dir="1" tabindex="-1" aria-label="Увеличить">+</button>' +
-              '</div>';
+              '</div>' +
+              lockBtn(p.key);
           }
           grid.appendChild(row);
+          applyLockRow(row, p.key);
         });
         det.appendChild(grid);
       }
@@ -157,6 +184,34 @@
         MT.apply({ [key]: parseFloat(e.target.value) }, true);
       }
       nudgeLayout(key);
+    });
+
+    groupsEl.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('.mt-lock-btn');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const key = btn.dataset.lockKey;
+      if (!key) return;
+      const row = btn.closest('.mt-row, .toggle-card');
+      if (!row) return;
+      const nowLocked = !lockedKeys.has(key);
+      if (nowLocked) {
+        lockedKeys.add(key);
+        row.classList.add('locked');
+        btn.classList.add('locked');
+        row.querySelectorAll('input, select, button:not(.mt-lock-btn)').forEach(c => { c.disabled = true; });
+        btn.title = 'Разблокировать';
+        btn.setAttribute('aria-label', 'Разблокировать');
+      } else {
+        lockedKeys.delete(key);
+        row.classList.remove('locked');
+        btn.classList.remove('locked');
+        row.querySelectorAll('input, select, button:not(.mt-lock-btn)').forEach(c => { c.disabled = false; });
+        btn.title = 'Заблокировать';
+        btn.setAttribute('aria-label', 'Заблокировать');
+      }
+      saveLocks();
     });
 
   }
@@ -226,6 +281,7 @@
     if (!MT) return;
     const snap = MT.snapshot();
     groupsEl.querySelectorAll('[data-key]').forEach(el => {
+      if (el.disabled) return;
       const v = snap[el.dataset.key];
       if (v == null) return;
       if (el.type === 'checkbox') el.checked = el.dataset.invert ? !v : !!v;
@@ -266,7 +322,12 @@
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (!MT) return;
     if (!confirm(T.confirmReset)) return;
-    MT.reset(); syncUI(); resetCutout();
+    const preSn = MT.snapshot();
+    const savedLocked = {};
+    lockedKeys.forEach(k => { if (preSn[k] !== undefined) savedLocked[k] = preSn[k]; });
+    MT.reset();
+    if (Object.keys(savedLocked).length) MT.apply(savedLocked, false);
+    syncUI(); resetCutout();
     // Reset the safe-zone overlay state too, so «Сбросить всё» really resets all.
     document.querySelectorAll('#zones-list input[data-zone]').forEach(i => { i.checked = true; });
     if (window._zoneVis) Object.keys(window._zoneVis).forEach(k => { window._zoneVis[k] = true; });

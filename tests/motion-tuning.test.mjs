@@ -8,7 +8,6 @@ import assert from 'node:assert/strict';
 import { boot } from './harness.mjs';
 
 const GEO_KEYS = [
-  'MT.BAY_HIT_PADDING',
   'MT.BAY_GRAB_SHAPE', 'MT.BAY_GRAB_RADIUS', 'MT.BAY_GRAB_OFFSET',
   'MT.RUNWAY_GRAB_SHAPE',
   'MT.RUNWAY_LAND_GRAB_RADIUS', 'MT.RUNWAY_LAND_GRAB_OFFSET',
@@ -29,7 +28,6 @@ test('round-trip export→reset→import восстанавливает знач
   const { game } = boot();
   // выставляем нестандартные значения (числа + булевы тумблеры слоёв)
   game.MT.apply({
-    'MT.BAY_HIT_PADDING': 44,
     'MT.BAY_GRAB_SHAPE': 'square',
     'MT.BAY_GRAB_RADIUS': 70,
     'MT.BAY_GRAB_OFFSET': -20,
@@ -45,14 +43,12 @@ test('round-trip export→reset→import восстанавливает знач
 
   game.MT.reset();                                   // сбрасываем к дефолтам
   let snap = game.MT.snapshot();
-  assert.equal(snap['MT.BAY_HIT_PADDING'], 12, 'после reset бокс-падинг = дефолт 12');
   assert.equal(snap['MT.BAY_GRAB_RADIUS'], 0, 'после reset радиус зоны = дефолт 0');
   assert.equal(snap['MT.BAY_GRAB_SHAPE'], 'semicircle', 'после reset форма = дефолт semicircle');
   assert.equal(snap['MT.DEBUG_BAY_SNAP_ZONES'], false, 'после reset слой выключен');
 
   game.MT.importText(json);                          // импортируем ранее экспортированный JSON
   snap = game.MT.snapshot();
-  assert.equal(snap['MT.BAY_HIT_PADDING'], 44, 'бокс-падинг восстановлен из JSON');
   assert.equal(snap['MT.BAY_GRAB_SHAPE'], 'square', 'форма зоны бокса восстановлена');
   assert.equal(snap['MT.BAY_GRAB_RADIUS'], 70, 'радиус зоны бокса восстановлен');
   assert.equal(snap['MT.BAY_GRAB_OFFSET'], -20, 'смещение зоны бокса восстановлено (отрицательное)');
@@ -67,29 +63,30 @@ test('round-trip export→reset→import восстанавливает знач
 
 test('импорт числового параметра клампится в [min,max]', () => {
   const { game } = boot();
-  game.MT.importText(JSON.stringify({ values: { 'MT.BAY_HIT_PADDING': 9999 } }));
-  assert.equal(game.MT.snapshot()['MT.BAY_HIT_PADDING'], 120, 'выше max → max=120');
-  game.MT.importText(JSON.stringify({ values: { 'MT.BAY_HIT_PADDING': -5 } }));
-  assert.equal(game.MT.snapshot()['MT.BAY_HIT_PADDING'], 0, 'ниже min → min=0');
+  game.MT.importText(JSON.stringify({ values: { 'MT.BAY_GRAB_RADIUS': 9999 } }));
+  assert.equal(game.MT.snapshot()['MT.BAY_GRAB_RADIUS'], 200, 'выше max → max=200');
+  game.MT.importText(JSON.stringify({ values: { 'MT.BAY_GRAB_RADIUS': -5 } }));
+  assert.equal(game.MT.snapshot()['MT.BAY_GRAB_RADIUS'], 0, 'ниже min → min=0');
 });
 
 test('импорт принимает и «голый» объект значений (без обёртки values)', () => {
   const { game } = boot();
-  game.MT.importText(JSON.stringify({ 'MT.BAY_HIT_PADDING': 25 }));
-  assert.equal(game.MT.snapshot()['MT.BAY_HIT_PADDING'], 25, 'значение применено из голого объекта');
+  game.MT.importText(JSON.stringify({ 'MT.BAY_GRAB_RADIUS': 25 }));
+  assert.equal(game.MT.snapshot()['MT.BAY_GRAB_RADIUS'], 25, 'значение применено из голого объекта');
 });
 
 // Геймплейные точки ВПП/ангара — настраиваются глобально через K.* и должны
 // долетать до игры (target:'K'), экспортироваться и восстанавливаться при импорте.
-const RW_BAY_POINT_KEYS = ['K.RW_TOUCHDOWN_OFF', 'K.RW_LIFTOFF_OFF', 'K.RW_ALIGN_OFF', 'K.BAY_APPROACH_DIST'];
+const RW_BAY_POINT_KEYS = ['K.RW_TOUCHDOWN_OFF', 'K.RW_LIFTOFF_OFF', 'K.RW_ALIGN_OFF', 'K.TAKEOFF_ALIGN_OFF', 'K.BAY_APPROACH_DIST'];
 
 test('точки ВПП/ангара: дефолты совпадают с K и пишутся прямо в K (live-геймплей)', () => {
   const { game } = boot();
   const snap = game.MT.snapshot();
   assert.equal(snap['K.RW_TOUCHDOWN_OFF'],  50,  'K.RW_TOUCHDOWN_OFF дефолт 50');
   assert.equal(snap['K.RW_LIFTOFF_OFF'],   -83,  'K.RW_LIFTOFF_OFF дефолт -83');
-  assert.equal(snap['K.RW_ALIGN_OFF'],      24,  'K.RW_ALIGN_OFF дефолт 24');
-  assert.equal(snap['K.BAY_APPROACH_DIST'],  0,  'K.BAY_APPROACH_DIST дефолт 0');
+  assert.equal(snap['K.RW_ALIGN_OFF'],        24, 'K.RW_ALIGN_OFF дефолт 24');
+  assert.equal(snap['K.TAKEOFF_ALIGN_OFF'],   30, 'K.TAKEOFF_ALIGN_OFF дефолт 30');
+  assert.equal(snap['K.BAY_APPROACH_DIST'],    0, 'K.BAY_APPROACH_DIST дефолт 0');
   game.MT.apply({ 'K.RW_TOUCHDOWN_OFF': 40, 'K.BAY_APPROACH_DIST': 24 });
   assert.equal(game.K.RW_TOUCHDOWN_OFF, 40, 'значение долетело до K (читается симуляцией)');
   assert.equal(game.K.BAY_APPROACH_DIST, 24, 'дистанция подъезда долетела до K');

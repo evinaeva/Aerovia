@@ -621,7 +621,7 @@
 
     .mt-row {
       display: grid;
-      grid-template-columns: 1fr auto;   /* label · number-stepper (sliders removed) */
+      grid-template-columns: 1fr auto auto;   /* label · control · lock */
       align-items: center;
       gap: 6px;
       padding: 0 10px;
@@ -666,10 +666,10 @@
     .mt-stepper input[type=number] { -moz-appearance: textfield; appearance: textfield; }
     .mt-stepper .lab-num { flex: none; width: calc(4ch + 14px); }
 
-    .mt-row.mt-bool { grid-template-columns: 1fr auto; gap: 8px; }
+    .mt-row.mt-bool { grid-template-columns: 1fr auto auto; gap: 8px; }
     .mt-row.mt-bool .lbl { white-space: normal; font-size: 13px; line-height: 1.3; overflow: visible; }
 
-    .mt-row.mt-string { grid-template-columns: minmax(80px, 140px) 1fr; gap: 6px; }
+    .mt-row.mt-string { grid-template-columns: minmax(80px, 140px) 1fr auto; gap: 6px; }
     .mt-row.mt-string .mt-text {
       width: 100%;
       border: 1px solid rgba(127,155,176,.20); border-radius: 6px;
@@ -703,6 +703,37 @@
       transition: transform .18s;
     }
     .mt-toggle input:checked + .track::after { transform: translateX(16px); }
+
+    /* ── Lock button ─────────────────────────────────────────────────────── */
+    .mt-lock-btn {
+      flex: none;
+      width: 22px; height: 22px;
+      display: grid; place-items: center;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      background: transparent;
+      font-size: 13px; line-height: 1;
+      cursor: pointer; padding: 0;
+      opacity: 0;
+      transition: opacity .15s, border-color .15s, background .15s;
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+    .mt-lock-btn::before { content: '🔓'; }
+    .mt-lock-btn.locked::before { content: '🔒'; }
+
+    /* Show on row hover; always show when locked */
+    .mt-row:hover .mt-lock-btn,
+    .toggle-card:hover .mt-lock-btn { opacity: 0.45; }
+    .mt-lock-btn.locked { opacity: 1; border-color: rgba(34,227,198,.35); background: rgba(34,227,198,.07); }
+    .mt-lock-btn:not(.locked):hover { opacity: 1; border-color: var(--border); background: var(--btn-bg); }
+
+    /* Locked state: dim the interactive controls, not the label */
+    .mt-row.locked .mt-step,
+    .mt-row.locked .mt-num,
+    .mt-row.locked .mt-text,
+    .mt-row.locked .mt-toggle,
+    .toggle-card.locked .mt-toggle { opacity: 0.4; }
 
     /* ── Placeholder labs ───────────────────────────────────────────────── */
     .lab-view {
