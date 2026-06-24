@@ -42,9 +42,9 @@
   // в localStorage (обычный игрок её не видит). Клик — играем сохранённый уровень.
   function refreshCustomLevelBtn(){
     const btn=document.getElementById('customLevelBtn'); if(!btn) return;
-    const lv=readStoredCustomLevel();
-    if(lv){ btn.classList.remove('hidden'); btn.onclick=()=>startCustomLevel(lv); }
-    else  { btn.classList.add('hidden'); btn.onclick=null; }
+    const lv=readStoredCustomLevel() || BUILTIN_CUSTOM_LEVEL;
+    btn.classList.remove('hidden');
+    btn.onclick=()=>startCustomLevel(lv);
   }
   refreshCustomLevelBtn();
   ConsentBanner.init();               // GDPR/ATT: применяем хранённое согласие или показываем баннер (первый запуск)
