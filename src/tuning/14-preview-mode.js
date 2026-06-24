@@ -42,6 +42,7 @@
           return;
         }
         previewMode = 'test'; syncModeButtons();
+        if (window._resourcesSync) window._resourcesSync();   // (пере)применить зон-скины после загрузки уровня (на случай гонки с custom)
         setStatus(T.testRunning);
       } catch (e) { setStatus('Test: ' + e.message); }
     };

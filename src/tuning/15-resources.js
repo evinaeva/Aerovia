@@ -48,21 +48,34 @@
     function pushPreview() {
       if (window._setSkinPreview) window._setSkinPreview({ images: buildImages(), hangarState, pips, maxUp });
     }
-    // Проброс активных скинов в игровой iframe: arctic-PNG получают приоритет над neon.
+    // Резолв текущего выбора (Draft) в URL'ы картинок скинов по зонам. 'default' → null
+    // (зону рисует движок сам). Ангар → { state: url } по 5 состояниям (fuel/board/repair/deice/locked).
+    function buildZoneSkinUrls() {
+      const out = {};
+      if (!window.Draft) return out;
+      const sk = window.Draft.getSkins();
+      ZONES.forEach(([zone]) => {
+        const sel = sk[zone];
+        if (!sel || sel === 'default') { out[zone] = null; return; }
+        const skin = skinById(zone, sel);
+        if (!skin) { out[zone] = null; return; }
+        if (zone === 'hangar') {
+          const h = {};
+          ['fuel', 'board', 'repair', 'deice', 'locked'].forEach(st => { h[st] = skin.states[st] || skin.states.locked || null; });
+          out.hangar = h;
+        } else {
+          out[zone] = Object.values(skin.states)[0] || null;   // не-ангарные зоны: одна картинка
+        }
+      });
+      return out;
+    }
+    // Проброс выбранных скинов в игровой iframe (превью/тест-игра): движок рисует их
+    // ВМЕСТО процедурной отрисовки зоны (см. SPRITES.setZoneSkins + гейты в 09/09b).
     function pushSkinToGame() {
       try {
         const gw = document.getElementById('game-frame')?.contentWindow;
-        if (!gw || !gw.__SPRITES) return;
-        const sk = window.Draft ? window.Draft.getSkins() : {};
-        const folders = new Set();
-        ZONES.forEach(([zone]) => {
-          const sel = sk[zone]; if (!sel || sel === 'default') return;
-          const skin = skinById(zone, sel); if (!skin) return;
-          const parts = (skin.dir || '').split('/');
-          const folder = parts[parts.length - 1];
-          if (folder && folder !== 'neon') folders.add(folder);
-        });
-        gw.__SPRITES.setSkinOverrides([...folders]);
+        if (!gw || !gw.__SPRITES || !gw.__SPRITES.setZoneSkins) return;
+        gw.__SPRITES.setZoneSkins(buildZoneSkinUrls());
       } catch (_) {}
     }
 
@@ -74,7 +87,7 @@
         const row = document.createElement('div'); row.className = 'skin-zone-row';
         const lab = document.createElement('div'); lab.className = 'skin-zone-lab'; lab.textContent = label; row.appendChild(lab);
         const chips = document.createElement('div'); chips.className = 'lab-chips';
-        const opts = [['default', '— без скина —']].concat((registry[zone] || []).map(s => [s.id, s.label]));   // значение чипа = стабильный id
+        const opts = [['default', 'Неон']].concat((registry[zone] || []).map(s => [s.id, s.label]));   // значение чипа = стабильный id; 'default' = базовый неон (движок рисует его сам, без оверлея)
         opts.forEach(([val, txt]) => {
           const c = document.createElement('label'); c.className = 'lab-chip'; c.dataset.zone = zone; c.dataset.skin = val; c.textContent = txt;
           c.addEventListener('click', e => {

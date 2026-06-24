@@ -1,128 +1,129 @@
 {
   "apron": [
     {
-      "id": "apron-neon",
-      "name": "neon",
-      "label": "Неон",
-      "dir": "assets/skins/apron/neon",
+      "id": "apron-test-a",
+      "name": "test-a",
+      "label": "Тест A",
+      "dir": "assets/skins/apron/test-a",
       "states": {
-        "default": "assets/skins/apron/neon/apron.png"
+        "default": "assets/skins/apron/test-a/apron.png"
+      }
+    },
+    {
+      "id": "apron-test-b",
+      "name": "test-b",
+      "label": "Тест B",
+      "dir": "assets/skins/apron/test-b",
+      "states": {
+        "default": "assets/skins/apron/test-b/apron.png"
       }
     }
   ],
   "arrival": [
     {
-      "id": "arrival-neon",
-      "name": "neon",
-      "label": "Неон",
-      "dir": "assets/skins/arrival/neon",
+      "id": "arrival-test-a",
+      "name": "test-a",
+      "label": "Тест A",
+      "dir": "assets/skins/arrival/test-a",
       "states": {
-        "default": "assets/skins/arrival/neon/arrival.png"
+        "default": "assets/skins/arrival/test-a/arrival.png"
+      }
+    },
+    {
+      "id": "arrival-test-b",
+      "name": "test-b",
+      "label": "Тест B",
+      "dir": "assets/skins/arrival/test-b",
+      "states": {
+        "default": "assets/skins/arrival/test-b/arrival.png"
       }
     }
   ],
   "background": [
     {
-      "id": "background-neon",
-      "name": "neon",
-      "label": "Неон",
-      "dir": "assets/skins/background/neon",
+      "id": "background-test-a",
+      "name": "test-a",
+      "label": "Тест A",
+      "dir": "assets/skins/background/test-a",
       "states": {
-        "default": "assets/skins/background/neon/background.png"
+        "default": "assets/skins/background/test-a/background.png"
+      }
+    },
+    {
+      "id": "background-test-b",
+      "name": "test-b",
+      "label": "Тест B",
+      "dir": "assets/skins/background/test-b",
+      "states": {
+        "default": "assets/skins/background/test-b/background.png"
       }
     }
   ],
   "hangar": [
     {
-      "id": "hangar-arctic",
-      "name": "arctic",
-      "label": "Arctic",
-      "dir": "assets/sprites/arctic",
+      "id": "hangar-test-a",
+      "name": "test-a",
+      "label": "Тест A",
+      "dir": "assets/skins/hangar/test-a",
       "states": {
-        "fuel": "assets/sprites/arctic/bay-fuel.png",
-        "board": "assets/sprites/arctic/bay-board.png",
-        "repair": "assets/sprites/arctic/bay-repair.png",
-        "deice": "assets/sprites/arctic/bay-deice.png",
-        "locked": "assets/sprites/arctic/bay-locked.png"
+        "fuel": "assets/skins/hangar/test-a/bay-fuel.png",
+        "board": "assets/skins/hangar/test-a/bay-board.png",
+        "repair": "assets/skins/hangar/test-a/bay-repair.png",
+        "deice": "assets/skins/hangar/test-a/bay-deice.png",
+        "locked": "assets/skins/hangar/test-a/bay-locked.png"
       }
     },
     {
-      "id": "hangar-neon",
-      "name": "neon",
-      "label": "Неон",
-      "dir": "assets/skins/hangar/neon",
+      "id": "hangar-test-b",
+      "name": "test-b",
+      "label": "Тест B",
+      "dir": "assets/skins/hangar/test-b",
       "states": {
-        "fuel": "assets/skins/hangar/neon/bay-fuel.png",
-        "board": "assets/skins/hangar/neon/bay-board.png",
-        "repair": "assets/skins/hangar/neon/bay-repair.png",
-        "deice": "assets/skins/hangar/neon/bay-deice.png",
-        "locked": "assets/skins/hangar/neon/bay-locked.png"
-      }
-    },
-    {
-      "id": "hangar-neon2",
-      "name": "neon2",
-      "label": "Неон 2",
-      "dir": "assets/sprites/neon2",
-      "states": {
-        "fuel": "assets/sprites/neon2/bay-fuel.png",
-        "board": "assets/sprites/neon2/bay-board.png",
-        "repair": "assets/sprites/neon2/bay-repair.png",
-        "deice": "assets/sprites/neon2/bay-deice.png",
-        "locked": "assets/sprites/neon2/bay-locked.png"
+        "fuel": "assets/skins/hangar/test-b/bay-fuel.png",
+        "board": "assets/skins/hangar/test-b/bay-board.png",
+        "repair": "assets/skins/hangar/test-b/bay-repair.png",
+        "deice": "assets/skins/hangar/test-b/bay-deice.png",
+        "locked": "assets/skins/hangar/test-b/bay-locked.png"
       }
     }
   ],
   "plane": [
     {
-      "id": "plane-arctic",
-      "name": "arctic",
-      "label": "Arctic",
-      "dir": "assets/sprites/arctic",
+      "id": "plane-test-a",
+      "name": "test-a",
+      "label": "Тест A",
+      "dir": "assets/skins/plane/test-a",
       "states": {
-        "default": "assets/sprites/arctic/plane.png",
-        "emergency": "assets/sprites/arctic/plane-emergency.png",
-        "medevac": "assets/sprites/arctic/plane-medevac.png",
-        "vip": "assets/sprites/arctic/plane-vip.png"
+        "default": "assets/skins/plane/test-a/plane.png"
       }
     },
     {
-      "id": "plane-neon",
-      "name": "neon",
-      "label": "Неон",
-      "dir": "assets/skins/plane/neon",
+      "id": "plane-test-b",
+      "name": "test-b",
+      "label": "Тест B",
+      "dir": "assets/skins/plane/test-b",
       "states": {
-        "default": "assets/skins/plane/neon/plane.png"
-      }
-    },
-    {
-      "id": "plane-neon2",
-      "name": "neon2",
-      "label": "Неон 2",
-      "dir": "assets/sprites/neon2",
-      "states": {
-        "default": "assets/sprites/neon2/plane.png"
+        "default": "assets/skins/plane/test-b/plane.png"
       }
     }
   ],
   "runway": [
     {
-      "id": "runway-arctic",
-      "name": "arctic",
-      "label": "Arctic",
-      "dir": "assets/sprites/arctic",
+      "id": "runway-test-a",
+      "name": "test-a",
+      "label": "Тест A",
+      "dir": "assets/skins/runway/test-a",
       "states": {
-        "open": "assets/sprites/arctic/runway-open.png",
-        "closed": "assets/sprites/arctic/runway-closed.png"
+        "default": "assets/skins/runway/test-a/runway.png"
       }
     },
     {
-      "id": "runway-neon",
-      "name": "neon",
-      "label": "Неон",
-      "dir": "assets/skins/runway/neon",
+      "id": "runway-test-b",
+      "name": "test-b",
+      "label": "Тест B",
+      "dir": "assets/skins/runway/test-b",
       "states": {
-        "default": "assets/skins/runway/neon/runway.png"
+        "default": "assets/skins/runway/test-b/runway.png"
       }
     }
   ]

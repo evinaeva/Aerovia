@@ -156,6 +156,14 @@
   }
   function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any){
     if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)
+    if(!inMenu){   // скин самолёта (assets/skins) — ВМЕСТО спрайта/процедурки; не трогаем меню-контур
+      const pSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('plane');
+      if(pSkin){   // PNG нарисован носом вверх (как спрайт) → +90° к игровому курсу (нос вдоль +x)
+        const dw=62*s, dh=62*s;
+        ctx.save(); ctx.translate(x,y); ctx.rotate(ang + Math.PI/2); ctx.drawImage(pSkin, -dw/2, -dh/2, dw, dh); ctx.restore();
+        return;
+      }
+    }
     if(ATLAS && !inMenu){   // главный экран рисует борт контуром процедурно (ниже); геймплей — атлас-спрайт
       // sprite is authored nose-up; game heading has nose along +x → rotate ang+90°
       const _id = medical ? 'plane-medevac' : emergency ? 'plane-emergency' : vip ? 'plane-vip' : 'plane';
@@ -193,6 +201,9 @@
     const apR=field.x1;                          // правый край апрона (перед ВПП)
     const skyL=(field.rwR||W*0.85);              // левая кромка «неба» (правее ВПП)
 
+    const bgSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('background');
+    if(bgSkin){ ctx.drawImage(bgSkin, 0, 0, W, H); }   // скин фона (assets/skins) ВМЕСТО процедурного неба
+    else {
     // ===== небо справа (вне апрона) =====
     // звёзды (детерминированный разброс, мягкое мерцание)
     for(let i=0;i<30;i++){
@@ -223,9 +234,14 @@
     ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.phosphor,.6); rr(twx-9*ui,twy+4*ui,24*ui,16*ui,4*ui); ctx.stroke();
     ctx.fillStyle=hexa(COL.rose,.4+.5*(0.5+0.5*Math.sin(tm*0.004)));
     ctx.beginPath(); ctx.arc(twx+3*ui,twy,3.4*ui,0,7); ctx.fill();
+    }
 
     // ===== панель апрона (ограниченная зона руления) =====
     const fx=ax-8*ui, fy=ay-8*ui, fw=(apR-ax)+16*ui, fh=(ab-ay)+16*ui;
+    const apronSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('apron');
+    if(apronSkin){   // скин апрона ВМЕСТО неон-плиты; клип по силуэту, чтобы PNG не вылез за скруглённые углы
+      ctx.save(); rr(fx,fy,fw,fh,16*ui); ctx.clip(); ctx.drawImage(apronSkin, fx, fy, fw, fh); ctx.restore();
+    } else {
     rr(fx,fy,fw,fh,16*ui);
     if(!_neonApronGrad||_neonApronY0!==fy||_neonApronY1!==fy+fh){
       _neonApronGrad=ctx.createLinearGradient(0,fy,0,fy+fh);
@@ -263,6 +279,7 @@
     for(let i=0;i<=10;i++){ const lx=fx+12*ui+i*((fw-24*ui)/10);
       ctx.beginPath(); ctx.arc(lx,fy,1.7*ui,0,7); ctx.fill();
       ctx.beginPath(); ctx.arc(lx,fy+fh,1.7*ui,0,7); ctx.fill(); }
+    }
 
     if(LV.biome==='forest')   drawForestDecor(tm, ax, ay, field.rwR!, ab);
     if(LV.biome==='arctic')   drawArcticDecor(tm, ax, ay, field.rwR!, ab);
@@ -271,12 +288,32 @@
     if(LV.biome==='mountain') drawMountainDecor(tm, ax, ay, field.rwR!, ab);
     if(LV.biome==='megacity') drawCityDecor(tm, ax, ay, field.rwR!, ab);
     if(LV.bonus) drawBonusDecor(tm, ax, ay, field.rwR!, ab);
+    // скин прилёта (assets/skins) — рисуется в свой прямоугольник из разметки (zones.arrival), если он задан
+    const arrSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('arrival');
+    if(arrSkin && field.arrivalX0!=null && field.arrivalX1!=null){
+      const x0=field.arrivalX0, x1=field.arrivalX1, y0=field.arrivalY0??ay, y1=field.arrivalY1??ab;
+      ctx.save(); rr(x0,y0,x1-x0,y1-y0,10*ui); ctx.clip(); ctx.drawImage(arrSkin, x0, y0, x1-x0, y1-y0); ctx.restore();
+    }
   }
 
   function drawField(tm: number){ drawNeonField(tm); }   // единственная сцена поля — неоновая
 
   function drawRunways(tm: number){
     runways.forEach((r,i)=>{
+      const rwSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('runway');
+      if(rwSkin){   // скин ВПП (assets/skins) ВМЕСТО процедурной полосы; клип по силуэту
+        ctx.save(); rr(r.x,r.y,r.w,r.h,7*ui); ctx.clip(); ctx.drawImage(rwSkin, r.x, r.y, r.w, r.h); ctx.restore();
+        if(r.closed){   // закрытость — игровой сигнал: красный «X» + подпись поверх скина
+          const cx=r.x+r.w/2, s=Math.min(r.w,r.h)*0.16;
+          ctx.strokeStyle=hexa(COL.life,.8); ctx.lineWidth=3.5; ctx.lineCap='round';
+          ctx.beginPath(); ctx.moveTo(cx-s,r.cy-s); ctx.lineTo(cx+s,r.cy+s);
+          ctx.moveTo(cx+s,r.cy-s); ctx.lineTo(cx-s,r.cy+s); ctx.stroke();
+          ctx.fillStyle=hexa(COL.life,.85); ctx.font=`${10*ui}px ${MONO}`;
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(t('canvas.closed'), cx, r.y+r.h-12*ui);
+        }
+        return;
+      }
       const NTONE=[COL.phosphor,COL.rose,COL.green]; const nt=NTONE[i%NTONE.length];   // тон ВПП по индексу (27/18/09)
       rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':'#0a1226'; ctx.fill();  // бонус: садовая дорожка
       if(!r.closed){

@@ -171,12 +171,17 @@
   function drawBay(b: any){
     // Без активного скин-оверрайда обычные боксы рисует drawNeonBay (полная neon-отрисовка).
     // При активном скине — пробуем спрайт; спрайт не загружен ещё → neon-fallback.
-    if(!SPRITES.hasOverrides?.() && !b.deice && !LV.bonus){ drawNeonBay(b); return; }
+    if(!SPRITES.hasOverrides?.() && !SPRITES.hasZoneSkin?.('hangar', b.open?b.type:'locked') && !b.deice && !LV.bonus){ drawNeonBay(b); return; }
     const col=LV.bonus ? BSP[bSpec(b.type)].petal : (SVC as Record<string, {color: string}>)[b.type].color;   // бонус: цвет цветка по виду
     const busy=!!b.occupied;
     ctx.save();
     // пер-скиновый арт: bay-<type> / bay-locked; иконка/прогресс рисуются поверх.
-    const panelDrawn = ATLAS && SPRITES.blitC(b.open ? ('bay-'+b.type) : 'bay-locked', b.x+b.w/2, b.y+b.h/2, b.w, b.h);
+    // Зон-скин ангара (assets/skins) приоритетнее спрайт-оверрайда — рисуется ВМЕСТО панели,
+    // а игровые оверлеи (иконка/ценник/пипсы/прогресс) ложатся сверху тем же кодом.
+    const zSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('hangar', b.open ? b.type : 'locked');
+    let panelDrawn: boolean;
+    if(zSkin){ ctx.drawImage(zSkin, b.x, b.y, b.w, b.h); panelDrawn = true; }
+    else { panelDrawn = !!(ATLAS && SPRITES.blitC(b.open ? ('bay-'+b.type) : 'bay-locked', b.x+b.w/2, b.y+b.h/2, b.w, b.h)); }
     // Спрайт ещё не загружен → откат на процедурный neon для обычных боксов
     if(!panelDrawn && !b.deice && !LV.bonus){ ctx.restore(); drawNeonBay(b); return; }
     if(!b.open){

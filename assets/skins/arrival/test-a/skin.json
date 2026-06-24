@@ -1,0 +1,7 @@
+{
+  "id": "arrival-test-a",
+  "label": "Тест A",
+  "states": {
+    "default": "arrival.png"
+  }
+}

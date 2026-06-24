@@ -1,7 +1,0 @@
-{
-  "id": "arrival-neon",
-  "label": "Неон",
-  "states": {
-    "default": "arrival.png"
-  }
-}

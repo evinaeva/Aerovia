@@ -1,0 +1,7 @@
+{
+  "id": "apron-test-a",
+  "label": "Тест A",
+  "states": {
+    "default": "apron.png"
+  }
+}
