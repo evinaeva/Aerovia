@@ -3,13 +3,24 @@
 // Provides: frame, endLevel, drawMenuScene, drawMenuLanding, drawTimeline, drawShareCard.
 // Reads: 01 (cv, ctx); 08b (update); 08 (computeStars, metricValue, recordResult); 09 (drawField, drawRunways, drawForest, starfield, vignette…); 09b (drawBay, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawPlane, drawHUD, drawEffects, drawFloaters, drawToast, drawTutorial); 06 (state); 04 (K, LV, LEVELS, levelName, objectiveDesc); 03 (t, fmt*); 07 (Analytics, Leaderboard); 12 (ACH); 11 (SVGIC).
 
-  // Рендер не быстрее 60 fps — на 120-Гц экранах (Pixel 9 и т.п.) вдвое меньше GPU-нагрузки.
-  const FRAME_MS = 1000/60;
+  // Адаптивный FPS: 60 при активной игре, 30 в меню / эко-режиме / бездействии.
+  const FAST_MS=1000/60, SLOW_MS=1000/30;
   let lastRenderTs = 0;
   // handle rAF — нужен, чтобы остановить цикл при скрытии вкладки и возобновить по visibilitychange.
   let rafId = 0;
+  // prefers-reduced-motion: убираем тяжёлые декоративные анимации (радар-развёртка, мигание).
+  const REDUCED_MOTION = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Эко-режим: авто-включается при низком заряде без зарядки (Battery API, Chrome/Android).
+  let _ecoMode = false;
+  if(typeof navigator !== 'undefined' && typeof (navigator as any).getBattery === 'function'){
+    ((navigator as any).getBattery() as Promise<any>).then((bat: any)=>{
+      const chk=()=>{ _ecoMode=!bat.charging&&bat.level<0.2; };
+      chk(); bat.onchargingchange=chk; bat.onlevelchange=chk;
+    }).catch(()=>{});
+  }
   // Кэши градиентов для меню — пересоздаются только при изменении размера экрана.
   let _menuBgGrad: CanvasGradient|null=null, _menuHgGrad: CanvasGradient|null=null;
+  let _menuCoreGrad: CanvasGradient|null=null;
   let _menuGradW=0, _menuGradH=0;
 
   const _qss=(a: number,b: number,x: number)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
@@ -69,8 +80,9 @@
     ctx.globalAlpha=1;ctx.strokeStyle='rgba(234,255,255,0.42)';ctx.lineWidth=2*S;ctx.setLineDash([14*S,14*S]);
     ctx.beginPath();ctx.moveTo(MX(b.x0),MY(b.y));ctx.lineTo(MX(b.x1),MY(b.y));ctx.stroke();
     ctx.setLineDash([]);ctx.restore();
-    ctx.save();ctx.fillStyle='#3ad2ff';ctx.shadowColor='#3ad2ff';
-    for(let k=0;k<QTRAIL;k++){const ff=f-(k+1)*tail;if(ff<0||pa>=1)continue;const sp=_qsample(b,ff),q=1-k/QTRAIL;ctx.globalAlpha=Math.pow(q,1.6)*0.85;ctx.shadowBlur=7*S;ctx.beginPath();ctx.arc(MX(sp.x),MY(sp.y),(1.6+2.4*q)*S,0,7);ctx.fill();}
+    // Шлейф: blur убран — 32 shadowBlur/кадр → 0; затухание по globalAlpha сохраняет эффект.
+    ctx.save();ctx.fillStyle='#3ad2ff';
+    for(let k=0;k<QTRAIL;k++){const ff=f-(k+1)*tail;if(ff<0||pa>=1)continue;const sp=_qsample(b,ff),q=1-k/QTRAIL;ctx.globalAlpha=Math.pow(q,1.6)*0.85;ctx.beginPath();ctx.arc(MX(sp.x),MY(sp.y),(1.6+2.4*q)*S,0,7);ctx.fill();}
     ctx.restore();
     const occl=Math.max(0,...b.boxes.map((bx: any)=>Math.exp(-Math.pow((f-bx.sf)/0.009,2))));
     if(!offscr){ctx.save();ctx.globalAlpha=Math.max(0,1-0.92*occl);(drawPlaneBodyAt as any)(MX(s0.x),MY(s0.y),s0.ang,S,false,false);ctx.restore();}
@@ -82,20 +94,22 @@ function drawMenuScene(tm: number){
     if(!_menuBgGrad||_menuGradW!==W||_menuGradH!==H){
       _menuBgGrad=ctx.createRadialGradient(bx,by,0, bx,by,brad);
       _menuBgGrad.addColorStop(0,COL.core); _menuBgGrad.addColorStop(0.5,COL.tarmac); _menuBgGrad.addColorStop(1,COL.ink);
-      _menuHgGrad=null; _menuGradW=W; _menuGradH=H;
+      _menuHgGrad=null; _menuCoreGrad=null; _menuGradW=W; _menuGradH=H;
     }
     ctx.fillStyle=_menuBgGrad; ctx.fillRect(0,0,W,H);
-    // «дышащее» ядро-свечение в центре (циан, ~120px, период 6s)
-    const corePulse=0.5+0.5*Math.sin(tm*Math.PI*2/6000);
-    const coreGlow=ctx.createRadialGradient(bx,by,0, bx,by,120);
-    coreGlow.addColorStop(0,hexa(COL.phosphor,0.10+0.10*corePulse)); coreGlow.addColorStop(1,hexa(COL.phosphor,0));
-    ctx.fillStyle=coreGlow; ctx.fillRect(0,0,W,H);
+    // «дышащее» ядро-свечение — кэшируем градиент, пульс через globalAlpha (не аллоцируем каждый кадр).
+    const corePulse=REDUCED_MOTION?0.5:0.5+0.5*Math.sin(tm*Math.PI*2/6000);
+    if(!_menuCoreGrad){
+      _menuCoreGrad=ctx.createRadialGradient(bx,by,0, bx,by,120);
+      _menuCoreGrad.addColorStop(0,hexa(COL.phosphor,.20)); _menuCoreGrad.addColorStop(1,hexa(COL.phosphor,0));
+    }
+    ctx.globalAlpha=0.5+0.5*corePulse; ctx.fillStyle=_menuCoreGrad; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
     // тонкая неон-сетка 54px
     ctx.strokeStyle=hexa(COL.phosphor,.05); ctx.lineWidth=1; ctx.beginPath();
     for(let gx=0;gx<=W;gx+=54){ ctx.moveTo(gx,0); ctx.lineTo(gx,H); }
     for(let gy=0;gy<=H;gy+=54){ ctx.moveTo(0,gy); ctx.lineTo(W,gy); }
     ctx.stroke();
-    starfield(tm);
+    if(!REDUCED_MOTION) starfield(tm);
     const rx=W*0.5, ry=H*0.52, R=Math.min(W,H)*0.42;   // центр кадра (как RadarBg 50%/52%)
     ctx.save(); ctx.translate(rx,ry);
     for(let i=1;i<=4;i++){ ctx.beginPath(); ctx.arc(0,0,R*i/4,0,7);
@@ -104,16 +118,19 @@ function drawMenuScene(tm: number){
     ctx.strokeStyle=hexa(COL.phosphor,.10); ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(-rx,0); ctx.lineTo(W-rx,0);
                      ctx.moveTo(0,-ry); ctx.lineTo(0,H-ry); ctx.stroke();
-    ctx.save(); ctx.rotate(tm*0.0013);
-    const grad=ctx.createLinearGradient(0,0,R,0);
-    grad.addColorStop(0,hexa(COL.phosphor,.28)); grad.addColorStop(1,hexa(COL.phosphor,0));
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R,-0.5,0); ctx.closePath();
-    ctx.fillStyle=grad; ctx.fill(); ctx.restore();
-    [[0.55,1.1],[0.8,3.0],[0.35,4.6],[0.62,5.6]].forEach((b2,i)=>{
-      const x=Math.cos(b2[1])*R*b2[0], y=Math.sin(b2[1])*R*b2[0];
-      const f=0.4+0.6*Math.abs(Math.sin(tm*0.002+i));
-      ctx.fillStyle=hexa(COL.phosphor,f); ctx.beginPath(); ctx.arc(x,y,2.5,0,7); ctx.fill();
-    });
+    // Радар-развёртка и пульсирующие засечки — пропускаем при prefers-reduced-motion.
+    if(!REDUCED_MOTION){
+      ctx.save(); ctx.rotate(tm*0.0013);
+      const grad=ctx.createLinearGradient(0,0,R,0);
+      grad.addColorStop(0,hexa(COL.phosphor,.28)); grad.addColorStop(1,hexa(COL.phosphor,0));
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R,-0.5,0); ctx.closePath();
+      ctx.fillStyle=grad; ctx.fill(); ctx.restore();
+      [[0.55,1.1],[0.8,3.0],[0.35,4.6],[0.62,5.6]].forEach((b2,i)=>{
+        const x=Math.cos(b2[1])*R*b2[0], y=Math.sin(b2[1])*R*b2[0];
+        const f=0.4+0.6*Math.abs(Math.sin(tm*0.002+i));
+        ctx.fillStyle=hexa(COL.phosphor,f); ctx.beginPath(); ctx.arc(x,y,2.5,0,7); ctx.fill();
+      });
+    }
     ctx.restore();
     // бирюзовое свечение горизонта — кэшируем (пересоздаётся вместе с bgGrad при resize)
     if(!_menuHgGrad){
@@ -142,9 +159,10 @@ function drawMenuScene(tm: number){
     // На паузе канвас статичен — HTML-оверлей паузы не требует перерисовки холста.
     if(paused && !inMenu){ rafId=requestAnimationFrame(frame); return; }
 
-    // Кэп 60 fps: на 120-Гц дисплеях пропускаем лишние кадры отрисовки.
+    // Адаптивный FPS: 60 только если борты двигаются; меню/эко/бездействие → 30.
+    const _needFast=!_ecoMode&&!inMenu&&planes.some(p=>p.moving&&!p.dead);
     const sinceDraw=ts-lastRenderTs;
-    if(sinceDraw<FRAME_MS-1){ rafId=requestAnimationFrame(frame); return; }
+    if(sinceDraw<(_needFast?FAST_MS:SLOW_MS)-1){ rafId=requestAnimationFrame(frame); return; }
     lastRenderTs=ts;
 
     if(inMenu){
