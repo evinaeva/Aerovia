@@ -1,109 +1,109 @@
-# Aerovia — Zone Skin Brief (для Claude-дизайнера)
+# Aerovia — Zone Skin Specification
 
-> Ты дизайнер. Твоя задача — нарисовать все спрайты, описанные ниже,
-> и упаковать их в архив точно по структуре из раздела «Структура архива».
-> Не трогай репо. Только рисуй и пакуй.
-
----
-
-## Визуальный стиль
-
-Игра — **ночной радар сверху вниз**. Тёмный фон, неоновые линии, свечение (glow).
-
-- Фон: тёмно-синий / почти чёрный (`#0a0f1e` или похожий)
-- Акцентные цвета: электрический циан (`#00e5ff`), пурпурный (`#e040fb`), янтарный (`#ffd740`)
-- Границы: неоновые, 2–3 px, с размытым свечением (box-shadow / filter: blur)
-- Поверхности: мягкие градиенты, лёгкая текстура (бетон / металл / тармак)
-- Всё должно читаться на очень маленьком размере (минимум ~22 px в высоту)
+> You are a designer. Your task is to draw all the sprites described below
+> and pack them into an archive following the structure in the "Archive structure" section exactly.
+> Do not touch the repo. Just draw and pack.
 
 ---
 
-## Что рисовать — по зонам
+## What to draw — by zone
 
-### 1. Ангар (`hangar/`) — 5 спрайтов, 256 × 256 px каждый
+### 1. Hangar (`hangar/`) — 5 sprites, 256 × 256 px each
 
-Квадратная панель ангара. Ворота смотрят **вниз** (на апрон).
-Центр панели должен быть **пустым** — движок сам ставит туда самолёт.
-Угол (обычно верхний правый) оставить свободным — движок рисует там чип апгрейда.
+Square hangar panel. Gates face **downward** (toward the apron).
+The center of the panel must be **empty** — the engine places the plane there itself.
+Leave a corner free (usually top-right) — the engine draws the upgrade chip there.
 
-Движок дорисует поверх: иконку услуги, ценник, кружки апгрейда, кольцо прогресса, самолёт.
-**Ничего из этого в PNG не рисуй.**
+The engine draws on top: service icon, price tag, upgrade dots, progress ring, plane.
+**Do not draw any of these in the PNG.**
 
-| Файл | Услуга | Акцент |
-|------|--------|--------|
-| `bay-fuel.png` | Заправка | Электрический циан `#00e5ff` |
-| `bay-board.png` | Посадка | Розовый / пурпурный `#e040fb` |
-| `bay-repair.png` | Ремонт | Янтарный `#ffd740` |
-| `bay-deice.png` | Антиобледенение | Ледяной голубой `#80d8ff` |
-| `bay-locked.png` | Закрыт | Приглушённый серый, замок-силуэт на фоне |
-
----
-
-### 2. Апрон (`apron/`) — 1 спрайт, 512 × 512 px
-
-Прямоугольная площадка руления. Центр **пустой** — здесь ездят самолёты и игрок рисует маршруты.
-Рисуй только: материал пола (тёмный асфальт / бетон) + неоновая окантовка по краям + разметка краёв.
-
-Файл: `apron.png`
+| File | Service |
+|------|---------|
+| `bay-fuel.png` | Refueling |
+| `bay-board.png` | Boarding |
+| `bay-repair.png` | Repair |
+| `bay-deice.png` | De-icing |
+| `bay-locked.png` | Locked |
 
 ---
 
-### 3. ВПП (`runway/`) — 1 спрайт, 512 × 192 px
+### 2. Apron (`apron/`) — 1 sprite, 512 × 512 px
 
-Горизонтальная полоса. Движок растягивает её горизонтально.
-Рисуй: тёмная взлётная полоса + белые пунктиры по центральной оси + неоновые торцевые огни.
+Rectangular taxiing area. Center **empty** — planes taxi here and the player draws routes.
 
-Файл: `runway.png`
-
----
-
-### 4. Самолёт (`plane/`) — 1 спрайт, 256 × 256 px
-
-Вид сверху, **нос смотрит вверх**, по центру холста.
-Светлый корпус, неоновый контур + свечение. Движок дорисует кольца и иконки — их не рисуй.
-
-Файл: `plane.png`
+File: `apron.png`
 
 ---
 
-### 5. Прилёт (`arrival/`) — 1 спрайт, 512 × 512 px
+### 3. Runway (`runway/`) — 1 sprite, 512 × 192 px
 
-Зона входящих самолётов. Аналог апрона, но для прилётных маршрутов.
-Тот же стиль: тёмный пол, неоновая окантовка, центр пустой.
+Horizontal runway strip. The engine stretches it horizontally.
 
-Файл: `arrival.png`
-
----
-
-### 6. Фон (`background/`) — 1 спрайт, 1920 × 1080 px
-
-Полный фон поля. Ночной аэродром с высоты птичьего полёта.
-Можно с огнями ВПП вдали, звёздным небом. Без прозрачности.
-
-Файл: `background.png`
+File: `runway.png`
 
 ---
 
-## Что запекать в PNG — что нет
+### 4. Plane (`plane/`) — 1 sprite, 256 × 256 px
 
-| Запечь в PNG ✅ | НЕ рисовать ❌ |
-|----------------|----------------|
-| Свечение (glow), неоновые рамки | Иконки услуг |
-| Градиенты, тени | Ценник на ангаре |
-| Материал пола / стен | Кружки апгрейда |
-| Форма ворот, разметка ВПП | Кольцо прогресса |
-| | Самолёт внутри ангара |
+Top-down view, **nose pointing up**, centered on the canvas.
+The engine draws status rings and icons on top — do not include those.
+
+File: `plane.png`
 
 ---
 
-## Структура архива
+### 5. Arrival (`arrival/`) — 1 sprite, 512 × 512 px
 
-Упакуй точно в такую структуру (имена папок и файлов — строго как указано):
+Incoming-plane zone (apron equivalent for arrival routes). Center empty.
+
+File: `arrival.png`
+
+---
+
+### 6. Background (`background/`) — 1 sprite, 1920 × 1080 px
+
+Full field background. Drawn beneath all zones. No transparency.
+
+File: `background.png`
+
+---
+
+## What to bake into the PNG — what not to
+
+| Bake into PNG ✅ | Do NOT draw ❌ |
+|-----------------|----------------|
+| Floor / wall / surface material | Service icons |
+| Gate shape, markings, decor | Hangar price tag |
+| Visual effects (glow, shadows, gradients) | Upgrade dots |
+| | Progress ring |
+| | Plane inside the hangar |
+
+---
+
+## File format
+
+| Zone | Canvas size | Transparency |
+|------|-------------|--------------|
+| Hangar (5 files) | 256 × 256 px | PNG-32 with alpha channel |
+| Apron | 512 × 512 px | PNG-32 with alpha channel |
+| Runway | 512 × 192 px | PNG-32 with alpha channel |
+| Plane | 256 × 256 px | PNG-32 with alpha channel |
+| Arrival | 512 × 512 px | PNG-32 with alpha channel |
+| Background | 1920 × 1080 px | No transparency (RGB) |
+
+Details must be legible at ~22 px tall (the minimum hangar size on screen) — verify by scaling down.
+
+---
+
+## Archive structure
+
+Pack into exactly this structure. Replace `<name>` with a short lowercase ASCII slug for your skin
+(e.g. `arctic`, `retro`, `day`). Folder and file names are fixed — follow them exactly.
 
 ```
 skins/
   hangar/
-    neon/
+    <name>/
       skin.json
       bay-fuel.png
       bay-board.png
@@ -111,36 +111,39 @@ skins/
       bay-deice.png
       bay-locked.png
   apron/
-    neon/
+    <name>/
       skin.json
       apron.png
   runway/
-    neon/
+    <name>/
       skin.json
       runway.png
   plane/
-    neon/
+    <name>/
       skin.json
       plane.png
   arrival/
-    neon/
+    <name>/
       skin.json
       arrival.png
   background/
-    neon/
+    <name>/
       skin.json
       background.png
 ```
 
 ---
 
-## Содержимое skin.json для каждой папки
+## skin.json contents
 
-**`hangar/neon/skin.json`:**
+Every zone folder must contain a `skin.json`. The format is the same for all zones.
+`id` is a unique identifier: `<zone>-<name>`. `label` is the display name shown in the UI.
+
+**`hangar/<name>/skin.json`:**
 ```json
 {
-  "id": "hangar-neon",
-  "label": "Неон",
+  "id": "hangar-<name>",
+  "label": "<Display name>",
   "states": {
     "fuel":   "bay-fuel.png",
     "board":  "bay-board.png",
@@ -151,75 +154,58 @@ skins/
 }
 ```
 
-**`apron/neon/skin.json`:**
+**`apron/<name>/skin.json`:**
 ```json
 {
-  "id": "apron-neon",
-  "label": "Неон",
+  "id": "apron-<name>",
+  "label": "<Display name>",
   "states": { "default": "apron.png" }
 }
 ```
 
-**`runway/neon/skin.json`:**
+**`runway/<name>/skin.json`:**
 ```json
 {
-  "id": "runway-neon",
-  "label": "Неон",
+  "id": "runway-<name>",
+  "label": "<Display name>",
   "states": { "default": "runway.png" }
 }
 ```
 
-**`plane/neon/skin.json`:**
+**`plane/<name>/skin.json`:**
 ```json
 {
-  "id": "plane-neon",
-  "label": "Неон",
+  "id": "plane-<name>",
+  "label": "<Display name>",
   "states": { "default": "plane.png" }
 }
 ```
 
-**`arrival/neon/skin.json`:**
+**`arrival/<name>/skin.json`:**
 ```json
 {
-  "id": "arrival-neon",
-  "label": "Неон",
+  "id": "arrival-<name>",
+  "label": "<Display name>",
   "states": { "default": "arrival.png" }
 }
 ```
 
-**`background/neon/skin.json`:**
+**`background/<name>/skin.json`:**
 ```json
 {
-  "id": "background-neon",
-  "label": "Неон",
+  "id": "background-<name>",
+  "label": "<Display name>",
   "states": { "default": "background.png" }
 }
 ```
 
 ---
 
-## Формат файлов
+## Pre-delivery checklist
 
-- Все PNG кроме фона — **прозрачный фон (PNG-32 с альфа-каналом)**
-- Фон (`background.png`) — без прозрачности, любой формат
-- Размеры — **точно** по таблице; движок растягивает без передискретизации
-
-| Зона | Размер холста |
-|------|---------------|
-| Ангар (5 файлов) | 256 × 256 px |
-| Апрон | 512 × 512 px |
-| ВПП | 512 × 192 px |
-| Самолёт | 256 × 256 px |
-| Прилёт | 512 × 512 px |
-| Фон | 1920 × 1080 px |
-
----
-
-## Чеклист перед сдачей
-
-- [ ] Все 11 PNG нарисованы и лежат по правильным путям
-- [ ] Все 6 `skin.json` созданы с точным содержимым
-- [ ] Центр ангарных панелей пустой — нет иконок, ценников, самолётов
-- [ ] Нос самолёта смотрит вверх, по центру 256 × 256
-- [ ] Детали читаются на размере ~22 px (проверь масштабированием)
-- [ ] Архив распакуется в `assets/skins/` и сразу заработает
+- [ ] All 11 PNGs are drawn and placed at the correct paths
+- [ ] All 6 `skin.json` files created with correct `id` and `label`
+- [ ] Hangar panel centers are empty — no icons, price tags, or planes
+- [ ] Plane nose points upward, centered in 256 × 256
+- [ ] Details are legible at ~22 px (verify by scaling down)
+- [ ] Archive unpacks into `assets/skins/` and works immediately
