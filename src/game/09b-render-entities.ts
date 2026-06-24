@@ -110,18 +110,15 @@
     ctx.restore();
   }
 
-  // Отладочный слой «Зоны захвата ВПП» (MT.DEBUG_RUNWAY_SNAP_ZONES) — аналог боксового,
-  // настройка геометрии в tuning.html. Когда слой включён, у каждой открытой полосы
-  // рисуется прямоугольник зоны «прилипания» конца маршрута (полотно ВПП +
-  // MT.RUNWAY_HIT_PADDING). Ровная пунктирная рамка, по умолчанию слой выключен.
+  // Отладочный слой «Зоны захвата ВПП» (MT.DEBUG_RUNWAY_SNAP_ZONES) — настройка геометрии
+  // в tuning.html. Когда слой включён, у каждой открытой полосы рисуются зоны захвата
+  // у торцов (полукруги/квадраты посадочного и взлётного торцов).
   function drawRunwaySnapZones(){
     if(MT_META_VALUES.DEBUG_RUNWAY_SNAP_ZONES!==true || LV.bonus) return;
-    const g=(MT_META_VALUES.RUNWAY_HIT_PADDING as number)||0, rad=Math.min(8*ui, 6*ui+g*0.2);
     ctx.save();
     ctx.lineWidth=1.5*ui; ctx.strokeStyle=hexa(COL.gold,.6); ctx.setLineDash([6*ui,4*ui]);
     for(const r of runways){
       if(r.closed) continue;
-      if(g>0){ rr(r.x-g, r.y-g, r.w+2*g, r.h+2*g, rad); ctx.stroke(); }
       strokeGrabZone(runwayGrabZone(r,'land'));
       strokeGrabZone(runwayGrabZone(r,'takeoff'));
     }

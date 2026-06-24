@@ -24,7 +24,8 @@
     const wp=pl.path[0];
     steer(pl, wp.x, wp.y, spd, dt);
     const turnR = spd/K.TURN;                       // радиус разворота
-    const capture = Math.max(K.ARRIVE, turnR*0.6);  // порог «доехал»
+    // авто-маршрут (выкатывание с ВПП) — прямая линия, K.TURN не влияет на захват точки
+    const capture = pl.autoPath ? K.ARRIVE : Math.max(K.ARRIVE, turnR*0.6);
     const d = dist(pl.x,pl.y,wp.x,wp.y);
     // точка «позади по курсу» (за носом борта)
     const toX=wp.x-pl.x, toY=wp.y-pl.y;
