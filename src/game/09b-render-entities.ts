@@ -288,7 +288,8 @@
       ctx.save();
       ctx.strokeStyle=hexa(_rc, pl.selected?0.95:0.6);
       ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; // сплошная линия
-      ctx.shadowColor=_rc; ctx.shadowBlur=pl.selected?12:7;
+      // Выбранный борт — полный glow; остальные — минимальный (горячий путь на мобилах).
+      ctx.shadowColor=_rc; ctx.shadowBlur=pl.selected?8:3;
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
       for(const w of pl.path) ctx.lineTo(w.x,w.y);
       ctx.stroke(); ctx.shadowBlur=0;
@@ -325,7 +326,7 @@
       ctx.beginPath(); ctx.arc(0,0,16*ui*vs,0,7); ctx.lineWidth=3; ctx.strokeStyle=hexa(COL.ink,.6); ctx.stroke();
       ctx.beginPath(); ctx.arc(0,0,16*ui*vs,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
       ctx.lineWidth=3; ctx.lineCap='round'; ctx.strokeStyle=rcol;
-      ctx.shadowColor=rcol; ctx.shadowBlur=9; ctx.stroke();
+      ctx.shadowColor=rcol; ctx.shadowBlur=4; ctx.stroke();
       ctx.restore();
     }
     // пульсирующее кольцо срочного борта в воздухе (аварийный — красный, медицинский — розовый)
@@ -440,8 +441,7 @@
     else { ctx.textAlign='left'; ctx.fillStyle=COL.coin; ctx.font=`${13*ui}px ${NUM}`; ctx.fillText('$', lx, cy); }
     ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`;
     ctx.fillStyle = money<0?COL.life:COL.coin;
-    ctx.shadowColor=hexa(COL.gold,.55); ctx.shadowBlur=12*ui;
-    ctx.fillText(fmtMoney(money), lx+18*ui, cy); ctx.shadowBlur=0;
+    ctx.fillText(fmtMoney(money), lx+18*ui, cy);
     lx += 18*ui + ctx.measureText(fmtMoney(money)).width + 16*ui;
     // ── цель уровня (сирень): мишень + «N / M». В бесконечном — налёт «✈ N» (фосфор) ──
     vsep(lx); lx += 16*ui;
@@ -450,15 +450,13 @@
     const goalTone = endless ? COL.phosphor : COL.purple;
     iconTarget(lx+9*ui, cy, 9*ui, goalTone);
     ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`; ctx.fillStyle=goalTone;
-    ctx.shadowColor=hexa(goalTone,.55); ctx.shadowBlur=12*ui;
     const goalTxt = endless ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target ?? 0));
-    ctx.fillText(goalTxt, lx+23*ui, cy); ctx.shadowBlur=0;
+    ctx.fillText(goalTxt, lx+23*ui, cy);
     // ── правый: таймер перед кнопкой паузы (число, как в макете) ──
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
     const urgent = LV.objective.time && tShown<=10;
     ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`700 ${18*ui}px ${NUM}`;
-    ctx.shadowColor=hexa(urgent?COL.life:COL.phosphor,.55); ctx.shadowBlur=12*ui;
-    ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy); ctx.shadowBlur=0;
+    ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy);
 
     // кнопка паузы — спрайт-чип (на паузе поверх рисуем «play»)
     const pcx=pauseBtn.x+pauseBtn.w/2, pcy=pauseBtn.y+pauseBtn.h/2;
