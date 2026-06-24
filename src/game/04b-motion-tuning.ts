@@ -233,7 +233,13 @@
 
   function mtApply(values: Record<string, any>, persist = true): void {
     Object.keys(values || {}).forEach(k => mtSet(k, values[k]));
-    if (persist) try { localStorage.setItem(MT_STORE_KEY, JSON.stringify(mtSnapshot())); } catch (_) {}
+    if (persist) try {
+      const snap = mtSnapshot();
+      // ctrl-группа — тестовые шорткаты (DISABLE_BAY и т.п.): в сохранение не попадают,
+      // чтобы не проникать в геймплей через mtLoad() при следующем старте игры
+      MT_PARAMS.filter(p => p.group === 'ctrl').forEach(p => delete snap[p.key]);
+      localStorage.setItem(MT_STORE_KEY, JSON.stringify(snap));
+    } catch (_) {}
     mtRenderPanel();
   }
 
@@ -247,7 +253,7 @@
     try {
       const raw = localStorage.getItem(MT_STORE_KEY);
       if (!raw) return;
-      const saved = JSON.parse(raw);
+      const saved = JSON.parse(raw) as Record<string, any>;
       // Tuning workbench (iframe, ?test=1): restore everything including ctrl/debug flags.
       // Main game: skip debug-only overlays, workbench ctrl toggles (K.DISABLE_*,
       // K.APRON_SPAWN) and MT.SCENARIO — they must never leak into real sessions.

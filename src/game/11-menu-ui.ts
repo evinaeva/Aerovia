@@ -176,7 +176,7 @@
     maxUp: 3,
     layout: {
       apron: { x: 0.08, y: 0.18, w: 0.46, h: 0.66 },
-      zones: { arrival: { x: 0.8, y: 0.14, w: 0.12, h: 0.74 } },
+      zones: { arrival: { x: 0.84, y: 0.14, w: 0.1, h: 0.74 } },
       hangars: [
         { type: 'repair', x: 0.64, y: 0,    gate: 'down', upgCost: 123 },
         { type: 'board',  x: 0.18, y: 0,    gate: 'down', upgCost: 123 },
