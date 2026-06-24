@@ -438,15 +438,13 @@
   // любая ВПП под точкой — для покупки направления (без фильтрации по open/closed)
   function runwayAt(p: any){ for(const r of runways) if(rectHit(p.x,p.y,r)) return r; return null; }
   // открытая ВПП под точкой с учётом направления (посадка / взлёт). Конец маршрута
-  // «прилипает» к полосе в запасе MT.RUNWAY_HIT_PADDING вокруг неё (настройка в
-  // tuning.html, по умолчанию 0; зону рисует слой MT.DEBUG_RUNWAY_SNAP_ZONES).
+  // «прилипает» к полосе только через зоны захвата у торцов (MT.DEBUG_RUNWAY_SNAP_ZONES
+  // рисует их поверх поля для настройки геометрии).
   function openRunwayAt(p: any, dir?: 'landing'|'takeoff'){
-    const pad=(MT_META_VALUES.RUNWAY_HIT_PADDING as number)||0;
     for(const r of runways){
       if(r.closed) continue;
       if(dir==='landing' && !r.landingOpen) continue;
       if(dir==='takeoff' && !r.takeoffOpen) continue;
-      if(rectPad(p.x,p.y,r,pad)) return r;
       // полукруг/квадрат у нужного торца: при заданном направлении — соответствующая
       // сторона, иначе проверяем обе (посадочную и взлётную)
       if(dir!=='takeoff' && inGrabZone(p.x,p.y,runwayGrabZone(r,'land')))   return r;
