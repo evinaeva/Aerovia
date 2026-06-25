@@ -89,7 +89,7 @@
     let zoneSkins: ZoneSkinMap = {};
     const zoneImgCache = new Map<string, HTMLImageElement>();   // url -> Image
     function zoneImg(url?: string | null): HTMLImageElement | null {
-      if (!url) return null;
+      if (!url || typeof Image === 'undefined') return null;
       let im = zoneImgCache.get(url);
       if (!im) { im = new Image(); im.decoding = 'async'; im.crossOrigin = 'anonymous'; im.src = url; zoneImgCache.set(url, im); }
       return im;   // может ещё грузиться — zoneSkin()/ok() это учитывают (фолбэк до загрузки)
