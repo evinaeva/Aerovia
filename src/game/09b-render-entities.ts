@@ -439,7 +439,7 @@
     if(ATLAS) SPRITES.blitC('coin', lx+7*ui, cy, 16*ui, 16*ui);
     else { ctx.textAlign='left'; ctx.fillStyle=COL.coin; ctx.font=`${13*ui}px ${NUM}`; ctx.fillText('$', lx, cy); }
     ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`;
-    ctx.fillStyle = money<0?COL.life:COL.coin;
+    ctx.fillStyle = money<0?COL.life:COL.phosphor;
     ctx.fillText(fmtMoney(money), lx+18*ui, cy);
     lx += 18*ui + ctx.measureText(fmtMoney(money)).width + 16*ui;
     // ── цель уровня (сирень): мишень + «N / M». В бесконечном — налёт «✈ N» (фосфор) ──
@@ -454,7 +454,7 @@
     // ── правый: таймер перед кнопкой паузы (число, как в макете) ──
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
     const urgent = LV.objective.time && tShown<=10;
-    ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`700 ${18*ui}px ${NUM}`;
+    ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:COL.phosphor; ctx.font=`700 ${18*ui}px ${NUM}`;
     ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy);
 
     // кнопка паузы — спрайт-чип (на паузе поверх рисуем «play»)
