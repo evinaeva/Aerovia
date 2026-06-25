@@ -121,7 +121,7 @@
     // геометрию/настройки читаем из ЭКСПОРТА (правильный Level с layout), а не из
     // плоского черновика редактора (там hangars/runways — массивы верхнего уровня).
     let lvRead; try { lvRead = window.Draft.export(); } catch (_) { lvRead = le; }
-    const k = GAME.autoDifficulty(target, lvRead, { archetype: arch, locked });
+    const k = GAME.autoDifficulty(target, lvRead, { archetype: arch, locked, condMax: COND_MAX });
     if (applyEcon) {
       if (k.pace != null) le.pace = k.pace;
       ['openCost','upgCost','rwOpenCost','maxUp','minUp','startMoney','crashPenalty','latePenalty']
@@ -133,13 +133,11 @@
       if (Array.isArray(o.stars)) le.stars = o.stars.slice(0,3);
       le.time = o.time || 0; le.race = false;
       le.cond = le.cond || {};
-      // сгенерированное условие → в cond; не сгенерированное (locked) оставляем как было
+      // сгенерированное условие → в cond; не сгенерированное (locked) оставляем как было.
+      // COND_MAX уже применён внутри autoDifficulty — обрезки здесь нет.
       ['money','lives','upg','timeTier','maxLate','maxCrash'].forEach(c => {
         if (Array.isArray(o[c])) le.cond[c] = o[c].slice(0,3);
       });
-      // лимит COND_MAX: если автогенератор выдал больше условий — обрезаем
-      const _condKeys = ['money','lives','upg','timeTier','maxLate','maxCrash'];
-      _condKeys.filter(c => Array.isArray(le.cond[c])).slice(COND_MAX).forEach(c => { le.cond[c] = null; });
     }
     // события / погоду НЕ трогаем
     draftCommit(); renderDiffEditor(); afterDiffEdit();
