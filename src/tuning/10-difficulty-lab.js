@@ -137,6 +137,9 @@
       ['money','lives','upg','timeTier','maxLate','maxCrash'].forEach(c => {
         if (Array.isArray(o[c])) le.cond[c] = o[c].slice(0,3);
       });
+      // лимит COND_MAX: если автогенератор выдал больше условий — обрезаем
+      const _condKeys = ['money','lives','upg','timeTier','maxLate','maxCrash'];
+      _condKeys.filter(c => Array.isArray(le.cond[c])).slice(COND_MAX).forEach(c => { le.cond[c] = null; });
     }
     // события / погоду НЕ трогаем
     draftCommit(); renderDiffEditor(); afterDiffEdit();
