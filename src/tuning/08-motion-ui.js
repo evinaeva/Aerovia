@@ -43,7 +43,7 @@
         const grid = document.createElement('div');
         grid.className = 'toggle-grid';
         params.forEach(p => {
-          const card = document.createElement('label');
+          const card = document.createElement('div');   // div, not label — label forwards click to hint-q
           card.className = 'toggle-card';
           card.dataset.key = p.key;
           const v = snap[p.key];
@@ -65,9 +65,10 @@
 
         params.forEach(p => {
           const isNum = typeof p.def !== 'boolean' && typeof p.def !== 'string';
-          // Numeric rows are <div> (not <label>): a <label> would forward
-          // clicks on the −/+ buttons to the number input.
-          const row = document.createElement(isNum ? 'div' : 'label');
+          // Bool/num rows are <div>: a <label> would forward clicks to the
+          // first labelable child — the hint-q button — instead of the checkbox.
+          // String rows stay <label> so clicking the label area focuses the select/input.
+          const row = document.createElement(typeof p.def === 'string' ? 'label' : 'div');
           const v = snap[p.key];
           row.dataset.key = p.key;
 
@@ -186,6 +187,19 @@
       nudgeLayout(key);
     });
 
+    // toggle-card и mt-bool — теперь <div>, клик по карточке (кроме hint-q и замка) переключает чекбокс
+    groupsEl.addEventListener('click', e => {
+      if (e.target.closest('.hint-q, .mt-lock-btn')) return;
+      if (e.target.matches('input[type="checkbox"]')) return;
+      const card = e.target.closest('.toggle-card, .mt-bool');
+      if (!card) return;
+      const cb = card.querySelector('input[type="checkbox"]');
+      if (cb && !cb.disabled) {
+        cb.checked = !cb.checked;
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+
     groupsEl.addEventListener('click', e => {
       const btn = e.target.closest && e.target.closest('.mt-lock-btn');
       if (!btn) return;
@@ -289,7 +303,21 @@
     });
   }
 
+  const searchClear = document.getElementById('search-clear');
+  function updateSearchClear() {
+    if (searchClear) searchClear.style.display = searchEl.value ? 'grid' : 'none';
+  }
+  if (searchClear) {
+    searchClear.addEventListener('click', () => {
+      searchEl.value = '';
+      updateSearchClear();
+      searchEl.dispatchEvent(new Event('input'));
+      searchEl.focus();
+    });
+  }
+
   searchEl.addEventListener('input', () => {
+    updateSearchClear();
     const q = searchEl.value.trim().toLowerCase();
     groupsEl.querySelectorAll('.mt-row, .toggle-card').forEach(row => {
       const p = MT && MT.params.find(x => x.key === row.dataset.key);
