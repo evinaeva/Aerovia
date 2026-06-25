@@ -15,7 +15,7 @@
   }
   // ---- облик «ночной радар»: помощники ----
   const MONO='ui-monospace,"SF Mono",Menlo,Consolas,monospace';
-  const NUM="'Orbitron','Fredoka',sans-serif";  // игровые ЧИСЛА — WOW sci-fi шрифт (Orbitron SemiBold/Bold)
+  const NUM="'Fredoka','Nunito',sans-serif";   // игровые ЧИСЛА — крупный игровой шрифт (макет TopHUD)
   function hexa(c: string,a: number){ if(!c || c[0]!=='#') return c;
     const n=parseInt(c.slice(1),16);
     return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
