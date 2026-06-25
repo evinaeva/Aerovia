@@ -422,12 +422,12 @@
 
   // PNG-фон HUD: загружаем один раз; offscreen canvas строим с прозрачными вырезами
   // под live-значения, чтобы рамки панелей оставались нетронутыми.
-  const _hudBarImg: HTMLImageElement = new Image();
-  _hudBarImg.src = 'assets/hud/wow-bar.png';
+  let _hudBarImg: HTMLImageElement|null = null;
   let _hudFrame: HTMLCanvasElement|null = null;
 
   function _buildHudFrame(): boolean {
     if(_hudFrame) return true;
+    if(!_hudBarImg){ _hudBarImg = new Image(); _hudBarImg.src = 'assets/hud/wow-bar.png'; }
     if(!_hudBarImg.complete || !_hudBarImg.naturalWidth) return false;
     const oc = document.createElement('canvas');
     oc.width = _hudBarImg.naturalWidth; oc.height = _hudBarImg.naturalHeight;
