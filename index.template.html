@@ -40,6 +40,7 @@
         <div class="menu-col">
           <button class="m-btn m-btn--primary m-btn--lg m-btn--block" id="startBtn"><span class="mic" data-mic="play"></span><span class="m-btn__t" data-i18n="start.play"></span></button>
           <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="survivalBtn"><span class="mic" data-mic="inf"></span><span class="m-btn__t" data-i18n="start.survival"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="levelsBtn"><span class="mic" data-mic="list"></span><span class="m-btn__t" data-i18n="start.levels"></span></button>
           <!-- «Свой уровень» из конструктора (tuning.html). Скрыта, пока конструктор не положил уровень в localStorage. -->
           <button class="m-btn m-btn--ghost m-btn--lg m-btn--block hidden" id="customLevelBtn"><span class="mic" data-mic="hand"></span><span class="m-btn__t" data-i18n="start.custom"></span></button>
         </div>
@@ -87,11 +88,9 @@
           <div id="levelList"></div>
           <div class="lv-fade-strip"></div>
           <div class="lv-scroll-ind" id="lvScrollInd">
-            <div class="scroll-tot" id="lvScrollTot">50</div>
             <div class="lv-scroll-track" id="lvScrollTrack">
               <div class="lv-scroll-thumb" id="lvScrollThumb"></div>
             </div>
-            <div class="scroll-pos" id="lvScrollPos">ур.1</div>
           </div>
         </div>
       </div>
@@ -164,6 +163,18 @@
     </div>
   </div>
 
+  <div class="overlay hidden" id="restartConfirmScreen">
+    <div class="screen screen--center">
+      <div class="panel" style="--panel-w:400px;text-align:center">
+        <div class="m-head"><h1 class="m-title m-title--lg" data-i18n="restart.title"></h1><p class="m-subtitle" data-i18n="restart.msg"></p></div>
+        <div class="m-actions"><div class="m-actions__row">
+          <button class="m-btn m-btn--ghost" id="restartCancelBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="restart.no"></span></button>
+          <button class="m-btn m-btn--danger" id="restartConfirmBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="restart.yes"></span></button>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay hidden" id="againConfirmScreen">
     <div class="screen screen--center">
       <div class="panel" style="--panel-w:400px;text-align:center">
@@ -231,6 +242,7 @@
         <div class="obj-block"><div id="pauseGoals"></div></div>
         <div class="m-actions"><div class="m-actions__row">
           <button class="m-btn m-btn--primary m-btn--icon" id="resumeBtn" data-i18n-aria="pause.resume"><span class="mic" data-mic="play"></span></button>
+          <button class="m-btn m-btn--ghost m-btn--icon" id="pauseLevelsBtn" data-i18n-aria="start.levels"><span class="mic" data-mic="list"></span></button>
           <button class="m-btn m-btn--ghost m-btn--icon" id="menuBtn" data-i18n-aria="pause.menu"><span class="mic" data-mic="home"></span></button>
           <button class="m-btn m-btn--ghost m-btn--icon" id="restartBtn" data-i18n-aria="pause.restart"><span class="mic" data-mic="again"></span></button>
         </div></div>

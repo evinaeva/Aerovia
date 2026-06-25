@@ -141,7 +141,7 @@
     box.onclick=showLeaderboard;
   }
 
-  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','debugScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen'].forEach(s=>{ const el=document.getElementById(s); if(el) el.classList.add('hidden'); }); }
+  function hideAllScreens(){ ['startScreen','levelScreen','biomeScreen','overScreen','pauseScreen','settingsScreen','debugScreen','medalScreen','leaderboardScreen','goalsScreen','confirmScreen','restartConfirmScreen'].forEach(s=>{ const el=document.getElementById(s); if(el) el.classList.add('hidden'); }); }
   // главный экран: чип звёзд = сумма заработанных / максимум по основным уровням
   function updateStartChips(){
     let got=0; for(let i=0;i<LEVELS.length;i++) got+=save.stars[i]||0;
@@ -453,6 +453,7 @@
   ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev, ()=>{ if(inFullscreen()) lockLandscape(); resize(); }));
 
   document.getElementById('startBtn')!.onclick=showLevels;
+  { const b=document.getElementById('levelsBtn'); if(b) b.onclick=showLevels; }
   // «Выживание» ведёт прямо на экран карт (карты-биомы = режим Survival)
   { const b=document.getElementById('survivalBtn'); if(b) b.onclick=showBiomes; }
   document.getElementById('backBtn')!.onclick=()=>{ showStart(); };
@@ -482,10 +483,27 @@
     document.getElementById('pauseGoals')!.innerHTML = goalRowsHTML(t('pause.objective'));
   }
   document.getElementById('resumeBtn')!.onclick=()=>setPaused(false);
-  document.getElementById('restartBtn')!.onclick=()=>reset();
-  document.getElementById('menuBtn')!.onclick=()=>{
+  document.getElementById('restartBtn')!.onclick=()=>{
+    document.getElementById('pauseScreen')!.classList.add('hidden');
+    document.getElementById('restartConfirmScreen')!.classList.remove('hidden');
+  };
+  document.getElementById('restartCancelBtn')!.onclick=()=>{
+    document.getElementById('restartConfirmScreen')!.classList.add('hidden');
+    document.getElementById('pauseScreen')!.classList.remove('hidden');
+  };
+  document.getElementById('restartConfirmBtn')!.onclick=()=>{
+    document.getElementById('restartConfirmScreen')!.classList.add('hidden');
+    reset();
+  };
+  document.getElementById('pauseLevelsBtn')!.onclick=()=>{
     recordResult(); running=false; paused=false; ACH.flushToasts(); backToSelect();
   };
+  document.getElementById('menuBtn')!.onclick=()=>{
+    recordResult(); running=false; paused=false; ACH.flushToasts(); showStart();
+  };
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden && running && !paused) setPaused(true);
+  });
   document.getElementById('optLives')!.onchange=e=>{ debug.infiniteLives=(e.target as HTMLInputElement).checked; saveDebug(); };
   document.getElementById('optMoney')!.onchange=e=>{ debug.richStart=(e.target as HTMLInputElement).checked; if(debug.richStart) money=BIG_MONEY; saveDebug(); };
   document.getElementById('optUnlockAll')!.onchange=e=>{ debug.unlockAll=(e.target as HTMLInputElement).checked; saveDebug(); renderLevels(); };
@@ -706,7 +724,7 @@
   // «домой» из окна целей: закрыть окно и выйти в выбор уровней/карт
   { const b=document.getElementById('goalsHomeBtn');
     if(b) b.onclick=()=>{ document.getElementById('goalsScreen')!.classList.add('hidden'); goalsFromPause=false; running=false; paused=false; backToSelect(); }; }
-  document.getElementById('goalsScreen')!.addEventListener('pointerdown', e=>{ if((e.target as HTMLElement).id==='goalsScreen') closeGoals(); }); // тап мимо карточки
+  document.getElementById('goalsScreen')!.addEventListener('pointerdown', e=>{ if(!(e.target as HTMLElement).closest('.panel')) closeGoals(); }); // тап мимо карточки
 
   // ================= ДОСТИЖЕНИЯ / МЕДАЛИ =================
   // Самодостаточный модуль: ловит игровые события через ACH.onX(...), копит
