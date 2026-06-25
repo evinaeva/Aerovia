@@ -66,4 +66,43 @@
   <rect x="44.5" y="28" width="11" height="6.5" rx="3.2" fill="var(--phosphor,#3ad2ff)" opacity="0.85"></rect>
 </symbol>
 
+<!-- plane-vip: gold livery -->
+<symbol id="neon-plane-vip" viewBox="0 0 100 100">
+  <path d="M41 42 L 10 58 L 10 64 L 41 55 Z M59 42 L 90 58 L 90 64 L 59 55 Z"
+        fill="#fff4c0" stroke="var(--gold,#ffd23b)" stroke-width="2"></path>
+  <path d="M44 70 L 31 80 L 31 84 L 46 78 Z M56 70 L 69 80 L 69 84 L 54 78 Z"
+        fill="#fff4c0" stroke="var(--gold,#ffd23b)" stroke-width="1.6"></path>
+  <path d="M50 12 C 57 12 61 21 61 36 L 61 62 C 61 72 56 80 50 84 C 44 80 39 72 39 62 L 39 36 C 39 21 43 12 50 12 Z"
+        fill="#fffae8" stroke="var(--gold,#ffd23b)" stroke-width="2.6"></path>
+  <path d="M50 12 C 54 12 57 17 59 25 L 41 25 C 43 17 46 12 50 12 Z" fill="var(--gold,#ffd23b)"></path>
+  <rect x="44.5" y="28" width="11" height="6.5" rx="3.2" fill="var(--gold,#ffd23b)" opacity="0.85"></rect>
+</symbol>
+
+<!-- plane-emergency: warm orange livery -->
+<symbol id="neon-plane-emergency" viewBox="0 0 100 100">
+  <path d="M41 42 L 10 58 L 10 64 L 41 55 Z M59 42 L 90 58 L 90 64 L 59 55 Z"
+        fill="#ffeedd" stroke="var(--amber,#ffb13b)" stroke-width="2"></path>
+  <path d="M44 70 L 31 80 L 31 84 L 46 78 Z M56 70 L 69 80 L 69 84 L 54 78 Z"
+        fill="#ffeedd" stroke="var(--amber,#ffb13b)" stroke-width="1.6"></path>
+  <path d="M50 12 C 57 12 61 21 61 36 L 61 62 C 61 72 56 80 50 84 C 44 80 39 72 39 62 L 39 36 C 39 21 43 12 50 12 Z"
+        fill="#fff5ee" stroke="var(--amber,#ffb13b)" stroke-width="2.6"></path>
+  <path d="M50 12 C 54 12 57 17 59 25 L 41 25 C 43 17 46 12 50 12 Z" fill="var(--amber,#ffb13b)"></path>
+  <rect x="44.5" y="28" width="11" height="6.5" rx="3.2" fill="var(--amber,#ffb13b)" opacity="0.85"></rect>
+</symbol>
+
+<!-- plane-medevac: white + red cross -->
+<symbol id="neon-plane-medevac" viewBox="0 0 100 100">
+  <path d="M41 42 L 10 58 L 10 64 L 41 55 Z M59 42 L 90 58 L 90 64 L 59 55 Z"
+        fill="#ffffff" stroke="#ffffff" stroke-width="2"></path>
+  <path d="M44 70 L 31 80 L 31 84 L 46 78 Z M56 70 L 69 80 L 69 84 L 54 78 Z"
+        fill="#ffffff" stroke="#ffffff" stroke-width="1.6"></path>
+  <path d="M50 12 C 57 12 61 21 61 36 L 61 62 C 61 72 56 80 50 84 C 44 80 39 72 39 62 L 39 36 C 39 21 43 12 50 12 Z"
+        fill="#ffffff" stroke="#ddffee" stroke-width="2.6"></path>
+  <path d="M50 12 C 54 12 57 17 59 25 L 41 25 C 43 17 46 12 50 12 Z" fill="var(--rose,#ff4f9d)"></path>
+  <rect x="44.5" y="28" width="11" height="6.5" rx="3.2" fill="#ffffff" opacity="0.9"></rect>
+  <!-- red cross on fuselage -->
+  <rect x="47" y="45" width="6" height="16" rx="1.5" fill="var(--rose,#ff4f9d)"></rect>
+  <rect x="43" y="50" width="14" height="6" rx="1.5" fill="var(--rose,#ff4f9d)"></rect>
+</symbol>
+
 </svg>
