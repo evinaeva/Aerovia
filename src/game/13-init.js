@@ -38,9 +38,8 @@
   if(SPRITES.setZoneSkins){
     SPRITES.setZoneSkins({
       background: 'assets/skins/background/wow/default.jpg',
-      apron:      'assets/skins/apron/wow/default.png',
+      apron:      'assets/skins/apron/wow/default.jpg',
       runway:     'assets/skins/runway/wow/default.png',
-      arrival:    'assets/skins/arrival/wow/default.png',
       plane:      'assets/skins/plane/wow/default.png',
       hangar: {
         fuel:   'assets/skins/hangar/wow/fuel.png',
