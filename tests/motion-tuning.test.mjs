@@ -43,7 +43,7 @@ test('round-trip export→reset→import восстанавливает знач
 
   game.MT.reset();                                   // сбрасываем к дефолтам
   let snap = game.MT.snapshot();
-  assert.equal(snap['MT.BAY_GRAB_RADIUS'], 0, 'после reset радиус зоны = дефолт 0');
+  assert.equal(snap['MT.BAY_GRAB_RADIUS'], 24, 'после reset радиус зоны = дефолт 24 (тач: ловит конец маршрута и въезд у ворот)');
   assert.equal(snap['MT.BAY_GRAB_SHAPE'], 'semicircle', 'после reset форма = дефолт semicircle');
   assert.equal(snap['MT.DEBUG_BAY_SNAP_ZONES'], false, 'после reset слой выключен');
 

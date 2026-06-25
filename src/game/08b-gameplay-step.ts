@@ -4,12 +4,20 @@
 // Reads: 08 (land, touchdown, depart, killAir/killCrash, spawnPlane, dist, selected…); 04 (K, LV, pace*, dayCycle, weatherTaxiMult); 06 (planes, runways, bays, field, gameTime, lives…); 07 (SND, HAP); 09b (nearMiss, pulseFx, updateTutorial); 12 (ACH); 10 (endLevel).
 
   // ---- update ----
+  // Поворотливость масштабируем под размер мира. Геометрия (ВПП, боксы, борт) сжимается
+  // вместе с ui, а K.TURN и скорости заданы в АБСОЛЮТНЫХ пикселях и под ui НЕ масштабируются.
+  // Радиус разворота = скорость/поворот; на телефоне (ui≈0.7) он получается больше самого
+  // игрового поля — борт физически не может завернуть на узкую ВПП или в бокс и наматывает
+  // петли мимо цели (это и есть «невозможно завести на телефоне»). Делаем поворот круче
+  // ОБРАТНО пропорционально ui, с эталоном на десктопе (ui=1.5 — потолок ui): там 1.5/1.5=1,
+  // поведение не меняется; на телефоне поворот до ~2.1× круче → радиус пропорционален миру.
+  const turnRate = () => K.TURN * (1.5 / Math.max(0.7, Math.min(1.5, ui)));
   function steer(pl: any, tx: number, ty: number, spd: number, dt: number){
     const desired=Math.atan2(ty-pl.y, tx-pl.x);
     let diff=desired-pl.ang;
     while(diff>Math.PI)diff-=2*Math.PI;
     while(diff<-Math.PI)diff+=2*Math.PI;
-    const max=K.TURN*dt;
+    const max=turnRate()*dt;
     pl.ang += Math.max(-max,Math.min(max,diff));
     pl.x += Math.cos(pl.ang)*spd*dt;
     pl.y += Math.sin(pl.ang)*spd*dt;
@@ -17,15 +25,22 @@
   // плавный доворот курса к target (без смещения) — для парковки в боксе
   function turnTo(pl: any, target: number, dt: number){
     let d=target-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
-    const m=K.TURN*dt; pl.ang += Math.max(-m, Math.min(m, d));
+    const m=turnRate()*dt; pl.ang += Math.max(-m, Math.min(m, d));
   }
   function followPath(pl: any, spd: number, dt: number){
     if(!pl.path.length){ return false; }
     const wp=pl.path[0];
     steer(pl, wp.x, wp.y, spd, dt);
-    const turnR = spd/K.TURN;                       // радиус разворота
-    // авто-маршрут (выкатывание с ВПП) — прямая линия, K.TURN не влияет на захват точки
-    const capture = pl.autoPath ? K.ARRIVE : Math.max(K.ARRIVE, turnR*0.6);
+    const turnR = spd/turnRate();                   // радиус разворота (с учётом масштаба мира)
+    // Захват точки. Широкий захват (turnR·0.6) нужен лишь для ПРОМЕЖУТОЧНЫХ точек —
+    // чтобы борт срезал дугу и не вилял по каждому узлу нарисованной линии. Но он
+    // фиксирован в пикселях и НЕ масштабируется под ui: на телефоне (ui≈0.7) это ~67 px
+    // при ширине ВПП ~76 px, поэтому ПОСЛЕДНЮЮ точку (въезд на полосу под взлёт / в бокс)
+    // борт «захватывал» за полкорпуса ДО неё и замирал снаружи — rectHit ВПП/бокса не
+    // срабатывал, борт не взлетал и не заезжал. Конечную точку (как и прямой авто-маршрут)
+    // доезжаем вплотную (K.ARRIVE); проскок по-прежнему ловит ветка behind ниже.
+    const isLast = pl.path.length === 1;
+    const capture = (pl.autoPath || isLast) ? K.ARRIVE : Math.max(K.ARRIVE, turnR*0.6);
     const d = dist(pl.x,pl.y,wp.x,wp.y);
     // точка «позади по курсу» (за носом борта)
     const toX=wp.x-pl.x, toY=wp.y-pl.y;
@@ -248,7 +263,12 @@
             const apx=cx+o.dx*(half+ad), apy=cy+o.dy*(half+ad);     // точка подъезда на оси ворот
             const inRect=rectHit(pl.x,pl.y,b);
             const atAppr=ad>0 && dist(pl.x,pl.y,apx,apy) <= Math.max(K.ARRIVE*1.5, half*0.7);
-            if(inRect || atAppr){
+            // полукруг у ворот (BAY_GRAB_RADIUS): на телефоне борт почти никогда не
+            // останавливается ровно внутри маленького прямоугольника бокса — он подходит
+            // к воротам и замирает на полкорпуса снаружи. Засчитываем въезд и из зоны
+            // захвата; ниже фаза заезда сама центрирует борт по оси ворот и затягивает внутрь.
+            const inGrab=inGrabZone(pl.x,pl.y,bayGrabZone(b));
+            if(inRect || atAppr || inGrab){
               if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
               if(b.occupied && b.occupied!==pl){ if(!LV.bonus){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
               else {
