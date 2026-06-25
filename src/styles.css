@@ -400,17 +400,6 @@
 .screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
 .screen--center { align-items: center; justify-content: center; }
 
-/* entrance animates TRANSFORM only — base state stays visible so a
-   paused/background iframe never hides content (frozen = visible). */
-@media (prefers-reduced-motion: no-preference) {
-  .screen { animation: screenIn var(--m-dur) var(--m-ease) both; }
-  .panel  { animation: panelIn var(--m-dur) var(--m-ease) both; }
-}
-@keyframes screenIn { from { transform: translateY(8px); } to { transform: none; } }
-@keyframes panelIn {
-  from { transform: translateY(14px) scale(0.985); }
-  to   { transform: none; }
-}
 
 /* ============================================================
    PANEL  (the modal card)
@@ -872,7 +861,8 @@
   /* список: нативный scrollbar скрыт; padding = инсеты от края экрана
      (left56 = жест+нотч+буфер · right44 = жест+скролл+буфер · bottom38 = жест+14px) */
   #levelList{display:flex;flex-direction:column;height:100%;background:none;
-    overflow-y:scroll;overflow-x:hidden;margin:0;padding:5px 44px 38px 56px;scrollbar-width:none}
+    overflow-y:scroll;overflow-x:hidden;margin:0;padding:5px 44px 38px 56px;scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;overscroll-behavior-y:none}
   #levelList::-webkit-scrollbar{display:none}
   #finalStars{font-size:inherit;color:inherit;text-shadow:none;letter-spacing:0}
 
@@ -1007,8 +997,8 @@
 .m-btn--icon .m-btn__t { display: none; }
 .m-btn--icon.m-btn--primary { box-shadow: 0 0 12px rgba(108,200,143,.35); }  /* свечение не «раздувает» кнопку */
 
-/* Пауза: три иконки-кнопки ровно под таблицей (по её ширине) */
-#pauseScreen .m-actions__row { max-width: 200px; margin-inline: auto; justify-content: space-between; }
+/* Пауза: четыре иконки-кнопки ровно под таблицей (по её ширине) */
+#pauseScreen .m-actions__row { max-width: 268px; margin-inline: auto; justify-content: space-between; }
 
 /* icon-кнопки Паузы/Целей/Итогов: чистый квадрат под иконку.
    .m-actions__row > .m-btn--icon (0,2,0) перебивает и clamp-ширину из .m-btn--icon,
@@ -1100,10 +1090,6 @@
 /* Кастомный скроллбар: тонкая полоса справа + счётчик всего/текущего; тап по треку + drag */
 .lv-scroll-ind{position:absolute;right:28px;top:6px;bottom:28px;width:9px;z-index:10;
   display:flex;flex-direction:column;align-items:center;gap:4px}
-.scroll-tot,.scroll-pos{font-size:6px;font-family:var(--m-font-display),monospace;
-  line-height:1;text-align:center;white-space:nowrap;letter-spacing:.04em}
-.scroll-tot{font-weight:900;color:rgba(64,160,255,.55)}
-.scroll-pos{font-weight:700;color:rgba(64,160,255,.4)}
 .lv-scroll-track{flex:1;width:3px;position:relative;cursor:pointer;
   background:rgba(255,255,255,.07);border-radius:2px}
 .lv-scroll-thumb{position:absolute;left:0;width:3px;min-height:18px;border-radius:2px;
