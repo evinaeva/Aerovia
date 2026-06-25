@@ -1,0 +1,7 @@
+{
+  "id": "plane-wow",
+  "label": "WOW",
+  "states": {
+    "default": "default.png"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "hangar-wow",
+  "label": "WOW",
+  "states": {
+    "fuel": "fuel.png",
+    "board": "board.png",
+    "repair": "repair.png",
+    "deice": "deice.png",
+    "locked": "locked.png"
+  }
+}

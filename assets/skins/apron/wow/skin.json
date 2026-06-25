@@ -1,0 +1,7 @@
+{
+  "id": "apron-wow",
+  "label": "WOW",
+  "states": {
+    "default": "default.jpg"
+  }
+}
