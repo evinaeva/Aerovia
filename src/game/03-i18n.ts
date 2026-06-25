@@ -105,6 +105,7 @@
       'toast.fog':'Fog — taxiing slowed',
       'toast.weather.rain':'Rain — taxiing slowed', 'toast.weather.snow':'Snow — taxiing slowed',
       'toast.emergency':'Fuel critical — land now!', 'toast.medical':'Medevac — straight through!',
+      'toast.noMoney':'Unlock: {cost} — not enough',
       'float.combo':'×{x} combo', 'float.express':'on time!', 'float.nearMiss':'phew!',
       'loss.airTimeout':'Air timeout — didn\'t land in time',
       'loss.collision':'Collision',
@@ -117,7 +118,7 @@
       'canvas.terminal':'TERMINAL', 'canvas.garden':'GREENHOUSE', 'canvas.closed':'RUNWAY CLOSED', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- biomes / maps + forest biome ---
-      'biomes.kicker':'Airport maps', 'biomes.title':'Survival', 'biomes.back':'Back', 'biomes.soon':'Coming soon', 'biomes.best':'Best',
+      'biomes.kicker':'Airport maps', 'biomes.title':'Survival', 'biomes.back':'Back', 'biomes.soon':'Coming soon', 'biomes.best':'Best', 'biomes.total':'Landed',
       'biome.forest.name':'Forest Airport', 'biome.forest.tag':'Wind, wildlife and trees falling on the strip.',
       'biome.forest.hint':'Keep the runways clear — tap a hazard to send the right crew.',
       'biome.arctic.name':'Arctic Airport', 'biome.arctic.tag':'De-icing, snow and runway ice.',
@@ -323,6 +324,7 @@
       'toast.fog':'Туман — руление замедлено',
       'toast.weather.rain':'Дождь — руление замедлено', 'toast.weather.snow':'Снег — руление замедлено',
       'toast.emergency':'Топливо на нуле — садить срочно!', 'toast.medical':'Медицинский — вне очереди!',
+      'toast.noMoney':'Открыть: {cost} — не хватает',
       'float.combo':'×{x} комбо', 'float.express':'вовремя!', 'float.nearMiss':'уфф!',
       'loss.airTimeout':'Воздушный таймаут — не успел сесть',
       'loss.collision':'Столкновение',
@@ -335,7 +337,7 @@
       'canvas.terminal':'ТЕРМИНАЛ', 'canvas.garden':'ТЕПЛИЦА', 'canvas.closed':'ПОЛОСА ЗАКРЫТА', 'canvas.rwy':'RWY {n}',
       'fmt.money':'{n} ₿',
       // --- биомы / карты + лесной биом ---
-      'biomes.kicker':'Карты аэропортов', 'biomes.title':'Выживание', 'biomes.back':'Назад', 'biomes.soon':'Скоро', 'biomes.best':'Рекорд',
+      'biomes.kicker':'Карты аэропортов', 'biomes.title':'Выживание', 'biomes.back':'Назад', 'biomes.soon':'Скоро', 'biomes.best':'Рекорд', 'biomes.total':'Посажено',
       'biome.forest.name':'Лесной аэропорт', 'biome.forest.tag':'Ветер, звери и падающие на полосу деревья.',
       'biome.forest.hint':'Держи полосы свободными — тапни по помехе, чтобы выслать нужную бригаду.',
       'biome.arctic.name':'Арктический аэропорт', 'biome.arctic.tag':'Обледенение, снег и лёд на полосе.',
