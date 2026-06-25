@@ -464,8 +464,15 @@
   // (посадка — створ у небесного торца; взлёт — створ у полевого торца), вспышка + щелчок
   function lockRouteToRunway(pl: any, r: any){
     while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, r)) pl.path.pop();
-    const tx = (pl.zone==='air') ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
+    const isAir = pl.zone==='air';
+    const tx = isAir ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
     const ty = r.cy;
+    // точка входа на торце ВПП по центральной линии: траектория всегда входит
+    // горизонтально в ось полосы, а не по диагонали с произвольным углом.
+    const entryX = isAir ? r.x + r.w : r.x;
+    if(!pl.path.length || pl.path[pl.path.length-1].x !== entryX || pl.path[pl.path.length-1].y !== ty){
+      pl.path.push({x:entryX, y:ty});
+    }
     pl.path.push({x:tx, y:ty});
     pl.moving=true;
     // воздушный заход: запоминаем целевую полосу, чтобы добрать борт до рубежа ВПП,
@@ -613,10 +620,24 @@
       if(rectHit(last.x, last.y, r)){ last.x = r.x + r.w - PLANE_LEN()*0.5; last.y = r.cy; pl.approachR = r; break; }
     }
   }
-  function up(){
+  function up(e?: any){
     if(!drag) return;
     const pl=drag.plane;
     if(drag.drew){
+      // Android-snap: pointermove приходит редко — grab-zone в move() может ни разу не
+      // сработать на быстром свайпе (path.length не достигает 3). При pointerup повторяем
+      // ту же проверку по позиции пальца в момент отрыва — без порога длины пути.
+      // pointercancel (back-gesture) не снэпим: жест прерван, маршрут не нужен.
+      if(!drag.locked && !LV.bonus && pl.path.length && e && e.type==='pointerup'){
+        const chk=pt(e);
+        const needDir = pl.zone==='air' ? 'landing' as const : 'takeoff' as const;
+        const b = (pl.zone!=='air') ? openBayAt(chk) : null;
+        if(b){ lockRouteToBay(pl, b); }
+        else {
+          const r = (pl.zone==='air' || curNeed(pl)==='depart') ? openRunwayAt(chk, needDir) : null;
+          if(r) lockRouteToRunway(pl, r);
+        }
+      }
       snapAirPathToRunway(pl);             // посадочный створ — в центр ВПП
       pl.moving = pl.path.length>0;        // поехали по маршруту
       pl.exiting=false;
