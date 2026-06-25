@@ -37,7 +37,7 @@
   // setZoneSkins() pre-warms image decode; render gates fall back to procedural until ready.
   if(SPRITES.setZoneSkins){
     SPRITES.setZoneSkins({
-      background: 'assets/skins/background/wow/default.jpg',
+      background: 'assets/skins/background/wow/default.png',
       apron:      'assets/skins/apron/wow/default.jpg',
       runway:     'assets/skins/runway/wow/default.png',
       plane:      'assets/skins/plane/wow/default.png',

@@ -2,6 +2,6 @@
   "id": "background-wow",
   "label": "WOW",
   "states": {
-    "default": "default.jpg"
+    "default": "default.png"
   }
 }
