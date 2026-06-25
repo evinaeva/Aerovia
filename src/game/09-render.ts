@@ -299,11 +299,12 @@
   function drawField(tm: number){ drawNeonField(tm); }   // единственная сцена поля — неоновая
 
   function drawRunways(tm: number){
+    const WOW_BLUE = '#27E6FF';
     runways.forEach((r,i)=>{
       const rwSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('runway');
       if(rwSkin){   // скин ВПП (assets/skins) ВМЕСТО процедурной полосы; клип по силуэту
         ctx.save(); rr(r.x,r.y,r.w,r.h,7*ui); ctx.clip(); ctx.drawImage(rwSkin, r.x, r.y, r.w, r.h); ctx.restore();
-        if(r.closed){   // закрытость — игровой сигнал: красный «X» + подпись поверх скина
+        if(r.closed){
           const cx=r.x+r.w/2, s=Math.min(r.w,r.h)*0.16;
           ctx.strokeStyle=hexa(COL.life,.8); ctx.lineWidth=3.5; ctx.lineCap='round';
           ctx.beginPath(); ctx.moveTo(cx-s,r.cy-s); ctx.lineTo(cx+s,r.cy+s);
@@ -314,51 +315,43 @@
         }
         return;
       }
-      const NTONE=[COL.phosphor,COL.rose,COL.green]; const nt=NTONE[i%NTONE.length];   // тон ВПП по индексу (27/18/09)
-      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':'#0a1226'; ctx.fill();  // бонус: садовая дорожка
+
+      // WOW нeon runway — тёмная подложка
+      rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=LV.bonus?'#6e5238':'#061426'; ctx.fill();
+
       if(!r.closed){
-        ctx.save(); ctx.shadowColor=hexa(nt,.5); ctx.shadowBlur=9;
-        ctx.lineWidth=1.8; ctx.strokeStyle=hexa(nt,.7); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke(); ctx.restore();
-      } else {
-        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
-      }
-      // осевая пунктирная (без реакции на занятость — состояние полосы визуально
-      // не меняется, иначе это подсказка, упрощающая игру)
-      ctx.strokeStyle=hexa(nt,0.8);
-      ctx.lineWidth=2.5; ctx.setLineDash([18,15]);
-      ctx.beginPath(); ctx.moveTo(r.x+12*ui,r.cy); ctx.lineTo(r.x+r.w-12*ui,r.cy); ctx.stroke(); ctx.setLineDash([]);
-      // пороговые отметки с обоих торцов
-      ctx.fillStyle=hexa(COL.paper,.4);
-      for(let k=0;k<3;k++){
-        ctx.fillRect(r.x+7*ui, r.cy-14*ui+k*11*ui, 5*ui, 4*ui);
-        ctx.fillRect(r.x+r.w-12*ui, r.cy-14*ui+k*11*ui, 5*ui, 4*ui);
-      }
-      // огни кромок: тон ВПП / красные (закрыта), мерцают
-      const blink=0.4+0.6*Math.abs(Math.sin(tm*0.004+i));
-      const lc = r.closed?COL.life:nt;
-      for(let k=0;k<=8;k++){
-        const lx=r.x+9*ui+k*(r.w-18*ui)/8;
-        ctx.fillStyle=hexa(lc,blink);
-        ctx.beginPath(); ctx.arc(lx,r.y+5*ui,2*ui,0,7); ctx.fill();
-        ctx.beginPath(); ctx.arc(lx,r.y+r.h-5*ui,2*ui,0,7); ctx.fill();
-      }
-      // approach-огни: фосфорная «дорожка» от небесного торца открытой полосы вправо
-      // в небо (handoff §03 ADD). Поперечные штанги с «бегущим» к торцу огоньком — как
-      // настоящая ВПП-подсветка на заходе; гаснут с удалением, чтобы не спорить с заревом
-      // города. Процедурно (как огни кромок выше), своего PNG не имеют по спеке (§05).
-      if(!r.closed){
-        const axs=r.x+r.w, nA=6, span=Math.min(W-axs-8*ui, 84*ui), step=span/nA;
-        if(span>10*ui){
-          const seq=Math.floor((tm*0.004)%(nA+1));   // огонёк бежит из неба к торцу полосы
-          for(let k=1;k<=nA;k++){
-            const lx=axs+k*step, run=((nA-k)===seq)?1:0.4, fade=1-k/(nA+1);
-            ctx.fillStyle=hexa(COL.phosphor,(0.2+0.5*run)*fade);
-            ctx.fillRect(lx-1.5*ui, r.cy-4*ui, 3*ui, 8*ui);
-          }
+        // синяя неон-рамка (без shadowBlur)
+        ctx.lineWidth=1.8; ctx.strokeStyle=hexa(WOW_BLUE,.75);
+        rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
+
+        // LED-точки: верхняя и нижняя кромки (10 штук)
+        const dotR=2.5*ui, nH=9;
+        ctx.fillStyle=WOW_BLUE;
+        for(let k=0;k<=nH;k++){
+          const lx=r.x+9*ui+k*(r.w-18*ui)/nH;
+          ctx.beginPath(); ctx.arc(lx, r.y+5*ui, dotR, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.arc(lx, r.y+r.h-5*ui, dotR, 0, 7); ctx.fill();
         }
-      }
-      if(r.closed){
+        // LED-точки: левая и правая кромки (2 точки каждая, между угловыми)
+        ctx.beginPath(); ctx.arc(r.x+5*ui, r.cy, dotR, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(r.x+r.w-5*ui, r.cy, dotR, 0, 7); ctx.fill();
+
+        // белая осевая пунктирная (без реакции на занятость — иначе подсказка игроку)
+        ctx.strokeStyle=hexa(COL.paper,.75); ctx.lineWidth=2*ui;
+        ctx.setLineDash([16*ui,12*ui]);
+        ctx.beginPath(); ctx.moveTo(r.x+14*ui, r.cy); ctx.lineTo(r.x+r.w-22*ui, r.cy); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // пороговые маркеры (piano-keys) — только у воздушного (правого) торца
+        const nB=5, bW=3.5*ui, bH=7*ui, bGap=3*ui;
+        const ty0=r.cy-(nB*bH+(nB-1)*bGap)/2;
+        ctx.fillStyle=hexa(COL.paper,.85);
+        for(let k=0;k<nB;k++) ctx.fillRect(r.x+r.w-16*ui, ty0+k*(bH+bGap), bW, bH);
+
+      } else {
+        // закрытая ВПП: красная заливка + «X» + подпись
         rr(r.x,r.y,r.w,r.h,7*ui); ctx.fillStyle=hexa(COL.life,.16); ctx.fill();
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.18); rr(r.x,r.y,r.w,r.h,7*ui); ctx.stroke();
         const cx=r.x+r.w/2, s=Math.min(r.w,r.h)*0.16;
         ctx.strokeStyle=hexa(COL.life,.8); ctx.lineWidth=3.5; ctx.lineCap='round';
         ctx.beginPath(); ctx.moveTo(cx-s,r.cy-s); ctx.lineTo(cx+s,r.cy+s);
@@ -366,10 +359,6 @@
         ctx.fillStyle=hexa(COL.life,.85); ctx.font=`${10*ui}px ${MONO}`;
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText(t('canvas.closed'), cx, r.y+r.h-12*ui);
-      } else {
-        ctx.fillStyle=nt; ctx.font=`700 ${13*ui}px ${NUM}`;
-        ctx.textAlign='left'; ctx.textBaseline='middle';
-        ctx.fillText(t('canvas.rwy',{n:'0'+(i+1)}), r.x+12*ui, r.y+12*ui);
       }
     });
   }
