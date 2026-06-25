@@ -464,8 +464,15 @@
   // (посадка — створ у небесного торца; взлёт — створ у полевого торца), вспышка + щелчок
   function lockRouteToRunway(pl: any, r: any){
     while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, r)) pl.path.pop();
-    const tx = (pl.zone==='air') ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
+    const isAir = pl.zone==='air';
+    const tx = isAir ? (r.x + r.w - PLANE_LEN()*0.5) : (r.stopX + 8*ui);
     const ty = r.cy;
+    // точка входа на торце ВПП по центральной линии: траектория всегда входит
+    // горизонтально в ось полосы, а не по диагонали с произвольным углом.
+    const entryX = isAir ? r.x + r.w : r.x;
+    if(!pl.path.length || pl.path[pl.path.length-1].x !== entryX || pl.path[pl.path.length-1].y !== ty){
+      pl.path.push({x:entryX, y:ty});
+    }
     pl.path.push({x:tx, y:ty});
     pl.moving=true;
     // воздушный заход: запоминаем целевую полосу, чтобы добрать борт до рубежа ВПП,
