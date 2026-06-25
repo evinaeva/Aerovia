@@ -33,6 +33,23 @@
   loadGame();
   loadDebug();                        // восстановление отладочных читов (localStorage)
   saveGame();                         // миграция: сейв сразу переезжает под новый ключ
+  // WOW skin — design-reference assets baked into build; loaded once at startup.
+  // setZoneSkins() pre-warms image decode; render gates fall back to procedural until ready.
+  if(SPRITES.setZoneSkins){
+    SPRITES.setZoneSkins({
+      background: 'assets/skins/background/wow/default.jpg',
+      apron:      'assets/skins/apron/wow/default.jpg',
+      runway:     'assets/skins/runway/wow/default.png',
+      plane:      'assets/skins/plane/wow/default.png',
+      hangar: {
+        fuel:   'assets/skins/hangar/wow/fuel.png',
+        board:  'assets/skins/hangar/wow/board.png',
+        repair: 'assets/skins/hangar/wow/repair.png',
+        deice:  'assets/skins/hangar/wow/deice.png',
+        locked: 'assets/skins/hangar/wow/locked.png',
+      },
+    });
+  }
   ACH.init();
   lang = save.lang || DEFAULT_LANG;   // сохранённый выбор > английский по умолчанию
   applyI18n();
