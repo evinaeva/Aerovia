@@ -205,6 +205,10 @@
   .starcount .sclbl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-left:3px}
   #levelList{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
     scrollbar-width:thin;scrollbar-color:rgba(58,210,255,.18) transparent}
+  #biomeList{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;margin-top:14px;
+    scrollbar-width:thin;scrollbar-color:rgba(58,210,255,.18) transparent}
+  #biomeList .biome-grid{margin:0;width:100%}
+  #biomeScreen{background:var(--m-board)}
   /* статистика на экране итога */
   .stats{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:18px;padding:16px 18px;
     border:1.5px solid var(--pur-line);border-radius:16px;background:rgba(28,24,48,.6)}
