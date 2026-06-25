@@ -559,7 +559,7 @@
       selected=pl; ACH.onPlaneTouched(pl);
       SND.pick(); HAP.tap();
       planes.forEach(x=>x.selected=false); pl.selected=true;
-      drag={plane:pl, start:p, last:p, drew:false};
+      drag={plane:pl, start:p, last:p, drew:false, pushes:0};
       if(window.PointerEvent) cv.setPointerCapture(e.pointerId);
     } else {
       selected=null; planes.forEach(x=>x.selected=false);
@@ -581,12 +581,15 @@
     if(drag.drew && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
       drag.plane.path.push({x:p.x,y:p.y});
       drag.last=p;
-      // конец траектории доведён в цель → фиксируем маршрут (вспышка + щелчок)
-      // Проверяем захватные зоны лишь начиная с 3-й точки (≥36 пикс. движения), чтобы
-      // первый отрезок не залетал в зону при старте от hoverX вблизи ВПП (custom level).
-      // Порог 3 (вместо прежних 2) — на тач-устройствах даёт больше пространства для манёвра
-      // перед тем, как конец траектории «прилипнет» к торцу ВПП или боксу.
-      if(!LV.bonus && drag.plane.path.length >= 3){
+      drag.pushes++;
+      // конец траектории доведён в цель → фиксируем маршрут (вспышка + щелчок).
+      // Захватные зоны проверяем лишь после ≥3 ДОБАВЛЕННЫХ точек (≈≥36 px проведено
+      // пальцем), чтобы первый отрезок не залетал в зону при старте от hoverX вблизи ВПП.
+      // Считаем ИМЕННО добавленные точки (drag.pushes), а НЕ текущую длину path: борт
+      // едет по маршруту и СЪЕДАЕТ пройденные waypoints, поэтому path.length при обычном
+      // (не молниеносном) жесте почти не растёт — из-за этого привязка к ВПП/боксу часто
+      // не срабатывала на телефоне, и борт уходил по «сырой» линии мимо цели.
+      if(!LV.bonus && drag.pushes >= 3){
         const pl=drag.plane;
         const b = (pl.zone!=='air') ? openBayAt(p) : null;   // бокс — только с земли
         if(b){ lockRouteToBay(pl, b); drag.locked=true; }
