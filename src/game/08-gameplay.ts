@@ -560,6 +560,7 @@
       SND.pick(); HAP.tap();
       planes.forEach(x=>x.selected=false); pl.selected=true;
       drag={plane:pl, start:p, last:p, drew:false};
+      if(window.PointerEvent) cv.setPointerCapture(e.pointerId);
     } else {
       selected=null; planes.forEach(x=>x.selected=false);
     }
@@ -569,7 +570,7 @@
     e.preventDefault();
     if(drag.locked) return;          // маршрут уже зафиксирован на боксе — дальше не тянем
     const p=pt(e);
-    if(!drag.drew && dist(p.x,p.y,drag.start.x,drag.start.y)>10){
+    if(!drag.drew && dist(p.x,p.y,drag.start.x,drag.start.y)>8){
       drag.drew=true;
       drag.plane.path=[];            // начинаем новый маршрут
       drag.plane.approachR=null;     // новый маршрут — старый воздушный заход сбрасываем
@@ -581,9 +582,11 @@
       drag.plane.path.push({x:p.x,y:p.y});
       drag.last=p;
       // конец траектории доведён в цель → фиксируем маршрут (вспышка + щелчок)
-      // Проверяем захватные зоны лишь начиная со 2-й точки (≥24 пикс. движения), чтобы
+      // Проверяем захватные зоны лишь начиная с 3-й точки (≥36 пикс. движения), чтобы
       // первый отрезок не залетал в зону при старте от hoverX вблизи ВПП (custom level).
-      if(!LV.bonus && drag.plane.path.length >= 2){
+      // Порог 3 (вместо прежних 2) — на тач-устройствах даёт больше пространства для манёвра
+      // перед тем, как конец траектории «прилипнет» к торцу ВПП или боксу.
+      if(!LV.bonus && drag.plane.path.length >= 3){
         const pl=drag.plane;
         const b = (pl.zone!=='air') ? openBayAt(p) : null;   // бокс — только с земли
         if(b){ lockRouteToBay(pl, b); drag.locked=true; }
@@ -629,6 +632,9 @@
     cv.addEventListener('pointerdown',down);
     cv.addEventListener('pointermove',move);
     window.addEventListener('pointerup',up);
+    // pointercancel: Android back-gesture и системные прерывания отменяют жест —
+    // без этого drag остаётся ненулевым и следующий тап ведёт себя непредсказуемо.
+    window.addEventListener('pointercancel',up);
   } else {
     cv.addEventListener('touchstart',down,{passive:false});
     cv.addEventListener('touchmove',move,{passive:false});
