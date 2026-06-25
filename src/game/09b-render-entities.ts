@@ -358,9 +358,9 @@
       // бонус: над гусеницей — цветок нужного цвета (её цель). Куколка/бабочка — без пузырька.
       if(pl.zone!=='bay' && pl.bug==='cat') drawFlower(pl.x, pl.y-28*ui*vs, 9*ui, BSP[pl.species||0].petal);
     } else if(pl.zone==='field' || pl.zone==='air'){
-      const _ny = pl.y-28*ui*vs;
-      if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui)))
-        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // чип svc-* (фолбэк: процедурная иконка)
+      const _ny = pl.y-33*ui*vs;
+      if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, 42*ui, 42*ui)))
+        drawIcon(need, pl.x, _ny, 16*ui, ncol, COL.ink);   // чип svc-* (фолбэк: процедурная иконка)
     }
   }
 
