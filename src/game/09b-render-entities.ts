@@ -422,51 +422,83 @@
 
   function drawHUD(){
     const hud=HUD_H();
-    // плавающая панель — Variant A: ghost pill, full-width, square corners
-    // панель перекрывает safe-area сверху, контент — ниже выреза/скругления
-    rr(0,0,W,hud+safe.t,0);
-    ctx.fillStyle='rgba(4,8,20,.06)'; ctx.fill();
-    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.10); rr(0,0,W,hud+safe.t,0); ctx.stroke();
+    const barH=hud+safe.t;
     const cy=safe.t+hud/2;
+    const NEON='#27E6FF';   // WOW neon cyan
+
+    // ── WOW chrome bar: тёмная неон-панель (referenс (9).png) ──
+    const bg=ctx.createLinearGradient(0,0,0,barH);
+    bg.addColorStop(0,'#0d1f42'); bg.addColorStop(1,'#07111f');
+    ctx.fillStyle=bg; ctx.fillRect(0,0,W,barH);
+    // нижняя неон-полоса с свечением
+    ctx.save();
+    ctx.shadowColor=hexa(NEON,.75); ctx.shadowBlur=10;
+    ctx.fillStyle=hexa(NEON,.85); ctx.fillRect(0,barH-2,W,2);
+    ctx.restore();
+    // верхний волосяной контур
+    ctx.fillStyle=hexa(NEON,.28); ctx.fillRect(0,safe.t,W,1);
+
     ctx.textBaseline='middle';
-    // тонкий вертикальный разделитель (VSep из макета TopHUD)
-    const vsep=(vx: number)=>{ ctx.fillStyle=hexa(COL.phosphor,.16); ctx.fillRect(vx, cy-13*ui, 1, 26*ui); };
-    // ── левый кластер: жизни · | · деньги · | · цель (мокап TopHUD) ──
+    // тонкий вертикальный разделитель с неон-свечением
+    const vsep=(vx: number)=>{
+      ctx.save(); ctx.shadowColor=hexa(NEON,.3); ctx.shadowBlur=4;
+      ctx.fillStyle=hexa(NEON,.22); ctx.fillRect(vx, safe.t+hud*.15, 1.5, hud*.7);
+      ctx.restore();
+    };
+
+    // ── LEFT: жизни (сердца) ──
     for(let i=0;i<K.START_LIVES;i++) heart(safe.l+26*ui+i*19*ui, cy, 4.5*ui, i<lives?COL.life:null);
     let lx = safe.l+26*ui + K.START_LIVES*19*ui + 12*ui;
     vsep(lx); lx += 13*ui;
-    // деньги (золото)
+
+    // ── ДЕНЬГИ (нeon cyan вместо золота) ──
     if(ATLAS) SPRITES.blitC('coin', lx+7*ui, cy, 16*ui, 16*ui);
     else { ctx.textAlign='left'; ctx.fillStyle=COL.coin; ctx.font=`${13*ui}px ${NUM}`; ctx.fillText('$', lx, cy); }
     ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`;
-    ctx.fillStyle = money<0?COL.life:COL.coin;
+    ctx.fillStyle = money<0?COL.life:hexa(NEON,1);
     ctx.fillText(fmtMoney(money), lx+18*ui, cy);
     lx += 18*ui + ctx.measureText(fmtMoney(money)).width + 16*ui;
-    // ── цель уровня (сирень): мишень + «N / M». В бесконечном — налёт «✈ N» (фосфор) ──
+
+    // ── ЦЕЛЬ УРОВНЯ ──
     vsep(lx); lx += 16*ui;
     const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
-    const endless = survival || LV.objective.race;   // race (L5): «без лимита»
-    const goalTone = endless ? COL.phosphor : COL.purple;
+    const endless = survival || LV.objective.race;
+    const goalTone = endless ? COL.phosphor : hexa(NEON,.9);
     iconTarget(lx+9*ui, cy, 9*ui, goalTone);
     ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`; ctx.fillStyle=goalTone;
     const goalTxt = endless ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target ?? 0));
     ctx.fillText(goalTxt, lx+23*ui, cy);
-    // ── правый: таймер перед кнопкой паузы (число, как в макете) ──
+
+    // ── ТАЙМЕР с иконкой часов (правый кластер) ──
     const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
     const urgent = LV.objective.time && tShown<=10;
-    ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`700 ${18*ui}px ${NUM}`;
-    ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy);
+    const timerStr = fmtTime(tShown);
+    ctx.font=`700 ${18*ui}px ${NUM}`;
+    const timerW = ctx.measureText(timerStr).width;
+    const clockR=7*ui, clockX=pauseBtn.x - 14*ui - timerW - 10*ui - clockR;
+    // часы-иконка (процедурный циферблат)
+    ctx.save();
+    ctx.strokeStyle=urgent?COL.life:hexa(NEON,.8); ctx.lineWidth=Math.max(1.2,clockR*.18); ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(clockX,cy,clockR,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(clockX,cy); ctx.lineTo(clockX,cy-clockR*.55); ctx.stroke();  // часовая
+    ctx.beginPath(); ctx.moveTo(clockX,cy); ctx.lineTo(clockX+clockR*.42,cy); ctx.stroke();  // минутная
+    ctx.restore();
+    ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:hexa(NEON,1); ctx.font=`700 ${18*ui}px ${NUM}`;
+    ctx.fillText(timerStr, pauseBtn.x-14*ui, cy);
 
-    // кнопка паузы — спрайт-чип (на паузе поверх рисуем «play»)
+    // ── КНОПКА ПАУЗЫ (WOW-стиль: неон-рамка) ──
     const pcx=pauseBtn.x+pauseBtn.w/2, pcy=pauseBtn.y+pauseBtn.h/2;
     const pauseSprite = ATLAS && !paused &&
       SPRITES.blitC('pause-btn', pcx, pcy, Math.max(pauseBtn.w,pauseBtn.h), Math.max(pauseBtn.w,pauseBtn.h));
     if(!pauseSprite){
+      ctx.save();
+      ctx.shadowColor=hexa(NEON,.5); ctx.shadowBlur=8;
       rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui);
-      ctx.fillStyle='rgba(4,8,20,.10)'; ctx.fill();
-      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.08);
+      ctx.fillStyle='rgba(4,14,36,.6)'; ctx.fill();
+      ctx.lineWidth=1.5; ctx.strokeStyle=hexa(NEON,.75);
       rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui); ctx.stroke();
-      ctx.fillStyle=COL.paper;
+      ctx.restore();
+      ctx.fillStyle=hexa(NEON,.9);
       if(!paused){
         ctx.fillRect(pcx-6*ui,pcy-6*ui,4*ui,12*ui);
         ctx.fillRect(pcx+2*ui,pcy-6*ui,4*ui,12*ui);
@@ -475,7 +507,7 @@
       }
     }
 
-    // очередь потребностей выбранного борта + его терпение — карточка слева сверху
+    // карточка выбранного борта
     drawPlaneCard();
   }
 
