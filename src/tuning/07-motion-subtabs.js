@@ -61,9 +61,11 @@
 
   const SUBTABS = [
     // «Движение» tab — plane physics / flight / ground tuning.
-    { owner:'motion',     key:'plane',   icon:'✈',  label:'Самолёт',       groups:['movement','turns','routing','collisions','effects','weather'] },
-    { owner:'motion',     key:'flight',  icon:'🛬', label:'Взлёт/посадка',  groups:['takeoff','approach','landing','rollout_stop','aircraft_scale','flight_overlay'] },
-    { owner:'motion',     key:'ground',  icon:'🅿', label:'Боксы и ВПП',    groups:['service','bay_nav','runway_geometry','service_bay_geometry','snap_zones','debug_overlays'] },
+    { owner:'motion',     key:'plane',   icon:'✈',  label:'Самолёт',  groups:['movement','turns','routing','collisions','effects','weather'] },
+    { owner:'motion',     key:'takeoff', icon:'🛫', label:'Взлёт',    groups:['takeoff','aircraft_scale','flight_overlay'] },
+    { owner:'motion',     key:'landing', icon:'🛬', label:'Посадка',  groups:['approach','landing','rollout_stop'] },
+    { owner:'motion',     key:'bays',    icon:'🅿', label:'Боксы',    groups:['service','bay_nav','service_bay_geometry','snap_zones'] },
+    { owner:'motion',     key:'runway',  icon:'🛤', label:'ВПП',      groups:['runway_geometry','debug_overlays'] },
     // «Сложность» tab — движковые ручки тест/демо-сессии (один подтаб).
     { owner:'difficulty', key:'control', icon:'⚙',  label:'Настройки',      groups:['ctrl','spawn','timing','events'] },
     // 'zones' (safe_areas) intentionally not surfaced — see HIDDEN_GROUPS below.
@@ -88,9 +90,9 @@
     groupsEl.querySelectorAll('details[data-subtab]').forEach(d => {
       d.style.display = d.dataset.subtab === key ? '' : 'none';
     });
-    // Секция per-level ×-множителей ВПП видна только в подтабе «Взлёт/посадка»
+    // Секция per-level ×-множителей ВПП видна только в подтабах «Взлёт» и «Посадка»
     document.querySelectorAll('.motion-runway-section').forEach(el => {
-      el.style.display = key === 'flight' ? '' : 'none';
+      el.style.display = (key === 'takeoff' || key === 'landing') ? '' : 'none';
     });
   }
 

@@ -527,6 +527,7 @@
       padding: 0 8px;
       flex: none;
       border-left: 1px solid var(--border);
+      position: relative;
     }
     #search {
       border: 1px solid rgba(127,155,176,.22);
@@ -541,6 +542,20 @@
     }
     #search:focus { width: 180px; outline: none; border-color: var(--accent2); }
     #search::placeholder { color: var(--muted); }
+    /* Pad right to avoid text running under the clear button */
+    #search:not(:placeholder-shown) { padding-right: 26px; }
+    #search-clear {
+      position: absolute;
+      right: 13px;
+      top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px;
+      border: none; background: transparent; padding: 0;
+      color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1;
+      cursor: pointer; border-radius: 50%;
+      transition: color .12s, background .12s;
+      place-items: center; /* set by JS to display:grid when active */
+    }
+    #search-clear:hover { color: var(--text); background: rgba(127,155,176,.18); }
 
     /* ── Groups: 2-col card grid ─────────────────────────────────────────── */
     #groups {
@@ -1198,7 +1213,7 @@
       transition: background .12s;
     }
     .toggle-card:hover { background: rgba(22,34,68,.8); }
-    .toggle-card .lbl { font-size: 13px; flex: 1; font-weight: 600; line-height: 1.2; }
+    .toggle-card .lbl { font-size: 13px; flex: 1; font-weight: 600; line-height: 1.2; min-width: 0; overflow: hidden; }
 
     /* ── Responsive: small screens ──────────────────────────────────────── */
     @media (max-width: 600px) {
