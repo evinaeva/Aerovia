@@ -243,6 +243,9 @@
   function startBiome(b: Biome){ if(!b.ready) return; survival=true; buildBiome(b); hideAllScreens(); reset(); }
   function renderBiomes(){
     const list=document.getElementById('biomeList')!; list.innerHTML='';
+    const tot=document.getElementById('biomeTotal');
+    if(tot) tot.innerHTML=SVGIC('plane')+` <b>${fmtNum(save.stats.survivalTotal||0)}</b> <span class="unit">${t('biomes.total')}</span>`;
+    const grid=document.createElement('div'); grid.className='biome-grid';
     BIOMES.forEach(b=>{
       const best=save.best['b_'+b.id]||0;
       const card=document.createElement('div');
@@ -256,8 +259,9 @@
         `<div class="biome__desc">${t('biome.'+b.id+'.tag')}</div>`+
         `<div class="biome__foot">${foot}</div>`;
       if(b.ready) card.onclick=()=>startBiome(b);
-      list.appendChild(card);
+      grid.appendChild(card);
     });
+    list.appendChild(grid);
   }
   // звезда из HUD-листа дизайна (инлайн, чтобы карточки не зависели от загрузки листов)
   const STAR_PATH='M11.5 2.3a.53.53 0 0 1 1 0l2.3 4.68a2.1 2.1 0 0 0 1.6 1.16l5.16.75a.53.53 0 0 1 .3.91l-3.74 3.64a2.1 2.1 0 0 0-.6 1.87l.88 5.14a.53.53 0 0 1-.77.56l-4.62-2.43a2.1 2.1 0 0 0-1.97 0L6.4 21a.53.53 0 0 1-.77-.56l.88-5.14a2.1 2.1 0 0 0-.6-1.87L2.16 9.8a.53.53 0 0 1 .3-.91l5.16-.75a2.1 2.1 0 0 0 1.6-1.16z';
