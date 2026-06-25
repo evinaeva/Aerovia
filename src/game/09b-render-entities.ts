@@ -420,62 +420,121 @@
     }
   }
 
+  // PNG-фон HUD: загружаем один раз; offscreen canvas строим с прозрачными вырезами
+  // под live-значения, чтобы рамки панелей оставались нетронутыми.
+  const _hudBarImg: HTMLImageElement = new Image();
+  _hudBarImg.src = 'assets/hud/wow-bar.png';
+  let _hudFrame: HTMLCanvasElement|null = null;
+
+  function _buildHudFrame(): boolean {
+    if(_hudFrame) return true;
+    if(!_hudBarImg.complete || !_hudBarImg.naturalWidth) return false;
+    const oc = document.createElement('canvas');
+    oc.width = _hudBarImg.naturalWidth; oc.height = _hudBarImg.naturalHeight;
+    const ox = oc.getContext('2d')!;
+    ox.drawImage(_hudBarImg, 0, 0);
+    // Bbox из детектора (pixel-точные координаты в пространстве PNG 2872×547):
+    ox.clearRect( 334, 202, 237, 112);  // сердца
+    ox.clearRect( 776, 150, 631, 239);  // "$12,450"
+    ox.clearRect(1405, 201, 777, 180);  // часы + "02:45"
+    ox.clearRect(2167, 160, 537, 245);  // "||"
+    _hudFrame = oc;
+    return true;
+  }
+
+  // Шрифт для HUD-цифр: Orbitron ближе всего к sci-fi референсу
+  const HUD_F = "'Orbitron','Fredoka',sans-serif";
+  // Центры значений в долях ширины PNG 2872px (детектор):
+  // hearts cx=453, money cx=1092, timer cx=1794, pause cx=2436
+  const HUD_FX = {h:453/2872, m:1092/2872, t:1794/2872, p:2436/2872};
+
   function drawHUD(){
     const hud=HUD_H();
-    // плавающая панель — Variant A: ghost pill, full-width, square corners
-    // панель перекрывает safe-area сверху, контент — ниже выреза/скругления
-    rr(0,0,W,hud+safe.t,0);
-    ctx.fillStyle='rgba(4,8,20,.06)'; ctx.fill();
-    ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.10); rr(0,0,W,hud+safe.t,0); ctx.stroke();
+    const barH=hud+safe.t;
     const cy=safe.t+hud/2;
-    ctx.textBaseline='middle';
-    // тонкий вертикальный разделитель (VSep из макета TopHUD)
-    const vsep=(vx: number)=>{ ctx.fillStyle=hexa(COL.phosphor,.16); ctx.fillRect(vx, cy-13*ui, 1, 26*ui); };
-    // ── левый кластер: жизни · | · деньги · | · цель (мокап TopHUD) ──
-    for(let i=0;i<K.START_LIVES;i++) heart(safe.l+26*ui+i*19*ui, cy, 4.5*ui, i<lives?COL.life:null);
-    let lx = safe.l+26*ui + K.START_LIVES*19*ui + 12*ui;
-    vsep(lx); lx += 13*ui;
-    // деньги (золото)
-    if(ATLAS) SPRITES.blitC('coin', lx+7*ui, cy, 16*ui, 16*ui);
-    else { ctx.textAlign='left'; ctx.fillStyle=COL.coin; ctx.font=`${13*ui}px ${NUM}`; ctx.fillText('$', lx, cy); }
-    ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`;
-    ctx.fillStyle = money<0?COL.life:COL.coin;
-    ctx.fillText(fmtMoney(money), lx+18*ui, cy);
-    lx += 18*ui + ctx.measureText(fmtMoney(money)).width + 16*ui;
-    // ── цель уровня (сирень): мишень + «N / M». В бесконечном — налёт «✈ N» (фосфор) ──
-    vsep(lx); lx += 16*ui;
-    const mv = LV.objective.metric==='upgrades'?upgradesDone:served;
-    const endless = survival || LV.objective.race;   // race (L5): «без лимита»
-    const goalTone = endless ? COL.phosphor : COL.purple;
-    iconTarget(lx+9*ui, cy, 9*ui, goalTone);
-    ctx.textAlign='left'; ctx.font=`700 ${17*ui}px ${NUM}`; ctx.fillStyle=goalTone;
-    const goalTxt = endless ? ('✈ '+fmtNum(served)) : (fmtNum(mv)+' / '+fmtNum(LV.objective.target ?? 0));
-    ctx.fillText(goalTxt, lx+23*ui, cy);
-    // ── правый: таймер перед кнопкой паузы (число, как в макете) ──
-    const tShown = LV.objective.time ? Math.max(0, LV.objective.time-gameTime) : gameTime;
-    const urgent = LV.objective.time && tShown<=10;
-    ctx.textAlign='right'; ctx.fillStyle=urgent?COL.life:COL.paper; ctx.font=`700 ${18*ui}px ${NUM}`;
-    ctx.fillText(fmtTime(tShown), pauseBtn.x-14*ui, cy);
+    const NEON='#27E6FF';
+    const fs=Math.round(hud*0.42);  // основной размер шрифта HUD
 
-    // кнопка паузы — спрайт-чип (на паузе поверх рисуем «play»)
-    const pcx=pauseBtn.x+pauseBtn.w/2, pcy=pauseBtn.y+pauseBtn.h/2;
-    const pauseSprite = ATLAS && !paused &&
-      SPRITES.blitC('pause-btn', pcx, pcy, Math.max(pauseBtn.w,pauseBtn.h), Math.max(pauseBtn.w,pauseBtn.h));
-    if(!pauseSprite){
-      rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui);
-      ctx.fillStyle='rgba(4,8,20,.10)'; ctx.fill();
-      ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.08);
-      rr(pauseBtn.x,pauseBtn.y,pauseBtn.w,pauseBtn.h,8*ui); ctx.stroke();
-      ctx.fillStyle=COL.paper;
-      if(!paused){
-        ctx.fillRect(pcx-6*ui,pcy-6*ui,4*ui,12*ui);
-        ctx.fillRect(pcx+2*ui,pcy-6*ui,4*ui,12*ui);
-      } else {
-        ctx.beginPath(); ctx.moveTo(pcx-5*ui,pcy-6*ui); ctx.lineTo(pcx+7*ui,pcy); ctx.lineTo(pcx-5*ui,pcy+6*ui); ctx.closePath(); ctx.fill();
-      }
+    // ── Chrome-фон: PNG с прозрачными вырезами поверх тёмной подложки ──
+    if(_buildHudFrame() && _hudFrame){
+      ctx.fillStyle='#050c1a';
+      ctx.fillRect(0,0,W,barH);
+      ctx.drawImage(_hudFrame, 0, 0, W, barH);
+    } else {
+      // Fallback до загрузки PNG
+      const bg=ctx.createLinearGradient(0,0,0,barH);
+      bg.addColorStop(0,'#0d1f42'); bg.addColorStop(1,'#07111f');
+      ctx.fillStyle=bg; ctx.fillRect(0,0,W,barH);
+      ctx.fillStyle=hexa(NEON,.85); ctx.fillRect(0,barH-2,W,2);
     }
 
-    // очередь потребностей выбранного борта + его терпение — карточка слева сверху
+    ctx.textBaseline='middle';
+
+    // ── Сердца (cx = 15.8% от W) ──
+    const hcx=W*HUD_FX.h;
+    const hSp=19*ui;
+    const hx0=hcx-(K.START_LIVES-1)*hSp/2;
+    for(let i=0;i<K.START_LIVES;i++)
+      heart(hx0+i*hSp, cy, 4.5*ui, i<lives?COL.life:null);
+
+    // ── Деньги (cx = 38.0% от W) ──
+    const mncx=W*HUD_FX.m;
+    const moneyStr=fmtMoney(money);
+    ctx.font=`700 ${fs}px ${HUD_F}`;
+    const mnW=ctx.measureText(moneyStr).width;
+    const dolW=Math.round(fs*0.65);  // ширина "$"
+    const mnX0=mncx-(dolW+6*ui+mnW)/2;
+    ctx.save();
+    ctx.shadowColor=NEON; ctx.shadowBlur=6;
+    ctx.fillStyle=hexa(NEON,.70); ctx.font=`700 ${Math.round(fs*0.75)}px ${HUD_F}`;
+    ctx.textAlign='left'; ctx.fillText('$', mnX0, cy);
+    ctx.font=`700 ${fs}px ${HUD_F}`;
+    ctx.fillStyle=money<0?COL.life:NEON;
+    ctx.fillText(moneyStr, mnX0+dolW+6*ui, cy);
+    ctx.restore();
+
+    // ── Таймер с иконкой часов (cx = 62.5% от W) ──
+    const tmcx=W*HUD_FX.t;
+    const tShown=LV.objective.time?Math.max(0,LV.objective.time-gameTime):gameTime;
+    const urgent=!!(LV.objective.time&&tShown<=10);
+    const timerStr=fmtTime(tShown);
+    ctx.font=`700 ${fs}px ${HUD_F}`;
+    const tmW=ctx.measureText(timerStr).width;
+    const clkR=Math.round(hud*0.18);
+    const gap=7*ui;
+    const totalW=clkR*2+gap+tmW;
+    const clkCX=tmcx-totalW/2+clkR;
+    const clkCol=urgent?COL.life:NEON;
+    ctx.save();
+    ctx.shadowColor=clkCol; ctx.shadowBlur=5;
+    ctx.strokeStyle=clkCol; ctx.lineWidth=Math.max(1.5,clkR*0.17); ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(clkCX,cy,clkR,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(clkCX,cy); ctx.lineTo(clkCX,cy-clkR*0.55); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(clkCX,cy); ctx.lineTo(clkCX+clkR*0.42,cy); ctx.stroke();
+    ctx.fillStyle=urgent?COL.life:NEON;
+    ctx.textAlign='left'; ctx.fillText(timerStr, clkCX+clkR+gap, cy);
+    ctx.restore();
+
+    // ── Кнопка паузы (cx = 84.8% от W → обновляем pauseBtn для хит-теста) ──
+    const pzcx=W*HUD_FX.p;
+    pauseBtn.x=Math.round(pzcx-pauseBtn.w/2);
+    pauseBtn.y=Math.round(cy-pauseBtn.h/2);
+    const ps=Math.round(hud*0.28);
+    ctx.save();
+    ctx.shadowColor=NEON; ctx.shadowBlur=6;
+    ctx.fillStyle=NEON;
+    if(!paused){
+      ctx.fillRect(pzcx-ps*0.85, cy-ps, ps*0.55, ps*2);
+      ctx.fillRect(pzcx+ps*0.30, cy-ps, ps*0.55, ps*2);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(pzcx-ps,     cy-ps*1.1);
+      ctx.lineTo(pzcx+ps*1.2, cy);
+      ctx.lineTo(pzcx-ps,     cy+ps*1.1);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+
     drawPlaneCard();
   }
 
