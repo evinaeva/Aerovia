@@ -1,6 +1,7 @@
   /* ───── РЕДАКТОР СЛОЖНОСТИ — все контролы пишут в черновик «Разметки» (window.Draft) ───── */
   const DE_EVENTS = [['vip','VIP'],['emergency','авария'],['medical','медицина'],['rush','час пик'],['fog','туман'],['wind','ветер']];
   const DE_COND   = [['money','💰 Деньги','≥',100],['lives','♥ Жизни','≥',1],['upg','🔧 Апгрейды','≥',1],['timeTier','⏱ За время, с','≤',120],['maxLate','⌛ Просрочек','≤',0],['maxCrash','💥 Крушений','≤',0]];
+  const COND_MAX  = 3; // максимум одновременно активных доп-условий
   const _clamp01 = v => Math.max(0, Math.min(1, v));
   function draftLE()    { return (window.Draft && window.Draft.raw) ? window.Draft.raw() : null; }
   function draftCommit(){ if (window.Draft && window.Draft.commit) window.Draft.commit(); }
@@ -44,7 +45,12 @@
       chip.addEventListener('click', e => { e.preventDefault(); const le = draftLE(); if (!le) return; const k = chip.dataset.mode; le[k] = !le[k]; draftCommit(); renderDiffEditor(); afterDiffEdit(); }));
     document.querySelectorAll('#de-cond [data-de-cond-tog]').forEach(tog =>
       tog.addEventListener('click', e => { e.preventDefault(); const le = draftLE(); if (!le) return; const k = tog.dataset.deCondTog; le.cond = le.cond || {};
-        if (le.cond[k]) le.cond[k] = null; else { const def = (DE_COND.find(c=>c[0]===k)||[])[3]||0; le.cond[k] = [def,def,def]; }
+        if (le.cond[k]) { le.cond[k] = null; }
+        else {
+          const active = Object.values(le.cond).filter(v => Array.isArray(v)).length;
+          if (active >= COND_MAX) return;
+          const def = (DE_COND.find(c=>c[0]===k)||[])[3]||0; le.cond[k] = [def,def,def];
+        }
         draftCommit(); renderDiffEditor(); afterDiffEdit(); }));
     document.querySelectorAll('#de-cond .de-cond-v').forEach(inp =>
       inp.addEventListener('input', () => { const le = draftLE(); if (!le) return; const row = inp.closest('[data-de-cond]'); const k = row.dataset.deCond; if (!le.cond || !le.cond[k]) return; le.cond[k][+inp.dataset.i] = Math.round(+inp.value||0); draftCommit(); afterDiffEdit(); }));
@@ -115,7 +121,7 @@
     // геометрию/настройки читаем из ЭКСПОРТА (правильный Level с layout), а не из
     // плоского черновика редактора (там hangars/runways — массивы верхнего уровня).
     let lvRead; try { lvRead = window.Draft.export(); } catch (_) { lvRead = le; }
-    const k = GAME.autoDifficulty(target, lvRead, { archetype: arch, locked });
+    const k = GAME.autoDifficulty(target, lvRead, { archetype: arch, locked, condMax: COND_MAX });
     if (applyEcon) {
       if (k.pace != null) le.pace = k.pace;
       ['openCost','upgCost','rwOpenCost','maxUp','minUp','startMoney','crashPenalty','latePenalty']
@@ -127,7 +133,8 @@
       if (Array.isArray(o.stars)) le.stars = o.stars.slice(0,3);
       le.time = o.time || 0; le.race = false;
       le.cond = le.cond || {};
-      // сгенерированное условие → в cond; не сгенерированное (locked) оставляем как было
+      // сгенерированное условие → в cond; не сгенерированное (locked) оставляем как было.
+      // COND_MAX уже применён внутри autoDifficulty — обрезки здесь нет.
       ['money','lives','upg','timeTier','maxLate','maxCrash'].forEach(c => {
         if (Array.isArray(o[c])) le.cond[c] = o[c].slice(0,3);
       });
@@ -152,8 +159,11 @@
     if (lbl) lbl.textContent = le.metric==='survival' ? 'Пороги 1★ / 2★ / 3★ (секунды)' : le.metric==='upgrades' ? 'Пороги 1★ / 2★ / 3★ (апгрейды)' : 'Пороги 1★ / 2★ / 3★ (борта)';
     document.querySelectorAll('#de-events [data-de-ev]').forEach(chip => { const on = !!(le.events && le.events[chip.dataset.deEv]); chip.classList.toggle('on', on); const cb = chip.querySelector('input'); if (cb) cb.checked = on; });
     document.querySelectorAll('#de-modes [data-mode]').forEach(chip => { const on = !!le[chip.dataset.mode]; chip.classList.toggle('on', on); const cb = chip.querySelector('input'); if (cb) cb.checked = on; });
+    const activeCondCount = le.cond ? Object.values(le.cond).filter(v => Array.isArray(v)).length : 0;
     document.querySelectorAll('#de-cond [data-de-cond]').forEach(row => { const k = row.dataset.deCond; const arr = le.cond && le.cond[k]; const on = Array.isArray(arr);
-      const tog = row.querySelector('[data-de-cond-tog]'); tog.classList.toggle('on', on); const tcb = tog.querySelector('input'); if (tcb) tcb.checked = on;
+      const tog = row.querySelector('[data-de-cond-tog]'); tog.classList.toggle('on', on);
+      tog.classList.toggle('disabled', !on && activeCondCount >= COND_MAX);
+      const tcb = tog.querySelector('input'); if (tcb) tcb.checked = on;
       row.querySelectorAll('.de-cond-v').forEach(inp => { inp.disabled = !on; inp.value = on ? arr[+inp.dataset.i] : ''; }); });
     const s = le.stars || [], w = document.getElementById('de-stars-warn');
     if (w) w.textContent = (s[0]>0 && s[0]<=s[1] && s[1]<=s[2]) ? '' : '⚠ пороги должны идти по возрастанию';

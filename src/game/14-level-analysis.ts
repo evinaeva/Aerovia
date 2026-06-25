@@ -259,7 +259,7 @@
     maxUp?: number; minUp?: number; startMoney?: number;
     crashPenalty?: number; latePenalty?: number;
   }
-  interface AutoOpts { archetype?: string; locked?: string[]; }
+  interface AutoOpts { archetype?: string; locked?: string[]; condMax?: number; }
   function autoDifficulty(target: number, lv: Partial<Level> = {}, opts: AutoOpts = {}): AutoResult {
     const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
     const r = (v: number) => Math.round(v);
@@ -407,6 +407,24 @@
     if(lockedSet.has('startMoney')) delete (out as any).startMoney;
     if(lockedSet.has('crashPenalty')) delete (out as any).crashPenalty;
     if(lockedSet.has('latePenalty')) delete (out as any).latePenalty;
+
+    // — condMax: до валидации отбираем не более N условий по весу акцента —
+    // Обрезка ПОСЛЕ respect-manual, но ДО цикла проходимости: валидатор работает
+    // ровно с теми условиями, которые войдут в итоговый уровень.
+    if(opts.condMax && opts.condMax > 0){
+      const cands = [
+        { k:'upg',      score: A.upg     * 2.0 },
+        { k:'money',    score: A.money   * 2.0 },
+        { k:'timeTier', score: A.time    * 1.5 },
+        { k:'maxCrash', score: A.quality * 1.2 },
+        { k:'maxLate',  score: A.quality * 1.0 },
+        { k:'lives',    score: A.quality * 0.8 },
+      ].filter(c => (objective as any)[c.k] !== undefined);
+      const keep = new Set(cands.sort((a,b)=>b.score-a.score).slice(0,opts.condMax).map(c=>c.k));
+      for(const k of ['upg','money','timeTier','maxCrash','maxLate','lives']){
+        if(!keep.has(k)) delete (objective as any)[k];
+      }
+    }
 
     // — гарантия проходимости: ослабляем пороги, пока все тиры не зелёные —
     // валидируем тот же стамплённый уровень + locked-значения оператора (baseObj).

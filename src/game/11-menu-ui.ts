@@ -149,7 +149,7 @@
     if(v) v.textContent=fmtNum(got);
     if(mx) mx.textContent='/'+fmtNum(LEVELS.length*3);
   }
-  function showStart(){ hideAllScreens(); updateStartChips(); document.getElementById('startScreen')!.classList.remove('hidden'); }
+  function showStart(){ inMenu=true; hideAllScreens(); updateStartChips(); document.getElementById('startScreen')!.classList.remove('hidden'); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen')!.classList.remove('hidden'); }
   function startLevel(idx: number){ survival=false; buildLevel(idx); hideAllScreens(); reset(); }
   function startBonus(b: Bonus){ if(!bonusUnlocked(b)) return; survival=false; buildBonus(b); hideAllScreens(); reset(); }
