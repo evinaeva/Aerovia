@@ -453,7 +453,6 @@
   ['fullscreenchange','webkitfullscreenchange'].forEach(ev=>document.addEventListener(ev, ()=>{ if(inFullscreen()) lockLandscape(); resize(); }));
 
   document.getElementById('startBtn')!.onclick=showLevels;
-  { const b=document.getElementById('levelsBtn'); if(b) b.onclick=showLevels; }
   // «Выживание» ведёт прямо на экран карт (карты-биомы = режим Survival)
   { const b=document.getElementById('survivalBtn'); if(b) b.onclick=showBiomes; }
   document.getElementById('backBtn')!.onclick=()=>{ showStart(); };
