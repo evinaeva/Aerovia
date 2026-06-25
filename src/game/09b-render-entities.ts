@@ -66,10 +66,11 @@
     ctx.save(); ctx.shadowColor=hexa(col,.55); ctx.shadowBlur=10; ctx.lineWidth=2; ctx.strokeStyle=col; rr(bx,by,bSize,bSize,bSize*0.28); ctx.stroke(); ctx.restore();
     drawIcon(b.type, bx+bSize/2, by+bSize/2, bSize*0.30, col, '#0c1736');
     const up=bayUpCost(b);
-    if(up!=null){ const afford=money>=up, cs=Math.min(bSize*0.72,28*ui), cx2=x+w-pad-cs, cy2=top?y+pad:y+h-pad-cs;
-      rr(cx2,cy2,cs,cs,cs*0.3); ctx.fillStyle=afford?hexa(COL.green,.18):'#0c1736'; ctx.fill();
-      ctx.save(); if(afford){ctx.shadowColor=hexa(COL.green,.5); ctx.shadowBlur=10;} ctx.lineWidth=1.5; ctx.strokeStyle=afford?COL.green:hexa(COL.muted,.6); rr(cx2,cy2,cs,cs,cs*0.3); ctx.stroke(); ctx.restore();
-      ctx.strokeStyle=afford?COL.green:COL.muted; ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.lineJoin='round';
+    if(up!=null && money>=up){ const cs=Math.min(bSize*0.72,28*ui), cx2=x+w-pad-cs, cy2=top?y+pad:y+h-pad-cs;
+      const pulse=0.6+0.4*Math.sin(nowT*0.004);
+      rr(cx2,cy2,cs,cs,cs*0.3); ctx.fillStyle=hexa(COL.green,0.12+0.10*pulse); ctx.fill();
+      ctx.save(); ctx.shadowColor=hexa(COL.green,0.4+0.3*pulse); ctx.shadowBlur=7+8*pulse; ctx.lineWidth=1.5; ctx.strokeStyle=COL.green; rr(cx2,cy2,cs,cs,cs*0.3); ctx.stroke(); ctx.restore();
+      ctx.strokeStyle=COL.green; ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.lineJoin='round';
       const ax=cx2+cs/2, ay=cy2+cs/2, ar=cs*0.26; ctx.beginPath(); ctx.moveTo(ax,ay+ar); ctx.lineTo(ax,ay-ar); ctx.moveTo(ax-ar*0.7,ay-ar*0.3); ctx.lineTo(ax,ay-ar); ctx.lineTo(ax+ar*0.7,ay-ar*0.3); ctx.stroke(); }
     const totalDots=Math.min(4, bayMaxLvl(b)), dotR=3.2*ui, dgap=4*ui;   // 0 → ангар неулучшаем: без плашки
     if(totalDots>0){
@@ -264,13 +265,14 @@
       ctx.beginPath(); ctx.arc(ccx,ccy,7*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
       ctx.lineWidth=2.5*ui; ctx.lineCap='round'; ctx.strokeStyle=col; ctx.stroke();
     }
-    // подсказка цены апгрейда (жёлтым, если хватает)
+    // подсказка цены апгрейда — только если хватает денег, с пульсацией
     const up=bayUpCost(b);
-    if(up!=null){
-      const enough = money>=up;
-      ctx.fillStyle = enough?COL.coin:COL.muted; ctx.font=`${9*ui}px ${NUM}`;
+    if(up!=null && money>=up){
+      const pulse=0.6+0.4*Math.sin(nowT*0.004);
+      ctx.save(); ctx.globalAlpha=pulse; ctx.fillStyle=COL.coin; ctx.font=`${9*ui}px ${NUM}`;
       ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText('↑ '+fmtMoney(up), b.x+b.w/2, b.y+b.h+4*ui);
+      ctx.restore();
     }
     ctx.restore();
   }
@@ -351,14 +353,11 @@
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
     else drawPlaneBodyAt(pl.x, by, pl.ang, ui*0.5*SZ()*vs, pl.vip, pl.emergency, pl.medical);
 
-    // пузырёк нужды над бортом
+    // пузырёк нужды над бортом: воздух (ожидание) + апрон; на ВПП и в ангаре — скрыт
     if(LV.bonus){
       // бонус: над гусеницей — цветок нужного цвета (её цель). Куколка/бабочка — без пузырька.
       if(pl.zone!=='bay' && pl.bug==='cat') drawFlower(pl.x, pl.y-28*ui*vs, 9*ui, BSP[pl.species||0].petal);
-    } else if(pl.zone==='field'){
-      // иконка нужды появляется только когда борт уже на апроне (сел и выкатился с ВПП).
-      // В воздухе (зона ожидания) и на ВПП её нет — нужду в небе игрок узнаёт тапом по
-      // борту (карточка слева сверху, см. drawPlaneCard).
+    } else if(pl.zone==='field' || pl.zone==='air'){
       const _ny = pl.y-28*ui*vs;
       if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui)))
         drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // чип svc-* (фолбэк: процедурная иконка)

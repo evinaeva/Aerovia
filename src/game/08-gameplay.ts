@@ -513,6 +513,8 @@
       if(cost!=null && money>=cost){
         money-=cost; b.open=true; ACH.onBayOpen(b);
         upgradesDone++; SND.build(); HAP.tap();
+      } else if(cost!=null && money<cost){
+        toast={text:t('toast.noMoney',{cost:fmtMoney(cost)}), t:0, good:false};
       }
       return;
     }
@@ -539,6 +541,8 @@
             if(res.dir==='landing') r.landingOpen=true; else r.takeoffOpen=true;
             upgradesDone++;
             SND.build(); HAP.tap();
+          } else {
+            toast={text:t('toast.noMoney',{cost:fmtMoney(res.cost)}), t:0, good:false};
           }
           return;   // тап потреблён (есть что купить, даже если не хватает денег)
         }
@@ -761,6 +765,7 @@
     // Survival: только личный рекорд карты (обслуженные борта); звёзды/прогресс кампании не трогаем
     if(survival){
       if(save.best[levelKey]==null || served>save.best[levelKey]) save.best[levelKey]=served;
+      save.stats.survivalTotal = (save.stats.survivalTotal||0) + served;
       saveGame(); return;
     }
     const stars=computeStars();
