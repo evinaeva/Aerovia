@@ -108,7 +108,7 @@
       if (a.allowedRotations.length && !a.allowedRotations.map(Number).includes(+a.defaultRotation)) warnings.push('defaultRotation не входит в allowedRotations');
       return warnings;
     }
-    function normFromEvent(e) { const img = root.querySelector('.ac-canvas-img'); if (!img) return null; const b = img.getBoundingClientRect(); return { x:round((e.clientX - b.left) / b.width), y:round((e.clientY - b.top) / b.height), px:Math.round((e.clientX - b.left) / b.width * (state.natural.w || b.width)), py:Math.round((e.clientY - b.top) / b.height * (state.natural.h || b.height)) }; }
+    function normFromEvent(e) { const ref = root.querySelector('.ac-canvas-img') || root.querySelector('.ac-canvas'); if (!ref) return null; const b = ref.getBoundingClientRect(); if (b.width === 0 || b.height === 0) return null; return { x:round((e.clientX - b.left) / b.width), y:round((e.clientY - b.top) / b.height), px:Math.round((e.clientX - b.left) / b.width * (state.natural.w || b.width)), py:Math.round((e.clientY - b.top) / b.height * (state.natural.h || b.height)) }; }
     function findPoint(a, id, kind) { return a.points.find(p => p.id === id) || a.points.find(p => p.kind === kind); }
     function findRect(a, id, kind) { return a.rects.find(r => r.id === id) || a.rects.find(r => r.kind === kind); }
     function upsertPoint(kind, n) { const a = asset(); let p = findPoint(a, state.selectedId, kind); if (!p) { p = { id:uid(kind), kind, x:n.x, y:n.y, ...(kind === 'snap' ? { radius:.1 } : {}) }; a.points.push(p); } p.x = n.x; p.y = n.y; if (kind === 'anchor') a.anchor = { x:n.x, y:n.y }; state.selectedType = 'point'; state.selectedKind = kind; state.selectedId = p.id; }
