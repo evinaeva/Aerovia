@@ -1401,3 +1401,16 @@
   padding: 7px 9px;
   font-size: 12px;
 }
+.ac-file-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ac-file-row input[type="file"] {
+  max-width: 220px;
+}
+.ac-file-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
