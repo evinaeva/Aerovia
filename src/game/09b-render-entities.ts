@@ -520,7 +520,7 @@
 
     // ── Деньги (cx = 38.0% от W) ──
     const mncx=W*HUD_FX.m;
-    const moneyStr=fmtMoney(money);
+    const moneyStr=fmtNum(money); // $ рисуется отдельно — суффикс ₿ из fmtMoney не нужен
     ctx.font=`700 ${fs}px ${HUD_F}`;
     const mnW=ctx.measureText(moneyStr).width;
     const dolW=Math.round(fs*0.65);  // ширина "$"

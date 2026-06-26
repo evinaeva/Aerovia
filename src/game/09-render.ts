@@ -39,7 +39,8 @@
     ctx.fillStyle=_vigGrad; ctx.fillRect(0,0,W,H);
   }
   function heart(x: number,y: number,r: number,fill?: string|null){ // жизни в HUD
-    if(ATLAS && SPRITES.blitC(fill?'heart':'heart-empty', x, y, r*6, r*6)) return;
+    // Для заполненных сердец — процедурный путь (спрайт heart.png розовый, не совпадает с COL.life).
+    if(ATLAS && !fill && SPRITES.blitC('heart-empty', x, y, r*6, r*6)) return;
     ctx.save(); ctx.translate(x,y); ctx.beginPath(); ctx.moveTo(0,r*0.7);
     ctx.bezierCurveTo(-r*1.3,-r*0.4,-r*0.5,-r*1.1,0,-r*0.35);
     ctx.bezierCurveTo(r*0.5,-r*1.1,r*1.3,-r*0.4,0,r*0.7); ctx.closePath();
