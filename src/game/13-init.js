@@ -59,10 +59,13 @@
     HANDOFF_IMG.hangar     = loadI(BASE + 'sprite_hangar.png');
     HANDOFF_IMG.gate       = loadI(BASE + 'sprite_gate.png');
     HANDOFF_IMG.hud        = loadI(BASE + 'sprite_hud.png');
-    HANDOFF_IMG.hangarBase = loadI(BASE + 'sprite_hangar_base.png');
-    HANDOFF_IMG.svcFuel    = loadI(BASE + 'svc_fuel.png');
-    HANDOFF_IMG.svcRepair  = loadI(BASE + 'svc_repair.png');
-    HANDOFF_IMG.svcBoard   = loadI(BASE + 'svc_board.png');
+    HANDOFF_IMG.hangarBase   = loadI(BASE + 'sprite_hangar_base.png');
+    HANDOFF_IMG.svcFuel      = loadI(BASE + 'svc_fuel.png');
+    HANDOFF_IMG.svcRepair    = loadI(BASE + 'svc_repair.png');
+    HANDOFF_IMG.svcBoard     = loadI(BASE + 'svc_board.png');
+    HANDOFF_IMG.svcFuelBot   = loadI(BASE + 'svc_fuel_bot.png');
+    HANDOFF_IMG.svcRepairBot = loadI(BASE + 'svc_repair_bot.png');
+    HANDOFF_IMG.svcBoardBot  = loadI(BASE + 'svc_board_bot.png');
     const base = loadI(BASE + 'sprite_plane2.png');
     HANDOFF_IMG.plane = base;
     base.onload = function() {

@@ -199,19 +199,10 @@
         ctx.drawImage(hiBase as HTMLImageElement, b.x, b.y, b.w, b.h);
       }
       if(b.open){
-        const svcImg = (b.type==='fuel' ? HANDOFF_IMG.svcFuel : b.type==='repair' ? HANDOFF_IMG.svcRepair : b.type==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
-        if(svcImg && _hiOk(svcImg)){
-          if(b.side !== 'top'){
-            // Нижний бокс: интерьер снизу. Сдвигаем иконку вниз (без флипа),
-            // клиппируем по границе бокса — иконка в интерьере и читается правильно.
-            ctx.save();
-            ctx.beginPath(); ctx.rect(b.x, b.y, b.w, b.h); ctx.clip();
-            ctx.drawImage(svcImg, b.x, b.y + b.h * 0.42, b.w, b.h);
-            ctx.restore();
-          } else {
-            ctx.drawImage(svcImg, b.x, b.y, b.w, b.h);
-          }
-        }
+        const _svcTop = (b.type==='fuel' ? HANDOFF_IMG.svcFuel : b.type==='repair' ? HANDOFF_IMG.svcRepair : b.type==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
+        const _svcBot = (b.type==='fuel' ? HANDOFF_IMG.svcFuelBot : b.type==='repair' ? HANDOFF_IMG.svcRepairBot : b.type==='board' ? HANDOFF_IMG.svcBoardBot : null) as HTMLImageElement | null;
+        const svcDraw = (b.side !== 'top' ? _svcBot : _svcTop) as HTMLImageElement | null;
+        if(svcDraw && _hiOk(svcDraw)) ctx.drawImage(svcDraw, b.x, b.y, b.w, b.h);
       }
       ctx.restore();
       return;
@@ -419,8 +410,12 @@
       if(pl.zone!=='bay' && pl.bug==='cat') drawFlower(pl.x, pl.y-28*ui*vs, 9*ui, BSP[pl.species||0].petal);
     } else if(pl.zone==='field' || pl.zone==='air'){
       const _ny = pl.y-28*ui*vs;
-      if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui)))
-        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // чип svc-* (фолбэк: процедурная иконка)
+      const _svcNeed = (need==='fuel' ? HANDOFF_IMG.svcFuel : need==='repair' ? HANDOFF_IMG.svcRepair : need==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
+      const _sz = 33*ui;
+      if(_svcNeed && _hiOk(_svcNeed))
+        ctx.drawImage(_svcNeed, pl.x-_sz/2, _ny-_sz/2, _sz, _sz);
+      else if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, _sz, _sz)))
+        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);
     }
   }
 

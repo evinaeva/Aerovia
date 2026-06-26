@@ -26,10 +26,13 @@ declare const HANDOFF_IMG: {
   plane:      HTMLImageElement | null;
   planes:     (HTMLImageElement | HTMLCanvasElement)[];
   ready:      boolean;
-  hangarBase: HTMLImageElement | null;
-  svcFuel:    HTMLImageElement | null;
-  svcRepair:  HTMLImageElement | null;
-  svcBoard:   HTMLImageElement | null;
+  hangarBase:    HTMLImageElement | null;
+  svcFuel:       HTMLImageElement | null;
+  svcRepair:     HTMLImageElement | null;
+  svcBoard:      HTMLImageElement | null;
+  svcFuelBot:    HTMLImageElement | null;
+  svcRepairBot:  HTMLImageElement | null;
+  svcBoardBot:   HTMLImageElement | null;
 };
 declare function _hiOk(im: HTMLImageElement | HTMLCanvasElement | null): boolean;
 declare function _hiDraw(im: HTMLImageElement | HTMLCanvasElement | null, cx: number, cy: number, w: number, h: number, rotDeg?: number): boolean;

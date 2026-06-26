@@ -82,10 +82,13 @@
     plane: null,      // sprite_plane2.png  base
     planes: [],       // [0..3]: livery variants
     ready: false,     // set once plane base loaded
-    hangarBase: null, // sprite_hangar_base.png  (base for all bays)
-    svcFuel: null,    // svc_fuel.png
-    svcRepair: null,  // svc_repair.png
-    svcBoard: null,   // svc_board.png
+    hangarBase: null,   // sprite_hangar_base.png  (base for all bays)
+    svcFuel: null,      // svc_fuel.png        — иконка услуги (верхние боксы)
+    svcRepair: null,    // svc_repair.png
+    svcBoard: null,     // svc_board.png
+    svcFuelBot: null,   // svc_fuel_bot.png    — иконка услуги (нижние/боковые боксы)
+    svcRepairBot: null, // svc_repair_bot.png
+    svcBoardBot: null,  // svc_board_bot.png
   };
   // Returns true if the image/canvas is ready to draw.
   function _hiOk(im) {
