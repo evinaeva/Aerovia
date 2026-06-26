@@ -72,16 +72,26 @@
   // planes[] = 4 livery variants pre-rendered from sprite_plane2.png.
   // ready = true once the plane base image has loaded (liveries are built synchronously).
   const HANDOFF_IMG = {
-    bg: null,       // sprite_back_full.png
-    apron: null,    // sprite_apron.png
-    vpp: null,      // sprite_vpp.png  (runway strip)
-    vppConn: null,  // sprite_vpp_conn.png  (Y-junction)
-    hangar: null,   // sprite_hangar.png  (top bays)
-    gate: null,     // sprite_gate.png    (bottom bays)
-    hud: null,      // sprite_hud.png
-    plane: null,    // sprite_plane2.png  base
-    planes: [],     // [0..3]: livery variants
-    ready: false,   // set once plane base loaded
+    bg: null,         // sprite_back_full.png
+    apron: null,      // sprite_apron.png
+    vpp: null,        // sprite_vpp.png  (runway strip)
+    vppConn: null,    // sprite_vpp_conn.png  (Y-junction)
+    hangar: null,     // sprite_hangar.png  (top bays, legacy fallback)
+    gate: null,       // sprite_gate.png    (bottom bays, legacy fallback)
+    hud: null,        // sprite_hud.png
+    plane: null,      // sprite_plane2.png  base
+    planes: [],       // [0..3]: livery variants
+    ready: false,     // set once plane base loaded
+    hangarBase: null,   // sprite_hangar_base.png  (base for all bays)
+    svcFuel: null,      // svc_fuel.png        — иконка услуги (верхние боксы)
+    svcRepair: null,    // svc_repair.png
+    svcBoard: null,     // svc_board.png
+    svcFuelBot: null,    // svc_fuel_bot.png    — иконка услуги (нижние боксы)
+    svcRepairBot: null,  // svc_repair_bot.png
+    svcBoardBot: null,   // svc_board_bot.png
+    svcFuelSide: null,   // svc_fuel_side.png   — иконка услуги (боковые боксы)
+    svcRepairSide: null, // svc_repair_side.png
+    svcBoardSide: null,  // svc_board_side.png
   };
   // Returns true if the image/canvas is ready to draw.
   function _hiOk(im) {

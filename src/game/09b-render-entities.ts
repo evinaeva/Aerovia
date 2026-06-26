@@ -182,14 +182,29 @@
         assetMetadataRegistry.drawDebugOverlay(meta, pngDrawRect, b.id || b.type, 0);
       }
     }
-    // Handoff PNG: top bays → sprite_hangar.png, bottom bays → sprite_gate.png.
-    // Drawn before the zone-skin / atlas path so the handoff art shows when atlas isn't ready.
-    const hiSide = b.side === 'top' ? HANDOFF_IMG.hangar : HANDOFF_IMG.gate;
-    if(!b.deice && !LV.bonus && _hiOk(hiSide)){
+    // Handoff PNG: базовый ангар (sprite_hangar_base.png) + иконка услуги.
+    // Для нижних боксов (gate facing up) база зеркалится по вертикали.
+    // Game-state оверлеи (тинт занятости, прогресс, ценник закрытого) будут
+    // добавлены отдельно вместе с соответствующими спрайтами.
+    const hiBase = HANDOFF_IMG.hangarBase;
+    if(!b.deice && !LV.bonus && _hiOk(hiBase)){
       ctx.save();
-      ctx.drawImage(hiSide as HTMLImageElement, b.x, b.y, b.w, b.h);
-      // Occupied tint
-      if(b.occupied){ const tone=(({fuel:'teal',repair:'amber',board:'rose',deice:'ice'} as Record<string,string>)[b.type]||'phosphor'); ctx.fillStyle=hexa(COL[tone],.18); ctx.fillRect(b.x,b.y,b.w,b.h); }
+      if(b.side !== 'top'){
+        ctx.save();
+        ctx.translate(b.x + b.w/2, b.y + b.h/2);
+        ctx.scale(1, -1);
+        ctx.drawImage(hiBase as HTMLImageElement, -b.w/2, -b.h/2, b.w, b.h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(hiBase as HTMLImageElement, b.x, b.y, b.w, b.h);
+      }
+      if(b.open){
+        const _svcTop  = (b.type==='fuel' ? HANDOFF_IMG.svcFuel      : b.type==='repair' ? HANDOFF_IMG.svcRepair      : b.type==='board' ? HANDOFF_IMG.svcBoard      : null) as HTMLImageElement | null;
+        const _svcBot  = (b.type==='fuel' ? HANDOFF_IMG.svcFuelBot   : b.type==='repair' ? HANDOFF_IMG.svcRepairBot   : b.type==='board' ? HANDOFF_IMG.svcBoardBot   : null) as HTMLImageElement | null;
+        const _svcSide = (b.type==='fuel' ? HANDOFF_IMG.svcFuelSide  : b.type==='repair' ? HANDOFF_IMG.svcRepairSide  : b.type==='board' ? HANDOFF_IMG.svcBoardSide  : null) as HTMLImageElement | null;
+        const svcDraw = (b.side==='top' ? _svcTop : b.side==='bottom' ? _svcBot : _svcSide) as HTMLImageElement | null;
+        if(svcDraw && _hiOk(svcDraw)) ctx.drawImage(svcDraw, b.x, b.y, b.w, b.h);
+      }
       ctx.restore();
       return;
     }
@@ -396,8 +411,12 @@
       if(pl.zone!=='bay' && pl.bug==='cat') drawFlower(pl.x, pl.y-28*ui*vs, 9*ui, BSP[pl.species||0].petal);
     } else if(pl.zone==='field' || pl.zone==='air'){
       const _ny = pl.y-28*ui*vs;
-      if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui)))
-        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // чип svc-* (фолбэк: процедурная иконка)
+      const _svcNeed = (need==='fuel' ? HANDOFF_IMG.svcFuel : need==='repair' ? HANDOFF_IMG.svcRepair : need==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
+      const _sz = 33*ui;
+      if(_svcNeed && _hiOk(_svcNeed))
+        ctx.drawImage(_svcNeed, pl.x-_sz/2, _ny-_sz/2, _sz, _sz);
+      else if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, _sz, _sz)))
+        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);
     }
   }
 
