@@ -58,7 +58,8 @@
     safe={t:parseFloat(cs.paddingTop)||0, r:parseFloat(cs.paddingRight)||0,
           b:parseFloat(cs.paddingBottom)||0, l:parseFloat(cs.paddingLeft)||0};
   }
-  const HUD_H = () => Math.round(44*ui);
+  // HUD PNG — 640×67; рисуется по центру шириной 50% W → высота = W/2 * 67/640 = W*67/1280
+  const HUD_H = () => Math.round(W * 67 / 1280);
   function resize(){
     dpr = Math.min(window.devicePixelRatio||1, 2);
     W = window.innerWidth; H = window.innerHeight;
