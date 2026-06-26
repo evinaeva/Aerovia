@@ -200,8 +200,18 @@
       }
       if(b.open){
         const svcImg = (b.type==='fuel' ? HANDOFF_IMG.svcFuel : b.type==='repair' ? HANDOFF_IMG.svcRepair : b.type==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
-        // Иконка всегда в одной ориентации — не переворачивается с базой
-        if(svcImg && _hiOk(svcImg)) ctx.drawImage(svcImg, b.x, b.y, b.w, b.h);
+        if(svcImg && _hiOk(svcImg)){
+          if(b.side !== 'top'){
+            // Нижний бокс: интерьер снизу. Сдвигаем иконку вниз (без флипа),
+            // клиппируем по границе бокса — иконка в интерьере и читается правильно.
+            ctx.save();
+            ctx.beginPath(); ctx.rect(b.x, b.y, b.w, b.h); ctx.clip();
+            ctx.drawImage(svcImg, b.x, b.y + b.h * 0.42, b.w, b.h);
+            ctx.restore();
+          } else {
+            ctx.drawImage(svcImg, b.x, b.y, b.w, b.h);
+          }
+        }
       }
       ctx.restore();
       return;
