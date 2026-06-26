@@ -490,11 +490,8 @@
     const NEON='#27E6FF';
     const fs=Math.round(hud*0.42);
 
-    // ── Фон на весь экран ──
-    ctx.fillStyle='#050c1a';
-    ctx.fillRect(0, 0, W, barH);
-
     // ── PNG по центру, 50% ширины, пропорции 640:67 сохранены ──
+    // Тёмного фона нет — HUD плавает поверх фона поля.
     const hudImg=HANDOFF_IMG.hud;
     const hudPngW=Math.round(W*0.5);
     const hudPngX=Math.round((W-hudPngW)/2);
