@@ -476,90 +476,56 @@
     }
   }
 
-  // PNG-фон HUD: загружаем один раз; offscreen canvas строим с прозрачными вырезами
-  // под live-значения, чтобы рамки панелей оставались нетронутыми.
-  let _hudBarImg: HTMLImageElement|null = null;
-  let _hudFrame: HTMLCanvasElement|null = null;
-
-  function _buildHudFrame(): boolean {
-    if(_hudFrame) return true;
-    if(!_hudBarImg){ _hudBarImg = new Image(); _hudBarImg.src = 'assets/hud/wow-bar.png'; }
-    if(!_hudBarImg.complete || !_hudBarImg.naturalWidth) return false;
-    const oc = document.createElement('canvas');
-    oc.width = _hudBarImg.naturalWidth; oc.height = _hudBarImg.naturalHeight;
-    const ox = oc.getContext('2d')!;
-    ox.drawImage(_hudBarImg, 0, 0);
-    // Bbox из детектора (pixel-точные координаты в пространстве PNG 2872×547):
-    ox.clearRect( 334, 202, 237, 112);  // сердца
-    ox.clearRect( 776, 150, 631, 239);  // "$12,450"
-    ox.clearRect(1405, 201, 777, 180);  // часы + "02:45"
-    ox.clearRect(2167, 160, 537, 245);  // "||"
-    _hudFrame = oc;
-    return true;
-  }
-
-  // Шрифт для HUD-цифр: Orbitron ближе всего к sci-fi референсу
+  // Шрифт для HUD-цифр.
   const HUD_F = "'Orbitron','Fredoka',sans-serif";
-  // Центры значений в долях ширины PNG 2872px (детектор):
-  // hearts cx=453, money cx=1092, timer cx=1794, pause cx=2436
-  const HUD_FX = {h:453/2872, m:1092/2872, t:1794/2872, p:2436/2872};
+  // Якоря из hud_example.png (640×67), в долях ширины:
+  //   ❤ anchor x=45, $ anchor x=225, ⏱ anchor x=407, pause cx=605
+  const HUD_FX = {h:45/640, m:225/640, t:407/640, p:605/640};
 
   function drawHUD(){
     const hud=HUD_H();
     const barH=hud+safe.t;
     const cy=safe.t+hud/2;
     const NEON='#27E6FF';
-    const fs=Math.round(hud*0.42);  // основной размер шрифта HUD
+    const fs=Math.round(hud*0.42);
 
-    // ── Chrome-фон: PNG с прозрачными вырезами поверх тёмной подложки ──
-    if(_buildHudFrame() && _hudFrame){
-      ctx.fillStyle='#050c1a';
-      ctx.fillRect(0,0,W,barH);
-      ctx.drawImage(_hudFrame, 0, 0, W, barH);
-    } else {
-      // Fallback до загрузки PNG
-      const bg=ctx.createLinearGradient(0,0,0,barH);
-      bg.addColorStop(0,'#0d1f42'); bg.addColorStop(1,'#07111f');
-      ctx.fillStyle=bg; ctx.fillRect(0,0,W,barH);
-      ctx.fillStyle=hexa(NEON,.85); ctx.fillRect(0,barH-2,W,2);
-    }
+    // ── PNG-фрейм (ячейки с тёмным фоном, || уже нарисованы) ──
+    ctx.fillStyle='#050c1a';
+    ctx.fillRect(0, 0, W, barH);
+    const hudImg=HANDOFF_IMG.hud;
+    if(hudImg && _hiOk(hudImg)) ctx.drawImage(hudImg, 0, safe.t, W, hud);
 
     ctx.textBaseline='middle';
 
-    // ── Сердца (cx = 15.8% от W) ──
-    const hcx=W*HUD_FX.h;
-    const hSp=19*ui;
-    const hx0=hcx-(K.START_LIVES-1)*hSp/2;
+    // ── Сердца (left-anchor = W*7%): ряд сердец от якоря вправо ──
+    const hSp=Math.round(hud*0.50);
+    const hR=Math.round(hud*0.20);
+    const hx0=W*HUD_FX.h;
     for(let i=0;i<K.START_LIVES;i++)
-      heart(hx0+i*hSp, cy, 4.5*ui, i<lives?COL.life:null);
+      heart(hx0+i*hSp, cy, hR, i<lives?COL.life:null);
 
-    // ── Деньги (cx = 38.0% от W) ──
-    const mncx=W*HUD_FX.m;
+    // ── Деньги (left-anchor = W*35.2%): $ + число ──
+    const mnAnchor=W*HUD_FX.m;
     const moneyStr=fmtMoney(money);
-    ctx.font=`700 ${fs}px ${HUD_F}`;
-    const mnW=ctx.measureText(moneyStr).width;
-    const dolW=Math.round(fs*0.65);  // ширина "$"
-    const mnX0=mncx-(dolW+6*ui+mnW)/2;
+    const dolFs=Math.round(fs*0.75);
+    const dolW=Math.round(dolFs*0.65);
     ctx.save();
     ctx.shadowColor=NEON; ctx.shadowBlur=6;
-    ctx.fillStyle=hexa(NEON,.70); ctx.font=`700 ${Math.round(fs*0.75)}px ${HUD_F}`;
-    ctx.textAlign='left'; ctx.fillText('$', mnX0, cy);
+    ctx.textAlign='left';
+    ctx.fillStyle=hexa(NEON,.70); ctx.font=`700 ${dolFs}px ${HUD_F}`;
+    ctx.fillText('$', mnAnchor, cy);
     ctx.font=`700 ${fs}px ${HUD_F}`;
     ctx.fillStyle=money<0?COL.life:NEON;
-    ctx.fillText(moneyStr, mnX0+dolW+6*ui, cy);
+    ctx.fillText(moneyStr, mnAnchor+dolW+4*ui, cy);
     ctx.restore();
 
-    // ── Таймер с иконкой часов (cx = 62.5% от W) ──
-    const tmcx=W*HUD_FX.t;
+    // ── Таймер (left-anchor = W*63.6%): иконка часов + строка ──
+    const tmAnchor=W*HUD_FX.t;
     const tShown=LV.objective.time?Math.max(0,LV.objective.time-gameTime):gameTime;
     const urgent=!!(LV.objective.time&&tShown<=10);
     const timerStr=fmtTime(tShown);
-    ctx.font=`700 ${fs}px ${HUD_F}`;
-    const tmW=ctx.measureText(timerStr).width;
     const clkR=Math.round(hud*0.18);
-    const gap=7*ui;
-    const totalW=clkR*2+gap+tmW;
-    const clkCX=tmcx-totalW/2+clkR;
+    const clkCX=tmAnchor+clkR;
     const clkCol=urgent?COL.life:NEON;
     ctx.save();
     ctx.shadowColor=clkCol; ctx.shadowBlur=5;
@@ -567,29 +533,27 @@
     ctx.beginPath(); ctx.arc(clkCX,cy,clkR,0,Math.PI*2); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(clkCX,cy); ctx.lineTo(clkCX,cy-clkR*0.55); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(clkCX,cy); ctx.lineTo(clkCX+clkR*0.42,cy); ctx.stroke();
-    ctx.fillStyle=urgent?COL.life:NEON;
-    ctx.textAlign='left'; ctx.fillText(timerStr, clkCX+clkR+gap, cy);
+    ctx.fillStyle=clkCol;
+    ctx.font=`700 ${fs}px ${HUD_F}`;
+    ctx.textAlign='left'; ctx.fillText(timerStr, clkCX+clkR+5*ui, cy);
     ctx.restore();
 
-    // ── Кнопка паузы (cx = 84.8% от W → обновляем pauseBtn для хит-теста) ──
+    // ── Пауза (cx = W*94.5%): || в PNG; при паузе рисуем ► поверх ──
     const pzcx=W*HUD_FX.p;
     pauseBtn.x=Math.round(pzcx-pauseBtn.w/2);
     pauseBtn.y=Math.round(cy-pauseBtn.h/2);
-    const ps=Math.round(hud*0.28);
-    ctx.save();
-    ctx.shadowColor=NEON; ctx.shadowBlur=6;
-    ctx.fillStyle=NEON;
-    if(!paused){
-      ctx.fillRect(pzcx-ps*0.85, cy-ps, ps*0.55, ps*2);
-      ctx.fillRect(pzcx+ps*0.30, cy-ps, ps*0.55, ps*2);
-    } else {
+    if(paused){
+      const ps=Math.round(hud*0.28);
+      ctx.save();
+      ctx.shadowColor=NEON; ctx.shadowBlur=6;
+      ctx.fillStyle=NEON;
       ctx.beginPath();
-      ctx.moveTo(pzcx-ps,     cy-ps*1.1);
+      ctx.moveTo(pzcx-ps, cy-ps*1.1);
       ctx.lineTo(pzcx+ps*1.2, cy);
-      ctx.lineTo(pzcx-ps,     cy+ps*1.1);
+      ctx.lineTo(pzcx-ps, cy+ps*1.1);
       ctx.closePath(); ctx.fill();
+      ctx.restore();
     }
-    ctx.restore();
 
     drawPlaneCard();
   }
