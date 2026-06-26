@@ -86,9 +86,12 @@
     svcFuel: null,      // svc_fuel.png        — иконка услуги (верхние боксы)
     svcRepair: null,    // svc_repair.png
     svcBoard: null,     // svc_board.png
-    svcFuelBot: null,   // svc_fuel_bot.png    — иконка услуги (нижние/боковые боксы)
-    svcRepairBot: null, // svc_repair_bot.png
-    svcBoardBot: null,  // svc_board_bot.png
+    svcFuelBot: null,    // svc_fuel_bot.png    — иконка услуги (нижние боксы)
+    svcRepairBot: null,  // svc_repair_bot.png
+    svcBoardBot: null,   // svc_board_bot.png
+    svcFuelSide: null,   // svc_fuel_side.png   — иконка услуги (боковые боксы)
+    svcRepairSide: null, // svc_repair_side.png
+    svcBoardSide: null,  // svc_board_side.png
   };
   // Returns true if the image/canvas is ready to draw.
   function _hiOk(im) {

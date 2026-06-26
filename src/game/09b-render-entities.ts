@@ -199,9 +199,10 @@
         ctx.drawImage(hiBase as HTMLImageElement, b.x, b.y, b.w, b.h);
       }
       if(b.open){
-        const _svcTop = (b.type==='fuel' ? HANDOFF_IMG.svcFuel : b.type==='repair' ? HANDOFF_IMG.svcRepair : b.type==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
-        const _svcBot = (b.type==='fuel' ? HANDOFF_IMG.svcFuelBot : b.type==='repair' ? HANDOFF_IMG.svcRepairBot : b.type==='board' ? HANDOFF_IMG.svcBoardBot : null) as HTMLImageElement | null;
-        const svcDraw = (b.side !== 'top' ? _svcBot : _svcTop) as HTMLImageElement | null;
+        const _svcTop  = (b.type==='fuel' ? HANDOFF_IMG.svcFuel      : b.type==='repair' ? HANDOFF_IMG.svcRepair      : b.type==='board' ? HANDOFF_IMG.svcBoard      : null) as HTMLImageElement | null;
+        const _svcBot  = (b.type==='fuel' ? HANDOFF_IMG.svcFuelBot   : b.type==='repair' ? HANDOFF_IMG.svcRepairBot   : b.type==='board' ? HANDOFF_IMG.svcBoardBot   : null) as HTMLImageElement | null;
+        const _svcSide = (b.type==='fuel' ? HANDOFF_IMG.svcFuelSide  : b.type==='repair' ? HANDOFF_IMG.svcRepairSide  : b.type==='board' ? HANDOFF_IMG.svcBoardSide  : null) as HTMLImageElement | null;
+        const svcDraw = (b.side==='top' ? _svcTop : b.side==='bottom' ? _svcBot : _svcSide) as HTMLImageElement | null;
         if(svcDraw && _hiOk(svcDraw)) ctx.drawImage(svcDraw, b.x, b.y, b.w, b.h);
       }
       ctx.restore();

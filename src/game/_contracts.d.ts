@@ -33,6 +33,9 @@ declare const HANDOFF_IMG: {
   svcFuelBot:    HTMLImageElement | null;
   svcRepairBot:  HTMLImageElement | null;
   svcBoardBot:   HTMLImageElement | null;
+  svcFuelSide:   HTMLImageElement | null;
+  svcRepairSide: HTMLImageElement | null;
+  svcBoardSide:  HTMLImageElement | null;
 };
 declare function _hiOk(im: HTMLImageElement | HTMLCanvasElement | null): boolean;
 declare function _hiDraw(im: HTMLImageElement | HTMLCanvasElement | null, cx: number, cy: number, w: number, h: number, rotDeg?: number): boolean;
