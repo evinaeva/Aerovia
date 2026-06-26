@@ -48,6 +48,7 @@
   // ── Handoff PNG sprites (assets/sprites/handoff/) ────────────────────────────
   // Loaded once at startup; render code falls back to procedural until ready.
   (function loadHandoffSprites(){
+    if (typeof Image === 'undefined') return;   // Node.js test harness — пропускаем
     const BASE = 'assets/sprites/handoff/';
     const LIV_COLORS = [null, '#cc1122', '#c89800', '#1a9944'];
     function loadI(src){ const im = new Image(); im.src = src; return im; }
