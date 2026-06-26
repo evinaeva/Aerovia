@@ -1414,3 +1414,43 @@
   color: var(--muted);
   font-size: 12px;
 }
+.ac-check-ru { font-weight: 500; }
+.ac-check-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  opacity: .5;
+  margin-left: 4px;
+}
+.ac-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  padding: 2px 9px;
+  font-size: 11px;
+  border: 1px solid;
+}
+.ac-mode-chip b { font-weight: 600; }
+.ac-mode-point { color: #35e678; border-color: rgba(53,230,120,.4); background: rgba(53,230,120,.08); }
+.ac-mode-rect  { color: #ffd35a; border-color: rgba(255,211,90,.4);  background: rgba(255,211,90,.08); }
+.ac-howto {
+  margin-bottom: 10px;
+  border: 1px solid rgba(127,155,176,.2);
+  border-radius: 8px;
+}
+.ac-howto summary {
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  user-select: none;
+}
+.ac-howto summary:hover { color: var(--text); }
+.ac-howto ol {
+  margin: 0;
+  padding: 4px 10px 10px 28px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+}
