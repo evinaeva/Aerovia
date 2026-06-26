@@ -1260,3 +1260,144 @@
 
     /* hint-q inside lbl-wrap works with lbl-main (needs min-width:0 for truncation) */
     .lab-row .lbl-wrap .lbl-main { min-width: 0; }
+
+/* ── Asset Calibration Tool ─────────────────────────────────────────────── */
+#ac-root {}
+#asset-calibration-view { overflow: auto; }
+.ac-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(320px, 1fr) minmax(260px, 360px);
+  gap: 10px;
+  align-items: start;
+}
+.ac-form, .ac-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ac-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ac-form label, .ac-side label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ac-form input, .ac-form select, .ac-form textarea,
+.ac-side input, .ac-side select, .ac-side textarea,
+.ac-json {
+  border: 1px solid rgba(127,155,176,.28);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 13px;
+}
+.ac-form textarea, .ac-side textarea { min-height: 48px; resize: vertical; }
+.ac-preview-wrap { min-width: 0; }
+.ac-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.ac-stage {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  border: 1px solid rgba(127,155,176,.28);
+  border-radius: 12px;
+  background-color: #111827;
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,.12) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,.12) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255,255,255,.12) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,.12) 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+  touch-action: none;
+}
+.ac-canvas {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+.ac-canvas-img {
+  display: block;
+  max-width: min(100%, 760px);
+  max-height: 560px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.ac-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  overflow: visible;
+}
+.ac-overlay text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; paint-order: stroke; stroke: rgba(0,0,0,.75); stroke-width: .008; vector-effect: non-scaling-stroke; }
+.ac-empty {
+  display: grid;
+  place-items: center;
+  width: min(100vw, 520px);
+  height: 320px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.ac-checks { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.ac-check {
+  border: 1px solid rgba(127,155,176,.28);
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  color: var(--muted);
+  padding: 5px 9px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.ac-check.ok { color: #35e678; border-color: rgba(53,230,120,.35); }
+.ac-check.missing { color: #ffd35a; border-color: rgba(255,211,90,.35); }
+.ac-check.sel { background: rgba(34,227,198,.12); border-color: var(--accent); color: var(--accent); }
+.ac-valid {
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.ac-valid ul { margin: 4px 0 0 18px; padding: 0; }
+.ac-valid.warn { border: 1px solid rgba(255,211,90,.35); background: rgba(255,211,90,.08); color: #ffe28a; }
+.ac-valid.ready { border: 1px solid rgba(53,230,120,.35); background: rgba(53,230,120,.08); color: #8ff0ad; }
+.ac-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.ac-actions .p-btn[disabled] { opacity: .45; cursor: not-allowed; }
+.ac-json { min-height: 130px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
+@media (max-width: 1100px) {
+  .ac-grid { grid-template-columns: 1fr; }
+}
+.ac-path-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.ac-path-hint code {
+  color: var(--accent);
+}
+.ac-preview-status {
+  border: 1px solid rgba(34,227,198,.35);
+  border-radius: 10px;
+  background: rgba(34,227,198,.08);
+  color: var(--accent);
+  padding: 7px 9px;
+  font-size: 12px;
+}
