@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "id": "hangar_fuel_v1",
+      "kind": "hangar",
+      "src": "assets/skins/hangar/test-a/bay-fuel.png",
+      "logicalSize": { "w": 220, "h": 150 },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "rects": [
+        { "id": "visual", "kind": "visualBounds", "x": 0, "y": 0, "w": 1, "h": 1 },
+        { "id": "collision", "kind": "collisionBounds", "x": 0.08, "y": 0.08, "w": 0.84, "h": 0.72 },
+        { "id": "hit", "kind": "hitArea", "x": 0.04, "y": 0.04, "w": 0.92, "h": 0.92 }
+      ],
+      "points": [
+        { "id": "entrance", "kind": "entrance", "x": 0.5, "y": 0.96, "radius": 0.12 },
+        { "id": "insideStop", "kind": "insideStop", "x": 0.5, "y": 0.55, "radius": 0.08 },
+        { "id": "exit", "kind": "exit", "x": 0.5, "y": 0.96, "radius": 0.12 },
+        { "id": "snapEntrance", "kind": "snap", "x": 0.5, "y": 0.96, "radius": 0.14 }
+      ],
+      "allowedRotations": [0, 90, 180, 270],
+      "defaultRotation": 0,
+      "rotationOffset": 0,
+      "layer": "structures",
+      "tags": ["fuel", "service"],
+      "notes": "Sample only. Production metadata should be placed in assets/metadata/asset-metadata.json."
+    }
+  ]
+}

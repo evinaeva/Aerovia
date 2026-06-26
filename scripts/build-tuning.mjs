@@ -56,7 +56,7 @@ export const TUNING_ORDER = [
   '01-bootstrap-i18n', '02-phone-preview', '03-popups', '04-cutout',
   '05-splitter', '06-zone-legend', '07-motion-subtabs', '08-motion-ui',
   '09-level-lab', '10-difficulty-lab', '11-tabs', '12-layout-designer',
-  '13-zones-overlay', '14-preview-mode', '15-resources', '16-init-test',
+  '13-zones-overlay', '14-preview-mode', '15-resources', '15b-asset-calibration', '16-init-test',
 ];
 
 export function build() {
