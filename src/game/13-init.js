@@ -62,18 +62,20 @@
     const base = loadI(BASE + 'sprite_plane2.png');
     HANDOFF_IMG.plane = base;
     base.onload = function() {
+      // sprite_plane2.png already has a transparent background — draw directly onto canvas.
       // Build 4 livery variants: base (index 0) + tinted tail (1-3)
       HANDOFF_IMG.planes = LIV_COLORS.map(function(col) {
-        if (!col) return base;
         var c = document.createElement('canvas');
         c.width = base.naturalWidth; c.height = base.naturalHeight;
         var cx = c.getContext('2d');
         cx.drawImage(base, 0, 0);
-        cx.globalCompositeOperation = 'source-atop';
-        cx.fillStyle = col; cx.globalAlpha = 0.72;
-        // tail = lower 44% of the sprite (nose points up)
-        cx.fillRect(base.naturalWidth * 0.22, base.naturalHeight * 0.56,
-                    base.naturalWidth * 0.56, base.naturalHeight * 0.44);
+        if (col) {
+          cx.globalCompositeOperation = 'source-atop';
+          cx.fillStyle = col; cx.globalAlpha = 0.72;
+          // tail = lower 44% of the sprite (nose points up)
+          cx.fillRect(base.naturalWidth * 0.22, base.naturalHeight * 0.56,
+                      base.naturalWidth * 0.56, base.naturalHeight * 0.44);
+        }
         return c;
       });
       HANDOFF_IMG.ready = true;

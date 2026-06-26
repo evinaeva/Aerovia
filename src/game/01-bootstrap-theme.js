@@ -83,8 +83,12 @@
     planes: [],     // [0..3]: livery variants
     ready: false,   // set once plane base loaded
   };
-  // Returns true if the HTMLImageElement is loaded and has pixels.
-  function _hiOk(im) { return !!(im && im.complete && im.naturalWidth > 0); }
+  // Returns true if the image/canvas is ready to draw.
+  function _hiOk(im) {
+    if (!im) return false;
+    if (im instanceof HTMLCanvasElement) return im.width > 0;
+    return !!(im.complete && im.naturalWidth > 0);
+  }
   // Draw image centered at (cx,cy) with optional rotation (degrees).
   function _hiDraw(im, cx, cy, w, h, rotDeg) {
     if (!_hiOk(im)) return false;

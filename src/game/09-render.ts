@@ -164,14 +164,8 @@
         return;
       }
     }
-    if(ATLAS && !inMenu){   // главный экран рисует борт контуром процедурно (ниже); геймплей — атлас-спрайт
-      // sprite is authored nose-up; game heading has nose along +x → rotate ang+90°
-      const _id = medical ? 'plane-medevac' : emergency ? 'plane-emergency' : vip ? 'plane-vip' : 'plane';
-      if(SPRITES.blitC(_id, x, y, 62*s, 62*s, ang + Math.PI/2)) return;
-    }
-    // Handoff PNG plane — fallback before procedural, nose-up → rotate ang+90°
+    // Handoff PNG plane — приоритет выше neon-атласа; нос вверх → +90° к курсу
     if(HANDOFF_IMG.ready && !inMenu){
-      // map vip/emergency/medical → livery index; or use explicit liv param
       const livIdx = (liv != null) ? Math.max(0,Math.min(3,liv)) :
                      (medical ? 3 : emergency ? 1 : vip ? 2 : 0);
       const im = HANDOFF_IMG.planes[livIdx] || HANDOFF_IMG.plane;
@@ -181,6 +175,11 @@
         ctx.drawImage(im as HTMLImageElement, -dw/2, -dh/2, dw, dh); ctx.restore();
         return;
       }
+    }
+    if(ATLAS && !inMenu){   // главный экран рисует борт контуром процедурно (ниже); геймплей — атлас-спрайт
+      // sprite is authored nose-up; game heading has nose along +x → rotate ang+90°
+      const _id = medical ? 'plane-medevac' : emergency ? 'plane-emergency' : vip ? 'plane-vip' : 'plane';
+      if(SPRITES.blitC(_id, x, y, 62*s, 62*s, ang + Math.PI/2)) return;
     }
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     if(inMenu){ planeContour(); ctx.restore(); return; }   // главный экран: тонкий неон-контур-джет (макет SKINS.neon)
