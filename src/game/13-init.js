@@ -33,6 +33,16 @@
   loadGame();
   loadDebug();                        // восстановление отладочных читов (localStorage)
   saveGame();                         // миграция: сейв сразу переезжает под новый ключ
+  // Runtime side of the Asset Metadata System. Safe default is procedural. Production
+  // metadata lives in asset-metadata.json; the sample file is a documentation/dev fallback only.
+  assetMetadataRegistry.loadFromUrl('assets/metadata/asset-metadata.json').then(warnings=>{
+    if(warnings.length) console.warn('[PlaneFlow] asset metadata warnings', warnings);
+    if(typeof location !== 'undefined' && /[?&]assetMetadataSample=1(?:&|$)/.test(location.search)){
+      assetMetadataRegistry.loadFromUrl('assets/metadata/asset-metadata.sample.json').then(sampleWarnings=>{
+        if(sampleWarnings.length) console.warn('[PlaneFlow] sample asset metadata warnings', sampleWarnings);
+      });
+    }
+  });
   // WOW skin — design-reference assets baked into build; loaded once at startup.
   // setZoneSkins() pre-warms image decode; render gates fall back to procedural until ready.
   if(SPRITES.setZoneSkins){
@@ -74,6 +84,16 @@
   { const _v=document.getElementById('ver'); if(_v) _v.textContent=VERSION; }  // #ver убран из neon-бренда — guard
   { const _mt=document.getElementById('motionTuningBtn'); if(_mt) _mt.onclick=()=>mtOpenPanel(); }
   window.__MT = MT;   // доступен из родительского tuning.html (same-origin iframe)
+  window.__ASSETS = {
+    registry: assetMetadataRegistry,
+    get rendererMode(){ return ASSET_RENDERER.mode; },
+    set rendererMode(mode){ if(['procedural','png','hybrid'].includes(mode)) ASSET_RENDERER.mode = mode; },
+    get debugOverlay(){ return ASSET_RENDERER.debugOverlay; },
+    set debugOverlay(v){ ASSET_RENDERER.debugOverlay = !!v; },
+    loadMetadata: (file) => assetMetadataRegistry.load(file),
+    loadMetadataUrl: (url) => assetMetadataRegistry.loadFromUrl(url),
+    warnings: () => assetMetadataRegistry.getValidationWarnings(),
+  };
   window.__SPRITES = {
     setSkinOverrides: (skins) => SPRITES.setSkinOverrides && SPRITES.setSkinOverrides(skins),
     // Пер-зонные скины (assets/skins/…): воркбенч резолвит выбор в URL'ы и шлёт сюда.
