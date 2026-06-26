@@ -117,6 +117,7 @@
       has(id: string): boolean;
       blitC(id: string, cx: number, cy: number, dw: number, dh: number, rot?: number, color?: any): boolean;
       blit(id: string, dx: number, dy: number, dw: number, dh: number, color?: any): boolean;
+      nineSlice?(id: string, dx: number, dy: number, dw: number, dh: number, srcBorder: number): boolean;
       pattern(id: string, tile: number): CanvasPattern | null;
       loadSkin?: (skin: string) => void;
       setSkinOverrides?: (skins: string[]) => void;
@@ -141,6 +142,27 @@
       blit(id, dx, dy, dw, dh, color){
         if(!A.ready) return false; const im = img(id, dw, dh, withTheme(color)); if(!ok(im)) return false;
         ctx.drawImage(im, dx, dy, dw, dh); return true;
+      },
+      nineSlice(id, dx, dy, dw, dh, srcBorder){
+        if(!A.ready) return false;
+        const im = pngImg(id); if(!ok(im)) return false;
+        const iw = im.naturalWidth, ih = im.naturalHeight;
+        const sb = Math.min(srcBorder, iw / 3, ih / 3);
+        const db = sb;
+        if(dw < 2*db || dh < 2*db){ ctx.drawImage(im, dx, dy, dw, dh); return true; }
+        const d = (sx: number, sy: number, sw: number, sh: number, ddx: number, ddy: number, ddw: number, ddh: number) => {
+          if(ddw<=0||ddh<=0) return; ctx.drawImage(im, sx, sy, sw, sh, ddx, ddy, ddw, ddh);
+        };
+        d(0,      0,      sb,       sb,       dx,         dy,         db,       db);
+        d(sb,     0,      iw-2*sb,  sb,       dx+db,      dy,         dw-2*db,  db);
+        d(iw-sb,  0,      sb,       sb,       dx+dw-db,   dy,         db,       db);
+        d(0,      sb,     sb,       ih-2*sb,  dx,         dy+db,      db,       dh-2*db);
+        d(sb,     sb,     iw-2*sb,  ih-2*sb,  dx+db,      dy+db,      dw-2*db,  dh-2*db);
+        d(iw-sb,  sb,     sb,       ih-2*sb,  dx+dw-db,   dy+db,      db,       dh-2*db);
+        d(0,      ih-sb,  sb,       sb,       dx,         dy+dh-db,   db,       db);
+        d(sb,     ih-sb,  iw-2*sb,  sb,       dx+db,      dy+dh-db,   dw-2*db,  db);
+        d(iw-sb,  ih-sb,  sb,       sb,       dx+dw-db,   dy+dh-db,   db,       db);
+        return true;
       },
       // бесшовный тайл → CanvasPattern (кэш по id+размеру+теме); null, пока спрайт не готов
       pattern(id, tile){
