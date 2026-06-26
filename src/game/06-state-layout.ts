@@ -58,7 +58,9 @@
     safe={t:parseFloat(cs.paddingTop)||0, r:parseFloat(cs.paddingRight)||0,
           b:parseFloat(cs.paddingBottom)||0, l:parseFloat(cs.paddingLeft)||0};
   }
-  const HUD_H = () => Math.round(44*ui);
+  // HUD_H: высота пропорциональна ширине холста (PNG wow-bar.png 2872×547 → aspect 5.25:1).
+  // Это единственный способ не сжимать PNG — растяжение по ширине и высоте одинаковое.
+  const HUD_H = () => W > 0 ? Math.round(W * 547 / 2872) : Math.round(44 * ui);
   function resize(){
     dpr = Math.min(window.devicePixelRatio||1, 2);
     W = window.innerWidth; H = window.innerHeight;

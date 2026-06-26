@@ -490,13 +490,20 @@
     const barH=hud+safe.t;
     const cy=safe.t+hud/2;
     const NEON='#27E6FF';
-    const fs=Math.round(hud*0.42);  // основной размер шрифта HUD
+    // Все размеры контента выводятся из hud (высоты бара) как доли — так они
+    // пропорциональны PNG-дизайну (который 547px высотой) и не вылезают из ячеек.
+    const fs=Math.round(hud*0.24);   // шрифт ≈ 24% высоты бара — "$12,450" влезает в ячейку
+    const heartSz=hud*0.07;          // радиус сердца (≈7% высоты) — 3 влезают в ячейку
+    const hSp=hud*0.145;             // шаг между сердцами (79px/547 ≈ 0.144)
+    const clkR=Math.round(hud*0.09); // радиус иконки часов
+    const gap=hud*0.073;             // отступ между часами и числом
+    const dolGap=hud*0.047;          // отступ между $ и числом
 
-    // ── Chrome-фон: PNG с прозрачными вырезами поверх тёмной подложки ──
+    // ── Chrome-фон: PNG рисуется ниже safe-zone, W×hud — ровно aspect PNG 5.25:1 ──
     if(_buildHudFrame() && _hudFrame){
       ctx.fillStyle='#050c1a';
       ctx.fillRect(0,0,W,barH);
-      ctx.drawImage(_hudFrame, 0, 0, W, barH);
+      ctx.drawImage(_hudFrame, 0, safe.t, W, hud);
     } else {
       // Fallback до загрузки PNG
       const bg=ctx.createLinearGradient(0,0,0,barH);
@@ -509,10 +516,9 @@
 
     // ── Сердца (cx = 15.8% от W) ──
     const hcx=W*HUD_FX.h;
-    const hSp=19*ui;
     const hx0=hcx-(K.START_LIVES-1)*hSp/2;
     for(let i=0;i<K.START_LIVES;i++)
-      heart(hx0+i*hSp, cy, 4.5*ui, i<lives?COL.life:null);
+      heart(hx0+i*hSp, cy, heartSz, i<lives?COL.life:null);
 
     // ── Деньги (cx = 38.0% от W) ──
     const mncx=W*HUD_FX.m;
@@ -520,14 +526,14 @@
     ctx.font=`700 ${fs}px ${HUD_F}`;
     const mnW=ctx.measureText(moneyStr).width;
     const dolW=Math.round(fs*0.65);  // ширина "$"
-    const mnX0=mncx-(dolW+6*ui+mnW)/2;
+    const mnX0=mncx-(dolW+dolGap+mnW)/2;
     ctx.save();
     ctx.shadowColor=NEON; ctx.shadowBlur=6;
     ctx.fillStyle=hexa(NEON,.70); ctx.font=`700 ${Math.round(fs*0.75)}px ${HUD_F}`;
     ctx.textAlign='left'; ctx.fillText('$', mnX0, cy);
     ctx.font=`700 ${fs}px ${HUD_F}`;
     ctx.fillStyle=money<0?COL.life:NEON;
-    ctx.fillText(moneyStr, mnX0+dolW+6*ui, cy);
+    ctx.fillText(moneyStr, mnX0+dolW+dolGap, cy);
     ctx.restore();
 
     // ── Таймер с иконкой часов (cx = 62.5% от W) ──
@@ -537,8 +543,6 @@
     const timerStr=fmtTime(tShown);
     ctx.font=`700 ${fs}px ${HUD_F}`;
     const tmW=ctx.measureText(timerStr).width;
-    const clkR=Math.round(hud*0.18);
-    const gap=7*ui;
     const totalW=clkR*2+gap+tmW;
     const clkCX=tmcx-totalW/2+clkR;
     const clkCol=urgent?COL.life:NEON;
@@ -556,7 +560,7 @@
     const pzcx=W*HUD_FX.p;
     pauseBtn.x=Math.round(pzcx-pauseBtn.w/2);
     pauseBtn.y=Math.round(cy-pauseBtn.h/2);
-    const ps=Math.round(hud*0.28);
+    const ps=Math.round(hud*0.15);
     ctx.save();
     ctx.shadowColor=NEON; ctx.shadowBlur=6;
     ctx.fillStyle=NEON;
