@@ -412,23 +412,23 @@
   }
   // открытый бокс под точкой (для фиксации конца маршрута)
   function openBayAt(p: any){
-    for(const b of bays) if(b.open && (rectHit(p.x,p.y,b) || inGrabZone(p.x,p.y,bayGrabZone(b)))) return b;
+    for(const b of bays) if(b.open && (rectHit(p.x,p.y,bayHitRect(b)) || baySnapHit(p.x,p.y,b))) return b;
     return null;
   }
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
   // (подход снаружи → центр), так что въезд получается строго по центру и носом вперёд
   function lockRouteToBay(pl: any, b: any){
     const o=dirOut(b);
-    const cx=b.x+b.w/2, cy=b.y+b.h/2;
-    const vert=Math.abs(o.dy)>Math.abs(o.dx);
-    const half=(vert?b.h:b.w)/2;
-    const apx=cx+o.dx*(half+22*ui), apy=cy+o.dy*(half+22*ui);  // точка подхода на оси ворот, снаружи
-    // срезаем хвост маршрута, попавший внутрь бокса, и достраиваем «подход → центр»
-    while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, b)) pl.path.pop();
-    pl.path.push({x:apx,y:apy},{x:cx,y:cy});
+    const entrance=bayEntrancePoint(b);
+    const inside=bayInsideStopPoint(b);
+    const collision=bayCollisionRect(b);
+    const apx=entrance.x+o.dx*22*ui, apy=entrance.y+o.dy*22*ui;  // metadata entrance plus a safe outside approach offset
+    // срезаем хвост маршрута, попавший в collisionBounds, и достраиваем «подход → entrance → insideStop»
+    while(pl.path.length && rectHit(pl.path[pl.path.length-1].x, pl.path[pl.path.length-1].y, collision)) pl.path.pop();
+    pl.path.push({x:apx,y:apy}, entrance, inside);
     pl.moving=true;
     // обратная связь игроку: маленькая вспышка + щелчок у ворот
-    pulseFx(cx+o.dx*half, cy+o.dy*half, 'lock', 0.28);
+    pulseFx(entrance.x, entrance.y, 'lock', 0.28);
     SND.lock(); HAP.tap();
   }
   // любая ВПП под точкой — для покупки направления (без фильтрации по open/closed)
