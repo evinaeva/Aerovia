@@ -167,6 +167,19 @@
   function drawBay(b: any){
     // Без активного скин-оверрайда обычные боксы рисует drawNeonBay (полная neon-отрисовка).
     // При активном скине — пробуем спрайт; спрайт не загружен ещё → neon-fallback.
+    const mode = ASSET_RENDERER.mode;
+    const metaId = b.assetId || (b.open ? ('hangar_' + b.type + '_wow_v1') : 'hangar_locked_wow_v1');
+    const meta = assetMetadataRegistry.getAssetMetadata(metaId);
+    if(meta && mode !== 'procedural'){
+      const cx=b.x+b.w/2, cy=b.y+b.h/2;
+      const pngDrawn = assetMetadataRegistry.drawPng(meta, cx, cy, Math.min(b.w/meta.logicalSize.w, b.h/meta.logicalSize.h), 0);
+      if(pngDrawn){
+        assetMetadataRegistry.drawDebugOverlay(meta, {x:b.x,y:b.y,w:b.w,h:b.h}, b.id || b.type, 0);
+        if(mode === 'png') return;
+      } else if(mode === 'png') {
+        assetMetadataRegistry.drawDebugOverlay(meta, {x:b.x,y:b.y,w:b.w,h:b.h}, b.id || b.type, 0);
+      }
+    }
     if(!SPRITES.hasOverrides?.() && !SPRITES.hasZoneSkin?.('hangar', b.open?b.type:'locked') && !b.deice && !LV.bonus){ drawNeonBay(b); return; }
     const col=LV.bonus ? BSP[bSpec(b.type)].petal : (SVC as Record<string, {color: string}>)[b.type].color;   // бонус: цвет цветка по виду
     const busy=!!b.occupied;
@@ -351,7 +364,17 @@
       else pl.bounceAt=0;
     }
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
-    else drawPlaneBodyAt(pl.x, by, pl.ang, ui*0.5*SZ()*vs, pl.vip, pl.emergency, pl.medical);
+    else {
+      const planeMeta = assetMetadataRegistry.getAssetMetadata(pl.assetId || 'plane_wow_v1');
+      const planeScalePx = ui*0.5*SZ()*vs;
+      const pngScale = planeMeta ? (62 * planeScalePx / planeMeta.logicalSize.w) : 1;
+      const usePng = planeMeta && ASSET_RENDERER.mode !== 'procedural' && assetMetadataRegistry.drawPng(planeMeta, pl.x, by, pngScale, pl.ang * 180 / Math.PI);
+      if(planeMeta && usePng){
+        const dr = assetMetadataRegistry.drawRectFor(planeMeta, pl.x, by, pngScale);
+        assetMetadataRegistry.drawDebugOverlay(planeMeta, dr, pl.id, pl.ang * 180 / Math.PI);
+      }
+      if(!usePng && ASSET_RENDERER.mode !== 'png') drawPlaneBodyAt(pl.x, by, pl.ang, planeScalePx, pl.vip, pl.emergency, pl.medical);
+    }
 
     // пузырёк нужды над бортом: воздух (ожидание) + апрон; на ВПП и в ангаре — скрыт
     if(LV.bonus){
