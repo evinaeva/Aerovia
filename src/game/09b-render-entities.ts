@@ -200,14 +200,17 @@
       }
       if(b.open){
         const svcImg = (b.type==='fuel' ? HANDOFF_IMG.svcFuel : b.type==='repair' ? HANDOFF_IMG.svcRepair : b.type==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
-        if(svcImg && _hiOk(svcImg)){
-          const iw = svcImg.naturalWidth, ih = svcImg.naturalHeight;
-          const aspect = iw > 0 ? iw / ih : 1;
-          const maxW = b.w * 0.82, maxH = b.h * 0.60;
-          const dw = Math.min(maxW, maxH * aspect), dh = dw / aspect;
-          const ix = b.x + (b.w - dw) / 2;
-          const iy = b.side === 'top' ? b.y + b.h * 0.06 : b.y + b.h * 0.26;
-          ctx.drawImage(svcImg, ix, iy, dw, dh);
+        // Иконка того же размера и холста, что и база — накладываем 1-в-1
+        if(b.side !== 'top'){
+          if(svcImg && _hiOk(svcImg)){
+            ctx.save();
+            ctx.translate(b.x + b.w/2, b.y + b.h/2);
+            ctx.scale(1, -1);
+            ctx.drawImage(svcImg, -b.w/2, -b.h/2, b.w, b.h);
+            ctx.restore();
+          }
+        } else {
+          if(svcImg && _hiOk(svcImg)) ctx.drawImage(svcImg, b.x, b.y, b.w, b.h);
         }
       }
       ctx.restore();
