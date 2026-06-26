@@ -257,17 +257,17 @@
           for(const b of bays){
             if(!b.open) continue;
             const o=dirOut(b);
-            const vert=Math.abs(o.dy)>Math.abs(o.dx);
-            const half=(vert? b.h : b.w)/2;
-            const cx=b.x+b.w/2, cy=b.y+b.h/2;
-            const apx=cx+o.dx*(half+ad), apy=cy+o.dy*(half+ad);     // точка подъезда на оси ворот
-            const inRect=rectHit(pl.x,pl.y,b);
-            const atAppr=ad>0 && dist(pl.x,pl.y,apx,apy) <= Math.max(K.ARRIVE*1.5, half*0.7);
+            const collision=bayCollisionRect(b);
+            const hit=bayHitRect(b);
+            const entrance=bayEntrancePoint(b);
+            const apx=entrance.x+o.dx*ad, apy=entrance.y+o.dy*ad;     // metadata entrance plus configured outside approach offset
+            const inRect=rectHit(pl.x,pl.y,collision);
+            const atAppr=ad>0 && dist(pl.x,pl.y,apx,apy) <= Math.max(K.ARRIVE*1.5, Math.max(hit.w, hit.h)*0.35);
             // полукруг у ворот (BAY_GRAB_RADIUS): на телефоне борт почти никогда не
             // останавливается ровно внутри маленького прямоугольника бокса — он подходит
             // к воротам и замирает на полкорпуса снаружи. Засчитываем въезд и из зоны
             // захвата; ниже фаза заезда сама центрирует борт по оси ворот и затягивает внутрь.
-            const inGrab=inGrabZone(pl.x,pl.y,bayGrabZone(b));
+            const inGrab=baySnapHit(pl.x,pl.y,b);
             if(inRect || atAppr || inGrab){
               if(b.type!==need){ /* не тот бокс — простаиваем рядом */ break; }
               if(b.occupied && b.occupied!==pl){ if(!LV.bonus){ killCrash(pl,'loss.collisionBay'); killCrash(b.occupied,'loss.collisionBay'); } }
@@ -306,9 +306,10 @@
           continue;
         }
         pl.groundTime-=dt; if(pl.groundTime<=0 && !pl.halfPay) groundPenalty(pl);
-        const cx=b.x+b.w/2, cy=b.y+b.h/2;
+        const inside=bayInsideStopPoint(b), entrance=bayEntrancePoint(b);
+        const cx=inside.x, cy=inside.y;
         const vert=Math.abs(o.dy)>Math.abs(o.dx);
-        const half=(vert? b.h : b.w)/2;
+        const half=(vert? Math.abs(entrance.y-inside.y) : Math.abs(entrance.x-inside.x)) || (vert? b.h : b.w)/2;
         // ПОДЪЕЗД: доехать до точки подъезда на оси ворот (K.BAY_APPROACH_DIST), попутно
         // центрируясь на неё, затем — заезд внутрь. Обслуживание ещё не идёт.
         if(pl.bayPhase==='approach'){

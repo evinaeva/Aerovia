@@ -106,6 +106,9 @@
     function render() {
       const a = asset(); ensureAnchor(a); const warnings = validate(a); const sp = spec();
       const previewSrc = state.previewUrl || a.src;
+      const warnHtml = warnings.length
+        ? `Предупреждения:<ul>${warnings.map(w => `<li>${escHtml(w)}</li>`).join('')}</ul><label><input type="checkbox" data-field="exportWarnings" ${state.exportWarnings ? 'checked' : ''}> Экспортировать с предупреждениями</label>`
+        : 'Готово к экспорту';
       root.innerHTML = `<div class="ac-grid">
         <div class="ac-form">
           <div class="ac-row"><label>${tip('ID ассета', FIELD_HINTS.id)}<input data-field="id" value="${escHtml(a.id)}" placeholder="hangar_fuel_v1"></label><label>${tip('Тип ассета', FIELD_HINTS.kind)}<select data-field="kind">${ASSET_KINDS.map(k=>`<option ${a.kind===k?'selected':''}>${k}</option>`).join('')}</select></label></div>
@@ -122,7 +125,7 @@
         <div class="ac-side"><h4>Обязательно для ${escHtml(a.kind)}</h4><div class="ac-checks">${[...sp.rects.map(k=>['rect',k]), ...(sp.anyRect?[['rectAny',sp.anyRect.join(' or ')]]:[]), ...sp.points.map(k=>['point',k])].map(([t,k])=>{ const ok=t==='rectAny'?a.rects.some(r=>sp.anyRect.includes(r.kind)):t==='rect'?a.rects.some(r=>r.kind===k):a.points.some(p=>p.kind===k); return `<button class="ac-check ${ok?'ok':'missing'} ${state.selectedKind===k?'sel':''}" data-select-type="${t==='point'?'point':'rect'}" data-kind="${escHtml(String(k).split(' ')[0])}">${ok?'✓':'○'} ${escHtml(k)}</button>`; }).join('')}</div>
           <details open><summary>Опционально/рекомендуется</summary><div class="ac-checks">${[...(sp.optionalRects||[]).map(k=>['rect',k]), ...(sp.optionalPoints||[]).map(k=>['point',k])].map(([t,k])=>`<button class="ac-check" data-select-type="${t}" data-kind="${k}">+ ${k}</button>`).join('') || '<span class="lab-empty">—</span>'}</div></details>
           <div id="ac-editor">${editorHtml()}</div>
-          <div class="ac-valid ${warnings.length?'warn':'ready'}">${warnings.length ? 'Предупреждения:<ul>' + warnings.map(w=>`<li>${escHtml(w)}</li>`).join('') + '</ul><label><input type="checkbox" data-field="exportWarnings" ${state.exportWarnings?'checked':''}> Экспортировать с предупреждениями</label>' : 'Готово к экспорту'}</div>
+          <div class="ac-valid ${warnings.length?'warn':'ready'}">${warnHtml}</div>
           <p class="ac-path-hint">Путь production-метаданных для runtime: <code>assets/metadata/asset-metadata.json</code>. <code>asset-metadata.sample.json</code> оставляем только как пример/dev-файл.</p>
           <div class="ac-actions"><button class="p-btn" data-action="applyPreview" ${warnings.length&&!state.exportWarnings?'disabled':''}>Применить к превью игры</button><button class="p-btn" data-action="copySelected" ${warnings.length&&!state.exportWarnings?'disabled':''}>Копировать выбранный JSON</button><button class="p-btn" data-action="downloadSelected" ${warnings.length&&!state.exportWarnings?'disabled':''}>Скачать выбранный</button><button class="p-btn" data-action="copyAll">Копировать весь JSON</button><button class="p-btn" data-action="downloadAll">Скачать всё</button><label class="p-btn">Импорт JSON<input type="file" accept="application/json" data-action="import" hidden></label></div>
           ${state.previewStatus ? `<div class="ac-preview-status">${escHtml(state.previewStatus)}</div>` : ''}<textarea class="ac-json" readonly>${escHtml(state.lastJson)}</textarea>
