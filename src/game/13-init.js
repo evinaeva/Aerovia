@@ -62,49 +62,19 @@
     const base = loadI(BASE + 'sprite_plane2.png');
     HANDOFF_IMG.plane = base;
     base.onload = function() {
-      // Remove gray checker background (flood-fill from edges, as in reference.html)
-      function bgRemove(img) {
-        var c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
-        var cx = c.getContext('2d'); cx.drawImage(img, 0, 0);
-        try {
-          var id = cx.getImageData(0, 0, c.width, c.height);
-          var data = id.data, w = c.width, h = c.height;
-          var seen = new Uint8Array(w * h);
-          var stack = new Int32Array(w * h); var top = 0;
-          function isBg(pi) {
-            var r = data[pi], g = data[pi+1], b = data[pi+2];
-            return (Math.max(r,g,b) - Math.min(r,g,b) < 30) && r > 172;
-          }
-          function seed(x, y) {
-            if (x < 0 || x >= w || y < 0 || y >= h) return;
-            var i = y * w + x; if (seen[i]) return;
-            if (!isBg(i * 4)) return;
-            seen[i] = 1; stack[top++] = i;
-          }
-          for (var x = 0; x < w; x++) { seed(x, 0); seed(x, h-1); }
-          for (var y = 1; y < h-1; y++) { seed(0, y); seed(w-1, y); }
-          while (top > 0) {
-            var i = stack[--top]; data[i*4+3] = 0;
-            var px = i % w, py = (i / w) | 0;
-            seed(px+1, py); seed(px-1, py); seed(px, py+1); seed(px, py-1);
-          }
-          cx.putImageData(id, 0, 0);
-        } catch(e) { console.warn('bgRemove:', e); }
-        return c;
-      }
-      var clean = bgRemove(base);
+      // sprite_plane2.png already has a transparent background — draw directly onto canvas.
       // Build 4 livery variants: base (index 0) + tinted tail (1-3)
       HANDOFF_IMG.planes = LIV_COLORS.map(function(col) {
         var c = document.createElement('canvas');
-        c.width = clean.width; c.height = clean.height;
+        c.width = base.naturalWidth; c.height = base.naturalHeight;
         var cx = c.getContext('2d');
-        cx.drawImage(clean, 0, 0);
+        cx.drawImage(base, 0, 0);
         if (col) {
           cx.globalCompositeOperation = 'source-atop';
           cx.fillStyle = col; cx.globalAlpha = 0.72;
           // tail = lower 44% of the sprite (nose points up)
-          cx.fillRect(clean.width * 0.22, clean.height * 0.56,
-                      clean.width * 0.56, clean.height * 0.44);
+          cx.fillRect(base.naturalWidth * 0.22, base.naturalHeight * 0.56,
+                      base.naturalWidth * 0.56, base.naturalHeight * 0.44);
         }
         return c;
       });
