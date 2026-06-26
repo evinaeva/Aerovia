@@ -1,15 +1,6 @@
 {
   "apron": [
     {
-      "id": "apron-wow",
-      "name": "wow",
-      "label": "WOW",
-      "dir": "assets/skins/apron/wow",
-      "states": {
-        "default": "assets/skins/apron/wow/default.jpg"
-      }
-    },
-    {
       "id": "apron-test-a",
       "name": "test-a",
       "label": "Тест A",
@@ -25,6 +16,15 @@
       "dir": "assets/skins/apron/test-b",
       "states": {
         "default": "assets/skins/apron/test-b/apron.png"
+      }
+    },
+    {
+      "id": "apron-wow",
+      "name": "wow",
+      "label": "WOW",
+      "dir": "assets/skins/apron/wow",
+      "states": {
+        "default": "assets/skins/apron/wow/default.jpg"
       }
     }
   ],
@@ -50,15 +50,6 @@
   ],
   "background": [
     {
-      "id": "background-wow",
-      "name": "wow",
-      "label": "WOW",
-      "dir": "assets/skins/background/wow",
-      "states": {
-        "default": "assets/skins/background/wow/default.jpg"
-      }
-    },
-    {
       "id": "background-test-a",
       "name": "test-a",
       "label": "Тест A",
@@ -75,22 +66,18 @@
       "states": {
         "default": "assets/skins/background/test-b/background.png"
       }
+    },
+    {
+      "id": "background-wow",
+      "name": "wow",
+      "label": "WOW",
+      "dir": "assets/skins/background/wow",
+      "states": {
+        "default": "assets/skins/background/wow/default.png"
+      }
     }
   ],
   "hangar": [
-    {
-      "id": "hangar-wow",
-      "name": "wow",
-      "label": "WOW",
-      "dir": "assets/skins/hangar/wow",
-      "states": {
-        "fuel": "assets/skins/hangar/wow/fuel.png",
-        "board": "assets/skins/hangar/wow/board.png",
-        "repair": "assets/skins/hangar/wow/repair.png",
-        "deice": "assets/skins/hangar/wow/deice.png",
-        "locked": "assets/skins/hangar/wow/locked.png"
-      }
-    },
     {
       "id": "hangar-test-a",
       "name": "test-a",
@@ -116,18 +103,22 @@
         "deice": "assets/skins/hangar/test-b/bay-deice.png",
         "locked": "assets/skins/hangar/test-b/bay-locked.png"
       }
+    },
+    {
+      "id": "hangar-wow",
+      "name": "wow",
+      "label": "WOW",
+      "dir": "assets/skins/hangar/wow",
+      "states": {
+        "fuel": "assets/skins/hangar/wow/fuel.png",
+        "board": "assets/skins/hangar/wow/board.png",
+        "repair": "assets/skins/hangar/wow/repair.png",
+        "deice": "assets/skins/hangar/wow/deice.png",
+        "locked": "assets/skins/hangar/wow/locked.png"
+      }
     }
   ],
   "plane": [
-    {
-      "id": "plane-wow",
-      "name": "wow",
-      "label": "WOW",
-      "dir": "assets/skins/plane/wow",
-      "states": {
-        "default": "assets/skins/plane/wow/default.png"
-      }
-    },
     {
       "id": "plane-test-a",
       "name": "test-a",
@@ -145,18 +136,18 @@
       "states": {
         "default": "assets/skins/plane/test-b/plane.png"
       }
+    },
+    {
+      "id": "plane-wow",
+      "name": "wow",
+      "label": "WOW",
+      "dir": "assets/skins/plane/wow",
+      "states": {
+        "default": "assets/skins/plane/wow/default.png"
+      }
     }
   ],
   "runway": [
-    {
-      "id": "runway-wow",
-      "name": "wow",
-      "label": "WOW",
-      "dir": "assets/skins/runway/wow",
-      "states": {
-        "default": "assets/skins/runway/wow/default.png"
-      }
-    },
     {
       "id": "runway-test-a",
       "name": "test-a",
@@ -173,6 +164,15 @@
       "dir": "assets/skins/runway/test-b",
       "states": {
         "default": "assets/skins/runway/test-b/runway.png"
+      }
+    },
+    {
+      "id": "runway-wow",
+      "name": "wow",
+      "label": "WOW",
+      "dir": "assets/skins/runway/wow",
+      "states": {
+        "default": "assets/skins/runway/wow/default.png"
       }
     }
   ]

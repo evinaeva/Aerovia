@@ -17,7 +17,7 @@
  *
  * After changing precached assets or wanting to force a refresh, bump VERSION.
  */
-const VERSION = 'v13';
+const VERSION = 'v14';
 const CACHE = 'planeflow-' + VERSION;
 
 // App shell — everything needed to boot offline. Paths are relative so the SW
@@ -45,6 +45,19 @@ const ASSETS = [
   './assets/sprites/neon/planeflow-aircraft.svg',
   './assets/sprites/neon/planeflow-field.svg',
   './assets/sprites/neon/manifest.json',
+  // WOW gameplay reskin: PNG-only design surfaces applied by src/game/13-init.js.
+  // Precache the first-screen set so a stale/slow network cannot leave gameplay
+  // showing the procedural fallback after an app update.
+  './assets/skins/background/wow/default.png',
+  './assets/skins/apron/wow/default.jpg',
+  './assets/skins/runway/wow/default.png',
+  './assets/skins/plane/wow/default.png',
+  './assets/skins/hangar/wow/fuel.png',
+  './assets/skins/hangar/wow/board.png',
+  './assets/skins/hangar/wow/repair.png',
+  './assets/skins/hangar/wow/deice.png',
+  './assets/skins/hangar/wow/locked.png',
+  './assets/hud/wow-bar.png',
 ];
 
 self.addEventListener('install', (e) => {
