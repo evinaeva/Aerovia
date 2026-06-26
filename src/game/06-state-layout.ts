@@ -112,9 +112,15 @@
     // полоса под инфо-бар нужды борта (drawPlaneCard) между HUD и апроном — как
     // зарезервированная лента в макете (PlaneCard на y100); верхняя ангара садится под неё
     const cardLane = 46*ui;
-    // field taxi area (left ~63%); runways on right
-    let fx0 = M, fy0 = hud + M + cardLane;
-    let fx1 = W*0.63, fy1 = H - M;            // апрон шире (ближе к макетным ~0.655W) → борту больше места
+    // PlaneFlow gameplay handoff v2 is authored on a fixed 1600×800 canvas:
+    // apron=(92,135,770,580), runways begin at apron right edge. Keep those
+    // proportions as the default responsive layout; explicit level-designer
+    // layouts below still override these values.
+    const REF_W = 1600, REF_H = 800;
+    const REF_S = Math.max(W / REF_W, H / REF_H);
+    const REF_X = Math.round((W - REF_W * REF_S) / 2), REF_Y = 0;
+    let fx0 = REF_X + 92 * REF_S, fy0 = REF_Y + 135 * REF_S;
+    let fx1 = REF_X + (92 + 770) * REF_S, fy1 = REF_Y + (135 + 580) * REF_S;
     // КОНСТРУКТОР: если разметка задаёт явный апрон (LV.layout.apron, доли поля),
     // берём границы поля из неё — тогда превью «Разметка» и «Тестовая игра» рисуют
     // апрон (и привязанные к нему ангары) в одном месте, а не у самого края экрана.
@@ -155,8 +161,16 @@
           const cfg = sides[side]; if(!cfg) continue;
           for(let i=0;i<cfg.slots;i++) all.push({type:cfg.type, open:i<cfg.open});
         }
-        all.forEach((b,i)=>{
-          bays.push({ side:(i%2===0?'top':'bottom'), type:b.type, slot:i,
+        // Reference gameplay screen has four gates: A1/A2 at the top edge and
+        // B1/B2 at the bottom edge. Keep one playable bay per visible gate and
+        // choose service types from the legacy side pool so every campaign service
+        // remains represented.
+        const firstOf = (type: string) => all.find(b => b.type === type);
+        const ref = [firstOf('fuel'), firstOf('board'), firstOf('repair'), all.find(b => b && b.type !== firstOf('fuel')?.type) || firstOf('fuel')]
+          .filter(Boolean) as { type: string; open: boolean }[];
+        while(ref.length < 4 && all[ref.length]) ref.push(all[ref.length]);
+        ref.slice(0,4).forEach((b,i)=>{
+          bays.push({ side:(i<2?'top':'bottom'), type:b.type, slot:i,
                       open:b.open, open0:b.open,
                       openCost: K.BAY_OPEN_COST, upgCost: undefined,
                       lvl:0, occupied:null, x:0,y:0,w:bw,h:bh });
@@ -189,31 +203,30 @@
         b.side = b.gate==='down' ? 'top' : b.gate==='up' ? 'bottom' : 'free';
       });
     } else {
-      // СТАРАЯ РАСКЛАДКА: две сплошные ангары — стойла встык по всей ширине апрона.
-      // Правая граница — fx1-8*ui (rwL): ВПП заходит на 8*ui внутрь апрона (мостик),
-      // боксы не должны попадать в эту зону мостика.
-      const bayRight = fx1 - 8*ui;
-      const packRow = (arr: Bay[], yTop: number) => {
-        const n=arr.length; if(!n) return;
-        const cellW=(bayRight-fx0)/n;
-        arr.forEach((b,i)=>{ b.w=cellW; b.h=hangH; b.x=fx0+i*cellW; b.y=yTop; });
-      };
-      packRow(bySide('top'), fy0);
-      packRow(bySide('bottom'), fy1-hangH);
+      // Reference gate anchors from the 1600×800 handoff: A1/A2 are top hangars,
+      // B1/B2 are bottom gates. Hit boxes follow the same centers/sizes as art.
+      const topAnchors=[308,504], botAnchors=[308,504];
+      bySide('top').forEach((b,i)=>{
+        const w=148*REF_S, h=85*REF_S, cx=REF_X + (topAnchors[i] ?? topAnchors[topAnchors.length-1])*REF_S;
+        b.w=w; b.h=h; b.x=cx-w/2; b.y=fy0-h;
+      });
+      bySide('bottom').forEach((b,i)=>{
+        const w=159*REF_S, h=69*REF_S, cx=REF_X + (botAnchors[i] ?? botAnchors[botAnchors.length-1])*REF_S;
+        b.w=w; b.h=h; b.x=cx-w/2; b.y=fy1;
+      });
     }
     // де-айс-бокс — у правого края поля, по центру по вертикали
     const de = bays.find(b=>b.side==='deice');
     if(de){ de.w=bw; de.h=bh; de.x=fx1-bw; de.y=(fy0+fy1)/2-bh/2; }
 
-    // runways on right
-    // полевой торец ВПП заходит на самую кромку апрона → «мост» апрон→небо (полосы не
-    // висят в пустоте); длина ВПП ≈0.21W (макет 318/1600≈0.20W), правый край = K.RUNWAY_R×W
-    const rwL = fx1 - 8*ui, rwR = W * K.RUNWAY_R;
+    // runways on right: handoff v2 places the apron edge and runway left edge
+    // on the same X (RX=862 on the 1600px reference canvas).
+    const rwL = fx1, rwR = REF_X + (862 + 350) * REF_S;
     const top0 = hud + M, bot0 = H - M;
     // ширина ВПП выводится из длины борта через K.RUNWAY_RATIO — масштаб борта
     // (K.PLANE_SCALE) масштабирует полосы на всех картах; просвет — доля ширины ВПП.
-    const rh = PLANE_LEN()*K.RUNWAY_RATIO;  // ширина ВПП ≈ длина борта × коэф
-    const gap = rh*0.37;                    // просвет между полосами ~ доля ширины ВПП
+    const rh = LV.layout ? PLANE_LEN()*K.RUNWAY_RATIO : 80 * REF_S;
+    const gap = LV.layout ? rh*0.37 : (464 - 280 - 80) * REF_S;
     // центры полос по вертикали: КОНСТРУКТОР — по нормированному y каждой ВПП; иначе —
     // n полос симметрично по центру (старая неон-композиция, центральная не пропускается).
     let cys: number[];
@@ -221,9 +234,10 @@
       // rd.y = доля высоты апрона (как в редакторе «Разметка»), не экрана
       cys = LV.layout.runways.map(rd => Math.max(top0+rh/2, Math.min(bot0-rh/2, fy0 + rd.y*(fy1-fy0))));
     } else {
-      const n = Math.max(1, LV.runways || 1);
-      const rwY0 = top0 + Math.max(0, ((bot0-top0) - (rh*n + gap*(n-1))) / 2);
-      cys = []; for(let i=0;i<n;i++) cys.push(rwY0 + i*(rh+gap) + rh/2);
+      // The reference gameplay screen has exactly two runway mouths. Legacy
+      // campaign configs may still declare more for economy/difficulty metadata,
+      // but the live reference-style field exposes the two handoff lanes.
+      cys = [320, 504].map(y => REF_Y + y * REF_S);
     }
     if(!runways.length || runways.length!==cys.length){
       const rdefs = (LV.layout && LV.layout.runways) ? LV.layout.runways : [];

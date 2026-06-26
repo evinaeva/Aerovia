@@ -154,13 +154,31 @@
     }
     return G;   // field / bay / борт стоит/выкатывается на полосе
   }
-  function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any){
+  const PLANE_LIVERY_COLORS = [null, '#cc1122', '#c89800', '#1a9944'];
+  const planeLiveryCache = new WeakMap<HTMLImageElement, Map<number, HTMLCanvasElement>>();
+  function planeLiverySprite(base: HTMLImageElement, idx?: number){
+    const li = Math.max(0, Math.min(3, idx || 0));
+    const col = PLANE_LIVERY_COLORS[li];
+    if(!col) return base;
+    let byImg = planeLiveryCache.get(base);
+    if(!byImg){ byImg = new Map(); planeLiveryCache.set(base, byImg); }
+    const cached = byImg.get(li); if(cached) return cached;
+    const c = document.createElement('canvas'); c.width = base.naturalWidth || base.width; c.height = base.naturalHeight || base.height;
+    const g = c.getContext('2d')!;
+    g.drawImage(base, 0, 0, c.width, c.height);
+    g.save(); g.globalCompositeOperation='source-atop'; g.fillStyle=col; g.globalAlpha=.72;
+    g.fillRect(c.width*.22, c.height*.56, c.width*.56, c.height*.44);
+    g.restore();
+    byImg.set(li, c); return c;
+  }
+  function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any,livery?: number){
     if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)
     if(!inMenu){   // скин самолёта (assets/skins) — ВМЕСТО спрайта/процедурки; не трогаем меню-контур
       const pSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('plane');
       if(pSkin){   // PNG нарисован носом вверх (как спрайт) → +90° к игровому курсу (нос вдоль +x)
         const dw=62*s, dh=62*s;
-        ctx.save(); ctx.translate(x,y); ctx.rotate(ang + Math.PI/2); ctx.drawImage(pSkin, -dw/2, -dh/2, dw, dh); ctx.restore();
+        const sprite = planeLiverySprite(pSkin, livery);
+        ctx.save(); ctx.translate(x,y); ctx.rotate(ang + Math.PI/2); ctx.drawImage(sprite, -dw/2, -dh/2, dw, dh); ctx.restore();
         return;
       }
     }
@@ -205,7 +223,10 @@
     const skyL=(field.rwR||W*0.85);              // левая кромка «неба» (правее ВПП)
 
     const bgSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('background');
-    if(bgSkin){ ctx.drawImage(bgSkin, 0, 0, W, H); }   // скин фона (assets/skins) ВМЕСТО процедурного неба
+    if(bgSkin){
+      const rs=Math.max(W/1600, H/800), rx=Math.round((W-1600*rs)/2);
+      ctx.drawImage(bgSkin, rx, 0, 1600*rs, 800*rs);
+    }   // скин фона (assets/skins) ВМЕСТО процедурного неба
     else {
     // ===== небо справа (вне апрона) =====
     // звёзды (детерминированный разброс, мягкое мерцание)
@@ -240,11 +261,29 @@
     }
 
     // ===== слой облаков (зона неба, правее апрона) =====
-    drawCloudLayer(tm);
+    // The v2 handoff background is pre-merged; avoid adding extra sky gradients/clouds
+    // over it. Procedural cloud fallback remains for non-sprite backgrounds.
+    if(!bgSkin) drawCloudLayer(tm);
 
-    // ===== панель апрона — только PNG (nineSlice масштабирует рамку без искажений) =====
-    const fx=ax-8*ui, fy=ay-8*ui, fw=(apR-ax)+16*ui, fh=(ab-ay)+16*ui;
-    if(!(SPRITES.nineSlice && SPRITES.nineSlice('apron-frame', fx, fy, fw, fh, 57))){
+    // ===== VPP connectors (sprite-only layer, before apron) =====
+    const rs=(field.x1-field.x0)/770;
+    const vppSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('runway');
+    if(vppSkin){
+      for(const r of runways){
+        const cx=field.x1 + (-51 + 279/2)*rs, cy=r.cy + 2*rs;
+        ctx.save();
+        ctx.translate(cx,cy);
+        ctx.drawImage(vppSkin, -279*rs/2, -203*rs/2, 279*rs, 203*rs);
+        ctx.restore();
+      }
+    }
+
+    // ===== панель апрона — handoff sprite first, nine-slice frame fallback =====
+    const apronSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('apron');
+    const fx=ax, fy=ay, fw=(apR-ax), fh=(ab-ay);
+    if(apronSkin){
+      ctx.drawImage(apronSkin, fx, fy, fw, fh);
+    } else if(!(SPRITES.nineSlice && SPRITES.nineSlice('apron-frame', fx-8*ui, fy-8*ui, fw+16*ui, fh+16*ui, 57))){
       // Плейсхолдер пока PNG не загружен: тёмный прямоугольник без декора
       ctx.fillStyle=COL.tarmac; rr(fx,fy,fw,fh,12*ui); ctx.fill();
     }

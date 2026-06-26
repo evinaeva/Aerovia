@@ -20,6 +20,7 @@
     runways.forEach(r=>{ r.occupied=null; r.closed=false; r.hazard=null; r.landingOpen=r.landingOpen0; r.takeoffOpen=r.takeoffOpen0; });
     effects=[]; floaters=[]; alarmAt=0; slowmo=0; nearMissPairs={}; selected=null; levelPassed=false; upgradesDone=0;
     statPeak=0; statSamples=[]; statStep=1.5; statNextAt=0; spawnedTotal=0;
+    seedReferenceApronPlanes();
     combo=0; runCrashes=0; runPenalties=0;
     rushUntil=0; windUntil=0; fogUntil=0;
     // атмосфера: «часы» суток идут всегда; погода — опциональный движок (флаг weather)
@@ -70,6 +71,39 @@
   }
 
   function shuffle(a: any[]){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+  // PlaneFlow gameplay handoff v2 starts with five idle aircraft already on the
+  // apron. They are regular field planes, so existing routing/service/takeoff
+  // mechanics continue to work after the visual reference is established.
+  function seedReferenceApronPlanes(){
+    if(LV.bonus || LV.biome || LV.layout) return;
+    const rs=Math.max(W/1600, H/800), rx=Math.round((W-1600*rs)/2);
+    const refs=[
+      {x:348,y:278,a:200,liv:0},
+      {x:660,y:284,a:162,liv:1},
+      {x:462,y:402,a:225,liv:3},
+      {x:320,y:506,a:196,liv:2},
+      {x:644,y:512,a:216,liv:0},
+    ];
+    const openTypes=bays.filter(b=>b.open && !b.deice).map(b=>b.type);
+    const fallback=['fuel','board','repair'];
+    refs.forEach((r,i)=>{
+      const type=openTypes[i%Math.max(1,openTypes.length)] || fallback[i%fallback.length];
+      planes.push({
+        id: ++planeSeq, x:rx+r.x*rs, y:r.y*rs, ang:(r.a-90)*Math.PI/180, livery:r.liv,
+        requests:[type,'depart'], reqIndex:0, nSvc:1, zone:'field',
+        entering:false, path:[], moving:false, selected:false, autoPath:false,
+        landing:false, takeoff:false, exiting:false, approachR:null, runway:null, bay:null,
+        airTime:Infinity, airMax:Infinity, waitMult:2, groundTime:Infinity, groundMax:Infinity,
+        serveTime:0, serveMax:0, landedAt:0, halfPay:false, dead:false,
+        reward:econ.svcReward, vip:false, emergency:false, medical:false,
+      });
+    });
+    spawnedTotal += refs.length;
+    // Next arrivals come from the right-hand runway queue after the reference board
+    // has been visible for a moment, matching the 8–12s handoff cadence.
+    spawnTimer = 8 + Math.random()*4;
+  }
 
   function spawnPlane(){
     // бонус-мир «луг бабочек»: гусеница ВПОЛЗАЕТ справа по земле (не прилетает),
@@ -129,7 +163,7 @@
     spawnedTotal++;
     planes.push({
       id: ++planeSeq,
-      x: W + 40*ui, y, ang: Math.PI, // влетает с правого края, нос влево
+      x: W + 40*ui, y, ang: Math.PI, livery: Math.floor(Math.random()*4), // влетает с правого края, нос влево
       vip, emergency, medical, requests, reqIndex:0,
       zone:'air',            // air | runway | field | bay
       entering:true,         // глиссада с правого края до точки зависания

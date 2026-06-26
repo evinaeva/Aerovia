@@ -176,7 +176,17 @@
     // а игровые оверлеи (иконка/ценник/пипсы/прогресс) ложатся сверху тем же кодом.
     const zSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('hangar', b.open ? b.type : 'locked');
     let panelDrawn: boolean;
-    if(zSkin){ ctx.drawImage(zSkin, b.x, b.y, b.w, b.h); panelDrawn = true; }
+    if(zSkin){
+      if(!LV.bonus && !LV.biome && !LV.layout){
+        ctx.save();
+        ctx.translate(b.x+b.w/2, b.y+b.h/2);
+        if(b.side==='top') ctx.rotate(Math.PI);
+        ctx.drawImage(zSkin, -b.w/2, -b.h/2, b.w, b.h);
+        ctx.restore();
+        return;
+      }
+      ctx.drawImage(zSkin, b.x, b.y, b.w, b.h); panelDrawn = true;
+    }
     else { panelDrawn = !!(ATLAS && SPRITES.blitC(b.open ? ('bay-'+b.type) : 'bay-locked', b.x+b.w/2, b.y+b.h/2, b.w, b.h)); }
     // Спрайт ещё не загружен → откат на процедурный neon для обычных боксов
     if(!panelDrawn && !b.deice && !LV.bonus){ ctx.restore(); drawNeonBay(b); return; }
@@ -351,16 +361,16 @@
       else pl.bounceAt=0;
     }
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
-    else drawPlaneBodyAt(pl.x, by, pl.ang, ui*0.5*SZ()*vs, pl.vip, pl.emergency, pl.medical);
+    else drawPlaneBodyAt(pl.x, by, pl.ang, ui*0.5*SZ()*vs, pl.vip, pl.emergency, pl.medical, pl.livery);
 
     // пузырёк нужды над бортом: воздух (ожидание) + апрон; на ВПП и в ангаре — скрыт
     if(LV.bonus){
       // бонус: над гусеницей — цветок нужного цвета (её цель). Куколка/бабочка — без пузырька.
       if(pl.zone!=='bay' && pl.bug==='cat') drawFlower(pl.x, pl.y-28*ui*vs, 9*ui, BSP[pl.species||0].petal);
-    } else if(pl.zone==='field' || pl.zone==='air'){
+    } else if((pl.zone==='field' || pl.zone==='air') && (LV.biome || LV.layout)){
       const _ny = pl.y-28*ui*vs;
       if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, 33*ui, 33*ui)))
-        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // чип svc-* (фолбэк: процедурная иконка)
+        drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);   // legacy/custom overlays only outside the reference screen
     }
   }
 
@@ -420,26 +430,13 @@
     }
   }
 
-  // PNG-фон HUD: загружаем один раз; offscreen canvas строим с прозрачными вырезами
-  // под live-значения, чтобы рамки панелей оставались нетронутыми.
-  let _hudBarImg: HTMLImageElement|null = null;
-  let _hudFrame: HTMLCanvasElement|null = null;
-
-  function _buildHudFrame(): boolean {
-    if(_hudFrame) return true;
-    if(!_hudBarImg){ _hudBarImg = new Image(); _hudBarImg.src = 'assets/hud/wow-bar.png'; }
-    if(!_hudBarImg.complete || !_hudBarImg.naturalWidth) return false;
-    const oc = document.createElement('canvas');
-    oc.width = _hudBarImg.naturalWidth; oc.height = _hudBarImg.naturalHeight;
-    const ox = oc.getContext('2d')!;
-    ox.drawImage(_hudBarImg, 0, 0);
-    // Bbox из детектора (pixel-точные координаты в пространстве PNG 2872×547):
-    ox.clearRect( 334, 202, 237, 112);  // сердца
-    ox.clearRect( 776, 150, 631, 239);  // "$12,450"
-    ox.clearRect(1405, 201, 777, 180);  // часы + "02:45"
-    ox.clearRect(2167, 160, 537, 245);  // "||"
-    _hudFrame = oc;
-    return true;
+  // HUD PNG from the v2 handoff. Draw it as-is; live values are layered into
+  // the three reference cells below. The previous code punched holes in the old
+  // wide HUD bar, which kept legacy HUD assumptions alive.
+  let _hudPng: HTMLImageElement|null = null;
+  function hudPng(): HTMLImageElement|null {
+    if(!_hudPng){ _hudPng = new Image(); _hudPng.src = 'assets/hud/wow-bar.png'; }
+    return (_hudPng.complete && _hudPng.naturalWidth) ? _hudPng : null;
   }
 
   // Шрифт для HUD-цифр: Orbitron ближе всего к sci-fi референсу
@@ -449,93 +446,51 @@
   const HUD_FX = {h:453/2872, m:1092/2872, t:1794/2872, p:2436/2872};
 
   function drawHUD(){
-    const hud=HUD_H();
-    const barH=hud+safe.t;
-    const cy=safe.t+hud/2;
-    const NEON='#27E6FF';
-    const fs=Math.round(hud*0.42);  // основной размер шрифта HUD
+    // Handoff v2 HUD: x=260,y=0,w=765,h=73 on the 1600×800 reference canvas,
+    // scaled proportionally to the current game viewport and pinned to the top edge.
+    const rs=Math.max(W/1600, H/800), rx=Math.round((W-1600*rs)/2);
+    const hx=rx+260*rs, hy=safe.t;
+    const hw=765*rs, hh=73*rs;
+    const cy=hy+hh/2;
+    const NEON='#00e5ff';
+    const fs=Math.max(11, Math.round(hh*0.2));
 
-    // ── Chrome-фон: PNG с прозрачными вырезами поверх тёмной подложки ──
-    if(_buildHudFrame() && _hudFrame){
-      ctx.fillStyle='#050c1a';
-      ctx.fillRect(0,0,W,barH);
-      ctx.drawImage(_hudFrame, 0, 0, W, barH);
-    } else {
-      // Fallback до загрузки PNG
-      const bg=ctx.createLinearGradient(0,0,0,barH);
-      bg.addColorStop(0,'#0d1f42'); bg.addColorStop(1,'#07111f');
-      ctx.fillStyle=bg; ctx.fillRect(0,0,W,barH);
-      ctx.fillStyle=hexa(NEON,.85); ctx.fillRect(0,barH-2,W,2);
+    const hudImg = hudPng();
+    if(hudImg) ctx.drawImage(hudImg, hx, hy, hw, hh);
+    else {
+      ctx.fillStyle='rgba(3,9,22,.97)';
+      ctx.fillRect(hx, hy, hw, hh);
     }
 
-    ctx.textBaseline='middle';
+    const py=hy+hh*0.12, ph=hh*0.76;
+    const p1x=hx+hw*0.01, p2x=hx+hw*0.345, p3x=hx+hw*0.644;
+    const pw1=hw*0.33, pw2=hw*0.285, pw3=hw*0.245;
+    ctx.fillStyle='rgba(0,0,0,.55)';
+    ctx.fillRect(p1x,py,pw1,ph); ctx.fillRect(p2x,py,pw2,ph); ctx.fillRect(p3x,py,pw3,ph);
 
-    // ── Сердца (cx = 15.8% от W) ──
-    const hcx=W*HUD_FX.h;
-    const hSp=19*ui;
-    const hx0=hcx-(K.START_LIVES-1)*hSp/2;
+    const heartScale=hw/765;
+    const hSp=26*heartScale, hcx=p1x+pw1/2;
     for(let i=0;i<K.START_LIVES;i++)
-      heart(hx0+i*hSp, cy, 4.5*ui, i<lives?COL.life:null);
+      heart(hcx-26*heartScale+i*hSp, cy, 7.8*heartScale, i<lives?COL.life:null);
 
-    // ── Деньги (cx = 38.0% от W) ──
-    const mncx=W*HUD_FX.m;
-    const moneyStr=fmtMoney(money);
+    ctx.textBaseline='middle'; ctx.textAlign='center';
     ctx.font=`700 ${fs}px ${HUD_F}`;
-    const mnW=ctx.measureText(moneyStr).width;
-    const dolW=Math.round(fs*0.65);  // ширина "$"
-    const mnX0=mncx-(dolW+6*ui+mnW)/2;
-    ctx.save();
-    ctx.shadowColor=NEON; ctx.shadowBlur=6;
-    ctx.fillStyle=hexa(NEON,.70); ctx.font=`700 ${Math.round(fs*0.75)}px ${HUD_F}`;
-    ctx.textAlign='left'; ctx.fillText('$', mnX0, cy);
-    ctx.font=`700 ${fs}px ${HUD_F}`;
-    ctx.fillStyle=money<0?COL.life:NEON;
-    ctx.fillText(moneyStr, mnX0+dolW+6*ui, cy);
+    ctx.save(); ctx.shadowColor=NEON; ctx.shadowBlur=6; ctx.fillStyle=money<0?COL.life:NEON;
+    ctx.fillText('$ '+fmtMoney(money), p2x+pw2/2, cy+hh*0.04);
     ctx.restore();
 
-    // ── Таймер с иконкой часов (cx = 62.5% от W) ──
-    const tmcx=W*HUD_FX.t;
     const tShown=LV.objective.time?Math.max(0,LV.objective.time-gameTime):gameTime;
     const urgent=!!(LV.objective.time&&tShown<=10);
-    const timerStr=fmtTime(tShown);
-    ctx.font=`700 ${fs}px ${HUD_F}`;
-    const tmW=ctx.measureText(timerStr).width;
-    const clkR=Math.round(hud*0.18);
-    const gap=7*ui;
-    const totalW=clkR*2+gap+tmW;
-    const clkCX=tmcx-totalW/2+clkR;
-    const clkCol=urgent?COL.life:NEON;
-    ctx.save();
-    ctx.shadowColor=clkCol; ctx.shadowBlur=5;
-    ctx.strokeStyle=clkCol; ctx.lineWidth=Math.max(1.5,clkR*0.17); ctx.lineCap='round';
-    ctx.beginPath(); ctx.arc(clkCX,cy,clkR,0,Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(clkCX,cy); ctx.lineTo(clkCX,cy-clkR*0.55); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(clkCX,cy); ctx.lineTo(clkCX+clkR*0.42,cy); ctx.stroke();
-    ctx.fillStyle=urgent?COL.life:NEON;
-    ctx.textAlign='left'; ctx.fillText(timerStr, clkCX+clkR+gap, cy);
+    ctx.save(); ctx.shadowColor=urgent?COL.life:NEON; ctx.shadowBlur=5; ctx.fillStyle=urgent?COL.life:NEON;
+    ctx.fillText('⏱ '+fmtTime(tShown), p3x+pw3/2, cy+hh*0.04);
     ctx.restore();
 
-    // ── Кнопка паузы (cx = 84.8% от W → обновляем pauseBtn для хит-теста) ──
-    const pzcx=W*HUD_FX.p;
-    pauseBtn.x=Math.round(pzcx-pauseBtn.w/2);
-    pauseBtn.y=Math.round(cy-pauseBtn.h/2);
-    const ps=Math.round(hud*0.28);
-    ctx.save();
-    ctx.shadowColor=NEON; ctx.shadowBlur=6;
-    ctx.fillStyle=NEON;
-    if(!paused){
-      ctx.fillRect(pzcx-ps*0.85, cy-ps, ps*0.55, ps*2);
-      ctx.fillRect(pzcx+ps*0.30, cy-ps, ps*0.55, ps*2);
-    } else {
-      ctx.beginPath();
-      ctx.moveTo(pzcx-ps,     cy-ps*1.1);
-      ctx.lineTo(pzcx+ps*1.2, cy);
-      ctx.lineTo(pzcx-ps,     cy+ps*1.1);
-      ctx.closePath(); ctx.fill();
-    }
-    ctx.restore();
+    pauseBtn.x=Math.round(hx+hw*0.88);
+    pauseBtn.y=Math.round(hy);
+    pauseBtn.w=Math.round(hw*0.12);
+    pauseBtn.h=Math.round(hh);
 
-    drawPlaneCard();
+    if(LV.bonus || LV.biome || LV.layout) drawPlaneCard();
   }
 
   function fmtTime(s: number){ const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(Math.floor(s%60)).padStart(2,'0'); return m+':'+ss; }
