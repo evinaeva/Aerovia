@@ -478,9 +478,10 @@
 
   // Шрифт для HUD-цифр.
   const HUD_F = "'Orbitron','Fredoka',sans-serif";
-  // Якоря из hud_example.png (640×67), в долях ширины:
-  //   ❤ anchor x=45, $ anchor x=225, ⏱ anchor x=407, pause cx=605
-  const HUD_FX = {h:45/640, m:225/640, t:407/640, p:605/640};
+  // PNG 640×67 рисуется центрированным шириной W/2.
+  // Перевод доли x в PNG (0..1) → x на канвасе: W/4 + frac * W/2
+  // Якоря из hud_example.png: ❤ 45/640, $ 225/640, ⏱ 407/640, pause 605/640
+  const hudPx = (frac: number) => W * (0.25 + frac * 0.5);
 
   function drawHUD(){
     const hud=HUD_H();
@@ -489,23 +490,27 @@
     const NEON='#27E6FF';
     const fs=Math.round(hud*0.42);
 
-    // ── PNG-фрейм (ячейки с тёмным фоном, || уже нарисованы) ──
+    // ── Фон на весь экран ──
     ctx.fillStyle='#050c1a';
     ctx.fillRect(0, 0, W, barH);
+
+    // ── PNG по центру, 50% ширины, пропорции 640:67 сохранены ──
     const hudImg=HANDOFF_IMG.hud;
-    if(hudImg && _hiOk(hudImg)) ctx.drawImage(hudImg, 0, safe.t, W, hud);
+    const hudPngW=Math.round(W*0.5);
+    const hudPngX=Math.round((W-hudPngW)/2);
+    if(hudImg && _hiOk(hudImg)) ctx.drawImage(hudImg, hudPngX, safe.t, hudPngW, hud);
 
     ctx.textBaseline='middle';
 
-    // ── Сердца (left-anchor = W*7%): ряд сердец от якоря вправо ──
+    // ── Сердца (left-anchor в PNG x=45) ──
     const hSp=Math.round(hud*0.50);
     const hR=Math.round(hud*0.20);
-    const hx0=W*HUD_FX.h;
+    const hx0=hudPx(45/640);
     for(let i=0;i<K.START_LIVES;i++)
       heart(hx0+i*hSp, cy, hR, i<lives?COL.life:null);
 
-    // ── Деньги (left-anchor = W*35.2%): $ + число ──
-    const mnAnchor=W*HUD_FX.m;
+    // ── Деньги (left-anchor в PNG x=225): $ + число ──
+    const mnAnchor=hudPx(225/640);
     const moneyStr=fmtMoney(money);
     const dolFs=Math.round(fs*0.75);
     const dolW=Math.round(dolFs*0.65);
@@ -519,8 +524,8 @@
     ctx.fillText(moneyStr, mnAnchor+dolW+4*ui, cy);
     ctx.restore();
 
-    // ── Таймер (left-anchor = W*63.6%): иконка часов + строка ──
-    const tmAnchor=W*HUD_FX.t;
+    // ── Таймер (left-anchor в PNG x=407): иконка часов + строка ──
+    const tmAnchor=hudPx(407/640);
     const tShown=LV.objective.time?Math.max(0,LV.objective.time-gameTime):gameTime;
     const urgent=!!(LV.objective.time&&tShown<=10);
     const timerStr=fmtTime(tShown);
@@ -538,8 +543,8 @@
     ctx.textAlign='left'; ctx.fillText(timerStr, clkCX+clkR+5*ui, cy);
     ctx.restore();
 
-    // ── Пауза (cx = W*94.5%): || в PNG; при паузе рисуем ► поверх ──
-    const pzcx=W*HUD_FX.p;
+    // ── Пауза (cx в PNG x=605): || в PNG; при паузе рисуем ► поверх ──
+    const pzcx=hudPx(605/640);
     pauseBtn.x=Math.round(pzcx-pauseBtn.w/2);
     pauseBtn.y=Math.round(cy-pauseBtn.h/2);
     if(paused){
