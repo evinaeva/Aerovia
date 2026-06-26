@@ -79,6 +79,9 @@
 
     function render() {
       const a = asset(); ensureAnchor(a); const warnings = validate(a); const sp = spec();
+      const warnHtml = warnings.length
+        ? `Warnings:<ul>${warnings.map(w => `<li>${escHtml(w)}</li>`).join('')}</ul><label><input type="checkbox" data-field="exportWarnings" ${state.exportWarnings ? 'checked' : ''}> Export with warnings</label>`
+        : 'Ready to export';
       root.innerHTML = `<div class="ac-grid">
         <div class="ac-form">
           <div class="ac-row"><label>Asset id<input data-field="id" value="${escHtml(a.id)}" placeholder="hangar_fuel_v1"></label><label>Kind<select data-field="kind">${ASSET_KINDS.map(k=>`<option ${a.kind===k?'selected':''}>${k}</option>`).join('')}</select></label></div>
@@ -94,7 +97,7 @@
         <div class="ac-side"><h4>Required for ${escHtml(a.kind)}</h4><div class="ac-checks">${[...sp.rects.map(k=>['rect',k]), ...(sp.anyRect?[['rectAny',sp.anyRect.join(' or ')]]:[]), ...sp.points.map(k=>['point',k])].map(([t,k])=>{ const ok=t==='rectAny'?a.rects.some(r=>sp.anyRect.includes(r.kind)):t==='rect'?a.rects.some(r=>r.kind===k):a.points.some(p=>p.kind===k); return `<button class="ac-check ${ok?'ok':'missing'} ${state.selectedKind===k?'sel':''}" data-select-type="${t==='point'?'point':'rect'}" data-kind="${escHtml(String(k).split(' ')[0])}">${ok?'✓':'○'} ${escHtml(k)}</button>`; }).join('')}</div>
           <details open><summary>Optional/recommended</summary><div class="ac-checks">${[...(sp.optionalRects||[]).map(k=>['rect',k]), ...(sp.optionalPoints||[]).map(k=>['point',k])].map(([t,k])=>`<button class="ac-check" data-select-type="${t}" data-kind="${k}">+ ${k}</button>`).join('') || '<span class="lab-empty">—</span>'}</div></details>
           <div id="ac-editor">${editorHtml()}</div>
-          <div class="ac-valid ${warnings.length?'warn':'ready'}">${warnings.length ? 'Warnings:<ul>' + warnings.map(w=>`<li>${escHtml(w)}</li>`).join('') + '</ul><label><input type="checkbox" data-field="exportWarnings" ${state.exportWarnings?'checked':''}> Export with warnings</label>' : 'Ready to export'}</div>
+          <div class="ac-valid ${warnings.length?'warn':'ready'}">${warnHtml}</div>
           <p class="ac-path-hint">Production runtime metadata path: <code>assets/metadata/asset-metadata.json</code>. Keep <code>asset-metadata.sample.json</code> as example/dev data only.</p>
           <div class="ac-actions"><button class="p-btn" data-action="applyPreview" ${warnings.length&&!state.exportWarnings?'disabled':''}>Apply to Game Preview</button><button class="p-btn" data-action="copySelected" ${warnings.length&&!state.exportWarnings?'disabled':''}>Copy selected JSON</button><button class="p-btn" data-action="downloadSelected" ${warnings.length&&!state.exportWarnings?'disabled':''}>Download selected</button><button class="p-btn" data-action="copyAll">Copy all JSON</button><button class="p-btn" data-action="downloadAll">Download all</button><label class="p-btn">Import JSON<input type="file" accept="application/json" data-action="import" hidden></label></div>
           ${state.previewStatus ? `<div class="ac-preview-status">${escHtml(state.previewStatus)}</div>` : ''}<textarea class="ac-json" readonly>${escHtml(state.lastJson)}</textarea>
