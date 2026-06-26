@@ -7,6 +7,7 @@
     const motionViewEl = document.getElementById('motion-view');
     const diffViewEl   = document.getElementById('difficulty-view');
     const assetViewEl  = document.getElementById('asset-view');
+    const assetCalViewEl = document.getElementById('asset-calibration-view');
     const testViewEl   = document.getElementById('test-view');
 
     function activateTab(tab) {
@@ -20,6 +21,7 @@
       if (motionViewEl) motionViewEl.style.display = tab === 'motion'     ? 'flex' : 'none';
       diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
       assetViewEl.style.display = tab === 'assets'     ? 'flex' : 'none';
+      if (assetCalViewEl) assetCalViewEl.style.display = tab === 'asset-calibration' ? 'flex' : 'none';
       if (testViewEl) testViewEl.style.display = tab === 'test' ? 'flex' : 'none';
       // «Движение» и «Сложность» встраивают #groups в свой view для единого скролла.
       if (tab === 'motion' && motionViewEl) {
@@ -52,6 +54,7 @@
       // _runTestWhenReady — ждёт пока __PLAY готов, без модалки валидации.
       if (tab === 'assets' && window._getPreviewMode && window._getPreviewMode() !== 'test' && window._runTestWhenReady) window._runTestWhenReady();
       if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
+      if (tab === 'asset-calibration' && window._assetCalibrationSync) window._assetCalibrationSync();
       if (tab === 'test'    && window._testSync)      window._testSync();
     }
     window._activateTab = activateTab;
