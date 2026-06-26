@@ -188,9 +188,12 @@
   // неоновое поле: тёмный фон + радарная сетка/кольца/развёртка вместо
   // металлического апрона, терминала, травы и воды (боксы рисуются поверх)
   // Кэши для тяжёлых градиентов поля (зарево города + апрон) — пересоздаём при resize.
-  let _neonCityGrad: CanvasGradient|null=null, _neonApronGrad: CanvasGradient|null=null;
-  let _neonApronY0=0, _neonApronY1=0;   // запоминаем fy/fh, чтобы поймать смену layout
+  let _neonCityGrad: CanvasGradient|null=null;
   let _neonCacheW=0, _neonCacheH=0;
+  function drawCloudLayer(_tm: number): void {
+    // cloud sprites: cloud-far / cloud-mid / cloud-near
+    // Clip to sky zone: field.x1 → W
+  }
   function drawNeonField(tm: number){
     // НЕОН-ГЕЙМПЛЕЙ (handoff, docs/design/skins/neon/handoff/): спокойный ночной УВД.
     // Апрон — ОГРАНИЧЕННАЯ зона руления слева с неон-рамкой (верх/лево/низ сплошные,
@@ -217,7 +220,7 @@
     if(!_neonCityGrad||_neonCacheW!==W||_neonCacheH!==H){
       _neonCityGrad=ctx.createRadialGradient(W*0.9,H,0,W*0.9,H,Math.min(W,H)*0.55);
       _neonCityGrad.addColorStop(0,hexa(COL.phosphor,.10)); _neonCityGrad.addColorStop(1,'rgba(0,0,0,0)');
-      _neonCacheW=W; _neonCacheH=H; _neonApronGrad=null; // инвалидируем и апрон
+      _neonCacheW=W; _neonCacheH=H;
     }
     ctx.fillStyle=_neonCityGrad; ctx.fillRect(skyL,H*0.45,W-skyL,H*0.55);
     const bn=8, bw=(W-skyL-14*ui)/bn;
@@ -236,49 +239,14 @@
     ctx.beginPath(); ctx.arc(twx+3*ui,twy,3.4*ui,0,7); ctx.fill();
     }
 
-    // ===== панель апрона (ограниченная зона руления) =====
-    const fx=ax-8*ui, fy=ay-8*ui, fw=(apR-ax)+16*ui, fh=(ab-ay)+16*ui;
-    const apronSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('apron');
-    if(apronSkin){   // скин апрона ВМЕСТО неон-плиты; клип по силуэту, чтобы PNG не вылез за скруглённые углы
-      ctx.save(); rr(fx,fy,fw,fh,16*ui); ctx.clip(); ctx.drawImage(apronSkin, fx, fy, fw, fh); ctx.restore();
-    } else {
-    rr(fx,fy,fw,fh,16*ui);
-    if(!_neonApronGrad||_neonApronY0!==fy||_neonApronY1!==fy+fh){
-      _neonApronGrad=ctx.createLinearGradient(0,fy,0,fy+fh);
-      _neonApronGrad.addColorStop(0,'#0e1a40'); _neonApronGrad.addColorStop(1,'#070e26');
-      _neonApronY0=fy; _neonApronY1=fy+fh;
-    }
-    ctx.fillStyle=_neonApronGrad; ctx.fill();
-    // лёгкая сетка + статичные кольца (БЕЗ вращающейся развёртки и креста)
-    ctx.save(); rr(fx,fy,fw,fh,16*ui); ctx.clip();
-    // Батч: все линии сетки — один beginPath/stroke вместо N отдельных GPU draw-call'ов.
-    ctx.strokeStyle=hexa(COL.phosphor,.05); ctx.lineWidth=1; ctx.beginPath();
-    for(let gx=fx; gx<fx+fw; gx+=34*ui){ ctx.moveTo(gx,fy); ctx.lineTo(gx,fy+fh); }
-    for(let gy=fy; gy<fy+fh; gy+=34*ui){ ctx.moveTo(fx,gy); ctx.lineTo(fx+fw,gy); }
-    ctx.stroke();
-    // Батч: все три кольца радара — один stroke.
-    const rcx=fx+fw*0.42, rcy=fy+fh*0.5, rmax=Math.min(fw,fh)*0.5;
-    ctx.strokeStyle=hexa(COL.phosphor,.07); ctx.lineWidth=1.2; ctx.beginPath();
-    for(let k=1;k<=3;k++){ ctx.moveTo(rcx+rmax*k/3,rcy); ctx.arc(rcx,rcy,rmax*k/3,0,Math.PI*2); }
-    ctx.stroke();
-    ctx.restore();
+    // ===== слой облаков (зона неба, правее апрона) =====
+    drawCloudLayer(tm);
 
-    // ===== неон-рамка: верх/лево/низ сплошные, право — короткие стабы =====
-    ctx.save(); ctx.shadowColor=hexa(COL.phosphor,.6); ctx.shadowBlur=12;
-    ctx.lineWidth=2.4; ctx.strokeStyle=hexa(COL.phosphor,.6);
-    ctx.beginPath();
-    ctx.moveTo(fx,fy); ctx.lineTo(fx+fw,fy);              // верх
-    ctx.moveTo(fx,fy+fh); ctx.lineTo(fx+fw,fy+fh);        // низ
-    ctx.moveTo(fx,fy); ctx.lineTo(fx,fy+fh);              // лево
-    const stub=Math.min(54*ui,fh*0.18);
-    ctx.moveTo(fx+fw,fy); ctx.lineTo(fx+fw,fy+stub);       // правый верхний стаб
-    ctx.moveTo(fx+fw,fy+fh-stub); ctx.lineTo(fx+fw,fy+fh); // правый нижний стаб (середина открыта)
-    ctx.stroke(); ctx.restore();
-    // краевые огни вдоль верх/низ кромки
-    ctx.fillStyle=hexa(COL.phosphor,.7);
-    for(let i=0;i<=10;i++){ const lx=fx+12*ui+i*((fw-24*ui)/10);
-      ctx.beginPath(); ctx.arc(lx,fy,1.7*ui,0,7); ctx.fill();
-      ctx.beginPath(); ctx.arc(lx,fy+fh,1.7*ui,0,7); ctx.fill(); }
+    // ===== панель апрона — только PNG (nineSlice масштабирует рамку без искажений) =====
+    const fx=ax-8*ui, fy=ay-8*ui, fw=(apR-ax)+16*ui, fh=(ab-ay)+16*ui;
+    if(!(SPRITES.nineSlice && SPRITES.nineSlice('apron-frame', fx, fy, fw, fh, 57))){
+      // Плейсхолдер пока PNG не загружен: тёмный прямоугольник без декора
+      ctx.fillStyle=COL.tarmac; rr(fx,fy,fw,fh,12*ui); ctx.fill();
     }
 
     if(LV.biome==='forest')   drawForestDecor(tm, ax, ay, field.rwR!, ab);
