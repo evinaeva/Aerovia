@@ -182,14 +182,59 @@
         assetMetadataRegistry.drawDebugOverlay(meta, pngDrawRect, b.id || b.type, 0);
       }
     }
-    // Handoff PNG: top bays → sprite_hangar.png, bottom bays → sprite_gate.png.
-    // Drawn before the zone-skin / atlas path so the handoff art shows when atlas isn't ready.
-    const hiSide = b.side === 'top' ? HANDOFF_IMG.hangar : HANDOFF_IMG.gate;
-    if(!b.deice && !LV.bonus && _hiOk(hiSide)){
+    // Handoff PNG: базовый ангар (sprite_hangar_base.png) + иконка услуги.
+    // Для нижних боксов (gate facing up) база зеркалится по вертикали.
+    const hiBase = HANDOFF_IMG.hangarBase;
+    if(!b.deice && !LV.bonus && _hiOk(hiBase)){
+      const TONE_MAP = {fuel:'teal',repair:'amber',board:'rose',deice:'ice'} as Record<string,string>;
+      const tone = TONE_MAP[b.type] || 'phosphor';
+      const col2 = COL[tone];
       ctx.save();
-      ctx.drawImage(hiSide as HTMLImageElement, b.x, b.y, b.w, b.h);
-      // Occupied tint
-      if(b.occupied){ const tone=(({fuel:'teal',repair:'amber',board:'rose',deice:'ice'} as Record<string,string>)[b.type]||'phosphor'); ctx.fillStyle=hexa(COL[tone],.18); ctx.fillRect(b.x,b.y,b.w,b.h); }
+      // База ангара — для нижних боксов переворачиваем по вертикали
+      if(b.side !== 'top'){
+        ctx.save();
+        ctx.translate(b.x + b.w/2, b.y + b.h/2);
+        ctx.scale(1, -1);
+        ctx.drawImage(hiBase as HTMLImageElement, -b.w/2, -b.h/2, b.w, b.h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(hiBase as HTMLImageElement, b.x, b.y, b.w, b.h);
+      }
+      if(!b.open){
+        // Закрытый: затемнение + ценник
+        ctx.fillStyle = 'rgba(0,5,20,0.55)'; ctx.fillRect(b.x, b.y, b.w, b.h);
+        const enough = money >= K.BAY_OPEN_COST;
+        const chW = Math.min(b.w - 10*ui, 56*ui);
+        rr(b.x+b.w/2-chW/2, b.y+b.h-19*ui, chW, 14*ui, 7*ui);
+        ctx.fillStyle = hexa(COL.gold, enough ? .16 : .07); ctx.fill();
+        ctx.fillStyle = enough ? COL.coin : COL.muted;
+        ctx.font = `${9*ui}px ${NUM}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(fmtMoney(K.BAY_OPEN_COST), b.x+b.w/2, b.y+b.h-12*ui);
+      } else {
+        // Открытый: иконка услуги (масштаб с сохранением пропорций изображения)
+        const svcImg = (b.type==='fuel' ? HANDOFF_IMG.svcFuel : b.type==='repair' ? HANDOFF_IMG.svcRepair : b.type==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
+        if(svcImg && _hiOk(svcImg)){
+          const iw = svcImg.naturalWidth, ih = svcImg.naturalHeight;
+          const aspect = iw > 0 ? iw / ih : 1;
+          const maxW = b.w * 0.82, maxH = b.h * 0.60;
+          const dw = Math.min(maxW, maxH * aspect), dh = dw / aspect;
+          const ix = b.x + (b.w - dw) / 2;
+          // Позиционируем в области интерьера ангара (верхняя часть для top, нижняя для bottom)
+          const iy = b.side === 'top' ? b.y + b.h * 0.06 : b.y + b.h * 0.26;
+          ctx.drawImage(svcImg, ix, iy, dw, dh);
+        }
+        // Occupied tint
+        if(b.occupied){ ctx.fillStyle = hexa(col2, .22); ctx.fillRect(b.x, b.y, b.w, b.h); }
+        // Progress ring (угол дальний от ворот)
+        if(b.occupied && b.occupied.serveMax){
+          const frac = 1 - Math.max(0, b.occupied.serveTime) / b.occupied.serveMax;
+          const ccx = b.x+b.w-12*ui, ccy = b.side==='top' ? b.y+12*ui : b.y+b.h-12*ui;
+          ctx.beginPath(); ctx.arc(ccx, ccy, 7*ui, 0, 7);
+          ctx.lineWidth = 2.5*ui; ctx.strokeStyle = hexa(COL.ink, .6); ctx.stroke();
+          ctx.beginPath(); ctx.arc(ccx, ccy, 7*ui, -Math.PI/2, -Math.PI/2+frac*Math.PI*2);
+          ctx.lineWidth = 2.5*ui; ctx.lineCap = 'round'; ctx.strokeStyle = col2; ctx.stroke();
+        }
+      }
       ctx.restore();
       return;
     }
