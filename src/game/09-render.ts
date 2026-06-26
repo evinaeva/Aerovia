@@ -244,7 +244,7 @@
 
     // ===== панель апрона — только PNG (nineSlice масштабирует рамку без искажений) =====
     const fx=ax-8*ui, fy=ay-8*ui, fw=(apR-ax)+16*ui, fh=(ab-ay)+16*ui;
-    if(!(SPRITES.nineSlice && SPRITES.nineSlice('apron-frame', fx, fy, fw, fh, 32*ui))){
+    if(!(SPRITES.nineSlice && SPRITES.nineSlice('apron-frame', fx, fy, fw, fh, 57))){
       // Плейсхолдер пока PNG не загружен: тёмный прямоугольник без декора
       ctx.fillStyle=COL.tarmac; rr(fx,fy,fw,fh,12*ui); ctx.fill();
     }

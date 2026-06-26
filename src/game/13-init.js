@@ -39,6 +39,7 @@
     SPRITES.setZoneSkins({
       background: 'assets/skins/background/wow/default.png',
       runway:     'assets/skins/runway/wow/default.png',
+      arrival:    'assets/skins/arrival/wow/arrival.png',
       plane:      'assets/skins/plane/wow/default.png',
       hangar: {
         fuel:   'assets/skins/hangar/wow/fuel.png',
