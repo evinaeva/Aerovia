@@ -14,3 +14,18 @@ declare const PALETTE: Record<string, string>;
 declare const NEON_TOKENS: Record<string, string>;
 declare const THEME: { tokens: Record<string, string> };
 declare let ATLAS: boolean;
+
+declare const HANDOFF_IMG: {
+  bg:      HTMLImageElement | null;
+  apron:   HTMLImageElement | null;
+  vpp:     HTMLImageElement | null;
+  vppConn: HTMLImageElement | null;
+  hangar:  HTMLImageElement | null;
+  gate:    HTMLImageElement | null;
+  hud:     HTMLImageElement | null;
+  plane:   HTMLImageElement | null;
+  planes:  (HTMLImageElement | HTMLCanvasElement)[];
+  ready:   boolean;
+};
+declare function _hiOk(im: HTMLImageElement | HTMLCanvasElement | null): boolean;
+declare function _hiDraw(im: HTMLImageElement | HTMLCanvasElement | null, cx: number, cy: number, w: number, h: number, rotDeg?: number): boolean;

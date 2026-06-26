@@ -154,7 +154,7 @@
     }
     return G;   // field / bay / борт стоит/выкатывается на полосе
   }
-  function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any){
+  function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any,liv?: number){
     if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)
     if(!inMenu){   // скин самолёта (assets/skins) — ВМЕСТО спрайта/процедурки; не трогаем меню-контур
       const pSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('plane');
@@ -168,6 +168,19 @@
       // sprite is authored nose-up; game heading has nose along +x → rotate ang+90°
       const _id = medical ? 'plane-medevac' : emergency ? 'plane-emergency' : vip ? 'plane-vip' : 'plane';
       if(SPRITES.blitC(_id, x, y, 62*s, 62*s, ang + Math.PI/2)) return;
+    }
+    // Handoff PNG plane — fallback before procedural, nose-up → rotate ang+90°
+    if(HANDOFF_IMG.ready && !inMenu){
+      // map vip/emergency/medical → livery index; or use explicit liv param
+      const livIdx = (liv != null) ? Math.max(0,Math.min(3,liv)) :
+                     (medical ? 3 : emergency ? 1 : vip ? 2 : 0);
+      const im = HANDOFF_IMG.planes[livIdx] || HANDOFF_IMG.plane;
+      if(im && _hiOk(im)){
+        const dw=62*s, dh=62*s;
+        ctx.save(); ctx.translate(x,y); ctx.rotate(ang + Math.PI/2);
+        ctx.drawImage(im as HTMLImageElement, -dw/2, -dh/2, dw, dh); ctx.restore();
+        return;
+      }
     }
     ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(s,s);
     if(inMenu){ planeContour(); ctx.restore(); return; }   // главный экран: тонкий неон-контур-джет (макет SKINS.neon)
@@ -205,7 +218,8 @@
     const skyL=(field.rwR||W*0.85);              // левая кромка «неба» (правее ВПП)
 
     const bgSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('background');
-    if(bgSkin){ ctx.drawImage(bgSkin, 0, 0, W, H); }   // скин фона (assets/skins) ВМЕСТО процедурного неба
+    if(bgSkin){ ctx.drawImage(bgSkin, 0, 0, W, H); }
+    else if(_hiOk(HANDOFF_IMG.bg)){ ctx.drawImage(HANDOFF_IMG.bg!, 0, 0, W, H); }
     else {
     // ===== небо справа (вне апрона) =====
     // звёзды (детерминированный разброс, мягкое мерцание)
@@ -242,10 +256,27 @@
     // ===== слой облаков (зона неба, правее апрона) =====
     drawCloudLayer(tm);
 
-    // ===== панель апрона — только PNG (nineSlice масштабирует рамку без искажений) =====
+    // ===== VPP-коннекторы (Y-развилки) — ДО апрона, апрон скрывает их левый край =====
+    // Пропорции из handoff (1600×800): vppConn 279×203 у правого края апрона (RX=862),
+    // смещение центра: dx=-51+279/2=88.5, dy≈+2 — масштабируем по высоте полосы.
+    if(_hiOk(HANDOFF_IMG.vppConn)){
+      for(const rw of runways){
+        const scale = rw.h / 80;            // 80px — эталонная высота ВПП в handoff
+        const cw = 279 * scale, ch = 203 * scale;
+        const cx = apR + 88.5 * scale;      // центр X: RX + (-51 + 279/2) * scale
+        const cy = rw.cy + 2 * scale;
+        _hiDraw(HANDOFF_IMG.vppConn, cx, cy, cw, ch);
+      }
+    }
+
+    // ===== Апрон — PNG ВМЕСТО процедурного (nineSlice / тёмный прямоугольник) =====
     const fx=ax-8*ui, fy=ay-8*ui, fw=(apR-ax)+16*ui, fh=(ab-ay)+16*ui;
-    if(!(SPRITES.nineSlice && SPRITES.nineSlice('apron-frame', fx, fy, fw, fh, 57))){
-      // Плейсхолдер пока PNG не загружен: тёмный прямоугольник без декора
+    const apronSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('apron');
+    if(apronSkin){
+      ctx.drawImage(apronSkin, fx, fy, fw, fh);
+    } else if(_hiOk(HANDOFF_IMG.apron)){
+      ctx.drawImage(HANDOFF_IMG.apron!, fx, fy, fw, fh);
+    } else if(!(SPRITES.nineSlice && SPRITES.nineSlice('apron-frame', fx, fy, fw, fh, 57))){
       ctx.fillStyle=COL.tarmac; rr(fx,fy,fw,fh,12*ui); ctx.fill();
     }
 
@@ -270,8 +301,10 @@
     const WOW_BLUE = '#27E6FF';
     runways.forEach((r,i)=>{
       const rwSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('runway');
-      if(rwSkin){   // скин ВПП (assets/skins) ВМЕСТО процедурной полосы; клип по силуэту
-        ctx.save(); rr(r.x,r.y,r.w,r.h,7*ui); ctx.clip(); ctx.drawImage(rwSkin, r.x, r.y, r.w, r.h); ctx.restore();
+      const rwHandoff = !rwSkin && _hiOk(HANDOFF_IMG.vpp);
+      if(rwSkin || rwHandoff){
+        const im = rwSkin || HANDOFF_IMG.vpp!;
+        ctx.save(); rr(r.x,r.y,r.w,r.h,7*ui); ctx.clip(); ctx.drawImage(im, r.x, r.y, r.w, r.h); ctx.restore();
         if(r.closed){
           const cx=r.x+r.w/2, s=Math.min(r.w,r.h)*0.16;
           ctx.strokeStyle=hexa(COL.life,.8); ctx.lineWidth=3.5; ctx.lineCap='round';
