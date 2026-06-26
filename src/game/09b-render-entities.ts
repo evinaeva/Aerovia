@@ -200,18 +200,8 @@
       }
       if(b.open){
         const svcImg = (b.type==='fuel' ? HANDOFF_IMG.svcFuel : b.type==='repair' ? HANDOFF_IMG.svcRepair : b.type==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
-        // Иконка того же размера и холста, что и база — накладываем 1-в-1
-        if(b.side !== 'top'){
-          if(svcImg && _hiOk(svcImg)){
-            ctx.save();
-            ctx.translate(b.x + b.w/2, b.y + b.h/2);
-            ctx.scale(1, -1);
-            ctx.drawImage(svcImg, -b.w/2, -b.h/2, b.w, b.h);
-            ctx.restore();
-          }
-        } else {
-          if(svcImg && _hiOk(svcImg)) ctx.drawImage(svcImg, b.x, b.y, b.w, b.h);
-        }
+        // Иконка всегда в одной ориентации — не переворачивается с базой
+        if(svcImg && _hiOk(svcImg)) ctx.drawImage(svcImg, b.x, b.y, b.w, b.h);
       }
       ctx.restore();
       return;
