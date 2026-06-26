@@ -33,6 +33,7 @@
     const asset = () => state.assets[state.selectedAsset] || state.assets[0];
     const spec = () => SPECS[asset().kind] || SPECS.hangar;
     const ensureAnchor = (a) => { const p = a.points.find(p => p.kind === 'anchor'); a.anchor = p ? { x:p.x, y:p.y } : (a.anchor || { x:.5, y:.5 }); };
+    const hasAnchor = (a) => !!a.anchor && Number.isFinite(+a.anchor.x) && Number.isFinite(+a.anchor.y);
     const pointColor = (k) => POINT_COLORS[k] || (['centerlineStart','centerlineEnd','touchdown','runwayStop','takeoffStart','liftOff','landingEntry'].includes(k) ? '#5695ff' : '#31d7ff');
 
     function exportAsset(a) {
@@ -57,12 +58,13 @@
       if (!a.src.trim()) warnings.push('missing src');
       if (!ASSET_KINDS.includes(a.kind)) warnings.push('missing/invalid kind');
       if (!a.logicalSize || +a.logicalSize.w <= 0 || +a.logicalSize.h <= 0) warnings.push('logicalSize <= 0');
+      if (!hasAnchor(a) || a.anchor.x < 0 || a.anchor.x > 1 || a.anchor.y < 0 || a.anchor.y > 1) warnings.push('anchor outside 0..1');
       const dupes = (xs) => xs.filter((x,i) => xs.indexOf(x) !== i);
       dupes(a.points.map(p => p.id)).forEach(id => warnings.push('duplicate point id: ' + id));
       dupes(a.rects.map(r => r.id)).forEach(id => warnings.push('duplicate rect id: ' + id));
       a.points.forEach(p => { if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1) warnings.push(`${p.id} point outside 0..1`); if (p.kind === 'snap' && +p.radius <= 0) warnings.push(`${p.id} snap radius <= 0`); });
       a.rects.forEach(r => { if (r.x < 0 || r.x > 1 || r.y < 0 || r.y > 1 || r.x + r.w > 1 || r.y + r.h > 1) warnings.push(`${r.id} rect outside 0..1`); if (+r.w <= 0 || +r.h <= 0) warnings.push(`${r.id} rect w/h <= 0`); });
-      spec().points.forEach(k => { if (k === 'anchor' ? !a.points.some(p => p.kind === 'anchor') : !a.points.some(p => p.kind === k)) warnings.push('missing required point: ' + k); });
+      spec().points.forEach(k => { if (k === 'anchor' ? !hasAnchor(a) : !a.points.some(p => p.kind === k)) warnings.push('missing required point: ' + k); });
       spec().rects.forEach(k => { if (!a.rects.some(r => r.kind === k)) warnings.push('missing required rect: ' + k); });
       if (spec().anyRect && !a.rects.some(r => spec().anyRect.includes(r.kind))) warnings.push('missing required rect: at least one ' + spec().anyRect.join(' or '));
       if (a.allowedRotations.length && !a.allowedRotations.map(Number).includes(+a.defaultRotation)) warnings.push('defaultRotation not included in allowedRotations');
@@ -93,8 +95,9 @@
           <details open><summary>Optional/recommended</summary><div class="ac-checks">${[...(sp.optionalRects||[]).map(k=>['rect',k]), ...(sp.optionalPoints||[]).map(k=>['point',k])].map(([t,k])=>`<button class="ac-check" data-select-type="${t}" data-kind="${k}">+ ${k}</button>`).join('') || '<span class="lab-empty">—</span>'}</div></details>
           <div id="ac-editor">${editorHtml()}</div>
           <div class="ac-valid ${warnings.length?'warn':'ready'}">${warnings.length ? 'Warnings:<ul>' + warnings.map(w=>`<li>${escHtml(w)}</li>`).join('') + '</ul><label><input type="checkbox" data-field="exportWarnings" ${state.exportWarnings?'checked':''}> Export with warnings</label>' : 'Ready to export'}</div>
-          <div class="ac-actions"><button class="p-btn" data-action="copySelected" ${warnings.length&&!state.exportWarnings?'disabled':''}>Copy selected JSON</button><button class="p-btn" data-action="downloadSelected" ${warnings.length&&!state.exportWarnings?'disabled':''}>Download selected</button><button class="p-btn" data-action="copyAll">Copy all JSON</button><button class="p-btn" data-action="downloadAll">Download all</button><label class="p-btn">Import JSON<input type="file" accept="application/json" data-action="import" hidden></label></div>
-          <textarea class="ac-json" readonly>${escHtml(state.lastJson)}</textarea>
+          <p class="ac-path-hint">Production runtime metadata path: <code>assets/metadata/asset-metadata.json</code>. Keep <code>asset-metadata.sample.json</code> as example/dev data only.</p>
+          <div class="ac-actions"><button class="p-btn" data-action="applyPreview" ${warnings.length&&!state.exportWarnings?'disabled':''}>Apply to Game Preview</button><button class="p-btn" data-action="copySelected" ${warnings.length&&!state.exportWarnings?'disabled':''}>Copy selected JSON</button><button class="p-btn" data-action="downloadSelected" ${warnings.length&&!state.exportWarnings?'disabled':''}>Download selected</button><button class="p-btn" data-action="copyAll">Copy all JSON</button><button class="p-btn" data-action="downloadAll">Download all</button><label class="p-btn">Import JSON<input type="file" accept="application/json" data-action="import" hidden></label></div>
+          ${state.previewStatus ? `<div class="ac-preview-status">${escHtml(state.previewStatus)}</div>` : ''}<textarea class="ac-json" readonly>${escHtml(state.lastJson)}</textarea>
         </div></div>`;
       bind();
     }
@@ -109,8 +112,9 @@
     }
     function jsonFor(all) { const file={ schemaVersion:1, assets:(all?state.assets:[asset()]).map(exportAsset) }; state.lastJson=JSON.stringify(file,null,2); return state.lastJson; }
     function download(name, text) { const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),500); }
-    function actions(e) { const a=e.currentTarget.dataset.action; const all=a.endsWith('All'); const txt=jsonFor(all); if(a.startsWith('copy')) navigator.clipboard?.writeText(txt); if(a.startsWith('download')) download((asset().id||'asset-metadata') + (all?'-all':'') + '.json', txt); render(); }
-    function importJson(e) { const f=e.target.files?.[0]; if(!f)return; f.text().then(t => { const parsed=JSON.parse(t); if(parsed.schemaVersion!==1 || !Array.isArray(parsed.assets)) throw new Error('Expected AssetMetadataFile'); state.assets=parsed.assets.map(a => ({ ...defaultAsset(), ...a, anchor:a.anchor||{x:.5,y:.5}, points:[...(a.points||[]), { id:'anchor', kind:'anchor', x:a.anchor?.x ?? .5, y:a.anchor?.y ?? .5 }], rects:a.rects||[] })); state.selectedAsset=0; state.selectedType='point'; state.selectedKind='anchor'; state.selectedId='anchor'; render(); }).catch(err => alert('Import failed: ' + err.message)); }
+    function applyPreview(txt) { const api = gameFrame?.contentWindow?.__ASSETS; if (!api || typeof api.loadMetadata !== 'function') { state.previewStatus = 'Preview API __ASSETS.loadMetadata is not available in the running game iframe.'; return; } api.loadMetadata(JSON.parse(txt)); api.rendererMode = 'hybrid'; api.debugOverlay = true; state.previewStatus = 'Applied to game preview: __ASSETS.loadMetadata(), rendererMode=hybrid, debugOverlay=true.'; }
+    function actions(e) { const a=e.currentTarget.dataset.action; const all=a.endsWith('All'); const txt=jsonFor(all || a === 'applyPreview'); if(a==='applyPreview') applyPreview(txt); if(a.startsWith('copy')) navigator.clipboard?.writeText(txt); if(a.startsWith('download')) download((asset().id||'asset-metadata') + (all?'-all':'') + '.json', txt); render(); }
+    function importJson(e) { const f=e.target.files?.[0]; if(!f)return; f.text().then(t => { const parsed=JSON.parse(t); if(parsed.schemaVersion!==1 || !Array.isArray(parsed.assets)) throw new Error('Expected AssetMetadataFile'); state.assets=parsed.assets.map(a => ({ ...defaultAsset(), ...a, anchor:a.anchor||{x:.5,y:.5}, points:[...(a.points||[]).filter(p => p.kind !== 'anchor'), { id:'anchor', kind:'anchor', x:a.anchor?.x ?? .5, y:a.anchor?.y ?? .5 }], rects:a.rects||[] })); state.selectedAsset=0; state.selectedType='point'; state.selectedKind='anchor'; state.selectedId='anchor'; render(); }).catch(err => alert('Import failed: ' + err.message)); }
     window._assetCalibrationSync = render;
     render();
   })();

@@ -1384,3 +1384,20 @@
 @media (max-width: 1100px) {
   .ac-grid { grid-template-columns: 1fr; }
 }
+.ac-path-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.ac-path-hint code {
+  color: var(--accent);
+}
+.ac-preview-status {
+  border: 1px solid rgba(34,227,198,.35);
+  border-radius: 10px;
+  background: rgba(34,227,198,.08);
+  color: var(--accent);
+  padding: 7px 9px;
+  font-size: 12px;
+}
