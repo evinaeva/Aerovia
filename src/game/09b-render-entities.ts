@@ -499,10 +499,8 @@
     const gap=hud*0.073;             // отступ между часами и числом
     const dolGap=hud*0.047;          // отступ между $ и числом
 
-    // ── Chrome-фон: PNG рисуется ниже safe-zone, W×hud — ровно aspect PNG 5.25:1 ──
+    // ── Chrome-фон: PNG без предзаливки — ячейки прозрачны, игровой фон видно сквозь них ──
     if(_buildHudFrame() && _hudFrame){
-      ctx.fillStyle='#050c1a';
-      ctx.fillRect(0,0,W,barH);
       ctx.drawImage(_hudFrame, 0, safe.t, W, hud);
     } else {
       // Fallback до загрузки PNG
@@ -514,11 +512,11 @@
 
     ctx.textBaseline='middle';
 
-    // ── Сердца (cx = 15.8% от W) ──
+    // ── Сердца (cx = 15.8% от W): только оставшиеся жизни, без розовых контуров ──
     const hcx=W*HUD_FX.h;
     const hx0=hcx-(K.START_LIVES-1)*hSp/2;
-    for(let i=0;i<K.START_LIVES;i++)
-      heart(hx0+i*hSp, cy, heartSz, i<lives?COL.life:null);
+    for(let i=0;i<lives;i++)
+      heart(hx0+i*hSp, cy, heartSz, COL.life);
 
     // ── Деньги (cx = 38.0% от W) ──
     const mncx=W*HUD_FX.m;
