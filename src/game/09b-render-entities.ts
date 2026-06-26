@@ -182,6 +182,17 @@
         assetMetadataRegistry.drawDebugOverlay(meta, pngDrawRect, b.id || b.type, 0);
       }
     }
+    // Handoff PNG: top bays → sprite_hangar.png, bottom bays → sprite_gate.png.
+    // Drawn before the zone-skin / atlas path so the handoff art shows when atlas isn't ready.
+    const hiSide = b.side === 'top' ? HANDOFF_IMG.hangar : HANDOFF_IMG.gate;
+    if(!b.deice && !LV.bonus && _hiOk(hiSide)){
+      ctx.save();
+      ctx.drawImage(hiSide as HTMLImageElement, b.x, b.y, b.w, b.h);
+      // Occupied tint
+      if(b.occupied){ const tone=(({fuel:'teal',repair:'amber',board:'rose',deice:'ice'} as Record<string,string>)[b.type]||'phosphor'); ctx.fillStyle=hexa(COL[tone],.18); ctx.fillRect(b.x,b.y,b.w,b.h); }
+      ctx.restore();
+      return;
+    }
     if(!SPRITES.hasOverrides?.() && !SPRITES.hasZoneSkin?.('hangar', b.open?b.type:'locked') && !b.deice && !LV.bonus){ drawNeonBay(b); return; }
     const col=LV.bonus ? BSP[bSpec(b.type)].petal : (SVC as Record<string, {color: string}>)[b.type].color;   // бонус: цвет цветка по виду
     const busy=!!b.occupied;

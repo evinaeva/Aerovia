@@ -67,3 +67,31 @@
   // ATLAS=true, когда neon-арт загружен; иначе процедурный фолбэк (неоновая палитра
   // подхватывается через THEME.tokens).
   let ATLAS = false;
+
+  // Handoff PNG sprites (assets/sprites/handoff/). Loaded in 13-init.js.
+  // planes[] = 4 livery variants pre-rendered from sprite_plane2.png.
+  // ready = true once the plane base image has loaded (liveries are built synchronously).
+  const HANDOFF_IMG = {
+    bg: null,       // sprite_back_full.png
+    apron: null,    // sprite_apron.png
+    vpp: null,      // sprite_vpp.png  (runway strip)
+    vppConn: null,  // sprite_vpp_conn.png  (Y-junction)
+    hangar: null,   // sprite_hangar.png  (top bays)
+    gate: null,     // sprite_gate.png    (bottom bays)
+    hud: null,      // sprite_hud.png
+    plane: null,    // sprite_plane2.png  base
+    planes: [],     // [0..3]: livery variants
+    ready: false,   // set once plane base loaded
+  };
+  // Returns true if the HTMLImageElement is loaded and has pixels.
+  function _hiOk(im) { return !!(im && im.complete && im.naturalWidth > 0); }
+  // Draw image centered at (cx,cy) with optional rotation (degrees).
+  function _hiDraw(im, cx, cy, w, h, rotDeg) {
+    if (!_hiOk(im)) return false;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (rotDeg) ctx.rotate(rotDeg * Math.PI / 180);
+    ctx.drawImage(im, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+  }

@@ -43,23 +43,42 @@
       });
     }
   });
-  // WOW skin — design-reference assets baked into build; loaded once at startup.
-  // setZoneSkins() pre-warms image decode; render gates fall back to procedural until ready.
-  if(SPRITES.setZoneSkins){
-    SPRITES.setZoneSkins({
-      background: 'assets/skins/background/wow/default.png',
-      runway:     'assets/skins/runway/wow/default.png',
-      arrival:    'assets/skins/arrival/wow/arrival.png',
-      plane:      'assets/skins/plane/wow/default.png',
-      hangar: {
-        fuel:   'assets/skins/hangar/wow/fuel.png',
-        board:  'assets/skins/hangar/wow/board.png',
-        repair: 'assets/skins/hangar/wow/repair.png',
-        deice:  'assets/skins/hangar/wow/deice.png',
-        locked: 'assets/skins/hangar/wow/locked.png',
-      },
-    });
-  }
+  // WOW skin init removed — handoff PNG sprites (HANDOFF_IMG) are now the primary rendering.
+  // Zone skins remain available via the tuning workbench (setZoneSkins still works there).
+  // ── Handoff PNG sprites (assets/sprites/handoff/) ────────────────────────────
+  // Loaded once at startup; render code falls back to procedural until ready.
+  (function loadHandoffSprites(){
+    const BASE = 'assets/sprites/handoff/';
+    const LIV_COLORS = [null, '#cc1122', '#c89800', '#1a9944'];
+    function loadI(src){ const im = new Image(); im.src = src; return im; }
+    HANDOFF_IMG.bg      = loadI(BASE + 'sprite_back_full.png');
+    HANDOFF_IMG.apron   = loadI(BASE + 'sprite_apron.png');
+    HANDOFF_IMG.vpp     = loadI(BASE + 'sprite_vpp.png');
+    HANDOFF_IMG.vppConn = loadI(BASE + 'sprite_vpp_conn.png');
+    HANDOFF_IMG.hangar  = loadI(BASE + 'sprite_hangar.png');
+    HANDOFF_IMG.gate    = loadI(BASE + 'sprite_gate.png');
+    HANDOFF_IMG.hud     = loadI(BASE + 'sprite_hud.png');
+    const base = loadI(BASE + 'sprite_plane2.png');
+    HANDOFF_IMG.plane = base;
+    base.onload = function() {
+      // Build 4 livery variants: base (index 0) + tinted tail (1-3)
+      HANDOFF_IMG.planes = LIV_COLORS.map(function(col) {
+        if (!col) return base;
+        var c = document.createElement('canvas');
+        c.width = base.naturalWidth; c.height = base.naturalHeight;
+        var cx = c.getContext('2d');
+        cx.drawImage(base, 0, 0);
+        cx.globalCompositeOperation = 'source-atop';
+        cx.fillStyle = col; cx.globalAlpha = 0.72;
+        // tail = lower 44% of the sprite (nose points up)
+        cx.fillRect(base.naturalWidth * 0.22, base.naturalHeight * 0.56,
+                    base.naturalWidth * 0.56, base.naturalHeight * 0.44);
+        return c;
+      });
+      HANDOFF_IMG.ready = true;
+    };
+  })();
+
   ACH.init();
   lang = save.lang || DEFAULT_LANG;   // сохранённый выбор > английский по умолчанию
   applyI18n();
