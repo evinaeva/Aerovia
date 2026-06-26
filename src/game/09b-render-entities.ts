@@ -172,12 +172,14 @@
     const meta = assetMetadataRegistry.getAssetMetadata(metaId);
     if(meta && mode !== 'procedural'){
       const cx=b.x+b.w/2, cy=b.y+b.h/2;
-      const pngDrawn = assetMetadataRegistry.drawPng(meta, cx, cy, Math.min(b.w/meta.logicalSize.w, b.h/meta.logicalSize.h), 0);
+      const pngScale = Math.min(b.w/meta.logicalSize.w, b.h/meta.logicalSize.h);
+      const pngDrawRect = assetMetadataRegistry.drawRectFor(meta, cx, cy, pngScale);
+      const pngDrawn = assetMetadataRegistry.drawPng(meta, cx, cy, pngScale, 0);
       if(pngDrawn){
-        assetMetadataRegistry.drawDebugOverlay(meta, {x:b.x,y:b.y,w:b.w,h:b.h}, b.id || b.type, 0);
+        assetMetadataRegistry.drawDebugOverlay(meta, pngDrawRect, b.id || b.type, 0);
         if(mode === 'png') return;
       } else if(mode === 'png') {
-        assetMetadataRegistry.drawDebugOverlay(meta, {x:b.x,y:b.y,w:b.w,h:b.h}, b.id || b.type, 0);
+        assetMetadataRegistry.drawDebugOverlay(meta, pngDrawRect, b.id || b.type, 0);
       }
     }
     if(!SPRITES.hasOverrides?.() && !SPRITES.hasZoneSkin?.('hangar', b.open?b.type:'locked') && !b.deice && !LV.bonus){ drawNeonBay(b); return; }
@@ -365,6 +367,7 @@
     }
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
     else {
+      // Plane PNGs are authored nose-right by contract; per-asset rotationOffset handles exceptions.
       const planeMeta = assetMetadataRegistry.getAssetMetadata(pl.assetId || 'plane_wow_v1');
       const planeScalePx = ui*0.5*SZ()*vs;
       const pngScale = planeMeta ? (62 * planeScalePx / planeMeta.logicalSize.w) : 1;

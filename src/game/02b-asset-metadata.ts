@@ -142,3 +142,42 @@ class AssetMetadataRegistry {
   private unit(n: any){ return typeof n === 'number' && isFinite(n) && n >= 0 && n <= 1; }
 }
 const assetMetadataRegistry = new AssetMetadataRegistry();
+
+function assetMetadataForBay(b: any){
+  const metaId = b && (b.assetId || (b.open ? ('hangar_' + b.type + '_wow_v1') : 'hangar_locked_wow_v1'));
+  return metaId ? assetMetadataRegistry.getAssetMetadata(metaId) : undefined;
+}
+function assetDrawRectForBay(b: any, asset?: AssetMetadata): AssetDrawRect {
+  if(!asset) return { x:b.x, y:b.y, w:b.w, h:b.h };
+  const scale = Math.min(b.w / asset.logicalSize.w, b.h / asset.logicalSize.h);
+  return assetMetadataRegistry.drawRectFor(asset, b.x + b.w / 2, b.y + b.h / 2, scale);
+}
+function assetBayPoint(b: any, pointIdOrKind: string){
+  const asset = assetMetadataForBay(b); if(!asset) return null;
+  return assetMetadataRegistry.assetPointToWorld(asset, pointIdOrKind, assetDrawRectForBay(b, asset), 0);
+}
+function assetBayRect(b: any, rectIdOrKind: string){
+  const asset = assetMetadataForBay(b); if(!asset) return null;
+  return assetMetadataRegistry.assetRectToWorld(asset, rectIdOrKind, assetDrawRectForBay(b, asset), 0);
+}
+function bayCollisionRect(b: any){ return assetBayRect(b, 'collisionBounds') || { x:b.x, y:b.y, w:b.w, h:b.h }; }
+function bayHitRect(b: any){ return assetBayRect(b, 'hitArea') || { x:b.x, y:b.y, w:b.w, h:b.h }; }
+function bayEntrancePoint(b: any){
+  const p = assetBayPoint(b, 'entrance'); if(p) return p;
+  const o=dirOut(b), vert=Math.abs(o.dy)>Math.abs(o.dx), half=(vert?b.h:b.w)/2;
+  return { x:b.x+b.w/2+o.dx*half, y:b.y+b.h/2+o.dy*half };
+}
+function bayInsideStopPoint(b: any){ return assetBayPoint(b, 'insideStop') || { x:b.x+b.w/2, y:b.y+b.h/2 }; }
+function baySnapHit(px: number, py: number, b: any){
+  const asset = assetMetadataForBay(b);
+  if(asset){
+    const dr = assetDrawRectForBay(b, asset);
+    for(const p of asset.points || []){
+      if(p.kind !== 'snap' && p.kind !== 'entrance') continue;
+      const wp = assetMetadataRegistry.assetPointToWorld(asset, p.id, dr, 0); if(!wp) continue;
+      const r = Math.max(8*ui, (p.radius || 0.08) * Math.max(dr.w, dr.h));
+      if(dist(px, py, wp.x, wp.y) <= r) return true;
+    }
+  }
+  return inGrabZone(px, py, bayGrabZone(b));
+}

@@ -33,10 +33,15 @@
   loadGame();
   loadDebug();                        // восстановление отладочных читов (localStorage)
   saveGame();                         // миграция: сейв сразу переезжает под новый ключ
-  // Runtime side of the Asset Metadata System. Safe default is procedural; metadata
-  // is loaded in the background for PNG/hybrid modes and debug overlays.
-  assetMetadataRegistry.loadFromUrl('assets/metadata/asset-metadata.sample.json').then(warnings=>{
+  // Runtime side of the Asset Metadata System. Safe default is procedural. Production
+  // metadata lives in asset-metadata.json; the sample file is a documentation/dev fallback only.
+  assetMetadataRegistry.loadFromUrl('assets/metadata/asset-metadata.json').then(warnings=>{
     if(warnings.length) console.warn('[PlaneFlow] asset metadata warnings', warnings);
+    if(typeof location !== 'undefined' && /[?&]assetMetadataSample=1(?:&|$)/.test(location.search)){
+      assetMetadataRegistry.loadFromUrl('assets/metadata/asset-metadata.sample.json').then(sampleWarnings=>{
+        if(sampleWarnings.length) console.warn('[PlaneFlow] sample asset metadata warnings', sampleWarnings);
+      });
+    }
   });
   // WOW skin — design-reference assets baked into build; loaded once at startup.
   // setZoneSkins() pre-warms image decode; render gates fall back to procedural until ready.
