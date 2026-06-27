@@ -67,8 +67,10 @@
       const v = stored();
       if (v === true)  { Analytics.setConsent(true); captureReferrer(); return; }
       if (v === false) { return; }   // already declined; consent stays false
-      // First run — show banner; consent stays false until user accepts
-      show();
+      // First run — баннер согласия ВРЕМЕННО отключён (см. бэклог: «вернуть окно
+      // согласия на аналитику перед релизом»). Согласие остаётся false — аналитика
+      // не собирается, пока окно не вернём. Чтобы вернуть, раскомментируй show().
+      // show();
     }
 
     return { init, hasConsent: () => stored() };
