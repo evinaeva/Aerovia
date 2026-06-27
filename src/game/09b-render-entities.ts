@@ -330,7 +330,7 @@
       const _rc = COL.phosphor;
       ctx.save();
       ctx.strokeStyle=hexa(_rc, pl.selected?0.95:0.6);
-      ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; // сплошная линия
+      ctx.lineWidth=Math.max(2.4, 6*ui); ctx.lineCap='round'; ctx.lineJoin='round'; // линия масштабируется с ui (≈9px @ui1.5 ∈ норма 8–14; ≈4.2px на телефоне) — толще визуального шума, не перекрывает поле
       // Выбранный борт — полный glow; остальные — минимальный (горячий путь на мобилах).
       ctx.shadowColor=_rc; ctx.shadowBlur=pl.selected?8:3;
       ctx.beginPath(); ctx.moveTo(pl.x,pl.y);

@@ -37,6 +37,9 @@ __pycache__/
 # generated sprite outputs (live on the lora-outputs branch, not main)
 tools/style-lora/output/
 
+# path-sim render outputs (regenerate with `node tools/path-sim.mjs`)
+tools/_pathsim/
+
 # local preview tooling (Claude Code preview server — not part of the game)
 .claude/launch.json
 scripts/static-server.mjs
