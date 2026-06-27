@@ -362,20 +362,30 @@
   // Маршрут наземного борта держим ВНУТРИ апрона: борт не должен выезжать за его
   // границы — выход разрешён только на ВПП или в ангар, а это делает привязка по
   // СЫРОЙ точке пальца (openRunwayAt/openBayAt в move/up), которая достраивает хвост
-  // маршрута к торцу полосы / воротам бокса в обход этого ограничения. Здесь же
-  // прижимаем точку, уведённую пальцем за кромку поля, внутрь на ~2/3 длины борта,
-  // чтобы борт доехал ровно до конца нарисованной линии, но его нос/крылья/хвост не
-  // вылезли за границу. В воздухе (заход на посадку через небо) и в бонус-мире
+  // маршрута к торцу полосы / воротам бокса в обход этого ограничения.
+  //
+  // a — последняя (внутренняя) точка маршрута, b — текущая точка пальца. Пока палец
+  // внутри допустимого прямоугольника — возвращаем b как есть. Как только отрезок a→b
+  // выходит за кромку, возвращаем ТОЧКУ ПЕРЕСЕЧЕНИЯ с кромкой и флаг bounded — линия
+  // на этом обрывается (вызывающий код перестаёт добавлять точки, а не «ведёт» линию
+  // вдоль края). Отступ от кромки — ~2/3 РЕАЛЬНОГО габарита наземного борта
+  // (PLANE_LEN()·PLANE_GND_SCALE, т.е. размер, в котором он рисуется на земле), иначе
+  // нос/крылья/хвост вылезут за поле. В воздухе (заход через небо) и в бонус-мире
   // (бабочки улетают за край) ограничение не действует.
-  function clampRoutePoint(pl: any, p: any){
-    if(pl.zone!=='field' || LV.bonus) return p;
-    const m = PLANE_LEN()*(2/3);                 // ~2/3 размера борта от кромки апрона
-    const cx = (field.x0+field.x1)/2, cy = (field.y0+field.y1)/2;
-    const x0=field.x0+m, x1=field.x1-m, y0=field.y0+m, y1=field.y1-m;
-    return {
-      x: x1>x0 ? Math.max(x0, Math.min(x1, p.x)) : cx,   // поле уже 2m → держим по центру
-      y: y1>y0 ? Math.max(y0, Math.min(y1, p.y)) : cy,
-    };
+  function confineRoutePoint(pl: any, a: any, b: any){
+    if(pl.zone!=='field' || LV.bonus) return {x:b.x, y:b.y, bounded:false};
+    const m = PLANE_LEN()*K.PLANE_GND_SCALE*(2/3);   // ~2/3 габарита наземного борта
+    const cx=(field.x0+field.x1)/2, cy=(field.y0+field.y1)/2;
+    let x0=field.x0+m, x1=field.x1-m, y0=field.y0+m, y1=field.y1-m;
+    if(x1<x0){ x0=x1=cx; } if(y1<y0){ y0=y1=cy; }   // поле уже 2m → стягиваем к центру
+    if(b.x>=x0 && b.x<=x1 && b.y>=y0 && b.y<=y1) return {x:b.x, y:b.y, bounded:false};
+    // отрезок (внутренняя a → внешняя b): ищем долю t до выхода за прямоугольник
+    const ax=Math.max(x0,Math.min(x1,a.x)), ay=Math.max(y0,Math.min(y1,a.y));
+    const dx=b.x-ax, dy=b.y-ay; let t=1;
+    if(dx>1e-6) t=Math.min(t,(x1-ax)/dx); else if(dx<-1e-6) t=Math.min(t,(x0-ax)/dx);
+    if(dy>1e-6) t=Math.min(t,(y1-ay)/dy); else if(dy<-1e-6) t=Math.min(t,(y0-ay)/dy);
+    t=Math.max(0,Math.min(1,t));
+    return {x:ax+dx*t, y:ay+dy*t, bounded:true};
   }
 
   // ---- полукруглые зоны захвата (одна форма на тип; геометрия настраивается в tuning.html) ----
@@ -604,30 +614,35 @@
       drag.plane.moving=true;        // борт трогается сразу, как пошла линия
       drag.plane.autoPath=false;     // это нарисованный игроком маршрут — его показываем
     }
-    if(drag.drew && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
-      const cp=clampRoutePoint(drag.plane, p);   // не даём линии уйти за апрон (кроме ВПП/ангара — их добирает привязка по сырой точке)
-      drag.plane.path.push({x:cp.x,y:cp.y});
+    if(!drag.drew) return;
+    // Привязка к ВПП/боксу — по СЫРОЙ точке пальца (не ограниченной кромкой апрона),
+    // ПРИОРИТЕТНЕЕ ограничения поля: именно так борт выходит на ВПП / заезжает в ангар
+    // за пределами апрона. Проверяем после ≥3 ДОБАВЛЕННЫХ точек (≈≥36 px проведено
+    // пальцем), чтобы первый отрезок не залетал в зону при старте от hoverX вблизи ВПП.
+    // Считаем ИМЕННО добавленные точки (drag.pushes), а НЕ длину path: борт едет по
+    // маршруту и СЪЕДАЕТ пройденные waypoints, поэтому path.length при обычном жесте
+    // почти не растёт. Привязку держим в обход bounded — линия могла оборваться на
+    // кромке апрона по пути к полосе, но довести её на ВПП/в бокс всё равно нужно.
+    if(!LV.bonus && drag.pushes >= 3){
+      const pl=drag.plane;
+      const b = (pl.zone!=='air') ? openBayAt(p) : null;   // бокс — только с земли
+      if(b){ lockRouteToBay(pl, b); drag.locked=true; return; }
+      // ВПП: посадка (борт в воздухе) / взлёт (на земле, нужда 'depart').
+      // openRunwayAt фильтрует по направлению — нельзя сесть на takeoff-only и наоборот
+      const needDir = pl.zone==='air' ? 'landing' as const : 'takeoff' as const;
+      const r = (pl.zone==='air' || curNeed(pl)==='depart') ? openRunwayAt(p, needDir) : null;
+      if(r){ lockRouteToRunway(pl, r); drag.locked=true; return; }
+    }
+    // Добавляем точку маршрута, удерживая линию в пределах апрона. Дойдя до кромки,
+    // линия ОБРЫВАЕТСЯ (drag.bounded) — дальше не рисуем, а не ведём её вдоль края.
+    if(!drag.bounded && dist(p.x,p.y,drag.last.x,drag.last.y)>12){
+      const pl=drag.plane;
+      const a = pl.path.length ? pl.path[pl.path.length-1] : {x:pl.x, y:pl.y};
+      const cp = confineRoutePoint(pl, a, p);
+      pl.path.push({x:cp.x, y:cp.y});
       drag.last=p;
       drag.pushes++;
-      // конец траектории доведён в цель → фиксируем маршрут (вспышка + щелчок).
-      // Захватные зоны проверяем лишь после ≥3 ДОБАВЛЕННЫХ точек (≈≥36 px проведено
-      // пальцем), чтобы первый отрезок не залетал в зону при старте от hoverX вблизи ВПП.
-      // Считаем ИМЕННО добавленные точки (drag.pushes), а НЕ текущую длину path: борт
-      // едет по маршруту и СЪЕДАЕТ пройденные waypoints, поэтому path.length при обычном
-      // (не молниеносном) жесте почти не растёт — из-за этого привязка к ВПП/боксу часто
-      // не срабатывала на телефоне, и борт уходил по «сырой» линии мимо цели.
-      if(!LV.bonus && drag.pushes >= 3){
-        const pl=drag.plane;
-        const b = (pl.zone!=='air') ? openBayAt(p) : null;   // бокс — только с земли
-        if(b){ lockRouteToBay(pl, b); drag.locked=true; }
-        else {
-          // ВПП: посадка (борт в воздухе) / взлёт (на земле, нужда 'depart')
-          // openRunwayAt фильтрует по направлению — нельзя сесть на takeoff-only и наоборот
-          const needDir = pl.zone==='air' ? 'landing' as const : 'takeoff' as const;
-          const r = (pl.zone==='air' || curNeed(pl)==='depart') ? openRunwayAt(p, needDir) : null;
-          if(r){ lockRouteToRunway(pl, r); drag.locked=true; }
-        }
-      }
+      if(cp.bounded) drag.bounded=true;
     }
   }
   // конец воздушной траектории, заведённой на открытую ВПП, притягиваем в центр полосы
