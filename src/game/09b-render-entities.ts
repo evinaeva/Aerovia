@@ -469,8 +469,15 @@
         const sp=selected.species||0;
         if(ty==='depart') drawButterfly(bx+bw2/2, bcy, 0, ui*0.42, sp);   // финал — бабочка
         else drawFlower(bx+bw2/2, bcy, 9*ui, c);                          // шаг — цветок своего цвета
-      } else if(!(ATLAS && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, 28*ui, 28*ui)))
-        drawIcon(ty, bx+bw2/2, bcy, 12*ui, c, '#211d33');
+      } else {
+        // те же новые PNG-иконки услуг, что в ангаре и на пузырьке борта; PNG→атлас→процедура
+        const _svcImg = (ty==='fuel' ? HANDOFF_IMG.svcFuel : ty==='repair' ? HANDOFF_IMG.svcRepair : ty==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
+        const _sz = 28*ui;
+        if(_svcImg && _hiOk(_svcImg))
+          ctx.drawImage(_svcImg, bx+bw2/2-_sz/2, bcy-_sz/2, _sz, _sz);
+        else if(!(ATLAS && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, _sz, _sz)))
+          drawIcon(ty, bx+bw2/2, bcy, 12*ui, c, '#211d33');
+      }
       ctx.globalAlpha=1;
     }
   }
