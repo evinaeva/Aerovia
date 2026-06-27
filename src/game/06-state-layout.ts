@@ -177,13 +177,16 @@
       bays.filter(b=>b.side==='free' || b.gx!=null).forEach(b=>{
         const cx = fx0 + (b.gx||0)*(fx1-fx0), cy = fy0 + (b.gy||0)*(fy1-fy0);
         b.w = bw; b.h = hangH;
-        b.x = Math.max(fx0, Math.min(fx1-b.w, cx-b.w/2));
-        b.y = Math.max(fy0, Math.min(fy1-b.h, cy-b.h/2));
         if(!b.gate){
           const dT=cy-fy0, dB=fy1-cy, dL=cx-fx0, dR=fx1-cx, m=Math.min(dT,dB,dL,dR);
           b.gate = m===dT?'down' : m===dB?'up' : m===dL?'right' : 'left';
         }
         b.side = b.gate==='down' ? 'top' : b.gate==='up' ? 'bottom' : 'free';
+        // ангар снаружи апрона: ворота вровень с кромкой апрона
+        if(b.gate==='down')       { b.x=Math.max(fx0,Math.min(fx1-b.w,cx-b.w/2)); b.y=fy0-b.h; }
+        else if(b.gate==='up')    { b.x=Math.max(fx0,Math.min(fx1-b.w,cx-b.w/2)); b.y=fy1; }
+        else if(b.gate==='right') { b.x=fx0-b.w; b.y=Math.max(fy0,Math.min(fy1-b.h,cy-b.h/2)); }
+        else                      { b.x=fx1;     b.y=Math.max(fy0,Math.min(fy1-b.h,cy-b.h/2)); }
       });
     } else {
       // СТАРАЯ РАСКЛАДКА: две сплошные ангары — стойла встык по всей ширине апрона.
@@ -195,8 +198,8 @@
         const cellW=(bayRight-fx0)/n;
         arr.forEach((b,i)=>{ b.w=cellW; b.h=hangH; b.x=fx0+i*cellW; b.y=yTop; });
       };
-      packRow(bySide('top'), fy0);
-      packRow(bySide('bottom'), fy1-hangH);
+      packRow(bySide('top'), fy0 - hangH);
+      packRow(bySide('bottom'), fy1);
     }
     // де-айс-бокс — у правого края поля, по центру по вертикали
     const de = bays.find(b=>b.side==='deice');
