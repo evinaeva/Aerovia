@@ -425,9 +425,8 @@
   // борт выбран — иначе угол остаётся пустым. Общая для всех скинов.
   function drawPlaneCard(){
     if(!(selected && !selected.dead)) return;
-    const hud=HUD_H();
     const chain=selected.requests, n=chain.length;
-    const bw2=30*ui, gap2=16*ui, x0=14*ui, y0=hud+8*ui;   // в зарезервированной cardLane (выше апрона), не на верхней ангаре
+    const bw2=30*ui, gap2=16*ui, x0=14*ui, y0=safe.t;   // прижато к верхней границе экрана (учитываем только safe-area сверху)
     const pw=n*bw2+(n-1)*gap2+16*ui;
     rr(x0,y0,pw,44*ui,9*ui); ctx.fillStyle='rgba(33,29,51,.72)'; ctx.fill();
     ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.12); rr(x0,y0,pw,44*ui,9*ui); ctx.stroke();
