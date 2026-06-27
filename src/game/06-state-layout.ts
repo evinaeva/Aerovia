@@ -112,16 +112,12 @@
     const M = 12*ui;
     // полоса под инфо-бар нужды борта (drawPlaneCard) между HUD и апроном — как
     // зарезервированная лента в макете (PlaneCard на y100); верхняя ангара садится под неё
-    const cardLane = 46*ui;
-    // field taxi area (left ~63%); runways on right
-    let fx0 = M, fy0 = hud + M + cardLane;
-    let fx1 = W*0.63, fy1 = H - M;            // апрон шире (ближе к макетным ~0.655W) → борту больше места
-    // КОНСТРУКТОР: если разметка задаёт явный апрон (LV.layout.apron, доли поля),
-    // берём границы поля из неё — тогда превью «Разметка» и «Тестовая игра» рисуют
-    // апрон (и привязанные к нему ангары) в одном месте, а не у самого края экрана.
-    // Верх не пускаем под HUD. Кампания (sides без apron) — прежняя процедурная геометрия.
-    { const ap = LV.layout && LV.layout.apron;
-      if(ap){ fx0 = ap.x*W; fx1 = (ap.x+ap.w)*W; fy0 = Math.max(hud+M, ap.y*H); fy1 = (ap.y+ap.h)*H; } }
+    // Положение апрона по умолчанию (из тюнинга, доли экрана).
+    // LV.layout.apron переопределяет для уровней конструктора.
+    const _defAp = { x:0.0689, y:0.1329, w:0.6177, h:0.7877 };
+    let fx0 = 0, fy0 = 0, fx1 = 0, fy1 = 0;
+    { const ap = (LV.layout && LV.layout.apron) || _defAp;
+      fx0 = ap.x*W; fx1 = (ap.x+ap.w)*W; fy0 = Math.max(hud+M, ap.y*H); fy1 = (ap.y+ap.h)*H; }
     field = {x0:fx0, y0:fy0, x1:fx1, y1:fy1};
 
     // ангар — КВАДРАТНЫЙ: сторона выводится из длины борта через K.HANGAR_RATIO,
