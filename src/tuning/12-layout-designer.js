@@ -119,8 +119,8 @@
       let K = null;
       try { const fw = gameFrame.contentWindow; K = fw && fw.__GAME && fw.__GAME.K; } catch (_) {}
       const ps  = (K && +K.PLANE_SCALE)  || 1;
-      const hr  = (K && +K.HANGAR_RATIO) || 1.8;
-      const rr  = (K && +K.RUNWAY_RATIO) || 1.23;
+      const hr  = (K && +K.HANGAR_RATIO) || 2.5;   // фолбэк = дефолт движка (04-config-levels)
+      const rr  = (K && +K.RUNWAY_RATIO) || 1.6;   // фолбэк = дефолт движка (04-config-levels)
       const rwr = (K && +K.RUNWAY_R)     || 0.84;
       const ui = Math.max(0.7, Math.min(1.5, Math.min(W / 1100, H / 620)));  // как в игре
       return { plane: 31 * ps * ui, hr, rr, rwr };   // plane = длина борта (px холста = px игры)
