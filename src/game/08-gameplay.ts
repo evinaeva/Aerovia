@@ -434,6 +434,9 @@
     for(const b of bays) if(b.open && (rectHit(p.x,p.y,bayHitRect(b)) || baySnapHit(p.x,p.y,b))) return b;
     return null;
   }
+  // борт цепляется к ангару ТОЛЬКО когда его текущая нужда совпадает с услугой ангара
+  // (тип бокса == curNeed): нельзя завести борт, которому нужна заправка, в ремонт/посадку.
+  function bayServesNeed(b: any, pl: any){ return !!b && b.type === curNeed(pl); }
   // конец нарисованного маршрута попал в бокс → ведём борт ровно по оси ворот
   // (подход снаружи → центр), так что въезд получается строго по центру и носом вперёд
   function lockRouteToBay(pl: any, b: any){
@@ -619,7 +622,7 @@
       if(!LV.bonus && drag.pushes >= 3){
         const pl=drag.plane;
         const b = (pl.zone!=='air') ? openBayAt(p) : null;   // бокс — только с земли
-        if(b){ lockRouteToBay(pl, b); drag.locked=true; }
+        if(bayServesNeed(b, pl)){ lockRouteToBay(pl, b); drag.locked=true; }
         else {
           // ВПП: посадка (борт в воздухе) / взлёт (на земле, нужда 'depart')
           // openRunwayAt фильтрует по направлению — нельзя сесть на takeoff-only и наоборот
@@ -652,7 +655,7 @@
         const chk=pt(e);
         const needDir = pl.zone==='air' ? 'landing' as const : 'takeoff' as const;
         const b = (pl.zone!=='air') ? openBayAt(chk) : null;
-        if(b){ lockRouteToBay(pl, b); }
+        if(bayServesNeed(b, pl)){ lockRouteToBay(pl, b); }
         else {
           const r = (pl.zone==='air' || curNeed(pl)==='depart') ? openRunwayAt(chk, needDir) : null;
           if(r) lockRouteToRunway(pl, r);
