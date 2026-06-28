@@ -1,6 +1,6 @@
 // ===== 09-render — draw primitives, the neon field/runways and biome decor (forest/arctic/tropical/desert/mountain/megacity/butterfly/bonus) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneShadow, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, emoji, drawForest, drawArctic, drawTropical, drawDesert, drawMountain, drawCity, drawBonusDecor, BSP/BTYPE/bSpec.
+// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneShadow, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, drawSideClouds, emoji, drawForest, drawArctic, drawTropical, drawDesert, drawMountain, drawCity, drawBonusDecor, BSP/BTYPE/bSpec.
 // Reads: 01 (ctx); 02 (COL, SPRITES); 06 (field, runways, hazards, crews, W/H, ui, save); 04 (K, LV); 03 (t); 08 (neededCrew).
 
   function rr(x: number,y: number,w: number,h: number,r: number){
@@ -37,6 +37,61 @@
       _vigW=W; _vigH=H;
     }
     ctx.fillStyle=_vigGrad; ctx.fillRect(0,0,W,H);
+  }
+  // ---- боковые облака у правого края ----
+  // Узкая светящаяся гряда, начинается у правой границы экрана и уходит влево на
+  // ≈2/3 корпуса борта (небесный масштаб). Борт влетает справа (x=W+40) и улетает
+  // туда же — гряда рисуется ПОВЕРХ поля/бортов/эффектов (но ПОД HUD, см. frame()),
+  // поэтому борт «появляется из облаков» и «улетает в них». Слегка анимирована:
+  // мягкое покачивание + пульс пухов.
+  // Форма гряды стабильна (детерминированный seed) — не дёргается при resize.
+  function _mkClouds(){
+    const arr: {x: number,y: number,r: number,a: number,ph: number,sp: number}[]=[];
+    let s=20260628>>>0;                                  // фикс. seed → стабильная форма
+    const rnd=()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; };
+    const ROWS=16;
+    for(let i=0;i<ROWS;i++){
+      const cy=(i+0.5)/ROWS;
+      const n=2+(rnd()<0.55?1:0);                        // 2–3 пуха в ряд, на разной глубине гряды
+      for(let j=0;j<n;j++){
+        arr.push({
+          x: 0.12 + rnd()*0.9,                           // 1 = правый край, гуще к нему
+          y: cy + (rnd()-0.5)*0.07,
+          r: 0.55 + rnd()*0.6,                           // радиус в долях ширины гряды
+          a: 0.55 + rnd()*0.45,
+          ph: rnd()*6.283,                               // фаза анимации
+          sp: 0.55 + rnd()*0.8,                          // скорость покачивания/пульса
+        });
+      }
+    }
+    return arr;
+  }
+  const _CLOUDS=_mkClouds();
+  function drawSideClouds(tm: number){
+    const bandW = PLANE_LEN()*K.PLANE_SKY_SCALE*(2/3);   // ширина = 2/3 корпуса борта в небе
+    if(bandW<=0) return;
+    const x0 = W - bandW;                                // левая кромка; правая = граница экрана
+    const reduced = typeof REDUCED_MOTION!=='undefined' && REDUCED_MOTION;
+    ctx.save();
+    // мягкая свечение-подложка гряды (растворяется влево, плотная у правого края)
+    const bg=ctx.createLinearGradient(x0,0,W,0);
+    bg.addColorStop(0,hexa(COL.ice,0)); bg.addColorStop(1,hexa(COL.ice,0.07));
+    ctx.fillStyle=bg; ctx.fillRect(x0,0,bandW,H);
+    for(const p of _CLOUDS){
+      const bob   = reduced ? 0 : Math.sin(tm*0.0006*p.sp + p.ph)*(bandW*0.05);
+      const pulse = reduced ? 1 : 0.85+0.15*Math.sin(tm*0.0009*p.sp + p.ph);
+      const cx = x0 + p.x*bandW;
+      const cy = p.y*H + bob;
+      const r  = p.r*bandW*0.62;
+      const a  = p.a*pulse;
+      const g=ctx.createRadialGradient(cx,cy,0, cx,cy,r);
+      g.addColorStop(0,   hexa('#eaf7ff', 0.85*a));
+      g.addColorStop(0.45,hexa('#a8e0ff', 0.45*a));
+      g.addColorStop(1,   hexa(COL.phosphor, 0));
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fill();
+    }
+    ctx.restore();
   }
   function heart(x: number,y: number,r: number,fill?: string|null){ // жизни в HUD
     if(ATLAS && SPRITES.blitC(fill?'heart':'heart-empty', x, y, r*6, r*6)) return;

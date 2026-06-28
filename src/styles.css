@@ -138,17 +138,6 @@
   .debug-opt{display:flex;align-items:center;gap:12px;padding:10px 2px;cursor:pointer;
     font-size:15px;color:var(--m-text-body,var(--paper));margin:0;border-top:1px solid var(--m-divider,rgba(127,155,176,.18))}
   .debug-opt input[type=checkbox]{accent-color:var(--teal,#4ecdc4);width:17px;height:17px;cursor:pointer;flex:none}
-  /* update progress modal */
-  .upd-track{margin:18px 0 8px}
-  .upd-track__labels{display:flex;justify-content:space-between;margin-bottom:8px}
-  .upd-ver{font-size:13px;color:var(--m-text-muted,var(--muted));font-variant-numeric:tabular-nums}
-  .upd-bar{height:38px;border-radius:19px;background:var(--m-panel-3,rgba(255,255,255,.06));
-    border:1.5px solid var(--m-panel-border,rgba(127,155,176,.2));position:relative;overflow:hidden}
-  .upd-bar__fill{position:absolute;left:0;top:0;height:100%;
-    background:linear-gradient(90deg,var(--teal,#4ecdc4),var(--phosphor,#7eff6e));
-    border-radius:19px;width:0%;transition:width .5s ease}
-  .upd-bar__plane{position:absolute;top:50%;transform:translateY(-50%);
-    font-size:20px;left:6px;z-index:1;transition:left .5s ease;pointer-events:none}
   .logbox{margin-top:14px;max-height:130px;overflow:auto;border-top:1px solid rgba(127,155,176,.25);padding-top:8px}
   .logrow{font-size:11px;color:var(--paper);padding:2px 0;letter-spacing:.03em}
   .logrow.muted{color:var(--muted)}
@@ -276,19 +265,6 @@
   #achToast .lbl{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
   #achToast .ttl{font-size:14px;margin-top:3px;color:var(--paper)}
   #achToast .dsc{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.45}
-  /* PWA: «доступно обновление» — тост у нижнего края с кнопкой перезапуска */
-  #pwaUpdate{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(22px);
-    z-index:20;display:flex;gap:14px;align-items:center;padding:11px 14px 11px 18px;border-radius:12px;
-    background:rgba(10,22,34,.96);border:1.5px solid var(--teal);color:var(--paper);
-    box-shadow:0 0 18px rgba(78,205,196,.3), 0 6px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;
-    transition:opacity .32s ease, transform .32s ease;max-width:90%}
-  #pwaUpdate.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
-  #pwaUpdate .ttl{font-size:13px;color:var(--paper)}
-  #pwaUpdate .btn-upd{font:inherit;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-    cursor:pointer;padding:8px 14px;border-radius:9px;border:1.5px solid var(--teal);
-    background:rgba(78,205,196,.16);color:var(--paper)}
-  #pwaUpdate .btn-upd:active{transform:translateY(1px)}
-
   /* ============================================================
      PlaneFlow Design System — unified menu styles (menus/menu.css,
      inlined as-is minus its html/body/.stage shell resets).

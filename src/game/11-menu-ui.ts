@@ -539,95 +539,11 @@
 
   // настройки из стартового меню (звук / язык / сброс прогресса)
   function openSettings(){ inMenu=true; syncSettingsUI(); renderLangBtns();
-    const vEl=document.getElementById('appVersion'); if(vEl) vEl.textContent='v'+VERSION;
     hideAllScreens();
     document.getElementById('settingsScreen')!.classList.remove('hidden'); }
   document.getElementById('settingsMenuBtn')!.onclick=openSettings;
   document.getElementById('settingsBackBtn')!.onclick=()=>{ showStart(); };
 
-  // «Проверить обновления»: модалки вместо статуса под кнопкой.
-  // Нет обновлений → updToDateModal с OK.
-  // Есть обновление → updAvailModal («Обновить» / «Отмена») → updProgressModal → updDoneSection.
-  (function(){
-    const btn=document.getElementById('checkUpdatesBtn') as HTMLButtonElement|null;
-    const toDateModal=document.getElementById('updToDateModal');
-    const availModal=document.getElementById('updAvailModal');
-    const progressModal=document.getElementById('updProgressModal');
-    const doneSection=document.getElementById('updDoneSection');
-    const toDateMsg=document.getElementById('updToDateMsg');
-    const barFill=document.getElementById('updBarFill') as HTMLElement|null;
-    const planeEl=document.getElementById('updPlane') as HTMLElement|null;
-    const barEl=document.getElementById('updBar') as HTMLElement|null;
-    const verFrom=document.getElementById('updVerFrom');
-    const verTo=document.getElementById('updVerTo');
-    if(!btn) return;
-
-    function closeUpdModals(){
-      if(toDateModal) toDateModal.classList.add('hidden');
-      if(availModal) availModal.classList.add('hidden');
-      if(progressModal) progressModal.classList.add('hidden');
-      if(doneSection) doneSection.classList.add('hidden');
-    }
-
-    const ok=document.getElementById('updToDateOk');
-    if(ok) ok.onclick=closeUpdModals;
-
-    const doneOk=document.getElementById('updDoneOk');
-    if(doneOk) doneOk.onclick=closeUpdModals;
-
-    const availCancel=document.getElementById('updAvailCancel');
-    if(availCancel) availCancel.onclick=closeUpdModals;
-
-    let planeTimer: ReturnType<typeof setInterval>|null=null;
-    function startPlaneAnim(){
-      let pct=0;
-      if(doneSection) doneSection.classList.add('hidden');
-      if(barFill) barFill.style.width='0%';
-      if(planeEl) planeEl.style.left='6px';
-      if(planeTimer) clearInterval(planeTimer);
-      planeTimer=setInterval(()=>{
-        pct=Math.min(pct+1.4, 100);
-        if(barFill) barFill.style.width=pct+'%';
-        if(planeEl && barEl){
-          const w=barEl.offsetWidth||320;
-          planeEl.style.left=Math.round((pct/100)*(w-44)+6)+'px';
-        }
-        if(pct>=100 && planeTimer){
-          clearInterval(planeTimer); planeTimer=null;
-          if(doneSection) doneSection.classList.remove('hidden');
-        }
-      }, 220);
-    }
-
-    const availOk=document.getElementById('updAvailOk');
-    if(availOk) availOk.onclick=()=>{
-      if(availModal) availModal.classList.add('hidden');
-      if(verFrom) verFrom.textContent='v'+VERSION;
-      if(verTo) verTo.textContent=t('pwa.updateTitle');
-      if(progressModal) progressModal.classList.remove('hidden');
-      startPlaneAnim();
-      // Применяем обновление после того как пользователь подтвердил.
-      // Страница перезагрузится сама через controllerchange.
-      if((window as any).pwaApplyUpdate) (window as any).pwaApplyUpdate();
-    };
-
-    btn.onclick=async()=>{
-      if(btn.disabled) return;
-      btn.disabled=true;
-      closeUpdModals();
-      let status='offline';
-      try{ status=((window as any).pwaCheckForUpdateAvailable ? await (window as any).pwaCheckForUpdateAvailable() : 'offline'); }
-      catch(e){ status='offline'; }
-      btn.disabled=false;
-      if(status==='available'){
-        if(availModal) availModal.classList.remove('hidden');
-      } else {
-        const msg=status==='offline' ? t('settings.updOffline') : t('settings.updUpToDate');
-        if(toDateMsg) toDateMsg.textContent=msg;
-        if(toDateModal) toDateModal.classList.remove('hidden');
-      }
-    };
-  })();
   function askReset(){ document.getElementById('confirmScreen')!.classList.remove('hidden'); }
   document.getElementById('resetProgBtn2')!.onclick=askReset;
   document.getElementById('resetCancelBtn')!.onclick=()=>document.getElementById('confirmScreen')!.classList.add('hidden');
