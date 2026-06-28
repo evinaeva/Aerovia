@@ -566,6 +566,31 @@
     drawPlaneCard();
   }
 
+  // Отдельная кнопка паузы для noHud-композиций (кастом-уровень): HUD не рисуется,
+  // поэтому показываем самостоятельную круглую кнопку прямо в её хит-зоне (pauseBtn,
+  // которую layout() ставит в не-интерактивный верх-левый угол). Тап по ней →
+  // setPaused (см. down() в 08): пауза + меню паузы.
+  function drawCustomPauseBtn(){
+    const NEON='#27E6FF';
+    const cx=pauseBtn.x+pauseBtn.w/2, cy=pauseBtn.y+pauseBtn.h/2;
+    const r=Math.min(pauseBtn.w,pauseBtn.h)/2;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.fillStyle='rgba(10,16,28,.70)'; ctx.fill();
+    ctx.lineWidth=Math.max(1.5,r*0.10); ctx.strokeStyle=hexa(NEON,.85);
+    ctx.shadowColor=NEON; ctx.shadowBlur=8; ctx.stroke();
+    ctx.shadowBlur=6; ctx.fillStyle=NEON;
+    if(paused){
+      const ps=r*0.45;
+      ctx.beginPath(); ctx.moveTo(cx-ps*0.8,cy-ps); ctx.lineTo(cx+ps,cy); ctx.lineTo(cx-ps*0.8,cy+ps); ctx.closePath(); ctx.fill();
+    } else {
+      const bw=r*0.26, bh=r*0.92, gap=r*0.24;
+      rr(cx-gap-bw, cy-bh/2, bw, bh, bw*0.4); ctx.fill();
+      rr(cx+gap,    cy-bh/2, bw, bh, bw*0.4); ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function fmtTime(s: number){ const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(Math.floor(s%60)).padStart(2,'0'); return m+':'+ss; }
   function drawToast(){
     const a = toast.t<2.0 ? 1 : (2.4-toast.t)/0.4;
