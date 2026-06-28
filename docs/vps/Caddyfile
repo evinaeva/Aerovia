@@ -6,6 +6,8 @@ capgo.jevgenia.com {
 		}
 	}
 	encode gzip
+	# /updates (прод) и /updates/dev (дев-канал) — оба проксируются в responder,
+	# который сам выбирает манифест по каналу (см. server.py).
 	handle /updates* {
 		reverse_proxy 127.0.0.1:8099
 	}
@@ -25,4 +27,19 @@ capgo.jevgenia.com {
 	handle {
 		respond "PlaneFlow OTA" 200
 	}
+}
+
+# Дев-веб (prod ⟂ dev). Прод PWA живёт на GitHub Pages (planeflow.jevgenia.com);
+# дев-сборку CI (deploy-dev.yml, push в ветку dev) rsync-ит сюда. Статика PWA —
+# index.html в корне. DNS: dev.planeflow.jevgenia.com → IP этого VPS.
+dev.planeflow.jevgenia.com {
+	log {
+		output file /var/log/caddy/planeflow-dev.log {
+			roll_size 10mb
+			roll_keep 7
+		}
+	}
+	encode gzip
+	root * /opt/planeflow-dev/site
+	file_server
 }

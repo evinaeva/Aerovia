@@ -87,9 +87,10 @@ jobs:
           scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new updates.json "$OTA_USER@$OTA_HOST:/opt/capgo-ota/updates.json.tmp"
           ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$OTA_USER@$OTA_HOST" \
             "mv /opt/capgo-ota/updates.json.tmp /opt/capgo-ota/updates.json"
-          # Retention: оставляем последние 10 бандлов (буфер отката для масштаба Play Store).
+          # Retention: оставляем последние 10 ПРОД-бандлов (буфер отката для масштаба Play Store).
+          # Глоб planeflow-[0-9]* — только прод (версия с цифры); дев-бандлы planeflow-dev-*.zip не трогаем.
           ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$OTA_USER@$OTA_HOST" \
-            "ls -t /opt/capgo-ota/bundles/planeflow-*.zip 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true"
+            "ls -t /opt/capgo-ota/bundles/planeflow-[0-9]*.zip 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true"
           echo "OTA опубликован: $VER (sha256 $SUM)"
 
       # Папка сайта = корень репо (index.html + assets + sw.js + manifest +

@@ -1,20 +1,46 @@
 #!/usr/bin/env python3
-"""PlaneFlow OTA responder — update manifest + health status."""
+"""PlaneFlow OTA responder — per-channel update manifest + health status.
+
+Каналы (prod ⟂ dev, см. docs/dev-environment.md):
+    GET/POST /updates       → /opt/capgo-ota/updates.json        (прод, push в main)
+    GET/POST /updates/dev   → /opt/capgo-ota/updates-dev.json    (дев,  push в dev)
+Имя канала из URL выбирает КЛЮЧ в фиксированном словаре CHANNEL_MANIFESTS; само имя
+файла — константа, не строится из пользовательского ввода. Поэтому обход каталога
+невозможен в принципе (а не «отфильтрован»). Неизвестный канал/нет манифеста → 404.
+Новый канал = одна строка в CHANNEL_MANIFESTS.
+"""
+
+from __future__ import annotations  # str | None в аннотациях работает и на Python < 3.10
 
 import json
 import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-BUNDLES_DIR = "/opt/capgo-ota/bundles"
-MANIFEST    = "/opt/capgo-ota/updates.json"
+OTA_DIR     = "/opt/capgo-ota"
+BUNDLES_DIR = os.path.join(OTA_DIR, "bundles")
 PORT        = 8099
+
+# Канал из URL → имя файла-манифеста. Ввод выбирает ключ; значение — литерал, поэтому
+# путь не зависит от данных запроса (нет «uncontrolled data in path expression»).
+CHANNEL_MANIFESTS = {
+    "":    "updates.json",      # прод: /updates
+    "dev": "updates-dev.json",  # дев:  /updates/dev
+}
+
+
+def _manifest_path(channel: str | None) -> str | None:
+    """Путь к манифесту канала, или None если канал не зарегистрирован."""
+    name = CHANNEL_MANIFESTS.get(channel or "")
+    if name is None:
+        return None
+    return os.path.join(OTA_DIR, name)
 
 
 class OTAHandler(BaseHTTPRequestHandler):
 
     def _health_data(self) -> bytes:
         try:
-            with open(MANIFEST) as f:
+            with open(_manifest_path(None)) as f:
                 latest = json.load(f).get("version", "unknown")
         except Exception:
             latest = "unknown"
@@ -40,9 +66,18 @@ class OTAHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
 
-    def _serve_manifest(self, write_body: bool = True) -> None:
+    def _channel_from_path(self, path: str) -> str | None:
+        # "/updates" → None (прод); "/updates/dev" → "dev".
+        rest = path[len("/updates"):].strip("/")
+        return rest or None
+
+    def _serve_manifest(self, channel: str | None, write_body: bool = True) -> None:
+        manifest = _manifest_path(channel)
+        if manifest is None:
+            self.send_error(404, "Unknown channel")
+            return
         try:
-            with open(MANIFEST, "rb") as f:
+            with open(manifest, "rb") as f:
                 body = f.read()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -67,8 +102,8 @@ class OTAHandler(BaseHTTPRequestHandler):
             self._health_headers(body)
             self.wfile.write(body)
 
-        elif path == "/updates":
-            self._serve_manifest()
+        elif path == "/updates" or path.startswith("/updates/"):
+            self._serve_manifest(self._channel_from_path(path))
 
         else:
             self.send_error(404)
@@ -80,8 +115,8 @@ class OTAHandler(BaseHTTPRequestHandler):
         # тихо остаётся на встроенном бандле. Отдаём тот же манифест, что и GET.
         path = self.path.split("?")[0].rstrip("/")
         self._drain_body()
-        if path == "/updates":
-            self._serve_manifest()
+        if path == "/updates" or path.startswith("/updates/"):
+            self._serve_manifest(self._channel_from_path(path))
         else:
             self.send_error(404)
 
