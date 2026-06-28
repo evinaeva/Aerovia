@@ -1,0 +1,106 @@
+# Дев-конвейер (prod ⟂ dev). Зеркало deploy.yml, но для ветки `dev` и БЕЗ публикации
+# на GitHub Pages (Pages = только прод). На каждый push в `dev`:
+#   1. tsc + сборка + юнит-тесты (тот же гейт качества, что и у прода);
+#   2. дев-веб: rsync собранного сайта на VPS → dev.planeflow.jevgenia.com;
+#   3. дев OTA-канал: zip www/ → бандл planeflow-dev-*.zip + updates-dev.json на VPS.
+# Маршрут разработки: feature → PR в `dev` → проверка на dev-веб/дев-APK → PR `dev` → `main`.
+# Подробности и чек-лист (DNS, VPS, дев-APK): docs/dev-environment.md.
+name: Deploy (dev)
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Один дев-деплой за раз; новый push отменяет предыдущий незавершённый.
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Установка зависимостей (TypeScript для сборки и проверки типов)
+        run: npm ci
+
+      - name: Проверка типов (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Сборка index.html из src/
+        run: node scripts/build.mjs
+
+      - name: Сборка tuning.html из src/ (dev-воркбенч)
+        run: node scripts/build-tuning.mjs
+
+      - name: Юнит-тесты (страховка перед публикацией)
+        run: node --test tests/*.test.mjs
+
+      # Дев-веб: собираем папку сайта (как deploy.yml) и rsync-им на VPS в каталог дев-вхоста.
+      # Прод-веб остаётся на GitHub Pages — здесь Pages НЕ трогаем.
+      - name: Сборка папки сайта
+        run: |
+          mkdir _site
+          rsync -a --exclude='.git' --exclude='_site' --exclude='node_modules' ./ _site/
+
+      - name: Дев-веб — публикация на VPS (dev.planeflow.jevgenia.com)
+        env:
+          OTA_SSH_KEY: ${{ secrets.OTA_SSH_KEY }}
+          OTA_HOST:    ${{ secrets.OTA_HOST }}
+          OTA_USER:    ${{ secrets.OTA_USER }}
+        run: |
+          if [ -z "$OTA_SSH_KEY" ]; then
+            echo "OTA_SSH_KEY не задан — пропускаю публикацию дев-веба (норма до настройки деплоя)."
+            exit 0
+          fi
+          mkdir -p ~/.ssh && printf '%s\n' "$OTA_SSH_KEY" > ~/.ssh/ota_key && chmod 600 ~/.ssh/ota_key
+          ssh-keyscan -H "$OTA_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          # Требует на VPS каталог /opt/planeflow-dev/site, доступный deploy-юзеру на запись.
+          rsync -az --delete -e "ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new" \
+            _site/ "$OTA_USER@$OTA_HOST:/opt/planeflow-dev/site/"
+          echo "Дев-веб опубликован → https://dev.planeflow.jevgenia.com"
+
+      # Дев OTA-канал: бандл для дев-APK (appId com.planeflow.game.dev). Отдельный манифест
+      # updates-dev.json и префикс planeflow-dev-*, чтобы НЕ пересекаться с прод-бандлами.
+      - name: Дев OTA — публикация бандла на VPS (канал dev)
+        env:
+          OTA_SSH_KEY: ${{ secrets.OTA_SSH_KEY }}
+          OTA_HOST:    ${{ secrets.OTA_HOST }}
+          OTA_USER:    ${{ secrets.OTA_USER }}
+        run: |
+          if [ -z "$OTA_SSH_KEY" ]; then
+            echo "OTA_SSH_KEY не задан — пропускаю публикацию дев-OTA (норма до настройки деплоя)."
+            exit 0
+          fi
+          mkdir -p ~/.ssh && printf '%s\n' "$OTA_SSH_KEY" > ~/.ssh/ota_key && chmod 600 ~/.ssh/ota_key
+          ssh-keyscan -H "$OTA_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          npm run build:www
+          # Версия дев-бандла ВЫШЕ нативной versionName дев-APK. major.minor из package.json,
+          # patch = номер прогона: 0.21.0 → 0.21.<run>. Манифест отдельный, поэтому с прод не спорит.
+          BASE="$(node -p "require('./package.json').version")"
+          VER="${BASE%.*}.${{ github.run_number }}"
+          ZIP="planeflow-dev-$VER.zip"
+          ( cd www && zip -qr "../$ZIP" . )           # index.html в корне zip — как требует плагин
+          SUM="$(sha256sum "$ZIP" | cut -d' ' -f1)"
+          # Атомарно: zip сначала, манифест последним — клиент не получит манифест с несуществующим zip.
+          scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$ZIP" "$OTA_USER@$OTA_HOST:/opt/capgo-ota/bundles/$ZIP.tmp"
+          ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$OTA_USER@$OTA_HOST" \
+            "mv /opt/capgo-ota/bundles/$ZIP.tmp /opt/capgo-ota/bundles/$ZIP"
+          printf '{"version":"%s","url":"https://capgo.jevgenia.com/bundles/%s","checksum":"%s"}\n' "$VER" "$ZIP" "$SUM" > updates-dev.json
+          scp -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new updates-dev.json "$OTA_USER@$OTA_HOST:/opt/capgo-ota/updates-dev.json.tmp"
+          ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$OTA_USER@$OTA_HOST" \
+            "mv /opt/capgo-ota/updates-dev.json.tmp /opt/capgo-ota/updates-dev.json"
+          # Retention: последние 10 ДЕВ-бандлов (прод-бандлы planeflow-*.zip не трогаем).
+          ssh -i ~/.ssh/ota_key -o StrictHostKeyChecking=accept-new "$OTA_USER@$OTA_HOST" \
+            "ls -t /opt/capgo-ota/bundles/planeflow-dev-*.zip 2>/dev/null | tail -n +11 | xargs rm -f 2>/dev/null || true"
+          echo "Дев-OTA опубликован: $VER (sha256 $SUM)"
