@@ -391,18 +391,29 @@
       if(p>=0 && p<1) by -= Math.sin(Math.PI*p)*(1-p)*K.LAND_BUMP_AMP*ui;
       else pl.bounceAt=0;
     }
+    // НОС НА ЛИНИИ. Борт едет по нарисованному маршруту так, что pl.x,pl.y лежит точно
+    // на линии (см. followPath). Спрайт же рисуется от ЦЕНТРА — поэтому нос оказывался на
+    // полкорпуса впереди линии и на поворотах выносился наружу («едет боком, тащит за
+    // корпус»). Пока борт идёт по своему нарисованному пути, сдвигаем отрисовку корпуса
+    // назад на полкорпуса вдоль курса: на линии оказывается НОС, а корпус тянется сзади.
+    // На положение/столкновения/посадку (всё считается по pl.x,pl.y) это НЕ влияет.
+    let bx = pl.x;
+    if(pl.moving && pl.path && pl.path.length>0 && !pl.autoPath){
+      const off = PLANE_LEN()*0.5;
+      bx -= Math.cos(pl.ang)*off; by -= Math.sin(pl.ang)*off;
+    }
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
     else {
       // Plane PNGs are authored nose-right by contract; per-asset rotationOffset handles exceptions.
       const planeMeta = assetMetadataRegistry.getAssetMetadata(pl.assetId || 'plane_wow_v1');
       const planeScalePx = ui*0.5*SZ()*vs;
       const pngScale = planeMeta ? (62 * planeScalePx / planeMeta.logicalSize.w) : 1;
-      const usePng = planeMeta && ASSET_RENDERER.mode !== 'procedural' && assetMetadataRegistry.drawPng(planeMeta, pl.x, by, pngScale, pl.ang * 180 / Math.PI);
+      const usePng = planeMeta && ASSET_RENDERER.mode !== 'procedural' && assetMetadataRegistry.drawPng(planeMeta, bx, by, pngScale, pl.ang * 180 / Math.PI);
       if(planeMeta && usePng){
-        const dr = assetMetadataRegistry.drawRectFor(planeMeta, pl.x, by, pngScale);
+        const dr = assetMetadataRegistry.drawRectFor(planeMeta, bx, by, pngScale);
         assetMetadataRegistry.drawDebugOverlay(planeMeta, dr, pl.id, pl.ang * 180 / Math.PI);
       }
-      if(!usePng && ASSET_RENDERER.mode !== 'png') drawPlaneBodyAt(pl.x, by, pl.ang, planeScalePx, pl.vip, pl.emergency, pl.medical);
+      if(!usePng && ASSET_RENDERER.mode !== 'png') drawPlaneBodyAt(bx, by, pl.ang, planeScalePx, pl.vip, pl.emergency, pl.medical);
     }
 
     // пузырёк нужды над бортом: воздух (ожидание) + апрон; на ВПП и в ангаре — скрыт
