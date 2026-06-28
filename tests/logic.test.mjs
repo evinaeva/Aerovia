@@ -796,3 +796,83 @@ test('survival: recordResult пишет личный рекорд карты и 
   const saved = JSON.parse(store.get(SAVE_KEY));
   assert.equal(saved.best[key], 20);
 });
+
+// ---------- следование борта по нарисованному маршруту ----------
+// Регрессия: борт должен ехать СТРОГО по полилинии, которую провёл игрок, проходя через
+// каждый узел и не срезая углы (тактика игрока завязана на точной траектории). Раньше
+// борт «рулил» к точке с ограничением поворота + срезал узлы захватом — на прямоугольном
+// маршруте вдоль стен апрона он заметно срезал углы и сходил с линии.
+
+// мин. расстояние от точки до отрезка [a,b]
+function distToSeg(p, a, b) {
+  const vx = b.x - a.x, vy = b.y - a.y;
+  const wx = p.x - a.x, wy = p.y - a.y;
+  const len2 = vx * vx + vy * vy;
+  let t = len2 ? (wx * vx + wy * vy) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  const cx = a.x + t * vx, cy = a.y + t * vy;
+  return Math.hypot(p.x - cx, p.y - cy);
+}
+// мин. расстояние от точки до всей полилинии
+function distToPolyline(p, pts) {
+  let m = Infinity;
+  for (let i = 0; i < pts.length - 1; i++) m = Math.min(m, distToSeg(p, pts[i], pts[i + 1]));
+  return m;
+}
+
+test('followPath: борт идёт строго по нарисованной полилинии, не срезая прямые углы', () => {
+  const { game } = boot();
+  assert.equal(typeof game.followPath, 'function', 'followPath должен быть выставлен в тест-API');
+
+  // прямоугольный маршрут «вдоль стен апрона»: вниз → вправо → вверх → влево.
+  const route = [
+    { x: 100, y: 100 }, { x: 100, y: 300 },
+    { x: 300, y: 300 }, { x: 300, y: 100 }, { x: 100, y: 100 },
+  ];
+  const pl = { x: route[0].x, y: route[0].y, ang: Math.PI / 2, autoPath: false, path: route.slice(1) };
+
+  const spd = 60, dt = 1 / 60;
+  let maxDev = 0;
+  for (let i = 0; i < 5000 && pl.path.length; i++) {
+    game.followPath(pl, spd, dt);
+    maxDev = Math.max(maxDev, distToPolyline({ x: pl.x, y: pl.y }, route));
+  }
+
+  // ни один кадр борт не отходит от линии больше чем на ~1px (геометрическая точность),
+  // т.е. углы не срезаются и борт не сходит с траектории.
+  assert.ok(maxDev <= 1.0, `борт сошёл с линии на ${maxDev.toFixed(2)}px (ожидали ≤1px — без среза углов)`);
+  // и маршрут доезжается до конца (последний узел потреблён)
+  assert.equal(pl.path.length, 0, 'маршрут должен быть пройден целиком');
+});
+
+test('followPath: проходит точно через каждый нарисованный узел', () => {
+  const { game } = boot();
+  const route = [
+    { x: 0, y: 0 }, { x: 0, y: 50 }, { x: 80, y: 50 }, { x: 80, y: 0 },
+  ];
+  const pl = { x: route[0].x, y: route[0].y, ang: Math.PI / 2, autoPath: false, path: route.slice(1) };
+
+  const spd = 40, dt = 1 / 60;
+  // для каждого промежуточного узла запоминаем минимальную дистанцию борта к нему за прогон
+  const closest = route.slice(1).map(() => Infinity);
+  for (let i = 0; i < 5000 && pl.path.length; i++) {
+    game.followPath(pl, spd, dt);
+    for (let k = 1; k < route.length; k++) {
+      closest[k - 1] = Math.min(closest[k - 1], Math.hypot(pl.x - route[k].x, pl.y - route[k].y));
+    }
+  }
+  for (let k = 0; k < closest.length; k++) {
+    assert.ok(closest[k] <= 1.0, `узел #${k + 1} пройден мимо на ${closest[k].toFixed(2)}px`);
+  }
+});
+
+test('followPath: авто-маршрут (autoPath) по-прежнему рулит к точке (без точного следования)', () => {
+  const { game } = boot();
+  // короткий служебный отрезок: борт смотрит вправо, точка строго сверху — при ограничении
+  // поворота он НЕ телепортируется на линию, а заворачивает дугой (положение != отрезку).
+  const pl = { x: 0, y: 0, ang: 0, autoPath: true, path: [{ x: 0, y: 200 }] };
+  const spd = 60, dt = 1 / 60;
+  game.followPath(pl, spd, dt);
+  // за один кадр борт сместился вперёд по своему курсу (вправо), а не прыгнул вверх к точке
+  assert.ok(pl.x > 0, 'autoPath: борт едет по курсу с доворотом, а не кладётся на линию');
+});
