@@ -175,6 +175,7 @@
       levelEconomy, levelEffects, levelDifficulty, levelPace, paceInterval, paceCap, airPatience, levelServices, levelMaxUp, levelMinUp, sidesToLayout, levelToEditorObj,
       analyzeLevel, countOpenHangars, countTotalHangars, countOpenRunwayDirections, autoDifficulty, validatePassable, campaignTarget, archetypeForIndex,
       dayCycle, weatherTaxiMult, neededCrew, planePrimaryState, fmtNum, fmtMoney,
+      followPath,   // тест точного следования борта по нарисованной полилинии (см. tests/logic.test.mjs)
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; }, get weather(){ return weather; },
       validateGame, validateLevels, validateBonus, validateI18n, validateConfig, validateAch,
