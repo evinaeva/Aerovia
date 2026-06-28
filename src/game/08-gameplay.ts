@@ -602,6 +602,7 @@
     if(!drag.drew && dist(p.x,p.y,drag.start.x,drag.start.y)>8){
       drag.drew=true;
       drag.plane.path=[];            // начинаем новый маршрут
+      drag.plane.noseX=null;         // новый маршрут — нос-трекер followPath переинициализируем
       drag.plane.approachR=null;     // новый маршрут — старый воздушный заход сбрасываем
       drag.plane.takeoffR=null;      // новый маршрут — старый взлётный заход сбрасываем
       drag.plane.moving=true;        // борт трогается сразу, как пошла линия

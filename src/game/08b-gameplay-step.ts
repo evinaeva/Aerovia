@@ -47,36 +47,39 @@
       return true;
     }
 
-    // НАРИСОВАННЫЙ ИГРОКОМ МАРШРУТ — едем СТРОГО по полилинии, проходя через КАЖДЫЙ узел
-    // по порядку, ничего не срезая. Игрок строит тактику на том, что борт проедет ровно
-    // там, где он провёл линию, поэтому ПОЛОЖЕНИЕ борта двигаем геометрически по длине дуги
-    // (arc-length) и кладём точно на путь. Раньше борт «рулил» к точке с ограничением
-    // поворота: при радиусе разворота (~110 px) больше игрового поля он физически не
-    // вписывался в нарисованные углы, а адаптивный «захват точки» дополнительно срезал
-    // узлы заранее — отсюда и срезанные углы, и сход с линии, и тараны соседних бортов.
-    const ox=pl.x, oy=pl.y;
+    // НАРИСОВАННЫЙ ИГРОКОМ МАРШРУТ — по линии едет НОС борта, строго через каждый узел по
+    // порядку, ничего не срезая. Игрок строит тактику на том, что борт пройдёт ровно там,
+    // где он провёл линию. Чтобы на повороте борт не «срезал угол боком» (нос выносило за
+    // линию, корпус тащило), по полилинии ведём именно НОС, а pl.x,pl.y (центр корпуса —
+    // по нему же считаются и отрисовка, и столкновения, и посадка) держим на полкорпуса
+    // позади носа вдоль курса. Так визуал и физика совпадают, а нос лежит точно на линии.
+    const off = PLANE_LEN()*0.5;                      // полкорпуса: нос впереди центра
+    // нос держим персистентно; при старте нового маршрута (move() обнуляет noseX) ставим его
+    // на полкорпуса впереди центра в сторону первого узла, чтобы центр не дёрнулся.
+    if(pl.noseX==null || !isFinite(pl.noseX)){
+      const n0=pl.path[0]; const a0=Math.atan2(n0.y-pl.y, n0.x-pl.x);
+      pl.noseX = pl.x + Math.cos(a0)*off; pl.noseY = pl.y + Math.sin(a0)*off; pl.ang=a0;
+    }
+    let nx=pl.noseX, ny=pl.noseY;
+    const onx=nx, ony=ny;
     let budget = spd*dt;                              // длина пути за кадр
     while(budget > 0 && pl.path.length){
       const wp=pl.path[0];
-      const dx=wp.x-pl.x, dy=wp.y-pl.y;
+      const dx=wp.x-nx, dy=wp.y-ny;
       const d=Math.hypot(dx,dy);
       if(d <= budget){
-        // дотянули до узла — встаём точно на него и переносим остаток хода на след. отрезок
-        pl.x=wp.x; pl.y=wp.y; budget-=d; pl.path.shift();
+        // нос дотянулся до узла — встаём на него точно и переносим остаток на след. отрезок
+        nx=wp.x; ny=wp.y; budget-=d; pl.path.shift();
       } else {
-        const f=budget/d; pl.x+=dx*f; pl.y+=dy*f; budget=0;
+        const f=budget/d; nx+=dx*f; ny+=dy*f; budget=0;
       }
     }
-    // Курс спрайта плавно доворачиваем к фактическому направлению движения. На ПОЛОЖЕНИЕ
-    // это не влияет (борт уже стоит точно на линии) — так на крутых изломах борт визуально
-    // доворачивает с прежней поворотливостью, а не дёргается мгновенным разворотом носа.
-    const mvx=pl.x-ox, mvy=pl.y-oy;
-    if(mvx || mvy){
-      const desired=Math.atan2(mvy,mvx);
-      let a=desired-pl.ang; while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI;
-      const m=turnRate()*dt;
-      pl.ang += Math.max(-m, Math.min(m, a));
-    }
+    // курс — касательная пути в точке носа (на следующий узел); в конце маршрута — по ходу носа
+    let ang=pl.ang;
+    if(pl.path.length){ const n=pl.path[0]; ang=Math.atan2(n.y-ny, n.x-nx); }
+    else { const mx=nx-onx, my=ny-ony; if(mx||my) ang=Math.atan2(my,mx); }
+    pl.ang=ang; pl.noseX=nx; pl.noseY=ny;
+    pl.x = nx - Math.cos(ang)*off; pl.y = ny - Math.sin(ang)*off;
     return true;
   }
 
@@ -139,10 +142,12 @@
         pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; }
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_AIR, dt);
-          // выравнивание на заходе: если точка начала выравнивания вынесена в небо
-          // (RW_ALIGN_OFF>0), уже в воздухе подтягиваем борт к осевой линии полосы,
-          // на которую заведён маршрут — не дожидаясь рубежа ВПП.
-          if(pl.approachR && pl.x <= field.rwR! + K.RW_ALIGN_OFF*ui){
+          // Выравнивание к осевой ТОЛЬКО для авто-захода (autoPath). Нарисованный игроком
+          // маршрут проходим строго по линии: он уже заканчивается на оси полосы
+          // (entryX→tx по cy), а подтяжка pl.y к cy воевала бы с точным следованием —
+          // борт замирал на первом же узле вне оси (тянем к cy ↔ followPath тянет к узлу)
+          // и не доходил до рубежа ВПП, не мог сесть.
+          if(pl.autoPath && pl.approachR && pl.x <= field.rwR! + K.RW_ALIGN_OFF*ui){
             pl.y += (pl.approachR.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
           }
         } else if(pl.approachR && pl.x > field.rwR!){
@@ -256,9 +261,10 @@
         } else if(pl.exiting){
           pl.exiting=false; pl.moving=false;
         }
-        // выравнивание при выходе на взлёт: когда борт приближается к апронному торцу ВПП,
-        // плавно подтягиваем его к осевой — аналогично выравниванию при заходе на посадку.
-        if(pl.takeoffR && pl.x >= pl.takeoffR.x - K.TAKEOFF_ALIGN_OFF*ui){
+        // выравнивание при выходе на взлёт — ТОЛЬКО для авто-маршрута (autoPath), как и на
+        // заходе: нарисованный игроком маршрут уже заканчивается на оси ВПП (lockRouteToRunway
+        // достраивает entryX→tx по cy), а подтяжка pl.y к cy воевала бы с точным следованием.
+        if(pl.autoPath && pl.takeoffR && pl.x >= pl.takeoffR.x - K.TAKEOFF_ALIGN_OFF*ui){
           pl.y += (pl.takeoffR.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
         }
         // вылет: все услуги сделаны -> заезд на полосу
