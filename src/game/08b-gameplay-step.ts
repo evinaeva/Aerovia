@@ -140,10 +140,12 @@
         pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; }
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_AIR, dt);
-          // выравнивание на заходе: если точка начала выравнивания вынесена в небо
-          // (RW_ALIGN_OFF>0), уже в воздухе подтягиваем борт к осевой линии полосы,
-          // на которую заведён маршрут — не дожидаясь рубежа ВПП.
-          if(pl.approachR && pl.x <= field.rwR! + K.RW_ALIGN_OFF*ui){
+          // Выравнивание к осевой ТОЛЬКО для авто-захода (autoPath). Нарисованный игроком
+          // маршрут проходим строго по линии: он уже заканчивается на оси полосы
+          // (entryX→tx по cy), а подтяжка pl.y к cy воевала бы с точным следованием —
+          // борт замирал на первом же узле вне оси (тянем к cy ↔ followPath тянет к узлу)
+          // и не доходил до рубежа ВПП, не мог сесть.
+          if(pl.autoPath && pl.approachR && pl.x <= field.rwR! + K.RW_ALIGN_OFF*ui){
             pl.y += (pl.approachR.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
           }
         } else if(pl.approachR && pl.x > field.rwR!){
@@ -257,9 +259,10 @@
         } else if(pl.exiting){
           pl.exiting=false; pl.moving=false;
         }
-        // выравнивание при выходе на взлёт: когда борт приближается к апронному торцу ВПП,
-        // плавно подтягиваем его к осевой — аналогично выравниванию при заходе на посадку.
-        if(pl.takeoffR && pl.x >= pl.takeoffR.x - K.TAKEOFF_ALIGN_OFF*ui){
+        // выравнивание при выходе на взлёт — ТОЛЬКО для авто-маршрута (autoPath), как и на
+        // заходе: нарисованный игроком маршрут уже заканчивается на оси ВПП (lockRouteToRunway
+        // достраивает entryX→tx по cy), а подтяжка pl.y к cy воевала бы с точным следованием.
+        if(pl.autoPath && pl.takeoffR && pl.x >= pl.takeoffR.x - K.TAKEOFF_ALIGN_OFF*ui){
           pl.y += (pl.takeoffR.cy - pl.y) * Math.min(1, dt * K.LAND_ALIGN_SPEED);
         }
         // вылет: все услуги сделаны -> заезд на полосу
