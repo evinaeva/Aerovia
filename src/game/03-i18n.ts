@@ -22,7 +22,6 @@
       _plural: (n: number) => (n===1 ? 0 : 1),
       'app.name':'PlaneFlow',
       'app.title':'PlaneFlow — air traffic control',
-      'pwa.updateTitle':'A new version is ready', 'pwa.updateBtn':'Update',
       'start.kicker':'Night controller · Airfield',
       'start.tagline':'Overthinking: OFF. Plane traffic: ON.',
       'start.play':'Play', 'start.levels':'Levels', 'start.version':'ver.', 'start.fullscreen':'Fullscreen',
@@ -89,10 +88,6 @@
       'settings.eco':'Battery saver', 'settings.ecoSlow':'Recommended for this device',
       'settings.debug':'Debug',
       'settings.optLives':'Infinite lives', 'settings.optMoney':'Unlimited money', 'settings.optUnlockAll':'Unlock all levels',
-      'settings.updates':'Updates', 'settings.checkUpdates':'Check for updates',
-      'settings.updChecking':'Checking…', 'settings.updUpdating':'New version found — updating…',
-      'settings.updRefreshed':'Up to date — assets refreshed', 'settings.updOffline':'No connection — try again later',
-      'settings.updUpToDate':'Your app is up to date!',
       'tut.land':'Drag the plane onto a runway',
       'tut.service':'Now lead it into the {svc} bay',
       'tut.takeoff':'All set — guide it to a runway to take off',
@@ -231,7 +226,6 @@
       'consent.no':'No',
       'consent.yes':'Accept',
       'again.title':'Play again?', 'again.yes':'Play again', 'again.no':'Cancel',
-      'upd.available':'Update available', 'upd.doUpdate':'Update', 'upd.done':'App updated to the latest version',
     };
     type PhraseKey = Exclude<keyof typeof en, keyof LangMeta>;
     const ru: LangMeta & Record<PhraseKey, Phrase> = {
@@ -242,7 +236,6 @@
         return 2; },
       'app.name':'PlaneFlow',
       'app.title':'PlaneFlow — диспетчер',
-      'pwa.updateTitle':'Доступна новая версия', 'pwa.updateBtn':'Обновить',
       'start.kicker':'Ночной диспетчер · Аэродром',
       'start.tagline':'Меньше мыслей — больше рейсов.',
       'start.play':'Играть', 'start.levels':'Уровни', 'start.version':'верс.', 'start.fullscreen':'Во весь экран',
@@ -309,10 +302,6 @@
       'settings.eco':'Экономия батареи', 'settings.ecoSlow':'Рекомендуется для этого устройства',
       'settings.debug':'Отладка',
       'settings.optLives':'Бесконечные жизни', 'settings.optMoney':'Безлимит денег', 'settings.optUnlockAll':'Открыть все уровни',
-      'settings.updates':'Обновления', 'settings.checkUpdates':'Проверить обновления',
-      'settings.updChecking':'Проверяю…', 'settings.updUpdating':'Найдена новая версия — обновляю…',
-      'settings.updRefreshed':'Уже последняя версия — ресурсы обновлены', 'settings.updOffline':'Нет сети — попробуйте позже',
-      'settings.updUpToDate':'У вас актуальная версия приложения!',
       'tut.land':'Веди борт пальцем на полосу',
       'tut.service':'Теперь отведи его в бокс «{svc}»',
       'tut.takeoff':'Готово — веди на полосу, на взлёт',
@@ -451,7 +440,6 @@
       'consent.no':'Нет',
       'consent.yes':'Принять',
       'again.title':'Сыграть заново?', 'again.yes':'Заново', 'again.no':'Отмена',
-      'upd.available':'Доступно обновление', 'upd.doUpdate':'Обновить', 'upd.done':'Приложение обновлено до последней версии',
     };
     return { en, ru } as unknown as Record<LangCode, LangDict>;
   })();

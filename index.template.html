@@ -125,10 +125,6 @@
           <div class="set-row" id="ecoRow">
             <span class="set-row__hint hidden" id="ecoSlowHint" style="color:#f4cf5e"></span>
           </div>
-          <div class="set-row">
-            <button class="m-btn m-btn--ghost m-btn--sm" id="checkUpdatesBtn"><span class="mic" data-mic="refresh"></span><span class="m-btn__t" data-i18n="settings.checkUpdates"></span></button>
-            <span class="set-row__hint" id="appVersion" style="opacity:.65"></span>
-          </div>
         </div>
         <div class="m-back-wrap"><button class="m-btn m-btn--ghost m-back" id="settingsBackBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="settings.back"></span></button></div>
         <button class="m-text-btn" id="resetProgBtn2" style="position:absolute;left:20px;bottom:22px"><span class="mic" data-mic="again"></span> <span data-i18n="levels.reset"></span></button>
@@ -182,54 +178,6 @@
           <button class="m-btn m-btn--ghost" id="againCancelBtn"><span class="mic" data-mic="back"></span><span class="m-btn__t" data-i18n="again.no"></span></button>
           <button class="m-btn m-btn--primary" id="againConfirmBtn"><span class="mic" data-mic="again"></span><span class="m-btn__t" data-i18n="again.yes"></span></button>
         </div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Модалка «актуальная версия / нет сети» -->
-  <div class="overlay hidden" id="updToDateModal">
-    <div class="screen screen--center">
-      <div class="panel" style="--panel-w:340px;text-align:center">
-        <p class="m-subtitle" id="updToDateMsg" style="margin:18px 0 14px;font-size:16px"></p>
-        <div class="m-actions__row">
-          <button class="m-btn m-btn--primary" id="updToDateOk" style="min-width:110px"><span class="m-btn__t" data-i18n="goals.ok"></span></button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Модалка «есть обновление» — промежуточный шаг перед прогресс-баром -->
-  <div class="overlay hidden" id="updAvailModal">
-    <div class="screen screen--center">
-      <div class="panel" style="--panel-w:340px;text-align:center">
-        <p class="m-subtitle" style="margin:18px 0 14px;font-size:16px" data-i18n="upd.available"></p>
-        <div class="m-actions__row">
-          <button class="m-btn m-btn--ghost" id="updAvailCancel" style="min-width:110px"><span class="m-btn__t" data-i18n="again.no"></span></button>
-          <button class="m-btn m-btn--primary" id="updAvailOk" style="min-width:110px"><span class="m-btn__t" data-i18n="upd.doUpdate"></span></button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Модалка обновления с прогресс-баром и самолётиком -->
-  <div class="overlay hidden" id="updProgressModal">
-    <div class="screen screen--center">
-      <div class="panel" style="--panel-w:400px;text-align:center">
-        <div class="m-head"><h1 class="m-title m-title--md" data-i18n="pwa.updateTitle"></h1></div>
-        <div class="upd-track">
-          <div class="upd-track__labels">
-            <span id="updVerFrom" class="upd-ver"></span>
-            <span id="updVerTo" class="upd-ver"></span>
-          </div>
-          <div class="upd-bar" id="updBar">
-            <div class="upd-bar__fill" id="updBarFill"></div>
-            <span class="upd-bar__plane" id="updPlane">✈</span>
-          </div>
-        </div>
-        <div class="hidden" id="updDoneSection" style="margin-top:14px">
-          <p class="m-subtitle" data-i18n="upd.done" style="margin:0 0 14px"></p>
-          <button class="m-btn m-btn--primary" id="updDoneOk" style="min-width:110px"><span class="m-btn__t" data-i18n="goals.ok"></span></button>
-        </div>
       </div>
     </div>
   </div>
@@ -304,10 +252,6 @@
     <div><div class="lbl" data-i18n="ach.toastLabel"></div><div class="ttl" id="achTtl"></div><div class="dsc" id="achDsc"></div></div>
   </div>
 
-  <div id="pwaUpdate" role="status">
-    <div class="ttl" data-i18n="pwa.updateTitle"></div>
-    <button class="btn-upd" id="pwaUpdateBtn" data-i18n="pwa.updateBtn"></button>
-  </div>
 </div>
 
 <script>
