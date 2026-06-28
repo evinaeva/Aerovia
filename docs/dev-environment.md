@@ -37,7 +37,8 @@ feature-ветка  →  PR в dev  →  (проверка на дев-вебе/
 - **`.github/workflows/deploy.yml`** — retention сужен до `planeflow-[0-9]*.zip`, чтобы прод-уборка
   не удаляла дев-бандлы (живут в одном каталоге).
 - **`docs/vps/server.py`** — отдаёт манифест по каналу: `/updates` → `updates.json`,
-  `/updates/dev` → `updates-dev.json` (имя канала санитизируется).
+  `/updates/dev` → `updates-dev.json` (канал из URL выбирает ключ в фиксированном
+  словаре `CHANNEL_MANIFESTS`; имя файла — константа, обход каталога невозможен).
 - **`docs/vps/Caddyfile`** — добавлен vhost `dev.planeflow.jevgenia.com` (статика дев-веба).
 
 Дев-конвейер использует **те же секреты**, что и прод: `OTA_SSH_KEY`, `OTA_HOST`, `OTA_USER`.

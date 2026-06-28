@@ -4,32 +4,36 @@
 Каналы (prod ⟂ dev, см. docs/dev-environment.md):
     GET/POST /updates       → /opt/capgo-ota/updates.json        (прод, push в main)
     GET/POST /updates/dev   → /opt/capgo-ota/updates-dev.json    (дев,  push в dev)
-Имя канала из пути санитизируется (только [a-z0-9_-]) → файл updates-<channel>.json,
-чтобы исключить обход каталога. Неизвестный/отсутствующий манифест → 404.
+Имя канала из URL выбирает КЛЮЧ в фиксированном словаре CHANNEL_MANIFESTS; само имя
+файла — константа, не строится из пользовательского ввода. Поэтому обход каталога
+невозможен в принципе (а не «отфильтрован»). Неизвестный канал/нет манифеста → 404.
+Новый канал = одна строка в CHANNEL_MANIFESTS.
 """
 
 from __future__ import annotations  # str | None в аннотациях работает и на Python < 3.10
 
 import json
 import os
-import re
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 OTA_DIR     = "/opt/capgo-ota"
 BUNDLES_DIR = os.path.join(OTA_DIR, "bundles")
 PORT        = 8099
 
-# /updates → updates.json (прод); /updates/<chan> → updates-<chan>.json (дев и пр.).
-_CHANNEL_RE = re.compile(r"^[a-z0-9_-]{1,32}$")
+# Канал из URL → имя файла-манифеста. Ввод выбирает ключ; значение — литерал, поэтому
+# путь не зависит от данных запроса (нет «uncontrolled data in path expression»).
+CHANNEL_MANIFESTS = {
+    "":    "updates.json",      # прод: /updates
+    "dev": "updates-dev.json",  # дев:  /updates/dev
+}
 
 
 def _manifest_path(channel: str | None) -> str | None:
-    """Путь к манифесту канала, или None если имя канала некорректно."""
-    if not channel:
-        return os.path.join(OTA_DIR, "updates.json")
-    if not _CHANNEL_RE.match(channel):
+    """Путь к манифесту канала, или None если канал не зарегистрирован."""
+    name = CHANNEL_MANIFESTS.get(channel or "")
+    if name is None:
         return None
-    return os.path.join(OTA_DIR, f"updates-{channel}.json")
+    return os.path.join(OTA_DIR, name)
 
 
 class OTAHandler(BaseHTTPRequestHandler):
