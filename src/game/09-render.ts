@@ -1,6 +1,6 @@
 // ===== 09-render — draw primitives, the neon field/runways and biome decor (forest/arctic/tropical/desert/mountain/megacity/butterfly/bonus) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, drawSideClouds, emoji, drawForest, drawArctic, drawTropical, drawDesert, drawMountain, drawCity, drawBonusDecor, BSP/BTYPE/bSpec.
+// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneShadow, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, drawSideClouds, emoji, drawForest, drawArctic, drawTropical, drawDesert, drawMountain, drawCity, drawBonusDecor, BSP/BTYPE/bSpec.
 // Reads: 01 (ctx); 02 (COL, SPRITES); 06 (field, runways, hazards, crews, W/H, ui, save); 04 (K, LV); 03 (t); 08 (neededCrew).
 
   function rr(x: number,y: number,w: number,h: number,r: number){
@@ -208,6 +208,29 @@
       }
     }
     return G;   // field / bay / борт стоит/выкатывается на полосе
+  }
+  // Тень борта в воздухе. Высоту берём из визуального масштаба planeScale (небо A → земля G):
+  // alt=1 в небе, 0 на земле, плавно между на ВПП во время посадки/взлёта. Солнце в правом
+  // верхнем углу → тень падает к низу-влево; чем выше борт, тем дальше тень и тем она мягче и
+  // светлее (penumbra), у самой земли — ближе, темнее и плотнее. На земле (alt≈0) не рисуем —
+  // игра условно вид сверху. Овал ориентирован по курсу борта (вытянут вдоль фюзеляжа).
+  function drawPlaneShadow(pl: any, cx: number, cy: number, ang: number, vs: number){
+    const A=K.PLANE_SKY_SCALE, G=K.PLANE_GND_SCALE;
+    const alt = A>G ? Math.max(0, Math.min(1, (vs - G) / (A - G))) : 0;
+    if(alt < 0.03) return;                                   // на земле тени нет
+    const off = alt * K.PLANE_SHADOW_OFFSET * ui;            // смещение растёт с высотой
+    const sx = cx - off * Math.SQRT1_2, sy = cy + off * Math.SQRT1_2;   // низ-влево
+    const len = (PLANE_LEN()*0.62) * vs * (1 + 0.18*alt);    // выше → тень чуть шире (penumbra)
+    const wid = len * 0.34;
+    const a = K.PLANE_SHADOW_ALPHA * (1 - 0.3*alt);          // ниже → плотнее (penumbra мягче высоко)
+    ctx.save();
+    ctx.translate(sx, sy); ctx.rotate(ang); ctx.scale(len, wid);
+    const g = ctx.createRadialGradient(0,0,0, 0,0,1);
+    g.addColorStop(0, hexa('#000000', a));
+    g.addColorStop(0.7, hexa('#000000', a*0.82));
+    g.addColorStop(1, hexa('#000000', 0));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,1,0,7); ctx.fill();
+    ctx.restore();
   }
   function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any,liv?: number){
     if(LV.bonus && !inMenu){ drawCaterpillar(x,y,ang,s); return; }   // бонус-мир: борт → гусеница (в меню-радаре оставляем самолёт)

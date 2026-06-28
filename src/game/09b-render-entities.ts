@@ -1,7 +1,7 @@
 // ===== 09b-render-entities — draw bays, planes, the HUD, transient FX and the tutorial overlay =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: drawBay, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
-// Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 04b (MT_META_VALUES); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
+// Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawPlaneShadow, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 04b (MT_META_VALUES); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
   function bayWalls(b: any,out: any,r: number){
@@ -391,6 +391,8 @@
       if(p>=0 && p<1) by -= Math.sin(Math.PI*p)*(1-p)*K.LAND_BUMP_AMP*ui;
       else pl.bounceAt=0;
     }
+    // тень борта в воздухе (под корпусом): едет за бортом и съезжается к нему на посадке
+    if(!LV.bonus && !inMenu) drawPlaneShadow(pl, pl.x, by, pl.ang, vs);
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
     else {
       // Plane PNGs are authored nose-right by contract; per-asset rotationOffset handles exceptions.
