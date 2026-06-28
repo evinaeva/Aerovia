@@ -19,7 +19,11 @@
   // zones.arrival/waiting — зоны прилёта/ожидания бортов. Их пишет визуальный
   // редактор разметки (tuning.html → таб «Разметка»); движок пока их игнорирует
   // (геометрия апрона процедурная) — поля задают замысел до доработки рендера.
-  interface LevelLayout { hangars: HangarDef[]; runways: RunwayDef[]; apron?: ZoneRect; zones?: { arrival?: ZoneRect; waiting?: ZoneRect }; }
+  // Пер-левел оверрайды вида (опциональны): runwayRatio/runwayR замещают глобальные
+  // K.RUNWAY_RATIO/K.RUNWAY_R только для этого уровня; fitRunways — раскладывать ВПП
+  // равномерно ВНУТРИ апрона с учётом их ширины (нижняя не вылезает на любом экране);
+  // noHud — скрыть HUD и не резервировать место сверху (для кастомных композиций).
+  interface LevelLayout { hangars: HangarDef[]; runways: RunwayDef[]; apron?: ZoneRect; zones?: { arrival?: ZoneRect; waiting?: ZoneRect }; runwayRatio?: number; runwayR?: number; fitRunways?: boolean; noHud?: boolean; }
   interface Events { vip?: boolean; emergency?: boolean; medical?: boolean; rush?: boolean; fog?: boolean; wind?: boolean; [k: string]: boolean | undefined; }
   // Цель уровня + градация звёзд. stars=[1★,2★,3★] — пороги по ОСНОВНОЙ метрике
   // (served: бортов · upgrades: апгрейдов · survival: секунд продержаться). Ниже —
