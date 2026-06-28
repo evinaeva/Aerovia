@@ -67,15 +67,16 @@
         const f=budget/d; pl.x+=dx*f; pl.y+=dy*f; budget=0;
       }
     }
-    // Курс спрайта плавно доворачиваем к фактическому направлению движения. На ПОЛОЖЕНИЕ
-    // это не влияет (борт уже стоит точно на линии) — так на крутых изломах борт визуально
-    // доворачивает с прежней поворотливостью, а не дёргается мгновенным разворотом носа.
-    const mvx=pl.x-ox, mvy=pl.y-oy;
-    if(mvx || mvy){
-      const desired=Math.atan2(mvy,mvx);
-      let a=desired-pl.ang; while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI;
-      const m=turnRate()*dt;
-      pl.ang += Math.max(-m, Math.min(m, a));
+    // Нос борта ВСЕГДА смотрит строго вдоль траектории: курс задаём мгновенно по
+    // направлению пути в текущей точке (на следующий узел path[0]), без ограничения
+    // поворота. Иначе при крутом изломе нос отставал и борт «срезал угол боком».
+    // На положение это не влияет — борт уже стоит точно на линии.
+    if(pl.path.length){
+      const n=pl.path[0];
+      pl.ang=Math.atan2(n.y-pl.y, n.x-pl.x);
+    } else {
+      const mvx=pl.x-ox, mvy=pl.y-oy;
+      if(mvx || mvy) pl.ang=Math.atan2(mvy,mvx);
     }
     return true;
   }
