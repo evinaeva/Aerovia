@@ -39,57 +39,68 @@
     ctx.fillStyle=_vigGrad; ctx.fillRect(0,0,W,H);
   }
   // ---- боковые облака у правого края ----
-  // Узкая светящаяся гряда, начинается у правой границы экрана и уходит влево на
-  // ≈2/3 корпуса борта (небесный масштаб). Борт влетает справа (x=W+40) и улетает
-  // туда же — гряда рисуется ПОВЕРХ поля/бортов/эффектов (но ПОД HUD, см. frame()),
-  // поэтому борт «появляется из облаков» и «улетает в них». Слегка анимирована:
-  // мягкое покачивание + пульс пухов.
-  // Форма гряды стабильна (детерминированный seed) — не дёргается при resize.
-  function _mkClouds(){
-    const arr: {x: number,y: number,r: number,a: number,ph: number,sp: number}[]=[];
-    let s=20260628>>>0;                                  // фикс. seed → стабильная форма
-    const rnd=()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; };
-    const ROWS=16;
-    for(let i=0;i<ROWS;i++){
-      const cy=(i+0.5)/ROWS;
-      const n=2+(rnd()<0.55?1:0);                        // 2–3 пуха в ряд, на разной глубине гряды
-      for(let j=0;j<n;j++){
-        arr.push({
-          x: 0.12 + rnd()*0.9,                           // 1 = правый край, гуще к нему
-          y: cy + (rnd()-0.5)*0.07,
-          r: 0.55 + rnd()*0.6,                           // радиус в долях ширины гряды
-          a: 0.55 + rnd()*0.45,
-          ph: rnd()*6.283,                               // фаза анимации
-          sp: 0.55 + rnd()*0.8,                          // скорость покачивания/пульса
-        });
-      }
-    }
-    return arr;
+  // Светящаяся «стена» облаков во всю высоту экрана (от верхней до нижней границы),
+  // прижата к правой границе. Борт влетает справа (x=W+40) и улетает туда же — стена
+  // рисуется ПОВЕРХ поля/бортов/эффектов (но ПОД HUD, см. frame()), поэтому борт
+  // «появляется из облаков» и «улетает в них».
+  //   • правые 50% стены — плотные (борт за ними не виден);
+  //   • к левому краю стена плавно растворяется в прозрачность.
+  // Воздушность даёт фактура из сотен мелких мягких пухов; чтобы это было дёшево, она
+  // печётся в офскрин-канвас ОДИН раз (пере-печатывается только при resize). Анимация —
+  // дрейф двух полупрозрачных слоёв этой же фактуры (видимое «дыхание» облаков).
+  let _cloudBase: HTMLCanvasElement|null=null, _cloudWisp: HTMLCanvasElement|null=null;
+  let _cloudCW=0, _cloudCH=0;
+  function _cloudPuff(g: CanvasRenderingContext2D, x: number, y: number, r: number, a: number){
+    const rg=g.createRadialGradient(x,y,0, x,y,r);
+    rg.addColorStop(0,   hexa('#f4fbff', 0.95*a));
+    rg.addColorStop(0.5, hexa('#d6efff', 0.40*a));
+    rg.addColorStop(1,   hexa('#cfeaff', 0));
+    g.fillStyle=rg; g.beginPath(); g.arc(x,y,r,0,7); g.fill();
   }
-  const _CLOUDS=_mkClouds();
+  // печём фактуру стены: seed/параметры подобраны под «плотный пол + воздушные пухи».
+  function _bakeCloud(w: number, h: number, seed: number, fill: boolean, N: number, rMax: number, aBase: number){
+    const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(w)); c.height=Math.max(1,Math.round(h));
+    const g=c.getContext('2d')!;
+    let s=seed>>>0; const rnd=()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; };
+    if(fill){   // плотный «пол»: правые 50% непрозрачны, левее — в прозрачность
+      const bg=g.createLinearGradient(0,0,w,0);
+      bg.addColorStop(0.0, hexa('#cfeaff',0));
+      bg.addColorStop(0.5, hexa('#cfe8ff',1));   // с середины и правее — плотно
+      bg.addColorStop(1.0, hexa('#e3f4ff',1));
+      g.fillStyle=bg; g.fillRect(0,0,w,h);
+    }
+    for(let i=0;i<N;i++){
+      const px=(1-Math.pow(rnd(),1.7))*w;        // гуще к правому краю
+      const py=(-0.08+rnd()*1.16)*h;             // оверскан верх/низ — без «дыр» по краям
+      const pr=8 + Math.pow(rnd(),2)*rMax*w;     // много мелких + редкие крупные → воздушность
+      const dens=px/w;                           // 0 слева .. 1 справа
+      _cloudPuff(g, px, py, pr, (aBase+rnd()*aBase)*(0.22+0.78*dens));
+    }
+    return c;
+  }
   function drawSideClouds(tm: number){
-    const bandW = PLANE_LEN()*K.PLANE_SKY_SCALE*(2/3);   // ширина = 2/3 корпуса борта в небе
-    if(bandW<=0) return;
-    const x0 = W - bandW;                                // левая кромка; правая = граница экрана
+    const bandW = PLANE_LEN()*K.PLANE_SKY_SCALE*(2/3)*2.5;   // ширина = 2/3 корпуса борта ×2.5
+    if(bandW<=0 || H<=0) return;
+    const x0 = W - bandW;                                    // левая кромка; правая = граница экрана
+    const tw=Math.round(bandW), th=Math.round(H);
+    if(_cloudCW!==tw || _cloudCH!==th){                      // (пере)печатываем фактуру только при resize
+      _cloudBase=_bakeCloud(tw,th, 20260628, true, 130, 0.50, 0.12);   // плотный пол + крупная фактура
+      _cloudWisp=_bakeCloud(tw,th, 72727,    false,240, 0.34, 0.08);   // лёгкие пухи для дрейфа
+      _cloudCW=tw; _cloudCH=th;
+    }
     const reduced = typeof REDUCED_MOTION!=='undefined' && REDUCED_MOTION;
     ctx.save();
-    // мягкая свечение-подложка гряды (растворяется влево, плотная у правого края)
-    const bg=ctx.createLinearGradient(x0,0,W,0);
-    bg.addColorStop(0,hexa(COL.ice,0)); bg.addColorStop(1,hexa(COL.ice,0.07));
-    ctx.fillStyle=bg; ctx.fillRect(x0,0,bandW,H);
-    for(const p of _CLOUDS){
-      const bob   = reduced ? 0 : Math.sin(tm*0.0006*p.sp + p.ph)*(bandW*0.05);
-      const pulse = reduced ? 1 : 0.85+0.15*Math.sin(tm*0.0009*p.sp + p.ph);
-      const cx = x0 + p.x*bandW;
-      const cy = p.y*H + bob;
-      const r  = p.r*bandW*0.62;
-      const a  = p.a*pulse;
-      const g=ctx.createRadialGradient(cx,cy,0, cx,cy,r);
-      g.addColorStop(0,   hexa('#eaf7ff', 0.85*a));
-      g.addColorStop(0.45,hexa('#a8e0ff', 0.45*a));
-      g.addColorStop(1,   hexa(COL.phosphor, 0));
-      ctx.fillStyle=g;
-      ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fill();
+    ctx.drawImage(_cloudBase!, x0, 0);                       // плотная стена (статична — даёт перекрытие)
+    if(reduced){
+      ctx.drawImage(_cloudWisp!, x0, 0);
+    } else {
+      // два дрейфующих полупрозрачных слоя в противофазе → заметное «дыхание»/завихрения
+      const dy1=Math.sin(tm*0.00050)*(H*0.05),     dx1=Math.cos(tm*0.00035)*(bandW*0.08);
+      ctx.globalAlpha=0.55+0.30*Math.sin(tm*0.0009);
+      ctx.drawImage(_cloudWisp!, x0+dx1, dy1);
+      const dy2=Math.sin(tm*0.00070+2.1)*(H*0.04), dx2=Math.cos(tm*0.00052+1)*(bandW*0.06);
+      ctx.globalAlpha=0.45+0.30*Math.cos(tm*0.0012);
+      ctx.drawImage(_cloudWisp!, x0-dx2, dy2);
     }
     ctx.restore();
   }
