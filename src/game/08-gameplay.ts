@@ -702,15 +702,15 @@
     SND.crash(); HAP.crash();
     combo=0; runCrashes++;
     ACH.onCrash(pl, reason);
-    if(!debug.infiniteLives) lives--;
-    if(penaltyFrac > 0 && !debug.infiniteLives){
+    if(!livesInfinite()) lives--;
+    if(penaltyFrac > 0 && !livesInfinite()){
       const fine = Math.round(pl.reward * penaltyFrac);
       money -= fine;
       addFloat(pl.x, pl.y-24*ui, '−'+fmtMoney(fine), COL.life);
     }
     lossLog.push({t:gameTime, reason});
     if(lossLog.length>12) lossLog.shift();
-    console.log('[PlaneFlow] '+(debug.infiniteLives?'(∞) ':'-1 ✈ ')+t(reason)+' | t='+fmtTime(gameTime)+' | lives='+lives);
+    console.log('[PlaneFlow] '+(livesInfinite()?'(∞) ':'-1 ✈ ')+t(reason)+' | t='+fmtTime(gameTime)+' | lives='+lives);
   }
   function killAir(pl: any){ logLoss(pl, 'loss.airTimeout'); }
   function killCrash(pl: any, reason?: string){ logLoss(pl, reason||'loss.collision', LV.crashPenalty ?? 0); }

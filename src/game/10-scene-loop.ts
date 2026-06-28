@@ -193,6 +193,8 @@ function drawMenuScene(tm: number){
       if(!(LV && LV.layout && LV.layout.noHud)){   // HUD/туториал скрыты на уровнях с layout.noHud (чистая композиция)
         drawHUD();
         if(tut) drawTutorial();
+      } else {
+        drawCustomPauseBtn();   // noHud: HUD спрятан, но кнопка паузы нужна — рисуем её отдельно
       }
       if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
     }
