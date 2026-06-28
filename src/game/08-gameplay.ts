@@ -644,6 +644,44 @@
       if(rectHit(last.x, last.y, r)){ last.x = r.x + r.w - PLANE_LEN()*0.5; last.y = r.cy; pl.approachR = r; break; }
     }
   }
+  // Сглаживание нарисованного маршрута. Пропускаем линию через ВСЕ узлы игрока (траекторию
+  // НЕ меняем — борт идёт ровно там, где провели), но между узлами добавляем промежуточные
+  // точки по ЦЕНТРОСТРЕМИТЕЛЬНОМУ сплайну Катмулл-Рома (alpha=0.5): линия и ход борта
+  // становятся гладкими, углы скругляются «капельку», без среза и без заноса наружу
+  // (центростремительная параметризация не даёт сплайну выскакивать за линию). Больше точек
+  // = курс меняется крошечными шагами, поэтому борт не дёргается на поворотах.
+  function smoothRoute(pl: any){
+    const P = pl.path;
+    if(!P || P.length < 3) return;                 // короткий/прямой маршрут — нечего сглаживать
+    const step = 2;                                // шаг ресемплинга (px) — узлы идут ~каждые 12px;
+    // мелкий шаг = курс меняется частыми крошечными приращениями (борт не дёргается даже на крутом изломе)
+    const dpow = (a: any, b: any) => Math.sqrt(Math.hypot(b.x - a.x, b.y - a.y)) || 1e-4;  // |Δ|^0.5
+    const out: any[] = [];
+    for(let i = 0; i < P.length - 1; i++){
+      const p0 = P[i > 0 ? i - 1 : i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2 < P.length ? i + 2 : i + 1];
+      out.push({ x: p1.x, y: p1.y });              // сам узел — точно на месте (траектория не сдвигается)
+      const segLen = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const steps = Math.max(1, Math.round(segLen / step));
+      if(steps <= 1) continue;                     // совсем короткий сегмент — без промежуточных
+      const t0 = 0;
+      let t1 = t0 + dpow(p0, p1), t2 = t1 + dpow(p1, p2), t3 = t2 + dpow(p2, p3);
+      if(t1 - t0 < 1e-4) t1 = t0 + 1e-4;           // защита границ (совпадающие/дублированные точки)
+      if(t2 - t1 < 1e-4) t2 = t1 + 1e-4;
+      if(t3 - t2 < 1e-4) t3 = t2 + 1e-4;
+      for(let s = 1; s < steps; s++){
+        const t = t1 + (t2 - t1) * (s / steps);    // Барри-Голдман: интерполируем между p1 и p2
+        const A1x = ((t1 - t) * p0.x + (t - t0) * p1.x) / (t1 - t0), A1y = ((t1 - t) * p0.y + (t - t0) * p1.y) / (t1 - t0);
+        const A2x = ((t2 - t) * p1.x + (t - t1) * p2.x) / (t2 - t1), A2y = ((t2 - t) * p1.y + (t - t1) * p2.y) / (t2 - t1);
+        const A3x = ((t3 - t) * p2.x + (t - t2) * p3.x) / (t3 - t2), A3y = ((t3 - t) * p2.y + (t - t2) * p3.y) / (t3 - t2);
+        const B1x = ((t2 - t) * A1x + (t - t0) * A2x) / (t2 - t0), B1y = ((t2 - t) * A1y + (t - t0) * A2y) / (t2 - t0);
+        const B2x = ((t3 - t) * A2x + (t - t1) * A3x) / (t3 - t1), B2y = ((t3 - t) * A2y + (t - t1) * A3y) / (t3 - t1);
+        const Cx = ((t2 - t) * B1x + (t - t1) * B2x) / (t2 - t1), Cy = ((t2 - t) * B1y + (t - t1) * B2y) / (t2 - t1);
+        out.push({ x: Cx, y: Cy });
+      }
+    }
+    out.push({ x: P[P.length - 1].x, y: P[P.length - 1].y });  // последний узел — точно
+    pl.path = out;
+  }
   function up(e?: any){
     if(!drag) return;
     const pl=drag.plane;
@@ -663,6 +701,7 @@
         }
       }
       snapAirPathToRunway(pl);             // посадочный створ — в центр ВПП
+      smoothRoute(pl);                     // сгладить линию: гуще точек, мягче углы, без рывков
       pl.moving = pl.path.length>0;        // поехали по маршруту
       pl.exiting=false;
     } else {
