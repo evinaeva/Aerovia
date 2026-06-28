@@ -168,18 +168,20 @@
   const BUILTIN_CUSTOM_LEVEL: any = {
     pace: 0.35,
     objective: { metric: 'served', stars: [10, 15, 20], target: 20 },
-    services: ['repair'],
+    services: ['repair', 'board', 'fuel'],
     maxUp: 3,
     layout: {
       apron: { x: 0.155, y: 0.17, w: 0.495, h: 0.63 },
       runwayRatio: 2.2, runwayR: 0.85, fitRunways: true, noHud: true,
+      // 12 ангаров кольцом, типы чередуются (fuel/board/repair) — по 4 каждого, чтобы
+      // борты любой нужды обслуживались (играбельно). Порядок массива: верх→лево→низ.
       hangars: [
-        { type: 'repair', x: 0.18, y: 0.00 }, { type: 'repair', x: 0.39, y: 0.00 },
-        { type: 'repair', x: 0.63, y: 0.00 }, { type: 'repair', x: 0.83, y: 0.00 },
-        { type: 'repair', x: 0.00, y: 0.175 }, { type: 'repair', x: 0.00, y: 0.38 },
-        { type: 'repair', x: 0.00, y: 0.60 }, { type: 'repair', x: 0.00, y: 0.81 },
-        { type: 'repair', x: 0.18, y: 1.00 }, { type: 'repair', x: 0.39, y: 1.00 },
-        { type: 'repair', x: 0.63, y: 1.00 }, { type: 'repair', x: 0.83, y: 1.00 },
+        { type: 'fuel',   x: 0.18, y: 0.00 }, { type: 'board',  x: 0.39, y: 0.00 },
+        { type: 'repair', x: 0.63, y: 0.00 }, { type: 'fuel',   x: 0.83, y: 0.00 },
+        { type: 'board',  x: 0.00, y: 0.175 }, { type: 'repair', x: 0.00, y: 0.38 },
+        { type: 'fuel',   x: 0.00, y: 0.60 }, { type: 'board',  x: 0.00, y: 0.81 },
+        { type: 'repair', x: 0.18, y: 1.00 }, { type: 'fuel',   x: 0.39, y: 1.00 },
+        { type: 'board',  x: 0.63, y: 1.00 }, { type: 'repair', x: 0.83, y: 1.00 },
       ],
       runways: [{ y: 0.16 }, { y: 0.44 }, { y: 0.70 }, { y: 0.95 }],
     },
