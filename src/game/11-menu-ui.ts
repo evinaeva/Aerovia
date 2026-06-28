@@ -160,29 +160,28 @@
   const CUSTOM_LEVEL_KEY = 'aerovia:customLevel';
   // Уровень из последнего экспорта конструктора (aerovia-tuning.json → ключ "level").
   // Показывается кнопкой «Свой уровень» если в localStorage нет перезаписи.
+  // Демо-композиция «по референсу» (2400×1080): апрон + 12 ангаров кольцом (4 сверху /
+  // 4 слева / 4 снизу) + 4 широкие ВПП. Живёт в КАСТОМНОМ уровне (кнопка «Свой уровень»),
+  // НЕ в кампании. Вид самодостаточен через пер-левел оверрайды в layout (кампанию не
+  // трогают): runwayRatio/runwayR — широкие/короткие ВПП; fitRunways — ВПП ровно внутри
+  // апрона (нижняя не вылезает на любом телефоне); noHud — чистая композиция без HUD.
   const BUILTIN_CUSTOM_LEVEL: any = {
     pace: 0.35,
-    objective: {
-      metric: 'served',
-      stars: [13, 16, 19],
-      money: [70, 104, 138],
-      lives: [1, 1, 2],
-      upg: [1, 2, 3],
-      timeTier: [217, 181, 151],
-      maxLate: [16, 12, 8],
-      maxCrash: [10, 7, 4],
-    },
-    services: ['repair', 'board', 'fuel'],
+    objective: { metric: 'served', stars: [10, 15, 20], target: 20 },
+    services: ['repair'],
     maxUp: 3,
     layout: {
-      apron: { x: 0.08, y: 0.18, w: 0.46, h: 0.66 },
-      zones: { arrival: { x: 0.84, y: 0.14, w: 0.1, h: 0.74 } },
+      apron: { x: 0.155, y: 0.17, w: 0.495, h: 0.63 },
+      runwayRatio: 2.2, runwayR: 0.85, fitRunways: true, noHud: true,
       hangars: [
-        { type: 'repair', x: 0.64, y: 0,    gate: 'down', upgCost: 123 },
-        { type: 'board',  x: 0.18, y: 0,    gate: 'down', upgCost: 123 },
-        { type: 'fuel',   x: 0.64, y: 0.98, gate: 'up',   upgCost: 123 },
+        { type: 'repair', x: 0.18, y: 0.00 }, { type: 'repair', x: 0.39, y: 0.00 },
+        { type: 'repair', x: 0.63, y: 0.00 }, { type: 'repair', x: 0.83, y: 0.00 },
+        { type: 'repair', x: 0.00, y: 0.175 }, { type: 'repair', x: 0.00, y: 0.38 },
+        { type: 'repair', x: 0.00, y: 0.60 }, { type: 'repair', x: 0.00, y: 0.81 },
+        { type: 'repair', x: 0.18, y: 1.00 }, { type: 'repair', x: 0.39, y: 1.00 },
+        { type: 'repair', x: 0.63, y: 1.00 }, { type: 'repair', x: 0.83, y: 1.00 },
       ],
-      runways: [{ y: 0.76 }, { y: 0.3 }],
+      runways: [{ y: 0.16 }, { y: 0.44 }, { y: 0.70 }, { y: 0.95 }],
     },
     startMoney: 59,
     motion: { landBefore: 1.15, landAfter: 0.95, takeoffRoll: 0.8 },

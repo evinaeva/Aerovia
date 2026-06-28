@@ -190,8 +190,10 @@ function drawMenuScene(tm: number){
       drawEffects(dt);
       vignette();
       drawFloaters(dt);
-      drawHUD();
-      if(tut) drawTutorial();
+      if(!(LV && LV.layout && LV.layout.noHud)){   // HUD/туториал скрыты на уровнях с layout.noHud (чистая композиция)
+        drawHUD();
+        if(tut) drawTutorial();
+      }
       if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
     }
     if(!_slowDevice){ _perfMs+=performance.now()-_t0; if(++_perfFrames>=60){ _slowDevice=_perfMs/_perfFrames>12; if(_slowDevice&&typeof syncSettingsUI!=='undefined') (syncSettingsUI as ()=>void)(); } }

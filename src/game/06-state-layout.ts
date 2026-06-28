@@ -59,7 +59,8 @@
           b:parseFloat(cs.paddingBottom)||0, l:parseFloat(cs.paddingLeft)||0};
   }
   // HUD PNG — 640×67; рисуется по центру шириной 50% W → высота = W/2 * 67/640 = W*67/1280
-  const HUD_H = () => Math.round(W * 67 / 1280);
+  // высота HUD-полосы сверху; уровень с layout.noHud скрывает HUD и не резервирует место
+  const HUD_H = () => (LV && LV.layout && LV.layout.noHud) ? 0 : Math.round(W * 67 / 1280);
   function resize(){
     dpr = Math.min(window.devicePixelRatio||1, 2);
     W = window.innerWidth; H = window.innerHeight;
@@ -208,18 +209,31 @@
     // runways on right
     // полевой торец ВПП заходит на самую кромку апрона → «мост» апрон→небо (полосы не
     // висят в пустоте); длина ВПП ≈0.21W (макет 318/1600≈0.20W), правый край = K.RUNWAY_R×W
-    const rwL = fx1 - 8*ui, rwR = W * K.RUNWAY_R;
+    // RUNWAY_R/RUNWAY_RATIO можно переопределить пер-уровнем (LV.layout.runwayR/runwayRatio)
+    const rwR_ratio = (LV.layout && LV.layout.runwayR != null) ? LV.layout.runwayR : K.RUNWAY_R;
+    const rw_ratio  = (LV.layout && LV.layout.runwayRatio != null) ? LV.layout.runwayRatio : K.RUNWAY_RATIO;
+    const rwL = fx1 - 8*ui, rwR = W * rwR_ratio;
     const top0 = hud + M, bot0 = H - M;
-    // ширина ВПП выводится из длины борта через K.RUNWAY_RATIO — масштаб борта
+    // ширина ВПП выводится из длины борта через RUNWAY_RATIO — масштаб борта
     // (K.PLANE_SCALE) масштабирует полосы на всех картах; просвет — доля ширины ВПП.
-    const rh = PLANE_LEN()*K.RUNWAY_RATIO;  // ширина ВПП ≈ длина борта × коэф
+    const rh = PLANE_LEN()*rw_ratio;  // ширина ВПП ≈ длина борта × коэф
     const gap = rh*0.37;                    // просвет между полосами ~ доля ширины ВПП
     // центры полос по вертикали: КОНСТРУКТОР — по нормированному y каждой ВПП; иначе —
     // n полос симметрично по центру (старая неон-композиция, центральная не пропускается).
     let cys: number[];
     if(LV.layout && LV.layout.runways){
-      // rd.y = доля высоты апрона (как в редакторе «Разметка»), не экрана
-      cys = LV.layout.runways.map(rd => Math.max(top0+rh/2, Math.min(bot0-rh/2, fy0 + rd.y*(fy1-fy0))));
+      if(LV.layout.fitRunways){
+        // ВПП раскладываются РОВНО внутри апрона С УЧЁТОМ их ширины (rh): верхний край 1-й =
+        // кромка апрона (fy0), нижний край последней = fy1. Нижняя ВПП не вылезает за апрон ни
+        // на каком экране/телефоне (фикс. доли rd.y «плыли» из-за ui). Важно лишь ЧИСЛО ВПП.
+        const n = LV.layout.runways.length;
+        const a = fy0 + rh/2, b = fy1 - rh/2, mid = (fy0+fy1)/2;
+        cys = (n<=1 || b<=a) ? LV.layout.runways.map(()=>mid)
+                             : LV.layout.runways.map((_,i)=> a + (b-a)*i/(n-1));
+      } else {
+        // rd.y = доля высоты апрона (как в редакторе «Разметка»), не экрана
+        cys = LV.layout.runways.map(rd => Math.max(top0+rh/2, Math.min(bot0-rh/2, fy0 + rd.y*(fy1-fy0))));
+      }
     } else {
       const n = Math.max(1, LV.runways || 1);
       const rwY0 = top0 + Math.max(0, ((bot0-top0) - (rh*n + gap*(n-1))) / 2);
