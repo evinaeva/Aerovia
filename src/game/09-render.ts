@@ -260,7 +260,13 @@
   // Процедурная неон-линия по периметру апрона (та же, что раньше была запечена в
   // картинке апрона). Рисуется как скруглённый прямоугольник, но ПРЕРЫВАЕТСЯ там, где
   // к кромке апрона примыкают входы в ангары (проёмы боксов). Углы дуг рисуются всегда.
-  function drawApronNeon(fx: number,fy: number,fw: number,fh: number,arc: number){
+  //
+  // ПРОИЗВОДИТЕЛЬНОСТЬ: геометрия линии статична внутри раунда (зависит только от размера
+  // холста и позиций ангаров — а они фиксированы на уровне; открытие/апгрейд бокса её не
+  // меняет). Поэтому линию (включая дорогой shadowBlur-глоу) рисуем ОДИН раз в offscreen-
+  // канвас и каждый кадр только копируем drawImage. Кэш пересоздаётся лишь при resize или
+  // смене уровня — игровой цикл не платит за shadowBlur каждый кадр (как ВПП — без него).
+  function _strokeApronNeon(c: CanvasRenderingContext2D, fx: number,fy: number,fw: number,fh: number,arc: number){
     const ni=9*ui;                                   // отступ линии внутрь от кромки текстуры
     const x0=fx+ni, y0=fy+ni, x1=fx+fw-ni, y1=fy+fh-ni;
     const r=Math.max(2, arc-ni);
@@ -288,16 +294,16 @@
       return out;
     };
     const hSeg=(xa: number,xb: number,y: number,gaps: number[][])=>{
-      for(const s of subtract(xa,xb,gaps)){ ctx.moveTo(s[0],y); ctx.lineTo(s[1],y); }
+      for(const s of subtract(xa,xb,gaps)){ c.moveTo(s[0],y); c.lineTo(s[1],y); }
     };
     const vSeg=(ya: number,yb: number,x: number,gaps: number[][])=>{
-      for(const s of subtract(ya,yb,gaps)){ ctx.moveTo(x,s[0]); ctx.lineTo(x,s[1]); }
+      for(const s of subtract(ya,yb,gaps)){ c.moveTo(x,s[0]); c.lineTo(x,s[1]); }
     };
     const corner=(cx: number,cy: number,a0: number,a1: number)=>{
-      ctx.moveTo(cx+r*Math.cos(a0), cy+r*Math.sin(a0)); ctx.arc(cx,cy,r,a0,a1);
+      c.moveTo(cx+r*Math.cos(a0), cy+r*Math.sin(a0)); c.arc(cx,cy,r,a0,a1);
     };
     const trace=()=>{
-      ctx.beginPath();
+      c.beginPath();
       hSeg(x0+r, x1-r, y0, gT);                       // верх
       hSeg(x0+r, x1-r, y1, gB);                       // низ
       vSeg(y0+r, y1-r, x0, gL);                       // лево
@@ -307,15 +313,38 @@
       corner(x1-r,y1-r,0,0.5*Math.PI);               // низ-право
       corner(x0+r,y1-r,0.5*Math.PI,Math.PI);         // низ-лево
     };
-    ctx.save();
-    ctx.lineCap='round'; ctx.lineJoin='round';
+    c.save();
+    c.lineCap='round'; c.lineJoin='round';
     trace();                                           // 1) свечение
-    ctx.shadowColor=hexa('#27E6FF',.9); ctx.shadowBlur=12*ui;
-    ctx.strokeStyle=hexa('#27E6FF',.85); ctx.lineWidth=3.2*ui; ctx.stroke();
+    c.shadowColor=hexa('#27E6FF',.9); c.shadowBlur=12*ui;
+    c.strokeStyle=hexa('#27E6FF',.85); c.lineWidth=3.2*ui; c.stroke();
     trace();                                           // 2) яркое ядро
-    ctx.shadowBlur=0;
-    ctx.strokeStyle=hexa('#bfefff',.95); ctx.lineWidth=1.4*ui; ctx.stroke();
-    ctx.restore();
+    c.shadowBlur=0;
+    c.strokeStyle=hexa('#bfefff',.95); c.lineWidth=1.4*ui; c.stroke();
+    c.restore();
+  }
+  // Кэш неон-линии апрона: offscreen-канвас + подпись (размер + прямоугольники ангаров).
+  let _apronNeonCv: HTMLCanvasElement|null=null;
+  let _apronNeonSig='';
+  let _apronNeonBox={x:0,y:0,w:0,h:0};
+  function drawApronNeon(fx: number,fy: number,fw: number,fh: number,arc: number){
+    // подпись кэша: геометрия рамки + dpr/ui + позиции/типы ангаров (округлены до пикселя)
+    const sig=[fx,fy,fw,fh,arc,ui,dpr].map(n=>Math.round(n*100)).join(',')+'|'+
+      bays.map(b=>b.deice?'d':`${b.side||''}${b.gate||''}:${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.w)},${Math.round(b.h)}`).join(';');
+    if(sig!==_apronNeonSig || !_apronNeonCv){
+      const pad=Math.ceil(16*ui);                      // запас под свечение/толщину линии
+      const bx=fx-pad, by=fy-pad, bw=fw+2*pad, bh=fh+2*pad;
+      const cw=Math.max(1,Math.ceil(bw*dpr)), ch=Math.max(1,Math.ceil(bh*dpr));
+      let cvn=_apronNeonCv; if(!cvn){ cvn=document.createElement('canvas'); _apronNeonCv=cvn; }
+      cvn.width=cw; cvn.height=ch;                      // переустановка размера очищает канвас
+      const octx=cvn.getContext('2d'); if(!octx){ return; }
+      octx.setTransform(dpr,0,0,dpr,-bx*dpr,-by*dpr);   // мировые координаты → device-пиксели кэша
+      _strokeApronNeon(octx, fx,fy,fw,fh,arc);
+      _apronNeonSig=sig; _apronNeonBox={x:bx,y:by,w:bw,h:bh};
+    }
+    if(!_apronNeonCv) return;
+    const box=_apronNeonBox;
+    ctx.drawImage(_apronNeonCv, box.x, box.y, box.w, box.h);
   }
 
   function drawNeonField(tm: number){
