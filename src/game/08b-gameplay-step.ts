@@ -139,7 +139,12 @@
             else continue;
           }
         }
-        pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; }
+        // воздушное терпение замораживается, как только маршрут борта заведён на открытую
+        // ВПП (pl.approachR выставляет lockRouteToRunway/snapAirPathToRunway): игрок уже
+        // «посадил» борт линией — пусть докатится до полосы и сядет, не разбившись от
+        // истёкшего терпения. Просто покрутить пальцем в воздухе, не доведя маршрут до
+        // полосы, терпение НЕ останавливает — оно убывает и борт разбивается как обычно.
+        if(!pl.approachR){ pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; } }
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_AIR, dt);
           // Выравнивание к осевой ТОЛЬКО для авто-захода (autoPath). Нарисованный игроком
