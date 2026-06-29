@@ -133,15 +133,33 @@
       const gm = gameGeom();
       return Math.min(gm.plane * gm.hr, ap.w / 2.4);   // тот же потолок, что и в игре (не съедать апрон)
     }
+    // Эффективные ворота ангара — тем же правилом, что и движок (06-state-layout):
+    // явные ворота берутся как заданы; «авто» смотрит на ближайшую кромку апрона
+    // В ПИКСЕЛЯХ. gate — направление, КУДА открываются ворота (т.е. внутрь апрона):
+    // ближняя кромка сверху → 'down', снизу → 'up', слева → 'right', справа → 'left'.
+    function gameGate(h) {
+      if (h.gate && h.gate !== 'auto') return h.gate;
+      const ap = rectPx(LE.apron);
+      const dT = h.y * ap.h, dB = (1 - h.y) * ap.h, dL = h.x * ap.w, dR = (1 - h.x) * ap.w;
+      const m = Math.min(dT, dB, dL, dR);
+      return m === dT ? 'down' : m === dB ? 'up' : m === dL ? 'right' : 'left';
+    }
     function hangarPx(h) {
       const ap = rectPx(LE.apron);
       const s = hangarSidePx();
       const cx = ap.x + h.x * ap.w, cy = ap.y + h.y * ap.h;
-      // как в игре (06-state-layout: b.x/b.y зажаты в field) — бокс не вылезает за
-      // апрон, иначе в превью ангар у края торчит наружу, а в тестовой игре он внутри.
-      const x = Math.max(ap.x, Math.min(ap.x + ap.w - s, cx - s / 2));
-      const y = Math.max(ap.y, Math.min(ap.y + ap.h - s, cy - s / 2));
-      return { x, y, w: s, h: s, cx, cy };
+      // ангар СНАРУЖИ апрона — как в игре (06-state-layout): ворота вровень с кромкой
+      // апрона, корпус за ней. Сторону выбираем по воротам; поперёк кромки бокс зажат
+      // в пределах апрона, чтобы не уезжал за угол (та же зажимка, что в движке).
+      const clampX = Math.max(ap.x, Math.min(ap.x + ap.w - s, cx - s / 2));
+      const clampY = Math.max(ap.y, Math.min(ap.y + ap.h - s, cy - s / 2));
+      const gate = gameGate(h);
+      let x, y;
+      if (gate === 'down')       { x = clampX;      y = ap.y - s; }        // ангар сверху апрона
+      else if (gate === 'up')    { x = clampX;      y = ap.y + ap.h; }     // снизу апрона
+      else if (gate === 'right') { x = ap.x - s;    y = clampY; }          // слева от апрона
+      else                       { x = ap.x + ap.w; y = clampY; }          // справа от апрона
+      return { x, y, w: s, h: s, cx: x + s / 2, cy: y + s / 2 };
     }
     // Ширина (высота на холсте) ВПП привязана к размеру борта так же, как в игре
     // (06-state-layout: rh = длина борта × K.RUNWAY_RATIO) — иначе ВПП на «Разметке»
@@ -339,11 +357,9 @@
       if (skinOverlay.on) drawSkinOverlay();   // примерка скинов зон поверх редактора
     }
     function gateDir(h) {
+      // стрелка показывает направление открытия ворот (внутрь апрона) — как в игре
       const map = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
-      if (h.gate && h.gate !== 'auto') return map[h.gate];
-      // auto: point toward nearest apron edge
-      const d = [['up', h.y], ['down', 1 - h.y], ['left', h.x], ['right', 1 - h.x]].sort((a, b) => a[1] - b[1]);
-      return map[d[0][0]];
+      return map[gameGate(h)];
     }
 
     /* ---- skins preview (вкладка «Ресурсы») ----
@@ -371,12 +387,7 @@
       if (W <= 1 || H <= 1) return null;
       const gm = gameGeom();
       const ui = Math.max(0.7, Math.min(1.5, Math.min(W / 1100, H / 620)));
-      function autoGate(h) {
-        if (h.gate && h.gate !== 'auto') return h.gate;
-        const d = [['up', h.y], ['down', 1 - h.y], ['left', h.x], ['right', 1 - h.x]];
-        d.sort(function (a, b) { return a[1] - b[1]; });
-        return d[0][0];
-      }
+      const autoGate = gameGate;   // те же ворота, что у движка/редактора (см. gameGate)
       return {
         W: W, H: H, ui: ui, planeLen: gm.plane,
         runways: LE.runways.map(function (r) {
@@ -535,8 +546,12 @@
       }
       // Reject the move if it now overlaps the untouchable UI-reserved zone,
       // or (for hangars) overlaps another hangar — встык можно, перекрытие нет.
-      const badHangar = drag.mode === 'move-obj' && drag.kind === 'hangar' && hitsOtherHangar(drag.i);
-      if (hitsReserved(dragBoxPx(drag)) || badHangar) { restore(); drag.start = prevStart; }
+      const isHangar = drag.mode === 'move-obj' && drag.kind === 'hangar';
+      const badHangar = isHangar && hitsOtherHangar(drag.i);
+      // ангар рисуется СНАРУЖИ апрона (как в игре) и краем может заходить под HUD-полосу;
+      // его нормированная позиция в апроне всегда валидна, поэтому UI-зону для ангаров не
+      // проверяем — иначе верхний ряд ангаров оказался бы невозможно сдвинуть.
+      if ((!isHangar && hitsReserved(dragBoxPx(drag))) || badHangar) { restore(); drag.start = prevStart; }
       draw();
     });
     function endDrag(e) { if (!drag) return; drag = null; try { cv.releasePointerCapture(e.pointerId); } catch (_) {} renderSide(); save(); }
