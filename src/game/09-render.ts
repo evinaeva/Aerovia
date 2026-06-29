@@ -257,6 +257,67 @@
     // cloud sprites: cloud-far / cloud-mid / cloud-near
     // Clip to sky zone: field.x1 → W
   }
+  // Процедурная неон-линия по периметру апрона (та же, что раньше была запечена в
+  // картинке апрона). Рисуется как скруглённый прямоугольник, но ПРЕРЫВАЕТСЯ там, где
+  // к кромке апрона примыкают входы в ангары (проёмы боксов). Углы дуг рисуются всегда.
+  function drawApronNeon(fx: number,fy: number,fw: number,fh: number,arc: number){
+    const ni=9*ui;                                   // отступ линии внутрь от кромки текстуры
+    const x0=fx+ni, y0=fy+ni, x1=fx+fw-ni, y1=fy+fh-ni;
+    const r=Math.max(2, arc-ni);
+    // Проёмы ангаров → разрывы по соответствующей кромке. Разрыв соответствует ШИРИНЕ
+    // ВОРОТ (а не всему боксу): ворота — центральная часть фасада ангара, по краям бокса
+    // стены/стойки. Так линия остаётся «столбиками» между смежными ангарами и прерывается
+    // ровно напротив каждого въезда. DOOR_FRAC — доля фасада, занятая воротами.
+    const DOOR_FRAC=0.56;
+    const gap=(a: number,len: number)=>{ const d=len*(1-DOOR_FRAC)/2; return [a+d, a+len-d]; };
+    const gT: number[][]=[], gB: number[][]=[], gL: number[][]=[], gR: number[][]=[];
+    for(const b of bays){
+      if(b.deice) continue;
+      if(b.gate==='down' || (!b.gate && b.side==='top'))      gT.push(gap(b.x,b.w));
+      else if(b.gate==='up' || (!b.gate && b.side==='bottom')) gB.push(gap(b.x,b.w));
+      else if(b.gate==='right')                                gL.push(gap(b.y,b.h));
+      else if(b.gate==='left')                                 gR.push(gap(b.y,b.h));
+    }
+    // [a,b] минус интервалы-разрывы → список видимых под-отрезков
+    const subtract=(a: number,b: number,gaps: number[][])=>{
+      const gs=gaps.map(g=>[Math.max(a,Math.min(b,g[0])), Math.max(a,Math.min(b,g[1]))])
+                   .filter(g=>g[1]>g[0]).sort((p,q)=>p[0]-q[0]);
+      const out: number[][]=[]; let cur=a;
+      for(const g of gs){ if(g[0]>cur) out.push([cur,g[0]]); cur=Math.max(cur,g[1]); }
+      if(cur<b) out.push([cur,b]);
+      return out;
+    };
+    const hSeg=(xa: number,xb: number,y: number,gaps: number[][])=>{
+      for(const s of subtract(xa,xb,gaps)){ ctx.moveTo(s[0],y); ctx.lineTo(s[1],y); }
+    };
+    const vSeg=(ya: number,yb: number,x: number,gaps: number[][])=>{
+      for(const s of subtract(ya,yb,gaps)){ ctx.moveTo(x,s[0]); ctx.lineTo(x,s[1]); }
+    };
+    const corner=(cx: number,cy: number,a0: number,a1: number)=>{
+      ctx.moveTo(cx+r*Math.cos(a0), cy+r*Math.sin(a0)); ctx.arc(cx,cy,r,a0,a1);
+    };
+    const trace=()=>{
+      ctx.beginPath();
+      hSeg(x0+r, x1-r, y0, gT);                       // верх
+      hSeg(x0+r, x1-r, y1, gB);                       // низ
+      vSeg(y0+r, y1-r, x0, gL);                       // лево
+      vSeg(y0+r, y1-r, x1, gR);                       // право
+      corner(x0+r,y0+r,Math.PI,1.5*Math.PI);         // верх-лево
+      corner(x1-r,y0+r,1.5*Math.PI,2*Math.PI);       // верх-право
+      corner(x1-r,y1-r,0,0.5*Math.PI);               // низ-право
+      corner(x0+r,y1-r,0.5*Math.PI,Math.PI);         // низ-лево
+    };
+    ctx.save();
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    trace();                                           // 1) свечение
+    ctx.shadowColor=hexa('#27E6FF',.9); ctx.shadowBlur=12*ui;
+    ctx.strokeStyle=hexa('#27E6FF',.85); ctx.lineWidth=3.2*ui; ctx.stroke();
+    trace();                                           // 2) яркое ядро
+    ctx.shadowBlur=0;
+    ctx.strokeStyle=hexa('#bfefff',.95); ctx.lineWidth=1.4*ui; ctx.stroke();
+    ctx.restore();
+  }
+
   function drawNeonField(tm: number){
     // НЕОН-ГЕЙМПЛЕЙ (handoff, docs/design/skins/neon/handoff/): спокойный ночной УВД.
     // Апрон — ОГРАНИЧЕННАЯ зона руления слева с неон-рамкой (верх/лево/низ сплошные,
@@ -319,16 +380,23 @@
       }
     }
 
-    // ===== Апрон — PNG ВМЕСТО процедурного (nineSlice / тёмный прямоугольник) =====
+    // ===== Апрон — текстура PNG со скруглёнными углами + ПРОЦЕДУРНАЯ неон-линия =====
+    // Текстура апрона больше НЕ содержит запечённой неон-рамки: углы скругляются клипом,
+    // а неон-линия рисуется поверх процедурно (drawApronNeon) и прерывается у входов в ангары.
     const fx=ax-8*ui, fy=ay-8*ui, fw=(apR-ax)+16*ui, fh=(ab-ay)+16*ui;
+    const apArc=22*ui;
     const apronSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('apron');
+    ctx.save();
+    rr(fx,fy,fw,fh,apArc); ctx.clip();
     if(apronSkin){
       ctx.drawImage(apronSkin, fx, fy, fw, fh);
     } else if(_hiOk(HANDOFF_IMG.apron)){
       ctx.drawImage(HANDOFF_IMG.apron!, fx, fy, fw, fh);
     } else if(!(SPRITES.nineSlice && SPRITES.nineSlice('apron-frame', fx, fy, fw, fh, 57))){
-      ctx.fillStyle=COL.tarmac; rr(fx,fy,fw,fh,12*ui); ctx.fill();
+      ctx.fillStyle=COL.tarmac; ctx.fillRect(fx,fy,fw,fh);
     }
+    ctx.restore();
+    drawApronNeon(fx,fy,fw,fh,apArc);
 
     if(LV.biome==='forest')   drawForestDecor(tm, ax, ay, field.rwR!, ab);
     if(LV.biome==='arctic')   drawArcticDecor(tm, ax, ay, field.rwR!, ab);
