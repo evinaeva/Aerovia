@@ -403,7 +403,7 @@
       const usePng = planeMeta && ASSET_RENDERER.mode !== 'procedural' && assetMetadataRegistry.drawPng(planeMeta, pl.x, by, pngScale, pl.ang * 180 / Math.PI);
       if(planeMeta && usePng){
         const dr = assetMetadataRegistry.drawRectFor(planeMeta, pl.x, by, pngScale);
-        assetMetadataRegistry.drawDebugOverlay(planeMeta, dr, pl.id, pl.ang * 180 / Math.PI);
+        assetMetadataRegistry.drawDebugOverlay(planeMeta, dr, pl.id, pl.ang * 180 / Math.PI, false);   // точки-маркеры на борте скрыты: дёргаются при движении
       }
       if(!usePng && ASSET_RENDERER.mode !== 'png') drawPlaneBodyAt(pl.x, by, pl.ang, planeScalePx, pl.vip, pl.emergency, pl.medical);
     }
