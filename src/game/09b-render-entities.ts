@@ -357,6 +357,16 @@
       ctx.restore();
     }
 
+    // короткий «толчок» при касании: корпус отскакивает вверх и оседает (затухающая дуга)
+    let by = pl.y;
+    if(pl.bounceAt){
+      const p=(nowT - pl.bounceAt)/K.LAND_BUMP_MS;
+      if(p>=0 && p<1) by -= Math.sin(Math.PI*p)*(1-p)*K.LAND_BUMP_AMP*ui;
+      else pl.bounceAt=0;
+    }
+    // тень борта (под корпусом) — рисуем ПЕРВОЙ, до колец терпения/срочности/выделения,
+    // чтобы кольца оставались поверх тени, а не перекрывались ею; едет за бортом и съезжается на посадке
+    if(!LV.bonus && !inMenu) drawPlaneShadow(pl, pl.x, by, pl.ang, vs);
     // кольцо терпения — ТОЛЬКО в воздухе: игрок без тапа видит, сколько борт ещё
     // потерпит до посадки. На земле (поле/ВПП) и в боксе кольца нет — поле чище.
     // у улетающей бабочки кольца нет — она уже «обслужена»
@@ -384,15 +394,6 @@
       ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.6); ctx.setLineDash([4,5]); ctx.stroke(); ctx.restore();
     }
 
-    // короткий «толчок» при касании: корпус отскакивает вверх и оседает (затухающая дуга)
-    let by = pl.y;
-    if(pl.bounceAt){
-      const p=(nowT - pl.bounceAt)/K.LAND_BUMP_MS;
-      if(p>=0 && p<1) by -= Math.sin(Math.PI*p)*(1-p)*K.LAND_BUMP_AMP*ui;
-      else pl.bounceAt=0;
-    }
-    // тень борта в воздухе (под корпусом): едет за бортом и съезжается к нему на посадке
-    if(!LV.bonus && !inMenu) drawPlaneShadow(pl, pl.x, by, pl.ang, vs);
     if(LV.bonus && !inMenu) drawBug(pl);              // гусеница / куколка / бабочка по стадии
     else {
       // Plane PNGs are authored nose-right by contract; per-asset rotationOffset handles exceptions.
