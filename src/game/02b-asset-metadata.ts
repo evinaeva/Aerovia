@@ -86,13 +86,18 @@ class AssetMetadataRegistry {
     const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
     return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs)-Math.min(...xs), h: Math.max(...ys)-Math.min(...ys) };
   }
-  drawDebugOverlay(asset: AssetMetadata, drawRect: AssetDrawRect, objectId?: string, rotationDeg = 0){
+  // drawPoints=false скрывает точки-маркеры (anchor / nose / snap) — на движущемся борте
+  // они крутятся/дёргаются вместе со спрайтом и мешают визуально (зовущий передаёт false
+  // для самолёта; у статичных объектов — ангаров — точки остаются).
+  drawDebugOverlay(asset: AssetMetadata, drawRect: AssetDrawRect, objectId?: string, rotationDeg = 0, drawPoints = true){
     if(!ASSET_RENDERER.debugOverlay) return;
     ctx.save(); ctx.font = `${10*(typeof ui==='number'?ui:1)}px ui-monospace,monospace`; ctx.textBaseline='top'; ctx.lineWidth=1.5;
     const colors: Record<string,string> = { visualBounds:'#3ad2ff', collisionBounds:'#ff3b6b', hitArea:'#ffd23b', gameplayArea:'#5de08a', textSlot:'#dff4ff', iconSlot:'#b98cff', decorativeOnly:'#5f7bb0' };
     (asset.rects||[]).forEach(r => { const wr=this.assetRectToWorld(asset, r.id, drawRect, rotationDeg); if(!wr) return; ctx.strokeStyle=colors[r.kind]||'#fff'; ctx.setLineDash(r.kind==='decorativeOnly'?[4,4]:[]); ctx.strokeRect(wr.x,wr.y,wr.w,wr.h); ctx.setLineDash([]); ctx.fillStyle=ctx.strokeStyle; ctx.fillText(r.kind, wr.x+2, wr.y+2); });
-    const anc = this.normalizedToWorld(asset, asset.anchor.x, asset.anchor.y, drawRect, rotationDeg); ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(anc.x,anc.y,3,0,7); ctx.fill(); ctx.fillText('anchor', anc.x+5, anc.y+3);
-    (asset.points||[]).forEach(p => { const wp=this.assetPointToWorld(asset, p.id, drawRect, rotationDeg); if(!wp) return; const col=p.kind==='snap'?'#22e3c6':p.kind==='nose'?'#ff4f9d':'#ffd23b'; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(wp.x,wp.y,3,0,7); ctx.fill(); if(p.radius){ ctx.beginPath(); ctx.arc(wp.x,wp.y,p.radius*Math.max(drawRect.w,drawRect.h),0,7); ctx.stroke(); } ctx.fillText(p.id || p.kind, wp.x+5, wp.y+3); });
+    if(drawPoints){
+      const anc = this.normalizedToWorld(asset, asset.anchor.x, asset.anchor.y, drawRect, rotationDeg); ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(anc.x,anc.y,3,0,7); ctx.fill(); ctx.fillText('anchor', anc.x+5, anc.y+3);
+      (asset.points||[]).forEach(p => { const wp=this.assetPointToWorld(asset, p.id, drawRect, rotationDeg); if(!wp) return; const col=p.kind==='snap'?'#22e3c6':p.kind==='nose'?'#ff4f9d':'#ffd23b'; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(wp.x,wp.y,3,0,7); ctx.fill(); if(p.radius){ ctx.beginPath(); ctx.arc(wp.x,wp.y,p.radius*Math.max(drawRect.w,drawRect.h),0,7); ctx.stroke(); } ctx.fillText(p.id || p.kind, wp.x+5, wp.y+3); });
+    }
     ctx.fillStyle='#fff'; ctx.fillText(asset.id + (objectId ? ' / '+objectId : ''), drawRect.x, drawRect.y-13); ctx.restore();
   }
   private normalizedToWorld(asset: AssetMetadata, nx: number, ny: number, drawRect: AssetDrawRect, rotationDeg = 0){
