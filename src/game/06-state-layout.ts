@@ -429,7 +429,7 @@
   let nowT=0;              // время кадра (мс) для анимаций отрисовки
   let effects: any[]=[];          // анимации крушений
   let lossLog: any[]=[], toast: any=null;
-  const debug={infiniteLives:false, richStart:false, unlockAll:false};
+  const debug={infiniteLives:false, richStart:false, unlockAll:false, profiler:false};
   // Кастом-уровень (кнопка «Свой уровень») — песочница/демо, не кампания: счёт не
   // двигает прогресс (levelKey==='custom'), поэтому играется с БЕСКОНЕЧНЫМИ жизнями
   // (борт не теряется при крушении/таймауте). Чит «∞ жизни» из отладки — тоже сюда.
@@ -437,9 +437,9 @@
   const BIG_MONEY=999999;
   // отладочные читы сохраняются отдельным ключом и восстанавливаются при перезаходе
   const DEBUG_KEY='pf_debug';
-  function loadDebug(){ try{ const d=JSON.parse(localStorage.getItem(DEBUG_KEY) || 'null'); if(d&&typeof d==='object'){ debug.infiniteLives=!!d.infiniteLives; debug.richStart=!!d.richStart; debug.unlockAll=!!d.unlockAll; } }catch(e){} }
-  function saveDebug(){ try{ localStorage.setItem(DEBUG_KEY, JSON.stringify({infiniteLives:debug.infiniteLives, richStart:debug.richStart, unlockAll:debug.unlockAll})); }catch(e){} }
-  function syncDebugUI(){ const a=document.getElementById('optLives') as HTMLInputElement|null, b=document.getElementById('optMoney') as HTMLInputElement|null, c=document.getElementById('optUnlockAll') as HTMLInputElement|null; if(a)a.checked=debug.infiniteLives; if(b)b.checked=debug.richStart; if(c)c.checked=debug.unlockAll; }
+  function loadDebug(){ try{ const d=JSON.parse(localStorage.getItem(DEBUG_KEY) || 'null'); if(d&&typeof d==='object'){ debug.infiniteLives=!!d.infiniteLives; debug.richStart=!!d.richStart; debug.unlockAll=!!d.unlockAll; debug.profiler=!!d.profiler; } }catch(e){} }
+  function saveDebug(){ try{ localStorage.setItem(DEBUG_KEY, JSON.stringify({infiniteLives:debug.infiniteLives, richStart:debug.richStart, unlockAll:debug.unlockAll, profiler:debug.profiler})); }catch(e){} }
+  function syncDebugUI(){ const a=document.getElementById('optLives') as HTMLInputElement|null, b=document.getElementById('optMoney') as HTMLInputElement|null, c=document.getElementById('optUnlockAll') as HTMLInputElement|null, d=document.getElementById('optProfiler') as HTMLInputElement|null; if(a)a.checked=debug.infiniteLives; if(b)b.checked=debug.richStart; if(c)c.checked=debug.unlockAll; if(d)d.checked=debug.profiler; }
   let floaters: any[]=[];         // плавающие награды «+N ₿» / «×N комбо» / «уфф!» над полем
   let alarmAt=0;           // антидребезг тревожного бипа терпения
   let slowmo=0;            // секунды лёгкого замедления времени (near-miss)

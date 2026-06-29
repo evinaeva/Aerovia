@@ -22,6 +22,48 @@
   // Если среднее > 12ms — устройство слабое; показываем подсказку в настройках.
   let _slowDevice = false;
   let _perfFrames = 0, _perfMs = 0;
+  // Профайлер кадра по секциям (debug.profiler): куда уходят мс — field/runways/bays/planes/…
+  // Тумблер — в экране отладки; оверлей рисуется прямо на канвасе, поэтому виден и на телефоне
+  // (где devtools нет). Сбор включается ТОЛЬКО при поднятом флаге → в обычной игре оверхеда нет.
+  // Цель — мерить ДО оптимизации рендера (кэш подложки и т.п.), чтобы кэшировать по цифрам, а не на глаз.
+  let _profOn = false, _profLast = 0, _profWinFrames = 0, _profFps = 0;
+  const _profAcc: Record<string, number> = {};   // накопитель мс за окно усреднения
+  const _profAvg: Record<string, number> = {};   // последние усреднённые мс на секцию (для показа)
+  const PROF_WIN = 30;                            // окно усреднения, кадров (~0.5 c при 60 fps)
+  // отнести время, прошедшее с прошлой метки, к секции name (name=null — просто сдвинуть базу)
+  function _pseg(name: string | null){
+    if(!_profOn) return;
+    const tt = performance.now();
+    if(name) _profAcc[name] = (_profAcc[name] || 0) + (tt - _profLast);
+    _profLast = tt;
+  }
+  // компактный оверлей с усреднёнными мс по секциям + fps + сумма; цвет строки = «горячесть»
+  function drawProfiler(){
+    const order = inMenu ? ['menu'] : ['field','runways','decor','bays','zones','planes','fx','vignette','floaters','hud'];
+    let total = 0; for(const k of order) total += _profAvg[k] || 0;
+    const pad = 6, lh = 13, fs = 11, bw = 152;
+    const bh = pad*2 + (order.length + 2)*lh;
+    const x = (safe.l || 0) + 6, y = (safe.t || 0) + (inMenu ? 6 : HUD_H() + 10);
+    ctx.save();
+    ctx.font = `${fs}px ui-monospace,Menlo,Consolas,monospace`;
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(6,12,24,.82)'; ctx.fillRect(x, y, bw, bh);
+    ctx.strokeStyle = 'rgba(58,210,255,.5)'; ctx.lineWidth = 1; ctx.strokeRect(x+0.5, y+0.5, bw, bh);
+    let ty = y + pad;
+    ctx.textAlign = 'left'; ctx.fillStyle = '#3ad2ff';
+    ctx.fillText('PROF  ' + _profFps.toFixed(0) + 'fps', x+pad, ty); ty += lh;
+    for(const k of order){
+      const v = _profAvg[k] || 0;
+      ctx.fillStyle = v >= 3 ? '#ff8f6b' : v >= 1.5 ? '#f5c842' : '#9fb8cc';
+      ctx.textAlign = 'left';  ctx.fillText(k, x+pad, ty);
+      ctx.textAlign = 'right'; ctx.fillText(v.toFixed(2), x+bw-pad, ty);
+      ty += lh;
+    }
+    ctx.fillStyle = '#eaffff';
+    ctx.textAlign = 'left';  ctx.fillText('total', x+pad, ty);
+    ctx.textAlign = 'right'; ctx.fillText(total.toFixed(2) + 'ms', x+bw-pad, ty);
+    ctx.restore();
+  }
   // Кэши градиентов для меню — пересоздаются только при изменении размера экрана.
   let _menuBgGrad: CanvasGradient|null=null, _menuHgGrad: CanvasGradient|null=null;
   let _menuCoreGrad: CanvasGradient|null=null;
@@ -170,26 +212,30 @@ function drawMenuScene(tm: number){
     if(sinceDraw<(_needFast?FAST_MS:SLOW_MS)-1){ rafId=requestAnimationFrame(frame); return; }
     lastRenderTs=ts;
 
+    _profOn = !!debug.profiler;
+    if(_profOn){ _profFps = sinceDraw>0 ? 1000/sinceDraw : 0; _pseg(null); }   // fps = интервал между РИСУЕМЫМИ кадрами
     const _t0 = _slowDevice ? 0 : performance.now();
     if(inMenu){
       drawMenuScene(ts);
+      _pseg('menu');
     } else {
-      drawField(ts);
-      drawRunways(ts);
+      drawField(ts);              _pseg('field');
+      drawRunways(ts);            _pseg('runways');
       if(LV.biome==='forest')   drawForest(ts);
       else if(LV.biome==='arctic')   drawArctic(ts);
       else if(LV.biome==='tropical') drawTropical(ts);
       else if(LV.biome==='desert')   drawDesert(ts);
       else if(LV.biome==='mountain') drawMountain(ts);
       else if(LV.biome==='megacity') drawCity(ts);
-      bays.forEach(drawBay);
+      _pseg('decor');
+      bays.forEach(drawBay);      _pseg('bays');
       drawBaySnapZones();
       drawRunwaySnapZones();
-      drawMotionPoints();
-      planes.forEach(p=>{ if(!p.dead) drawPlane(p); });
-      drawEffects(dt);
-      vignette();
-      drawFloaters(dt);
+      drawMotionPoints();         _pseg('zones');
+      planes.forEach(p=>{ if(!p.dead) drawPlane(p); });   _pseg('planes');
+      drawEffects(dt);            _pseg('fx');
+      vignette();                 _pseg('vignette');
+      drawFloaters(dt);           _pseg('floaters');
       if(!(LV && LV.layout && LV.layout.noHud)){   // HUD/туториал скрыты на уровнях с layout.noHud (чистая композиция)
         drawHUD();
         if(tut) drawTutorial();
@@ -197,6 +243,14 @@ function drawMenuScene(tm: number){
         drawCustomPauseBtn();   // noHud: HUD спрятан, но кнопка паузы нужна — рисуем её отдельно
       }
       if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
+      _pseg('hud');
+    }
+    if(_profOn){
+      if(++_profWinFrames>=PROF_WIN){   // конец окна → пересчитать средние, обнулить накопитель
+        for(const k in _profAcc){ _profAvg[k]=(_profAcc[k]||0)/_profWinFrames; _profAcc[k]=0; }
+        _profWinFrames=0;
+      }
+      drawProfiler();   // оверлей не относим ни к одной секции — это оверхед самого профайлера
     }
     if(!_slowDevice){ _perfMs+=performance.now()-_t0; if(++_perfFrames>=60){ _slowDevice=_perfMs/_perfFrames>12; if(_slowDevice&&typeof syncSettingsUI!=='undefined') (syncSettingsUI as ()=>void)(); } }
     rafId=requestAnimationFrame(frame);
