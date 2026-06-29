@@ -101,8 +101,8 @@
   Проверено end-to-end на Pixel 9 (2026-06-18). Детали/грабли — [`capgo-self-host-migration.md`](capgo-self-host-migration.md).
 - **Решение: распространение — только Google Play** (2026-06-18) — отдельной поддерживаемой
   веб/PWA-версии как продукта не будет. Следствие: веб-рейтинг на Firebase и веб-фоллбэк **сняты**;
-  ачивки/лидерборды — Google Play Games (в коде), облачные сейвы — Play Games Saved Games (план в
-  [`backlog.md`](backlog.md)). GitHub Pages остаётся как хост privacy-URL и dev/test-поверхность.
+  ачивки/лидерборды — Google Play Games (в коде), облачные сейвы — Play Games Saved Games (в коде,
+  PR #149). GitHub Pages остаётся как хост privacy-URL и dev/test-поверхность.
 - **Иконки для стора** — 512 + adaptive + maskable (см. «Бренд и визуал»).
 - _Осталось до релиза_ (в [`backlog.md`](backlog.md)): скриншоты / feature graphic,
   Developer-аккаунт, закрытый трек, AdMob.
@@ -119,6 +119,12 @@
 - **Мост в коде** (`12b-native-play-games.ts`) — `Account.authProvider`, `Leaderboard.provider`,
   `ACH.unlock` → `unlockAchievement`. Вход по жесту (кнопка «G»). Нативные тосты отложены до
   конца уровня/паузы (гугловскую плашку нельзя приглушить).
+- **Облачные сейвы (Play Games Saved Games / Snapshots)** (PR #149, 2026-06-18) — кроссдевайсный
+  прогресс. Нативный `SnapshotsPlugin` (шаблон в `setup-android.mjs`, политика
+  `RESOLUTION_POLICY_MOST_RECENTLY_MODIFIED`), JS-мост `window.PFCloud` (`12c-cloud-saves.ts`):
+  last-writer-wins по `savedAt`, debounce, flush при сворачивании; хук в `saveGame()`. Offline-first:
+  `localStorage` — источник правды, облако — зеркало. Архитектура — [`cloud-saves.md`](cloud-saves.md).
+  Осталось ручное (в [`backlog.md`](backlog.md)): включить Saved Games в Play Console + тест на устройстве.
 - **Privacy / Data Safety** — `privacy.html` (раздел «Google Play Games») и
   [`play-data-safety.md`](play-data-safety.md) готовы; при публикации внести в форму Play Console.
 
