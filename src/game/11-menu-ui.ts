@@ -507,6 +507,7 @@
   document.getElementById('optLives')!.onchange=e=>{ debug.infiniteLives=(e.target as HTMLInputElement).checked; saveDebug(); };
   document.getElementById('optMoney')!.onchange=e=>{ debug.richStart=(e.target as HTMLInputElement).checked; if(debug.richStart) money=BIG_MONEY; saveDebug(); };
   document.getElementById('optUnlockAll')!.onchange=e=>{ debug.unlockAll=(e.target as HTMLInputElement).checked; saveDebug(); renderLevels(); };
+  document.getElementById('optProfiler')!.onchange=e=>{ debug.profiler=(e.target as HTMLInputElement).checked; saveDebug(); };
   // иконка Debug в настройках открывает отдельный экран отладки
   { const btn=document.getElementById('debugToggleBtn');
     if(btn) btn.onclick=()=>{ syncDebugUI(); hideAllScreens(); document.getElementById('debugScreen')?.classList.remove('hidden'); }; }
