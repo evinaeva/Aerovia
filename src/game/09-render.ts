@@ -154,27 +154,55 @@
     }
     return G;   // field / bay / борт стоит/выкатывается на полосе
   }
-  // Тень борта в воздухе. Высоту берём из визуального масштаба planeScale (небо A → земля G):
-  // alt=1 в небе, 0 на земле, плавно между на ВПП во время посадки/взлёта. Солнце в правом
-  // верхнем углу → тень падает к низу-влево; чем выше борт, тем дальше тень и тем она мягче и
-  // светлее (penumbra), у самой земли — ближе, темнее и плотнее. На земле (alt≈0) не рисуем —
-  // игра условно вид сверху. Овал ориентирован по курсу борта (вытянут вдоль фюзеляжа).
+  // Силуэт борта для тени: тот же спрайт, залитый сплошным чёрным (source-in сохраняет контур
+  // по альфа-каналу). Строим один раз и кешируем по исходному изображению/канвасу — поэтому
+  // отдельный «чёрный самолёт» в ассетах не нужен, тень всегда совпадает с реальным корпусом.
+  const _planeSilCache = new WeakMap<object, HTMLCanvasElement>();
+  function planeSilhouette(src: HTMLImageElement | HTMLCanvasElement): HTMLCanvasElement | null {
+    if(typeof document === 'undefined') return null;
+    const cached = _planeSilCache.get(src); if(cached) return cached;
+    const w = (src as HTMLImageElement).naturalWidth || (src as HTMLCanvasElement).width;
+    const h = (src as HTMLImageElement).naturalHeight || (src as HTMLCanvasElement).height;
+    if(!(w > 0 && h > 0)) return null;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const sctx = c.getContext('2d'); if(!sctx) return null;
+    sctx.drawImage(src, 0, 0, w, h);
+    sctx.globalCompositeOperation = 'source-in';            // непрозрачные пиксели → чёрные, контур сохранён
+    sctx.fillStyle = '#000'; sctx.fillRect(0, 0, w, h);
+    _planeSilCache.set(src, c);
+    return c;
+  }
+  // Тень борта в воздухе — ПОЛНЫЙ СИЛУЭТ корпуса (а не овал), залитый чёрным. Высоту берём из
+  // визуального масштаба planeScale (небо A → земля G): alt=1 в небе, 0 на земле, плавно между на
+  // ВПП при посадке/взлёте. Солнце в правом верхнем углу → тень падает к низу-влево; чем выше борт,
+  // тем дальше и крупнее тень (корпус тоже крупнее за счёт vs). По мере снижения тень съезжается к
+  // борту, мельчает (вместе с vs) и бледнеет, полностью исчезая у земли (alt≈0). Силуэт берём из
+  // того же спрайта, которым рисуется корпус (см. drawPlaneBodyAt), с фолбэком на процедурный контур.
   function drawPlaneShadow(pl: any, cx: number, cy: number, ang: number, vs: number){
     const A=K.PLANE_SKY_SCALE, G=K.PLANE_GND_SCALE;
     const alt = A>G ? Math.max(0, Math.min(1, (vs - G) / (A - G))) : 0;
-    if(alt < 0.03) return;                                   // на земле тени нет
+    if(alt < 0.04) return;                                   // на земле тени нет
     const off = alt * K.PLANE_SHADOW_OFFSET * ui;            // смещение растёт с высотой
     const sx = cx - off * Math.SQRT1_2, sy = cy + off * Math.SQRT1_2;   // низ-влево
-    const len = (PLANE_LEN()*0.62) * vs * (1 + 0.18*alt);    // выше → тень чуть шире (penumbra)
-    const wid = len * 0.34;
-    const a = K.PLANE_SHADOW_ALPHA * (1 - 0.3*alt);          // ниже → плотнее (penumbra мягче высоко)
+    const a = K.PLANE_SHADOW_ALPHA * Math.sqrt(alt);         // выше → темнее; у земли плавно в 0
+    const scalePx = ui*0.5*SZ()*vs;                          // тот же масштаб, что у корпуса
+    // источник силуэта — тот же спрайт, которым рисуется корпус (zoneSkin → handoff-PNG)
+    let img: HTMLCanvasElement | null = null;
+    if(!inMenu){
+      const pSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('plane');
+      if(pSkin && _hiOk(pSkin)) img = planeSilhouette(pSkin);
+      else if(HANDOFF_IMG.ready && _hiOk(HANDOFF_IMG.plane)) img = planeSilhouette(HANDOFF_IMG.plane!);
+    }
     ctx.save();
-    ctx.translate(sx, sy); ctx.rotate(ang); ctx.scale(len, wid);
-    const g = ctx.createRadialGradient(0,0,0, 0,0,1);
-    g.addColorStop(0, hexa('#000000', a));
-    g.addColorStop(0.7, hexa('#000000', a*0.82));
-    g.addColorStop(1, hexa('#000000', 0));
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,1,0,7); ctx.fill();
+    ctx.globalAlpha = a;
+    if(img){                                                 // PNG-спрайт нарисован носом вверх → +90° к курсу
+      const dw = 62*scalePx, dh = 62*scalePx;
+      ctx.translate(sx, sy); ctx.rotate(ang + Math.PI/2);
+      ctx.drawImage(img, -dw/2, -dh/2, dw, dh);
+    } else {                                                 // фолбэк: процедурный силуэт planeShape (нос по +x)
+      ctx.translate(sx, sy); ctx.rotate(ang); ctx.scale(scalePx, scalePx);
+      planeShape('#000');
+    }
     ctx.restore();
   }
   function drawPlaneBodyAt(x: number,y: number,ang: number,s: number,vip?: any,emergency?: any,medical?: any,liv?: number){
