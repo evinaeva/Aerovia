@@ -91,20 +91,23 @@
 
 ---
 
-## Облачное сохранение
+## Облачное сохранение — что осталось
 
-> Прогресс сейчас только в `localStorage` — на новом устройстве игра начинается заново
-> даже после входа в Play Games (вход возвращает только серверные ачивки/лидерборд, не наш `save`).
+> **Реализовано (PR #149, 2026-06-18).** Кроссдевайсный прогресс через Play Games Saved
+> Games (Snapshots) — в коде целиком: нативный `SnapshotsPlugin` (шаблон в
+> [`setup-android.mjs`](../scripts/setup-android.mjs), политика
+> `RESOLUTION_POLICY_MOST_RECENTLY_MODIFIED`), JS-мост `window.PFCloud`
+> ([`12c-cloud-saves.ts`](../src/game/12c-cloud-saves.ts) — LWW по `savedAt`, debounce,
+> flush при сворачивании), хук в `saveGame()`. Offline-first: `localStorage` — источник
+> правды, облако — зеркало. Архитектура и формат — [`cloud-saves.md`](cloud-saves.md).
+> Ниже — только то, что **не закрыть кодом**.
 
-**Нужны ДВЕ вещи:** (1) scope `drive.appdata` — плагин Play Games его уже запрашивает
-**и** (2) реально реализованный **Saved Games (Snapshots API)**: сериализовать `save`
-в облачный слот и читать обратно при запуске. Один scope ничего не синхронизирует.
-
-**Решение (2026-06-18):** тонкий свой Kotlin-плагин Snapshots поверх
-`@openforge/capacitor-game-connect` (PGS v2 вход общий → переиспользует ту же сессию,
-без второго sign-in); политика `RESOLUTION_POLICY_MOST_RECENTLY_MODIFIED` (last-writer-wins).
-Гейт: включить **Saved Games в Play Console** (пропагация до 24 ч).
-**Сложность:** средняя (~1–2 дня, additive).
+1. **Включить Saved Games в Play Console (гейт).** *Grow users → Play Games Services →
+   Configuration → Edit properties → Saved Games: ON*. Без этого `open()` снапшота падает.
+   Пропагация до 24 ч (или почистить данные «Google Play services» на устройстве). **Сложность:** низкая (ручная).
+2. **Проверка на устройстве.** Сценарий «два устройства, один аккаунт» из
+   [`cloud-saves.md`](cloud-saves.md) — на эмуляторе/в браузере не воспроизводится (нужен APK + вход в PGS).
+   **Сложность:** низкая (ручная).
 
 ---
 
