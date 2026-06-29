@@ -59,6 +59,7 @@
     if(pl.noseX==null || !isFinite(pl.noseX)){
       const n0=pl.path[0]; const a0=Math.atan2(n0.y-pl.y, n0.x-pl.x);
       pl.noseX = pl.x + Math.cos(a0)*off; pl.noseY = pl.y + Math.sin(a0)*off; pl.ang=a0;
+      pl.tailX = null;                                // курс-стержень переинициализируем под новый маршрут
     }
     let nx=pl.noseX, ny=pl.noseY;
     const onx=nx, ony=ny;
@@ -74,11 +75,28 @@
         const f=budget/d; nx+=dx*f; ny+=dy*f; budget=0;
       }
     }
-    // курс — касательная пути в точке носа (на следующий узел); в конце маршрута — по ходу носа
-    let ang=pl.ang;
-    if(pl.path.length){ const n=pl.path[0]; ang=Math.atan2(n.y-ny, n.x-nx); }
-    else { const mx=nx-onx, my=ny-ony; if(mx||my) ang=Math.atan2(my,mx); }
-    pl.ang=ang; pl.noseX=nx; pl.noseY=ny;
+    pl.noseX=nx; pl.noseY=ny;
+    // КУРС. Нос лежит на линии, но борт нельзя «крутить за нос» по мгновенной касательной —
+    // тогда весь корпус мотает вокруг носа, как игрушку. Ведём жёсткий стержень нос→хвост:
+    // хвост волочится за носом (caster), его точка скользит только вдоль курса — это и есть
+    // основные стойки шасси под крыльями, вокруг которых реально разворачивается самолёт.
+    // Курс = направление стержня; на дуге он доворачивает на ~Δ/L за кадр (Δ — ход носа,
+    // L — длина стержня), поэтому корпус идёт мягко, а нос остаётся точно на линии.
+    const trail = K.STEER_TRAIL * PLANE_LEN();
+    let ang: number;
+    if(trail > 0){
+      if(pl.tailX==null || !isFinite(pl.tailX)){
+        pl.tailX = nx - Math.cos(pl.ang)*trail; pl.tailY = ny - Math.sin(pl.ang)*trail;
+      }
+      ang = Math.atan2(ny - pl.tailY, nx - pl.tailX);
+      pl.tailX = nx - Math.cos(ang)*trail; pl.tailY = ny - Math.sin(ang)*trail;
+    } else {
+      // модель выключена (STEER_TRAIL=0) — курс по касательной у носа (прежнее поведение)
+      ang = pl.ang;
+      if(pl.path.length){ const n=pl.path[0]; ang=Math.atan2(n.y-ny, n.x-nx); }
+      else { const mx=nx-onx, my=ny-ony; if(mx||my) ang=Math.atan2(my,mx); }
+    }
+    pl.ang=ang;
     pl.x = nx - Math.cos(ang)*off; pl.y = ny - Math.sin(ang)*off;
     return true;
   }
