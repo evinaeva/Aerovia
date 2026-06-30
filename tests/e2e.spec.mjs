@@ -51,3 +51,29 @@ test('прохождение цели открывает следующий ур
   const unlocked = await page.evaluate(() => window.__GAME.save.unlocked);
   expect(unlocked).toBe(2);
 });
+
+test('MVP-аэропорт (forest, Survival): запуск, снег провоцирует де-айс перед вылетом борта', async ({ page }) => {
+  await page.goto('/index.html?test=1');
+  // детерминируем погоду: снег с первого тика погодного окна
+  await page.evaluate(() => {
+    window.__GAME.K.WEATHER_PERIOD = 0;
+    window.__GAME.K.WEATHER_SNOW_CHANCE = 1;
+  });
+  await page.locator('#survivalBtn').click();
+  await expect(page.locator('#biomeScreen')).toBeVisible();
+  await page.locator('#biomeList .biome').first().click();   // forest — первая карта биомов
+  await expect(page.locator('#goalsScreen')).toBeVisible();
+  await page.locator('#goalsOk').click();                    // закрыть окно целей, начать смену
+
+  // погода должна перейти в snow (детерминировано K.WEATHER_SNOW_CHANCE=1 выше)
+  await expect.poll(() => page.evaluate(() => window.__GAME.weather)).toBe('snow');
+
+  // хотя бы один борт должен получить шаг 'deice' в маршруте обслуживания
+  await expect.poll(() => page.evaluate(() =>
+    window.__GAME.planes.some(p => Array.isArray(p.requests) && p.requests.includes('deice'))
+  ), { timeout: 15000 }).toBe(true);
+
+  // де-айс-бокс должен присутствовать и быть открытым (всегда-открытая инфраструктура)
+  const hasDeiceBay = await page.evaluate(() => window.__GAME.bays.some(b => b.deice && b.open));
+  expect(hasDeiceBay).toBe(true);
+});
