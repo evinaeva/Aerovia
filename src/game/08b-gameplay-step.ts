@@ -1,7 +1,7 @@
 // ===== 08b-gameplay-step — per-frame simulation — steering, path-following and the main update(dt) tick =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: update, steer, turnTo, followPath, dirOut, clampX, clampY.
-// Reads: 08 (land, touchdown, depart, killAir/killCrash, spawnPlane, dist, selected…); 04 (K, LV, pace*, dayCycle, weatherTaxiMult); 06 (planes, runways, bays, field, gameTime, lives…); 07 (SND, HAP); 09b (nearMiss, pulseFx, updateTutorial); 12 (ACH); 10 (endLevel).
+// Reads: 08 (land, touchdown, depart, killAir/killCrash, spawnPlane, dist, selected, drag…); 04 (K, LV, pace*, dayCycle, weatherTaxiMult); 06 (planes, runways, bays, field, gameTime, lives…); 07 (SND, HAP); 09b (nearMiss, pulseFx, updateTutorial); 12 (ACH); 10 (endLevel).
 
   // ---- update ----
   // Поворотливость масштабируем под размер мира. Геометрия (ВПП, боксы, борт) сжимается
@@ -157,12 +157,16 @@
             else continue;
           }
         }
-        // воздушное терпение замораживается, как только маршрут борта заведён на открытую
-        // ВПП (pl.approachR выставляет lockRouteToRunway/snapAirPathToRunway): игрок уже
-        // «посадил» борт линией — пусть докатится до полосы и сядет, не разбившись от
-        // истёкшего терпения. Просто покрутить пальцем в воздухе, не доведя маршрут до
-        // полосы, терпение НЕ останавливает — оно убывает и борт разбивается как обычно.
-        if(!pl.approachR){ pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; } }
+        // воздушное терпение замораживается в двух случаях:
+        //  1) пока игрок ДЕРЖИТ/ЧЕРТИТ маршрут именно этого борта (drag.plane===pl) —
+        //     нельзя дать борту разбиться прямо под пальцем, пока игрок ведёт ему линию;
+        //  2) как только маршрут заведён на открытую ВПП (pl.approachR выставляет
+        //     lockRouteToRunway/snapAirPathToRunway, см. PR #353): игрок уже «посадил» борт
+        //     линией — пусть докатится до полосы и сядет, не разбившись от истёкшего терпения.
+        // Просто покрутить пальцем в воздухе и ОТПУСТИТЬ, не доведя маршрут до полосы,
+        // терпение НЕ останавливает — после отрыва пальца оно снова убывает и борт разбивается.
+        const beingRouted = !!drag && drag.plane === pl;   // этот борт сейчас под пальцем игрока
+        if(!pl.approachR && !beingRouted){ pl.airTime-=dt; if(pl.airTime<=0){ killAir(pl); continue; } }
         if(pl.moving && pl.path.length){
           followPath(pl, K.SPEED_AIR, dt);
           // Выравнивание к осевой ТОЛЬКО для авто-захода (autoPath). Нарисованный игроком
