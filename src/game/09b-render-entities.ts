@@ -1,6 +1,6 @@
 // ===== 09b-render-entities — draw bays, planes, the HUD, transient FX and the tutorial overlay =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: drawBay, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
+// Provides: drawBay, drawBayUpgradePanel, drawBayGate, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
 // Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawPlaneShadow, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 04b (MT_META_VALUES); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
@@ -65,24 +65,8 @@
     rr(bx,by,bSize,bSize,bSize*0.28); ctx.fillStyle='#0c1736'; ctx.fill();
     ctx.save(); ctx.shadowColor=hexa(col,.55); ctx.shadowBlur=10; ctx.lineWidth=2; ctx.strokeStyle=col; rr(bx,by,bSize,bSize,bSize*0.28); ctx.stroke(); ctx.restore();
     drawIcon(b.type, bx+bSize/2, by+bSize/2, bSize*0.30, col, '#0c1736');
-    const up=bayUpCost(b);
-    if(up!=null && money>=up){ const cs=Math.min(bSize*0.72,28*ui), cx2=x+w-pad-cs, cy2=top?y+pad:y+h-pad-cs;
-      const pulse=0.6+0.4*Math.sin(nowT*0.004);
-      rr(cx2,cy2,cs,cs,cs*0.3); ctx.fillStyle=hexa(COL.green,0.12+0.10*pulse); ctx.fill();
-      ctx.save(); ctx.shadowColor=hexa(COL.green,0.4+0.3*pulse); ctx.shadowBlur=7+8*pulse; ctx.lineWidth=1.5; ctx.strokeStyle=COL.green; rr(cx2,cy2,cs,cs,cs*0.3); ctx.stroke(); ctx.restore();
-      ctx.strokeStyle=COL.green; ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.lineJoin='round';
-      const ax=cx2+cs/2, ay=cy2+cs/2, ar=cs*0.26; ctx.beginPath(); ctx.moveTo(ax,ay+ar); ctx.lineTo(ax,ay-ar); ctx.moveTo(ax-ar*0.7,ay-ar*0.3); ctx.lineTo(ax,ay-ar); ctx.lineTo(ax+ar*0.7,ay-ar*0.3); ctx.stroke(); }
-    const totalDots=Math.min(4, bayMaxLvl(b)), dotR=3.2*ui, dgap=4*ui;   // 0 → ангар неулучшаем: без плашки
-    if(totalDots>0){
-      const plW=totalDots*(dotR*2+dgap)+dgap, plH=dotR*2+6*ui, plX=x+w/2-plW/2, plY=top?y+pad:y+h-pad-plH;
-      rr(plX,plY,plW,plH,plH/2); ctx.fillStyle='rgba(8,14,30,.72)'; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.phosphor,.18); rr(plX,plY,plW,plH,plH/2); ctx.stroke();
-      for(let i=0;i<totalDots;i++){ const dx=plX+dgap+i*(dotR*2+dgap)+dotR, dy=plY+plH/2, on=i<b.lvl;
-        ctx.beginPath(); ctx.arc(dx,dy,dotR,0,7);
-        if(on){ ctx.save(); ctx.shadowColor=hexa(COL.green,.7); ctx.shadowBlur=6; ctx.fillStyle=COL.green; ctx.fill(); ctx.restore(); ctx.lineWidth=1.4; ctx.strokeStyle=COL.green; ctx.stroke(); }
-        else { ctx.fillStyle='rgba(7,12,28,.6)'; ctx.fill(); ctx.lineWidth=1.4; ctx.strokeStyle=hexa(COL.muted,.7); ctx.stroke(); } }
-    }
-    if(busy && b.occupied.serveMax){ const frac=1-Math.max(0,b.occupied.serveTime)/b.occupied.serveMax, ccx=bx+bSize+8*ui, ccy=by+bSize/2;
-      ctx.beginPath(); ctx.arc(ccx,ccy,6*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2); ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.strokeStyle=col; ctx.stroke(); }
+    // апгрейд-индикаторы (зелёная стрелка) рисует drawBayUpgradePanel, а шеврон/прогресс
+    // обслуживания на входе — drawBayGate; оба отдельными проходами поверх любого арта бокса.
     ctx.restore();
   }
 
@@ -183,21 +167,22 @@
       }
     }
     // Handoff PNG: базовый ангар (sprite_hangar_base.png) + иконка услуги.
-    // Для нижних боксов (gate facing up) база зеркалится по вертикали.
-    // Game-state оверлеи (тинт занятости, прогресс, ценник закрытого) будут
-    // добавлены отдельно вместе с соответствующими спрайтами.
+    // Иконка нарисована входом ВНИЗ (нижний край = ворота). Структурную рамку
+    // ПОВОРАЧИВАЕМ так, чтобы вход смотрел к апрону (по dirOut): верх=0°, низ=180°,
+    // левый бокс (ворота вправо)=−90°, правый (ворота влево)=+90°. Пиктограмму услуги
+    // НЕ поворачиваем — она должна читаться вертикально, поэтому берём пред-нарисованный
+    // вариант под сторону (svc_*_top/_bot/_side). Game-state оверлеи (шеврон/прогресс на
+    // входе) рисует drawBayGate отдельным проходом.
     const hiBase = HANDOFF_IMG.hangarBase;
     if(!b.deice && !LV.bonus && _hiOk(hiBase)){
       ctx.save();
-      if(b.side !== 'top'){
-        ctx.save();
-        ctx.translate(b.x + b.w/2, b.y + b.h/2);
-        ctx.scale(1, -1);
-        ctx.drawImage(hiBase as HTMLImageElement, -b.w/2, -b.h/2, b.w, b.h);
-        ctx.restore();
-      } else {
-        ctx.drawImage(hiBase as HTMLImageElement, b.x, b.y, b.w, b.h);
-      }
+      const o0=dirOut(b);
+      const ang = o0.dy===1 ? 0 : o0.dy===-1 ? Math.PI : o0.dx===1 ? -Math.PI/2 : Math.PI/2;
+      ctx.save();
+      ctx.translate(b.x + b.w/2, b.y + b.h/2);
+      ctx.rotate(ang);
+      ctx.drawImage(hiBase as HTMLImageElement, -b.w/2, -b.h/2, b.w, b.h);
+      ctx.restore();
       if(b.open){
         const _svcTop  = (b.type==='fuel' ? HANDOFF_IMG.svcFuel      : b.type==='repair' ? HANDOFF_IMG.svcRepair      : b.type==='board' ? HANDOFF_IMG.svcBoard      : null) as HTMLImageElement | null;
         const _svcBot  = (b.type==='fuel' ? HANDOFF_IMG.svcFuelBot   : b.type==='repair' ? HANDOFF_IMG.svcRepairBot   : b.type==='board' ? HANDOFF_IMG.svcBoardBot   : null) as HTMLImageElement | null;
@@ -291,29 +276,77 @@
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(t('svc.'+b.type).toUpperCase(), b.x+b.w/2, b.y+b.h-18*ui);
     }
-    // пипсы уровня (число = потолок прокачки этого ангара; 0 → без пипсов)
-    const total=bayMaxLvl(b), pip=5.2*ui, gap=4.5*ui;
-    const startX=b.x+b.w/2-(total*(pip+gap)-gap)/2;
-    for(let i=0;i<total;i++){
-      ctx.fillStyle = i<b.lvl ? col : hexa(COL.muted,.18);
-      ctx.beginPath(); ctx.arc(startX+i*(pip+gap)+pip/2, b.y+b.h-8*ui, pip/2, 0,7); ctx.fill();
-    }
-    // прогресс обслуживания — кружок в правом верхнем углу
-    if(busy){
-      const p=b.occupied, frac=1-Math.max(0,p.serveTime)/p.serveMax;
-      const ccx=b.x+b.w-12*ui, ccy=b.y+12*ui;
-      ctx.beginPath(); ctx.arc(ccx,ccy,7*ui,0,7); ctx.lineWidth=2.5*ui; ctx.strokeStyle=hexa(COL.ink,.6); ctx.stroke();
-      ctx.beginPath(); ctx.arc(ccx,ccy,7*ui,-Math.PI/2,-Math.PI/2+frac*Math.PI*2);
-      ctx.lineWidth=2.5*ui; ctx.lineCap='round'; ctx.strokeStyle=col; ctx.stroke();
-    }
-    // подсказка цены апгрейда — только если хватает денег, с пульсацией
-    const up=bayUpCost(b);
-    if(up!=null && money>=up){
+    // апгрейд-индикаторы (плашка «открыто/возможно» + зелёная стрелка) рисует
+    // drawBayUpgradePanel отдельным проходом поверх любого арта бокса.
+    // прогресс обслуживания теперь рисует drawBayGate на входе (шеврон↔прогресс)
+    ctx.restore();
+  }
+
+  // Зелёная стрелка доступности апгрейда. Рисуется ПОВЕРХ любого арта бокса (PNG-ангар,
+  // neon-fallback, скин) отдельным проходом из scene-loop, поэтому не зависит от того,
+  // какой путь отрисовки сработал. Стрелка «хватает денег» — в углу со стороны входа-апрона:
+  // верх-лево у верхних боксов, низ-лево у нижних и левых. Геометрия берётся из bayUpBtn(b) —
+  // единый источник для отрисовки и зоны тапа. (Плашка «открыто/возможно» убрана по запросу.)
+  function drawBayUpgradePanel(b: any){
+    if(!b.open || b.deice || LV.bonus) return;
+    if(bayMaxLvl(b)<=0) return;                             // неулучшаемый ангар — без индикатора
+    ctx.save();
+    // ── зелёная стрелка «можно прокачать» в углу со стороны входа ──
+    const btn=bayUpBtn(b), up=bayUpCost(b);
+    if(btn && up!=null && money>=up){
       const pulse=0.6+0.4*Math.sin(nowT*0.004);
-      ctx.save(); ctx.globalAlpha=pulse; ctx.fillStyle=COL.coin; ctx.font=`${9*ui}px ${NUM}`;
-      ctx.textAlign='center'; ctx.textBaseline='top';
-      ctx.fillText('↑ '+fmtMoney(up), b.x+b.w/2, b.y+b.h+4*ui);
-      ctx.restore();
+      const cx2=btn.x, cy2=btn.y, cs=btn.w;
+      rr(cx2,cy2,cs,cs,cs*0.3); ctx.fillStyle=hexa(COL.green,0.12+0.10*pulse); ctx.fill();
+      ctx.save(); ctx.shadowColor=hexa(COL.green,0.4+0.3*pulse); ctx.shadowBlur=7+8*pulse; ctx.lineWidth=1.5; ctx.strokeStyle=COL.green; rr(cx2,cy2,cs,cs,cs*0.3); ctx.stroke(); ctx.restore();
+      ctx.strokeStyle=COL.green; ctx.lineWidth=2.4*ui; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.globalAlpha=0.7+0.3*pulse;
+      const ax=cx2+cs/2, ay=cy2+cs/2, ar=cs*0.26;
+      ctx.beginPath(); ctx.moveTo(ax,ay+ar); ctx.lineTo(ax,ay-ar); ctx.moveTo(ax-ar*0.7,ay-ar*0.3); ctx.lineTo(ax,ay-ar); ctx.lineTo(ax+ar*0.7,ay-ar*0.3); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Индикатор на ВХОДЕ бокса: шеврон (стрелка «заезжай») ↔ прогресс-бар обслуживания.
+  // Рисуется в слое боксов ДО бортов, поэтому корпус борта, проходя над воротами,
+  // прячет момент подмены. Подмена — чистая функция позиции (без хранимого состояния):
+  // прогресс показываем, когда борт зашёл за линию ворот (d<0 вдоль dirOut), иначе шеврон.
+  // При d≈0 борт стоит ровно на воротах и перекрывает индикатор → смена незаметна (на
+  // заезде шеврон→прогресс, на выезде прогресс→шеврон, оба «под крыльями»).
+  function drawBayGate(b: any){
+    if(!b.open || b.deice || LV.bonus) return;
+    const o=dirOut(b);
+    const E=bayEntrancePoint(b);                            // центр линии ворот
+    const vert=Math.abs(o.dy)>Math.abs(o.dx);
+    const gateW=(vert? b.w : b.h);                          // ширина ворот поперёк направления
+    const TONE:Record<string,string>={fuel:'teal',repair:'amber',board:'rose',deice:'ice'};
+    const col=COL[TONE[b.type]||'phosphor'];
+    const px=-o.dy, py=o.dx;                                // единичный вектор вдоль линии ворот
+    const inset=7*ui, gx=E.x-o.dx*inset, gy=E.y-o.dy*inset; // чуть внутрь от кромки ворот
+    let progress=false, frac=0;
+    if(b.occupied && b.occupied.serveMax){
+      const pl=b.occupied, d=(pl.x-E.x)*o.dx+(pl.y-E.y)*o.dy;   // d>0 снаружи (к апрону), d<0 внутри
+      if(d<0){ progress=true; frac=1-Math.max(0,pl.serveTime)/pl.serveMax; }
+    }
+    ctx.save();
+    if(progress){
+      // ── прогресс-бар поперёк ворот ──
+      const half=gateW*0.34;
+      const ax=gx-px*half, ay=gy-py*half, ex=gx+px*half, ey=gy+py*half;
+      ctx.lineCap='round';
+      ctx.lineWidth=4*ui; ctx.strokeStyle=hexa(COL.ink,.55);
+      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ex,ey); ctx.stroke();
+      ctx.lineWidth=4*ui; ctx.strokeStyle=col; ctx.shadowColor=hexa(col,.6); ctx.shadowBlur=8;
+      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ax+(ex-ax)*frac, ay+(ey-ay)*frac); ctx.stroke();
+    } else {
+      // ── шеврон-вход: накладываем готовый PNG-оверлей (sprite_hangar_arrow.png) ──
+      // Он размером с весь ангар и выровнен «вход вниз», поэтому поворачиваем его тем же
+      // углом, что и базу (по dirOut), чтобы стрелка смотрела к апрону для любой стороны.
+      const arrow=HANDOFF_IMG.hangarArrow;
+      if(_hiOk(arrow)){
+        const ang = o.dy===1 ? 0 : o.dy===-1 ? Math.PI : o.dx===1 ? -Math.PI/2 : Math.PI/2;
+        ctx.translate(b.x+b.w/2, b.y+b.h/2);
+        ctx.rotate(ang);
+        ctx.drawImage(arrow as HTMLImageElement, -b.w/2, -b.h/2, b.w, b.h);
+      }
     }
     ctx.restore();
   }

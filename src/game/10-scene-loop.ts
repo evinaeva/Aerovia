@@ -229,6 +229,8 @@ function drawMenuScene(tm: number){
       else if(LV.biome==='megacity') drawCity(ts);
       _pseg('decor');
       bays.forEach(drawBay);      _pseg('bays');
+      bays.forEach(drawBayGate);           // шеврон↔прогресс на входе — в слое боксов, ПОД бортом
+      bays.forEach(drawBayUpgradePanel);   // зелёная стрелка апгрейда поверх всех боксов
       drawBaySnapZones();
       drawRunwaySnapZones();
       drawMotionPoints();         _pseg('zones');
