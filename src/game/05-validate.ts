@@ -1,7 +1,7 @@
 // ===== 05-validate — runtime config self-checks (fail-fast on broken levels/medals/i18n/economy) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: validateGame, validateLevels, validateBonus, validateI18n, validateConfig, validateAch.
-// Reads: 04 (K, LEVELS, BONUS, Level, levelEconomy, EVENT_KEYS, SVC_TYPES, CALM_LEVELS…); 03 (I18N); 12 (ACH); 07 (validateLeaderboard); 06 (runways, weather).
+// Provides: validateGame, validateLevels, validateBonus, validateBiomes, validateI18n, validateConfig, validateAch.
+// Reads: 04 (K, LEVELS, BONUS, BIOMES, Level, levelEconomy, EVENT_KEYS, SVC_TYPES, CALM_LEVELS…); 03 (I18N); 12 (ACH); 07 (validateLeaderboard); 06 (runways, weather).
 
   function validateLevels(){
     const p: string[] = [];
@@ -102,6 +102,9 @@
       if(lv.latePenalty!=null && !(lv.latePenalty>=0 && lv.latePenalty<=1)) p.push(L+'latePenalty должен быть в [0, 1]');
       if(lv.weather!=null && lv.weather!==true) p.push(L+'weather должен быть true (или отсутствовать)');
       if(lv.deice!=null && lv.deice!==true) p.push(L+'deice должен быть true (или отсутствовать)');
+      // де-айс-бокс без погоды бесполезен: шаг 'deice' запрашивается только при weather==='snow'
+      // (08-gameplay.ts: spawnPlane), а снег возможен только если lv.weather===true
+      if(lv.deice===true && lv.weather!==true) p.push(L+'deice без weather — бокс де-айсинга бесполезен (де-айс запрашивается только при снеге)');
       // экономика уровня (levelEconomy): оплата в границах, голая смена окупает хотя бы
       // ОДИН новый бокс, и с включёнными эффектами весь ожидаемый набор ДОСТИЖИМ —
       // прямая страховка от «не накопить на бокс» и от того, что деньги блокируют 3★
@@ -202,6 +205,34 @@
     });
     return p;
   }
+  // биом-карты (Survival): BIOMES никогда не проходил через validateLevels/validateBonus —
+  // те гуляют только по LEVELS/BONUS. Биомы сами спавнят помехи на ВПП (updateForest →
+  // spawnHazard, 08-gameplay.ts), независимо от lv.weather; spawnHazard() держит инвариант
+  // «хотя бы одна ВПП открыта» лишь когда их ≥2 (на единственной ВПП своя же помеха может
+  // закрыть её целиком) — поэтому здесь требуем ≥2 ВПП у любого биома.
+  function validateBiomes(){
+    const p: string[] = [];
+    if(!Array.isArray(BIOMES)) return p;
+    BIOMES.forEach(b=>{
+      const L = 'BIOME('+b.id+'): ';
+      const lv = b.level;
+      if(!lv){ p.push(L+'нет level'); return; }
+      // в отличие от LEVELS (где weather/deice по умолчанию отсутствуют), BIOMES явно
+      // прописывает false там, где их нет — поэтому здесь допустим именно boolean, а не
+      // только true/отсутствие
+      if(lv.weather!=null && typeof lv.weather!=='boolean') p.push(L+'weather должен быть boolean');
+      if(lv.deice!=null && typeof lv.deice!=='boolean') p.push(L+'deice должен быть boolean');
+      if(lv.deice===true && lv.weather!==true) p.push(L+'deice без weather — бокс де-айсинга бесполезен');
+      const nRunways = lv.layout ? (lv.layout.runways||[]).length : (lv.runways||0);
+      if(nRunways < 2) p.push(L+'у биома (спавнит помехи на ВПП) меньше 2 ВПП — единственная полоса может быть закрыта помехой');
+      const sides = (lv.sides || {}) as Record<string, SideCfg | undefined>;
+      ['top','left','bottom'].forEach(side=>{
+        const c = sides[side];
+        if(c && !SVC_TYPES.includes(c.type)) p.push(L+side+': неизвестный тип бокса "'+c.type+'"');
+      });
+    });
+    return p;
+  }
   // медали (ACH.defs): уникальные id, валидный тир, непустая иконка, флаги-boolean,
   // и у КАЖДОЙ медали есть текст (ach.<id>.t / .d). Реестр медалей — единственный
   // источник правды (как SKIN_DEFS у скинов): тесты ловят битую запись здесь, а не в
@@ -234,4 +265,4 @@
     if(!seen['legend']) p.push('ACH: отсутствует медаль "legend" (на неё завязан checkLegend)');
     return p;
   }
-  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateI18n()).concat(validateConfig()).concat(validateAch()).concat(validateLeaderboard()); }
+  function validateGame(){ return validateLevels().concat(validateBonus()).concat(validateBiomes()).concat(validateI18n()).concat(validateConfig()).concat(validateAch()).concat(validateLeaderboard()); }

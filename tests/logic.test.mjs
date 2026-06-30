@@ -180,6 +180,99 @@ test('validateLevels ловит битый флаг deice', () => {
   assert.ok(game.validateLevels().some(p => /deice/.test(p)), 'битый флаг deice должен отлавливаться');
 });
 
+test('validateLevels ловит deice без weather (бокс де-айсинга бесполезен без снега)', () => {
+  const { game } = boot();
+  game.LEVELS[1].deice = true; game.LEVELS[1].weather = undefined;
+  assert.ok(game.validateLevels().some(p => /deice.*weather|weather.*deice/i.test(p)), 'deice без weather должен отлавливаться');
+});
+
+// ---------- Шаг 7: валидатор биомов (BIOMES) ----------
+
+test('validateBiomes(): текущий реестр биомов валиден (≥2 ВПП, корректные weather/deice)', () => {
+  const { game } = boot();
+  assert.deepEqual([...game.validateBiomes()], []);
+});
+
+test('validateBiomes ловит биом с одной ВПП (помеха может закрыть единственную полосу)', () => {
+  const { game } = boot();
+  const forest = game.BIOMES.find(b => b.id === 'forest');
+  forest.level.runways = 1;
+  assert.ok(game.validateBiomes().some(p => /ВПП/.test(p)), 'биом с 1 ВПП должен отлавливаться');
+});
+
+test('validateBiomes ловит deice без weather на биоме', () => {
+  const { game } = boot();
+  const desert = game.BIOMES.find(b => b.id === 'desert');
+  desert.level.deice = true;                        // desert: weather=false по умолчанию — deice становится бесполезным
+  assert.ok(game.validateBiomes().some(p => /deice/.test(p)));
+});
+
+// ---------- Шаг 7: погодный планировщик, де-айс как шаг routing, плуг расчищает ВПП ----------
+
+test('погодный планировщик: K.WEATHER_SNOW_CHANCE в [0,1], окно непогоды короче периода между окнами', () => {
+  const { game } = boot();
+  const K = game.K;
+  assert.ok(K.WEATHER_SNOW_CHANCE >= 0 && K.WEATHER_SNOW_CHANCE <= 1);
+  assert.ok(K.WEATHER_PERIOD > 0 && K.WEATHER_DUR > 0);
+  assert.ok(K.WEATHER_PERIOD > K.WEATHER_DUR, 'непогода — окно внутри периода, иначе она была бы непрерывной');
+});
+
+test('де-айс — обязательный шаг routing перед depart на deice-уровне во время снега', () => {
+  const { game } = boot();
+  const forest = game.BIOMES.find(b => b.id === 'forest');
+  game.buildBiome(forest); game.reset();
+  game.weather = 'snow';
+  let sawDeice = false;
+  for (let i = 0; i < 30; i++) {
+    game.spawnPlane();
+    const pl = game.planes[game.planes.length - 1];
+    if (pl.medical) continue;                       // медицинский — вне очереди, без де-айса
+    assert.ok(pl.requests.includes('deice'), 'обычный борт должен получить шаг deice при снеге');
+    assert.equal(pl.requests[pl.requests.length - 1], 'depart', 'depart остаётся последним шагом');
+    assert.equal(pl.requests[pl.requests.length - 2], 'deice', 'deice идёт прямо перед depart');
+    sawDeice = true;
+  }
+  assert.ok(sawDeice, 'хотя бы один не-медицинский борт должен был получить шаг deice за 30 спавнов');
+});
+
+test('де-айс не добавляется без снега (ясная погода, тот же deice-уровень)', () => {
+  const { game } = boot();
+  const forest = game.BIOMES.find(b => b.id === 'forest');
+  game.buildBiome(forest); game.reset();
+  game.weather = 'clear';
+  for (let i = 0; i < 10; i++) {
+    game.spawnPlane();
+    const pl = game.planes[game.planes.length - 1];
+    assert.ok(!pl.requests.includes('deice'), 'без снега deice не должен запрашиваться');
+  }
+});
+
+test('плуг расчищает снежную помеху и открывает полосу (snow-hazard → plow → runway open)', () => {
+  const { game } = boot();
+  const forest = game.BIOMES.find(b => b.id === 'forest');
+  game.buildBiome(forest); game.reset();
+  game.weather = 'snow';
+  const r = game.runways[0];
+  const h = { id: 1, kind: 'snow', runway: r, x: r.x + r.w * 0.5, y: r.cy, t: 0, dispatched: false, done: false };
+  r.hazard = h.id; r.closed = true; game.hazards.push(h);
+  game.dispatchCrew(h);
+  assert.equal(game.crews[game.crews.length - 1].kind, 'plow', 'снежная помеха вызывает именно plow-бригаду');
+  for (let i = 0; i < 2000 && !h.done; i++) game.updateForest(0.1);
+  assert.ok(h.done, 'бригада должна доработать и закрыть помеху');
+  assert.equal(r.closed, false, 'полоса вновь открыта после расчистки');
+  assert.equal(r.hazard, null, 'хазард-ссылка на полосе снята');
+});
+
+test('spawnHazard: на биоме (≥2 ВПП) всегда остаётся хотя бы одна открытая полоса', () => {
+  const { game } = boot();
+  const forest = game.BIOMES.find(b => b.id === 'forest');
+  game.buildBiome(forest); game.reset();        // 3 ВПП
+  game.weather = 'snow';
+  for (let i = 0; i < 500; i++) game.spawnHazard();
+  const openCount = game.runways.filter(r => !r.closed).length;
+  assert.ok(openCount >= 1, `должна остаться хотя бы одна открытая ВПП, осталось ${openCount}`);
+});
+
 // ---------- Уровни и прогрессия ----------
 
 test('не менее TUTORIAL_COUNT уровней', () => {
