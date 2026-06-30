@@ -537,15 +537,18 @@
     if(b.lvl >= bayMaxLvl(b)) return null;          // апгрейд выключен или достигнут потолок уровня
     return b.upgCost ?? K.BAY_UP_COST[b.lvl] ?? null;
   }
-  // Прямоугольник зелёного чипа «↑» открытого ангара — ровно то место, где его рисует
-  // drawNeonBay. Апгрейд кликается ТОЛЬКО по этому чипу: тап по остальному телу бокса
-  // больше не апгрейдит, чтобы не перехватывать захват борта, стоящего у ворот.
+  // Прямоугольник зелёной стрелки «↑» открытого ангара — ровно то место, где её рисует
+  // drawBayUpgradePanel. Стрелка в углу со стороны входа-апрона: верх-лево у верхних
+  // боксов (вход вниз), низ-лево у нижних и левых. Апгрейд кликается ТОЛЬКО по этому
+  // прямоугольнику: тап по остальному телу бокса не апгрейдит, чтобы не перехватывать
+  // захват борта, стоящего у ворот.
   function bayUpBtn(b: any){
     if(!b.open || b.deice || LV.bonus || bayUpCost(b)==null) return null;
-    const pad=5*ui, top=(b.side!=='bottom');
-    const bSize=Math.min(b.w*0.34, b.h*0.5, 40*ui);
-    const cs=Math.min(bSize*0.72, 28*ui);
-    return { x:b.x+b.w-pad-cs, y: top ? b.y+pad : b.y+b.h-pad-cs, w:cs, h:cs };
+    const pad=5*ui;
+    const cs=Math.min(b.w*0.30, b.h*0.30, 26*ui);
+    const o=dirOut(b);                                  // вход к апрону: вниз → бокс сверху
+    const ay = o.dy===1 ? b.y+pad : b.y+b.h-pad-cs;     // верх-лево у верхних, иначе низ-лево
+    return { x:b.x+pad, y:ay, w:cs, h:cs };
   }
 
   function down(e: any){

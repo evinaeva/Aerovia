@@ -55,11 +55,11 @@
     HANDOFF_IMG.bg         = loadI(BASE + 'sprite_back_full.png');
     HANDOFF_IMG.apron      = loadI(BASE + 'sprite_apron.png');
     HANDOFF_IMG.vpp        = loadI(BASE + 'sprite_vpp.png');
-    HANDOFF_IMG.vppConn    = loadI(BASE + 'sprite_vpp_conn.png');
     HANDOFF_IMG.hangar     = loadI(BASE + 'sprite_hangar.png');
     HANDOFF_IMG.gate       = loadI(BASE + 'sprite_gate.png');
     HANDOFF_IMG.hud        = loadI(BASE + 'sprite_hud.png');
     HANDOFF_IMG.hangarBase   = loadI(BASE + 'sprite_hangar_base.png');
+    HANDOFF_IMG.hangarArrow  = loadI(BASE + 'sprite_hangar_arrow.png');
     HANDOFF_IMG.svcFuel      = loadI(BASE + 'svc_fuel.png');
     HANDOFF_IMG.svcRepair    = loadI(BASE + 'svc_repair.png');
     HANDOFF_IMG.svcBoard     = loadI(BASE + 'svc_board.png');

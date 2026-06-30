@@ -19,7 +19,6 @@ declare const HANDOFF_IMG: {
   bg:         HTMLImageElement | null;
   apron:      HTMLImageElement | null;
   vpp:        HTMLImageElement | null;
-  vppConn:    HTMLImageElement | null;
   hangar:     HTMLImageElement | null;
   gate:       HTMLImageElement | null;
   hud:        HTMLImageElement | null;
@@ -27,6 +26,7 @@ declare const HANDOFF_IMG: {
   planes:     (HTMLImageElement | HTMLCanvasElement)[];
   ready:      boolean;
   hangarBase:    HTMLImageElement | null;
+  hangarArrow:   HTMLImageElement | null;
   svcFuel:       HTMLImageElement | null;
   svcRepair:     HTMLImageElement | null;
   svcBoard:      HTMLImageElement | null;

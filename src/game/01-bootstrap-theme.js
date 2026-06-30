@@ -75,7 +75,6 @@
     bg: null,         // sprite_back_full.png
     apron: null,      // sprite_apron.png
     vpp: null,        // sprite_vpp.png  (runway strip)
-    vppConn: null,    // sprite_vpp_conn.png  (Y-junction)
     hangar: null,     // sprite_hangar.png  (top bays, legacy fallback)
     gate: null,       // sprite_gate.png    (bottom bays, legacy fallback)
     hud: null,        // sprite_hud.png
@@ -83,6 +82,7 @@
     planes: [],       // [0..3]: livery variants
     ready: false,     // set once plane base loaded
     hangarBase: null,   // sprite_hangar_base.png  (base for all bays)
+    hangarArrow: null,  // sprite_hangar_arrow.png (вход-шеврон, оверлей размером с ангар)
     svcFuel: null,      // svc_fuel.png        — иконка услуги (верхние боксы)
     svcRepair: null,    // svc_repair.png
     svcBoard: null,     // svc_board.png
