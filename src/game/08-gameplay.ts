@@ -415,18 +415,29 @@
   }
   // Зона захвата ВПП. side='land' — посадочный (правый, со стороны неба) торец, купол
   // вправо; side='takeoff' — взлётный (левый, со стороны апрона) торец, купол влево.
+  // Зона — ПОЛОСА во ВЕСЬ торец ВПП (по высоте = вся полоса r.h, не только её середина):
+  // конец маршрута ловится у ЛЮБОГО края торца, а не только напротив центра. Radius задаёт
+  // лишь вылет НАРУЖУ (вдоль оси захода), offset — сдвиг полосы вдоль той же оси.
   function runwayGrabZone(r: any, side: 'land'|'takeoff'){
     const land=side==='land';
     const R=(MT_META_VALUES[land?'RUNWAY_LAND_GRAB_RADIUS':'RUNWAY_TAKEOFF_GRAB_RADIUS'] as number)||0; if(R<=0) return null;
     const off=(MT_META_VALUES[land?'RUNWAY_LAND_GRAB_OFFSET':'RUNWAY_TAKEOFF_GRAB_OFFSET'] as number)||0;
     const ux=land?1:-1, edge=land?r.x+r.w:r.x;
-    return { cx:edge+ux*off, cy:r.cy, r:R, ux, uy:0, square:MT_META_VALUES.RUNWAY_GRAB_SHAPE==='square' };
+    return { cx:edge+ux*off, cy:r.cy, r:R, ux, uy:0, band:true, halfH:r.h/2, square:MT_META_VALUES.RUNWAY_GRAB_SHAPE==='square' };
   }
-  // точка в зоне захвата. z.square = квадрат со стороной 2r с центром в z; иначе
-  // полукруг (в пределах радиуса И на стороне захода, купол по +u).
+  // точка в зоне захвата.
+  // z.band (ВПП) — полоса во весь торец: |dy|≤halfH по высоте полосы, по ширине — вылет
+  //   наружу на r вдоль оси захода (square → симметрично ±r от центра).
+  // иначе (ангар): z.square = квадрат со стороной 2r; semicircle = полукруг (в пределах
+  //   радиуса И на стороне захода, купол по +u).
   function inGrabZone(px: number,py: number,z: any){
     if(!z) return false;
     const dx=px-z.cx, dy=py-z.cy;
+    if(z.band){
+      if(Math.abs(dy) > z.halfH) return false;       // вне высоты торца
+      const along=dx*z.ux+dy*z.uy;                   // вдоль оси захода (для ВПП uy=0 → dx*ux)
+      return z.square ? Math.abs(along)<=z.r : (along>=0 && along<=z.r);
+    }
     if(z.square) return Math.abs(dx)<=z.r && Math.abs(dy)<=z.r;
     if(dx*dx+dy*dy > z.r*z.r) return false;
     return (dx*z.ux+dy*z.uy) >= 0;
