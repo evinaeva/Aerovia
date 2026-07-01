@@ -307,8 +307,9 @@
   /* text */
   --m-text-strong: #dff4ff;
   --m-text-body:   #bcd6f0;
-  --m-text-muted:  #5f7bb0;
-  --m-kicker:      #5f7bb0;
+  /* was #5f7bb0 for both — ~4:1 vs --m-panel/--m-panel-2, under WCAG AA's 4.5:1 for normal text */
+  --m-text-muted:  #6f88b5;
+  --m-kicker:      #6f88b5;
 
   /* semantic accents */
   --m-primary:        #6cc88f;
