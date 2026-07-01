@@ -9,6 +9,9 @@
     // раунд начинается с пустого неба: первый борт прилетает через 1–3 секунды
     spawnTimer=1 + Math.random()*2; running=true; paused=false; inMenu=false;
     lossLog=[]; toast=null;
+    // Лига сезона: активному игроку (есть личный рекорд) при первом заходе Survival в новом сезоне
+    // показываем тост-приглашение «Стартовал Сезон N» — один раз за сезон (season-leagues.md).
+    if(currentMode()==='survival'){ const inv=Leaderboard.season.invite(); if(inv.show){ toast={text:t('toast.seasonStart',{n:inv.number}), t:0, good:true}; Leaderboard.season.ackInvite(); } }
     document.getElementById('pauseScreen')!.classList.add('hidden');
     bays.forEach(b=>{ b.occupied=null;
       if(b.deice){ b.open=true; b.lvl=0; return; }   // де-айс — инфраструктура, всегда открыт
