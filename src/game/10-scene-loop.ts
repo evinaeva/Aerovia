@@ -295,6 +295,7 @@ function drawMenuScene(tm: number){
       money, peak: statPeak, time_s: Math.round(gameTime), lives: Math.max(0, lives),
     });
     ACH.onLevelEnd(passed, stars, lives>=K.START_LIVES);
+    if(passed) requestReviewIfDue();   // удачный момент для системного промпта оценки (docs/play-featuring-plan.md)
     // Survival → счёт захода (обслуженные борта) уходит в глобальный рейтинг; место в
     // таблице открывает пороговые ранг-медали. Каркас: mock-провайдер сейчас, бэкенд потом.
     // Не-survival режимы рейтинг не трогают (кампания/бонусы остаются как есть).
