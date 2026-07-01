@@ -420,21 +420,30 @@ function drawMenuScene(tm: number){
     g.fillStyle=hexa(COL.muted,.9); g.font=`24px ${MONO}`;
     g.fillText((shift.surv?t('over.survival'):(shift.passed?t('over.passed'):t('over.failed')))+' · '+shift.levelName, S/2, 178);
     // «твоё место» в мире — лучший ранг из всех срезов (только Survival, если рейтинг успел прийти)
+    let shareY=222;
     if(shift.surv && shift.ranks){
       const r=['alltime','month','week'].map(p=>shift.ranks[p]).filter((x: any)=>x!=null).sort((a: number,b: number)=>a-b)[0];
-      if(r!=null){ g.fillStyle=COL.gold; g.font=`700 30px ${MONO}`; g.fillText(t('over.shareRank',{rank:r}), S/2, 222); }
+      if(r!=null){ g.fillStyle=COL.gold; g.font=`700 30px ${MONO}`; g.fillText(t('over.shareRank',{rank:r}), S/2, shareY); shareY+=34; }
     }
-    // звёзды
+    // Лига сезона: дивизион + номер сезона (план season-leagues.md — «шеринг-карточка»)
+    if(shift.surv && shift.season && shift.season.divisionIdx!=null){
+      const div=Leaderboard.season.DIVISIONS[shift.season.divisionIdx];
+      g.fillStyle=COL.teal; g.font=`600 26px ${MONO}`;
+      g.fillText(div.ic+' '+t('lb.season.div.'+div.id)+' · '+t('lb.season.title',{n:shift.season.number}), S/2, shareY);
+      shareY+=34;
+    }
+    // звёзды — сдвигаем вниз, если строки ранга/дивизиона выше заняли место (иначе наезжают)
+    const scoreY=Math.max(290, shareY+40), scoreShift=scoreY-290;
     g.fillStyle=COL.gold; g.font=`80px ${MONO}`; g.shadowColor=hexa(COL.gold,.5); g.shadowBlur=24;
-    g.fillText(shift.surv?('✈ '+fmtNum(shift.v)):('★'.repeat(shift.stars)+'☆'.repeat(3-shift.stars)), S/2, 290); g.shadowBlur=0;
-    // плитки статистики 2×2
+    g.fillText(shift.surv?('✈ '+fmtNum(shift.v)):('★'.repeat(shift.stars)+'☆'.repeat(3-shift.stars)), S/2, scoreY); g.shadowBlur=0;
+    // плитки статистики 2×2 (сдвигаются на ту же величину, что и счёт выше)
     const tiles=[
       [shift.metric==='upgrades'?t('stats.upgrades'):t('stats.served'), shift.surv?fmtNum(shift.v):(fmtNum(shift.v)+' / '+fmtNum(shift.target)), COL.phosphor],
       [t('stats.money'), fmtMoney(shift.money), COL.gold],
       [t('stats.peak'), '✈ '+fmtNum(shift.peak), COL.teal],
       [t('stats.time'), fmtTime(shift.time), COL.phosphor],
     ];
-    const tw=440, th=120, gap=40, ox=(S-tw*2-gap)/2, oy=340;
+    const tw=440, th=120, gap=40, ox=(S-tw*2-gap)/2, oy=340+scoreShift;
     tiles.forEach((tl,i)=>{ const cx=ox+(i%2)*(tw+gap), cy=oy+Math.floor(i/2)*(th+gap);
       rrp(g,cx,cy,tw,th,18); g.fillStyle=hexa(COL.phosphor,.05); g.fill();
       g.lineWidth=2; g.strokeStyle=hexa(COL.phosphor,.15); rrp(g,cx,cy,tw,th,18); g.stroke();
@@ -444,9 +453,9 @@ function drawMenuScene(tm: number){
     });
     // график во времени
     g.textAlign='left'; g.textBaseline='alphabetic';
-    g.fillStyle=hexa(COL.muted,.85); g.font=`20px ${MONO}`; g.fillText(t('graph.title').toUpperCase(), ox, 700);
+    g.fillStyle=hexa(COL.muted,.85); g.font=`20px ${MONO}`; g.fillText(t('graph.title').toUpperCase(), ox, 700+scoreShift);
     // drawTimeline использует пиксельные шрифты ~9-11px → масштабируем контекст
-    g.save(); g.translate(ox, 720); g.scale(2.4,2.4);
+    g.save(); g.translate(ox, 720+scoreShift); g.scale(2.4,2.4);
     drawTimeline(g, 0,0, (tw*2+gap)/2.4, 230/2.4, shift); g.restore();
     g.textAlign='center'; g.fillStyle=hexa(COL.phosphor,.5); g.font=`22px ${MONO}`;
     g.fillText('#PlaneFlow', S/2, S-46);

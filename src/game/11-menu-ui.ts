@@ -92,6 +92,8 @@
             '<div style="display:flex;align-items:center;gap:8px;font-size:14px;margin-top:6px">'+
               '<span style="font-size:20px;line-height:1">'+div.ic+'</span>'+
               '<span>'+lbEsc(t('lb.season.div.'+div.id))+'</span>'+
+              (st.promoted ? '<span style="color:var(--m-gold)">▲ '+lbEsc(t('lb.season.promoted'))+'</span>' : '') +
+              (st.relegated ? '<span class="muted">▼ '+lbEsc(t('lb.season.relegated'))+'</span>' : '') +
               (reward ? '<span title="'+lbEsc(t('lb.season.reward'))+'" style="margin-left:auto;width:14px;height:14px;border-radius:50%;background:'+reward.accent+';box-shadow:0 0 6px '+reward.accent+'"></span>' : '')+
             '</div>';
         }).catch(()=>{ seasonBox.innerHTML=''; });

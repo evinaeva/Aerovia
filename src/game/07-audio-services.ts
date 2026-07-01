@@ -1,7 +1,8 @@
 // ===== 07-audio-services — sound synthesis + side services (haptics, analytics, leaderboard) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: SND, HAP, Analytics, Leaderboard, periodBucket, validateLeaderboard,
-//   seasonKey, seasonNumber, seasonDaysLeft, SEASON_DIVISIONS, seasonDivisionIndex.
+//   seasonKey, seasonNumber, seasonDaysLeft, SEASON_DIVISIONS, seasonDivisionIndex,
+//   seasonPercentile, seasonPromote, seasonIdxOf, resolveSeasonDivision.
 // Reads: 03 (t, I18N, lang); 06 (VERSION, served, debug); 12 (ACH).
 
   const SND = (() => {
@@ -251,11 +252,34 @@
     { id:'diamond',  ic:'💎' },
   ];
   // rank — 1-based место в сезонном топе (как из Leaderboard.top('season',…)); total — размер
-  // этого топа. Без ранга (только личный bestScore, вне топ-N) — стартовая база, Bronze.
+  // этого топа. Без ранга (только личный bestScore, вне топ-N) — худший перцентиль (база).
+  function seasonPercentile(rank: number|null, total: number){
+    if(!rank || !total || total<=1) return 1;           // без ранга / вырожденный случай — худший конец
+    return (rank - 1) / total;                          // 0 = лучший, ~1 = худший
+  }
   function seasonDivisionIndex(rank: number|null, total: number){
-    if(!rank || !total || total<=1) return 0;
-    const pct = (rank - 1) / total;                    // 0 = лучший, ~1 = худший
+    const pct = seasonPercentile(rank, total);
     return pct<0.2 ? 4 : pct<0.4 ? 3 : pct<0.6 ? 2 : pct<0.8 ? 1 : 0;
+  }
+  // Promotion/relegation (план, раздел «Дивизионы»): топ ~20% дивизиона за сезон повышается,
+  // низ ~20% понижается, середина остаётся. pct — перцентиль ИГРОКА в его сезонном топе на
+  // момент подведения итога (тот же расчёт, что seasonDivisionIndex — на mock-провайдере это
+  // общий список, не бракет по дивизиону, см. season-leagues.md).
+  function seasonPromote(prevDivisionIdx: number, pct: number){
+    if(pct<0.2) return Math.min(4, prevDivisionIdx+1);
+    if(pct>=0.8) return Math.max(0, prevDivisionIdx-1);
+    return prevDivisionIdx;
+  }
+  function seasonIdxOf(key: string){ return parseInt(String(key).slice(1), 10); }
+  // Назначение дивизиона на сезон — чистая функция от (сохранённая запись прошлого раунда,
+  // индекс ТЕКУЩЕГО сезона, место/размер топа): если рекорд уже за этот сезон — не пересчитываем
+  // (дивизион фиксирован на весь сезон); если рекорд за ПРЕДЫДУЩИЙ сезон — промо/релегейт; иначе
+  // (первый сезон игрока или пропущенные сезоны) — свежее назначение по перцентилю.
+  function resolveSeasonDivision(rec: any, curSeasonIdx: number, rank: number|null, total: number){
+    const pct = seasonPercentile(rank, total);
+    if(rec && seasonIdxOf(rec.seasonKey)===curSeasonIdx) return rec.divisionIdx;
+    if(rec && seasonIdxOf(rec.seasonKey)===curSeasonIdx-1) return seasonPromote(rec.divisionIdx, pct);
+    return seasonDivisionIndex(rank, total);
   }
 
   // Идентичность: реальные аккаунты (выбор продукт-овнера). Сейчас authProvider — mock
@@ -319,23 +343,35 @@
     let provider=mockProvider, started=false;
     // Лига сезона (MVP Фаза 1) — косметика сезона в СВОЁМ сторе, не в ACH.unlocked: ротирует
     // с сезоном, поэтому не может жить там же, где «медаль=навсегда» (см. season-leagues.md).
-    const SEASON_REWARDS_KEY='pf_season_rewards_v1';
+    const SEASON_REWARDS_KEY='pf_season_rewards_v1', SEASON_DIVISION_KEY='pf_season_division_v1';
     const SEASON_ACCENTS=['#c98a4b','#c7d0da','#ffd45e','#7fe0e8','#a9c8ff'];   // Bronze…Diamond
     function loadSeasonRewards(){ try{ const a=JSON.parse(ls.get(SEASON_REWARDS_KEY) || 'null'); return (a&&typeof a==='object')?a:{}; }catch(e){ return {}; } }
     function saveSeasonRewards(o: any){ ls.set(SEASON_REWARDS_KEY, JSON.stringify(o)); }
+    // последний известный дивизион игрока (для promotion/relegation в следующем сезоне) —
+    // {seasonKey, divisionIdx, rank, total, ts}, один рекорд, не журнал.
+    function loadSeasonDivisionRec(){ try{ return JSON.parse(ls.get(SEASON_DIVISION_KEY) || 'null'); }catch(e){ return null; } }
+    function saveSeasonDivisionRec(o: any){ ls.set(SEASON_DIVISION_KEY, JSON.stringify(o)); }
     const season = {
       DIVISIONS: SEASON_DIVISIONS,
       number(ts?: number){ return seasonNumber(ts==null?lbNow():ts); },
       daysLeft(ts?: number){ return seasonDaysLeft(ts==null?lbNow():ts); },
-      // сезонный топ (тот же приём, что top()) + место игрока + дивизион по перцентилю.
+      // сезонный топ (тот же приём, что top()) + место игрока + дивизион. Дивизион фиксируется
+      // на весь сезон при первом вызове в этом сезоне; на границе сезонов — promotion/relegation
+      // от дивизиона прошлого сезона (см. resolveSeasonDivision); pf_season_division_v1 хранит
+      // последний рекорд для этого перехода.
       standing(mode?: string){
         if(!started) Leaderboard.init();
         const acct=Account.current();
         return Promise.resolve(provider.top('season', mode||'survival')).then(list=>{
           const total=list.length, me=acct?list.find((r: any)=>r.accountId===acct.id):null;
-          const rank=me?me.rank:null, divisionIdx=seasonDivisionIndex(rank, total);
+          const rank=me?me.rank:null, curIdx=seasonIndex(lbNow()), rec=loadSeasonDivisionRec();
+          const divisionIdx=resolveSeasonDivision(rec, curIdx, rank, total);
+          const fromPrevSeason = !!(rec && seasonIdxOf(rec.seasonKey)===curIdx-1);
+          const promoted = fromPrevSeason && divisionIdx>rec.divisionIdx;
+          const relegated = fromPrevSeason && divisionIdx<rec.divisionIdx;
+          saveSeasonDivisionRec({ seasonKey:seasonKey(lbNow()), divisionIdx, rank, total, ts:lbNow() });
           return { number:seasonNumber(lbNow()), daysLeft:seasonDaysLeft(lbNow()),
-            rank, total, divisionIdx, division:SEASON_DIVISIONS[divisionIdx].id, list };
+            rank, total, divisionIdx, division:SEASON_DIVISIONS[divisionIdx].id, list, promoted, relegated };
         });
       },
       // один косметический приз на сезон — выдаётся раз, при первом достижении дивизиона

@@ -190,7 +190,9 @@
       get survival(){ return survival; }, set survival(v){ survival=v; },
       currentMode, periodBucket, Leaderboard, ACH, validateLeaderboard,
       seasonKey, seasonNumber, seasonDaysLeft, seasonDivisionIndex, SEASON_DIVISIONS,
+      seasonPercentile, seasonPromote, seasonIdxOf, resolveSeasonDivision,
       showLeaderboard,   // открыть экран рейтинга без розыгрыша реального Survival-захода (e2e)
+      drawShareCard,     // отрисовать карточку шеринга по произвольному снимку смены (e2e)
       get debug(){ return debug; },
       get served(){ return served; }, set served(v){ served=v; },
       // выставить текущий уровень кампании (levelKey=индекс — как в buildLevel)
