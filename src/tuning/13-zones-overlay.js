@@ -325,8 +325,10 @@
       }
       const r = (fd.runways || []).find(x => !x.closed);
       if (!r) return null;
-      if (kind === 'rwland') return { anchor: { x: r.x + r.w, y: r.cy }, u: [1, 0] };   // посадка: правый торец (небо)
-      return { anchor: { x: r.x, y: r.cy }, u: [-1, 0] };                                // взлёт: левый торец (апрон)
+      // ВПП: зона — полоса во весь торец (по высоте полосы), band+halfH передаём в SVG
+      const band = { band: true, halfH: r.h / 2 };
+      if (kind === 'rwland') return { anchor: { x: r.x + r.w, y: r.cy }, u: [1, 0], ...band };   // посадка: правый торец (небо)
+      return { anchor: { x: r.x, y: r.cy }, u: [-1, 0], ...band };                                // взлёт: левый торец (апрон)
     }
     function grabZoneSvg(kind, snap, fd) {
       const def = GRAB_DEFS[kind];
@@ -338,7 +340,11 @@
       const cx = a.x + u[0] * off, cy = a.y + u[1] * off;          // центр зоны
       const square = snap[def.shapeKey] === 'square';
       let out = '';
-      if (R > 0) {
+      if (R > 0 && geom.band) {                                    // ВПП: полоса во весь торец
+        const x0 = square ? cx - R : cx, x1 = square ? cx + R : cx + u[0] * R;
+        const xa = Math.min(x0, x1), w = Math.abs(x1 - x0);
+        out += '<rect x="' + xa + '" y="' + (cy - geom.halfH) + '" width="' + w + '" height="' + (geom.halfH * 2) + '" fill="' + col + '" fill-opacity=".10" stroke="' + col + '" stroke-width="1.4" stroke-dasharray="5 4"/>';
+      } else if (R > 0) {
         if (square) {                                              // квадрат со стороной 2R
           out += '<rect x="' + (cx - R) + '" y="' + (cy - R) + '" width="' + (R * 2) + '" height="' + (R * 2) + '" fill="' + col + '" fill-opacity=".10" stroke="' + col + '" stroke-width="1.4" stroke-dasharray="5 4"/>';
         } else {                                                   // полукруг (купол по +u)

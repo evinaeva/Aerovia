@@ -176,6 +176,7 @@
       analyzeLevel, countOpenHangars, countTotalHangars, countOpenRunwayDirections, autoDifficulty, validatePassable, campaignTarget, archetypeForIndex,
       dayCycle, weatherTaxiMult, neededCrew, planePrimaryState, fmtNum, fmtMoney,
       followPath, smoothRoute,   // тесты следования/сглаживания маршрута (см. tests/logic.test.mjs)
+      runwayGrabZone, inGrabZone, bayGrabZone,   // геометрия зон захвата (tests/grab-zone.test.mjs)
       bonusAfter, bonusUnlocked, bonusName,
       get nightAmount(){ return nightAmount; },
       get weather(){ return weather; }, set weather(v){ weather=v; weatherUntil=Infinity; },

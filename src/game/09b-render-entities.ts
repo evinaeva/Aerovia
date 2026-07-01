@@ -77,6 +77,12 @@
   // (дуга купола по +u + плоская хорда через центр).
   function strokeGrabZone(z: any){
     if(!z) return;
+    if(z.band){                                            // ВПП: полоса во весь торец полосы
+      const x0 = z.square ? z.cx-z.r : z.cx;
+      const x1 = z.square ? z.cx+z.r : z.cx + z.ux*z.r;
+      ctx.strokeRect(Math.min(x0,x1), z.cy-z.halfH, Math.abs(x1-x0), z.halfH*2);
+      return;
+    }
     if(z.square){ ctx.strokeRect(z.cx-z.r, z.cy-z.r, z.r*2, z.r*2); return; }
     const a=Math.atan2(z.uy, z.ux);
     ctx.beginPath(); ctx.arc(z.cx, z.cy, z.r, a-Math.PI/2, a+Math.PI/2); ctx.closePath(); ctx.stroke();
