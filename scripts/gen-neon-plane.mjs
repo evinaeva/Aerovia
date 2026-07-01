@@ -152,6 +152,11 @@ async function buildNeonSprite(srcPath, outPath) {
 }
 
 // ── Variants ───────────────────────────────────────────────────────────────
+// ВНИМАНИЕ: ливрейные варианты сейчас НЕ поставляются как отдельные файлы — в рантайме
+// они переиспользуют базовый plane.png (см. PLANE_LIVERY_FALLBACK в src/game/02-sprites.ts
+// и docs/memory-android17.md), чтобы не тащить дубликаты битмапов. Если регенерируешь их
+// как РАЗЛИЧАЮЩИЕСЯ ливреи — верни их id в assets/sprites/neon/manifest.json: фолбэк тогда
+// автоматически предпочтёт собственный файл варианта.
 await buildNeonSprite(SRC, join(NEON, 'plane.png'));
 
 // VIP: gold tint
