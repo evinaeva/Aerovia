@@ -858,8 +858,12 @@
   /* brand: wordmark · tagline (kicker/ver убраны). Блок сдвинут вправо так, чтобы левый
      край самолёта (= левый край блока) совпал с левым краем полосы ВПП меню-сцены:
      drawMenuLanding (10-scene-loop) рисует полосу от x1=128 (лев. край) в лок.коорд.,
-     масштаб x*W/960 → 128/960 ≈ 13.33% ширины. */
-  #startScreen .pf-brand{ --brand-mark-fs:60px; left:calc(100% * 128 / 960); top:50%; transform:translateY(-50%);
+     масштаб x*W/960 → 128/960 ≈ 13.33% ширины.
+     Кегль марки адаптивен по ширине окна (clamp по vw): на десктопе 60px, на узком
+     ландшафте ужимается, чтобы слово+тэглайн (обе строки ~7em/6em кегля) не налезали
+     на CTA-панель справа — раньше фикс. 60/40px оставлял «дыру» в ~561–770px, где
+     бренд перекрывал панель (iPhone SE в ландшафте). Портрет задаёт свой кегль ниже. */
+  #startScreen .pf-brand{ --brand-mark-fs:clamp(24px, 5vw, 60px); left:calc(100% * 128 / 960); top:50%; transform:translateY(-50%);
     max-width:min(46%,460px); text-align:left; z-index:2; }
   #startScreen .brand__mark{ font-family:var(--m-font-display); font-weight:700; font-size:var(--brand-mark-fs);
     line-height:1; letter-spacing:0; color:var(--m-text-strong); display:inline-flex; align-items:center;
@@ -895,16 +899,13 @@
   /* corner icon-кнопки — синий неон-чип вместо тёмно-фиолетового */
   #startScreen .pf-corner .icon-btn{ background:rgba(16,30,66,0.6); }
 
-  /* small landscape: keep the two side clusters from colliding */
-  @media (max-width:560px){
-    #startScreen .pf-brand{ --brand-mark-fs:40px; }
-    #startScreen .pf-cta{ width:min(46%,260px); }
-  }
-  /* короткий landscape на телефоне: компактнее панель и бренд (spec §8) */
+  /* короткий landscape на телефоне: компактнее панель (spec §8). Кегль бренда и
+     ширину панели больше не форсим отдельными брейкпоинтами — марка адаптивна
+     по vw (clamp выше), а базовая ширина панели min(40%,308px) уже не даёт бренду
+     налезть. Прежний оверрайд ширины до 46% лишь усиливал перекрытие — убран. */
   @media (max-height:480px){
-    #startScreen .pf-cta{ width:min(46%,268px); padding:18px 18px; }
+    #startScreen .pf-cta{ padding:18px 18px; }
     #startScreen .pf-cta .menu-col{ gap:10px; }
-    #startScreen .pf-brand{ --brand-mark-fs:40px; }
   }
 
   /* ── ПОРТРЕТ (телефон вертикально — основной формфактор). Ландшафтная раскладка
