@@ -38,6 +38,45 @@
     }
     ctx.fillStyle=_vigGrad; ctx.fillRect(0,0,W,H);
   }
+  // ── Кэш пред-масштабированных спрайтов ──────────────────────────────────────
+  // Крупные исходники (svc_*.png ~1254², sprite_hangar_base/arrow 176²) рисуются
+  // КАЖДЫЙ кадр уменьшенными до размера бокса/пузырька/шага-карточки. Прямой
+  // drawImage большого источника в маленький rect каждый кадр гоняет дорогой
+  // высококачественный даунсэмпл заново — это и есть горячие секции профайлера
+  // «bays»/«zones»/«planes» на телефоне (боксы, стрелка-вход, пузырёк нужды).
+  // Печём каждый (источник × целевой размер) ОДИН раз в маленький канвас и дальше
+  // блитим его 1:1 — тот же пиксель-результат, без пере-даунсэмпла каждый кадр.
+  // Размеры целей стабильны в раунде (бокс квадратный и постоянный, пузырёк 33·ui,
+  // шаг 28·ui) → все боксы делят одну запись на источник, карта не «пляшет».
+  // Ключ — id источника + округлённый размер; карта ограничена (LRU) и чистится
+  // при уходе вкладки в фон (memory-android17). Возвращает null, если печь нечем
+  // или незачем (нет document, размеры нулевые, источник не крупнее цели) — тогда
+  // вызывающий рисует исходник напрямую (прежнее поведение, без визуальных отличий).
+  let _ssSeq = 0;
+  const _ssId = new WeakMap<object, string>();
+  function _ssKeyOf(img: any): string { let k=_ssId.get(img); if(k==null){ k = String((img && img.src) || ('c'+(++_ssSeq))); _ssId.set(img, k); } return k; }
+  const _ssCache = new Map<string, HTMLCanvasElement>();
+  const _SS_MAX = 48;
+  function scaledSprite(img: any, w: number, h: number): HTMLCanvasElement | null {
+    if(!img || typeof document === 'undefined') return null;
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    if(!(iw>0 && ih>0)) return null;
+    const dw = Math.max(1, Math.round(w)), dh = Math.max(1, Math.round(h));
+    if(iw<=dw && ih<=dh) return null;                       // источник не крупнее цели → даунсэмпла нет
+    const key = _ssKeyOf(img) + '|' + dw + 'x' + dh;
+    let c = _ssCache.get(key);
+    if(c){ _ssCache.delete(key); _ssCache.set(key, c); return c; }   // LRU: освежаем запись
+    c = document.createElement('canvas'); c.width = dw; c.height = dh;
+    const g = c.getContext('2d'); if(!g) return null;
+    // те же дефолты сглаживания, что у экранного ctx → пиксель-в-пиксель как прежний
+    // прямой drawImage, только даунсэмпл считается один раз, а не каждый кадр.
+    g.drawImage(img, 0, 0, dw, dh);
+    _ssCache.set(key, c);
+    if(_ssCache.size > _SS_MAX){ const first = _ssCache.keys().next().value; if(first!==undefined) _ssCache.delete(first); }
+    return c;
+  }
+  function clearScaledSpriteCache(){ _ssCache.clear(); }
+
   function heart(x: number,y: number,r: number,fill?: string|null){ // жизни в HUD
     if(ATLAS && SPRITES.blitC(fill?'heart':'heart-empty', x, y, r*6, r*6)) return;
     ctx.save(); ctx.translate(x,y); ctx.beginPath(); ctx.moveTo(0,r*0.7);
