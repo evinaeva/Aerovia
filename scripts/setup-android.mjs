@@ -239,6 +239,20 @@ public class FirebaseAnalyticsPlugin extends Plugin {
 }
 `;
 
+// ProGuard/R8 keep-правила для RELEASE-шринка (Фаза 3, docs/memory-android17.md).
+// R8 в релизе минифицирует и переименовывает код; наши Capacitor-плагины мост зовёт
+// РЕФЛЕКСИЕЙ по имени класса/метода (@CapacitorPlugin / @PluginMethod), поэтому их надо
+// явно сохранить — иначе Snapshots/InstallReferrer/FirebaseAnalytics молча отвалятся в
+// релизе. Capacitor-core, play-services и firebase несут свои consumer-правила в AAR,
+// их держать не нужно. Наши классы все в пакете com.planeflow.game — сохраняем целиком.
+const PROGUARD_RULES = `# planeflow — генерируется scripts/setup-android.mjs (Фаза 3, docs/memory-android17.md).
+# R8-шринк релиза не должен трогать Capacitor-плагины (мост зовёт их рефлексией по имени).
+-keep @com.getcapacitor.annotation.CapacitorPlugin public class * { *; }
+-keepclassmembers class * { @com.getcapacitor.annotation.PluginMethod <methods>; }
+# Наши плагины и MainActivity (регистрируются по классу; методы — рефлексией).
+-keep class com.planeflow.game.** { *; }
+`;
+
 if (!existsSync(A)) {
   console.error('android/ not found — run `npx cap add android` first.');
   process.exit(1);
@@ -328,6 +342,30 @@ patch('app/build.gradle', (s) => {
   return out;
 });
 
+// R8 / shrink для RELEASE (docs/memory-android17.md, Фаза 3). Capacitor по умолчанию
+// ставит `minifyEnabled false`, т.е. в релизе нет ни минификации кода (R8), ни отсева
+// неиспользуемых ресурсов. Включаем оба + optimize-профиль ProGuard (full-mode R8 —
+// дефолт AGP 8, фиксируем явно в gradle.properties ниже). ProGuard-правила для наших
+// Capacitor-плагинов пишем в proguard-rules.pro (см. ниже), иначе R8 может выкинуть
+// методы, которые мост зовёт рефлексией по имени. Идемпотентно (гейт по shrinkResources).
+patch('app/build.gradle', (s) => {
+  if (s.includes('shrinkResources')) return s;
+  if (/minifyEnabled\s+false/.test(s))
+    return s
+      .replace(/minifyEnabled\s+false/, 'minifyEnabled true\n            shrinkResources true')
+      .replace(/getDefaultProguardFile\('proguard-android\.txt'\)/,
+        "getDefaultProguardFile('proguard-android-optimize.txt')");
+  // релиз-блок без явного minifyEnabled — вставляем директивы в начало release { }
+  return s.replace(/(buildTypes\s*\{\s*[\r\n]+\s*release\s*\{)/,
+    "$1\n            minifyEnabled true\n            shrinkResources true\n" +
+    "            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'");
+});
+
+// full-mode R8 — дефолт в AGP 8, но фиксируем явно (документирует намерение; защита от
+// регресса, если Capacitor-шаблон когда-нибудь выставит false).
+patch('gradle.properties', (s) =>
+  s.includes('android.enableR8.fullMode') ? s : s.replace(/\s*$/, '\nandroid.enableR8.fullMode=true\n'));
+
 // 2) local.properties (machine-specific SDK path; never committed)
 {
   const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
@@ -376,6 +414,12 @@ patch('app/src/main/AndroidManifest.xml', (s) => {
 // 6) Fullscreen / immersive MainActivity
 writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/MainActivity.java'), MAIN_ACTIVITY);
 log('wrote: MainActivity.java (immersive)');
+
+// 6b) ProGuard/R8 keep-правила (release-шринк, Фаза 3) — рядом с app/build.gradle,
+// который ссылается на 'proguard-rules.pro'. Перезаписываем целиком: наши правила
+// самодостаточны (Capacitor-шаблонный файл — только комментарии-заготовка).
+writeFileSync(join(A, 'app/proguard-rules.pro'), PROGUARD_RULES);
+log('wrote: app/proguard-rules.pro (keep Capacitor plugins under R8)');
 
 // 7) Saved Games (Snapshots) плагин — рядом с MainActivity (тот же пакет com.planeflow.game)
 writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/SnapshotsPlugin.java'), SNAPSHOTS_PLUGIN);

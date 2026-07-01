@@ -48,6 +48,14 @@ jobs:
       - name: Юнит-тесты (страховка перед публикацией)
         run: node --test tests/*.test.mjs
 
+      # Бюджет памяти Android 17 (docs/memory-android17.md, Фаза 4): собираем бандл www/
+      # и падаем при превышении байт-бюджета www/assets, слишком крупном битмапе или
+      # дубликатах по хэшу. Делает правила из доки машинно-обязательными на каждый push.
+      - name: Бюджет памяти — гард по www/assets (Android 17)
+        run: |
+          node scripts/build-www.mjs
+          node scripts/check-asset-budget.mjs
+
       # OTA (self-host): на каждый push в main собираем веб-бандл, зипуем www/ и заливаем на свой
       # VPS — Caddy раздаёт /bundles, responder /updates сравнивает версии и отдаёт бандл устройствам
       # (см. capacitor.config.ts и docs/capgo-self-host-migration.md). Пока секрет OTA_SSH_KEY не

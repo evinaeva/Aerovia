@@ -14,15 +14,26 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WWW = join(ROOT, 'www');
 const ASSETS = join(ROOT, 'assets');
 
-// Ассеты, которых НЕ должно быть в поставке (APK/OTA/PWA) — только dev/tuning-инструментарий.
-// Держим бандл маленьким ради лимита памяти Android 17 (см. docs/memory-android17.md).
+// Ассеты, которых НЕ должно быть в поставке (APK/OTA/PWA) — только dev/tuning-инструментарий
+// или мёртвый вес, который игра нигде не грузит. Держим бандл маленьким ради лимита памяти
+// Android 17 (см. docs/memory-android17.md); CI-гард scripts/check-asset-budget.mjs следит,
+// чтобы бюджет не рос. Всё перечисленное остаётся в репо (Pages/tuning/задел) — фильтруется
+// ТОЛЬКО из www/.
 //   • assets/skins/**        — тестовый набор скинов ТОЛЬКО для tuning-воркбенча
 //                              (Pages отдаёт их из корня репо; сама игра их не грузит).
 //   • *_src_reference.png    — исходники-референсы для генераторов спрайтов (dev-only).
+//   • *.card.html            — dev-карточки предпросмотра скина/палитры (design), не арт.
+//   • *_overview.png         — контакт-лист спрайтов (dev), кодом не грузится.
+//   • sprites/neon/app-icon.png — байт-в-байт дубль icon/icon-512.png, нигде не референсится.
+//   • hud/wow-bar.png        — задел WOW-рескина, кодом пока не грузится (2872 px, ~1 МБ).
 function shipAsset(src) {
   const rel = relative(ASSETS, src).split(sep).join('/');
   if (rel === 'skins' || rel.startsWith('skins/')) return false;
   if (rel.endsWith('_src_reference.png')) return false;
+  if (rel.endsWith('.card.html')) return false;
+  if (rel.endsWith('_overview.png')) return false;
+  if (rel === 'sprites/neon/app-icon.png') return false;
+  if (rel === 'hud/wow-bar.png') return false;
   return true;
 }
 
