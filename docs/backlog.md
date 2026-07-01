@@ -180,11 +180,13 @@
 > **Фаза 0 (чистка мёртвого веса: `www/assets` ~28 → ~18 МБ) — сделана**
 > ([PR #376](https://github.com/evinaeva/Aerovia/pull/376)). Ниже — что ещё не сделано.
 
-1. **Фаза 1 — сброс регенерируемых кэшей.** На `visibilitychange:hidden` и событие
-   `freeze` (Page Lifecycle) чистить SVG-raster `cache`, `zoneImgCache` и offscreen-буферы
-   (`_apronNeonCv`) в [`02-sprites.ts`](../src/game/02-sprites.ts) / [`09-render.ts`](../src/game/09-render.ts);
-   дать SVG-`cache` границу (LRU/лимит ключей). rAF-пауза в фоне уже есть — не регрессировать.
-   **Сложность:** низкая.
+1. ~~**Фаза 1 — сброс регенерируемых кэшей.**~~ **Готово.** На `visibilitychange:hidden`
+   и событие `freeze` (Page Lifecycle) `releaseTransientMemory()` в
+   [`10-scene-loop.ts`](../src/game/10-scene-loop.ts) чистит SVG-raster `cache`,
+   `zoneImgCache` и производные `patterns` (`SPRITES.releaseCaches()` в
+   [`02-sprites.ts`](../src/game/02-sprites.ts)) и отпускает offscreen-буфер неон-линии
+   апрона (`_apronNeonCv` в [`09-render.ts`](../src/game/09-render.ts)). SVG-`cache`
+   получил границу (`CACHE_MAX`, FIFO-вытеснение на промахе). rAF-пауза в фоне не тронута.
 2. **Фаза 2 — правильный размер арта.** Замерить пиксельные размеры крупнейших PNG
    (`sprite_back_full.png` 2.25 МБ и т.п.), даунсемплить до макс. экранного при `dpr 2`;
    где нет прозрачности — хранить без альфа-канала. Это доводит бюджет `www/assets` до цели ≤12 МБ.
