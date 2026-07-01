@@ -854,17 +854,25 @@
   #startScreen .pf-corner{ right:7%; bottom:18px; display:flex; gap:10px; z-index:3; }
   #startScreen .corner-debug{ left:18px; bottom:18px; z-index:3; }
 
-  /* brand: wordmark · tagline (kicker/ver убраны) */
-  #startScreen .pf-brand{ left:7%; top:50%; transform:translateY(-50%); max-width:min(46%,460px);
-    text-align:left; z-index:2; }
-  #startScreen .brand__mark{ font-family:var(--m-font-display); font-weight:700; font-size:52px;
+  /* brand: wordmark · tagline (kicker/ver убраны). Блок сдвинут вправо так, чтобы левый
+     край самолёта (= левый край блока) совпал с левым краем полосы ВПП меню-сцены:
+     drawMenuLanding (10-scene-loop) рисует полосу от x1=128 (лев. край) в лок.коорд.,
+     масштаб x*W/960 → 128/960 ≈ 13.33% ширины. */
+  #startScreen .pf-brand{ --brand-mark-fs:60px; left:calc(100% * 128 / 960); top:50%; transform:translateY(-50%);
+    max-width:min(46%,460px); text-align:left; z-index:2; }
+  #startScreen .brand__mark{ font-family:var(--m-font-display); font-weight:700; font-size:var(--brand-mark-fs);
     line-height:1; letter-spacing:0; color:var(--m-text-strong); display:inline-flex; align-items:center;
     gap:.24em; margin:6px 0 0; }
   #startScreen .brand__mark .mic svg{ width:.78em; height:.78em; }
   #startScreen .brand__plane{ color:var(--m-accent); filter:drop-shadow(0 0 8px var(--m-accent)); }
   #startScreen .brand__word{ display:inline-flex; }
   #startScreen .brand__w1,#startScreen .brand__w2{ display:inline; }
-  #startScreen .brand__tag{ display:block; margin-top:16px; font-size:17px; font-weight:700;
+  /* тэглайн: левый край под буквой «P» слова (отступ = иконка .78em + гэп .24em = 1.02em
+     кегля маркИ). Кегль подобран так, чтобы ширина строки совпала с шириной слова
+     «PLANEFLOW»: и слово, и тэглайн линейны по --brand-mark-fs, поэтому коэффициент
+     0.35 держит равенство ширин на всех брейкпоинтах (подобрано под англ. тэглайн). */
+  #startScreen .brand__tag{ display:block; margin-top:16px; margin-left:calc(var(--brand-mark-fs) * 1.02);
+    font-size:calc(var(--brand-mark-fs) * 0.35); font-weight:700; white-space:nowrap;
     color:var(--m-text-body); text-shadow:0 1px 8px rgba(0,0,0,.5); text-align:left; }
 
   /* CTA group — vertical centering via margin (NOT transform: the .panel
@@ -888,15 +896,14 @@
 
   /* small landscape: keep the two side clusters from colliding */
   @media (max-width:560px){
-    #startScreen .brand__mark{ font-size:40px; }
+    #startScreen .pf-brand{ --brand-mark-fs:40px; }
     #startScreen .pf-cta{ width:min(46%,260px); }
   }
   /* короткий landscape на телефоне: компактнее панель и бренд (spec §8) */
   @media (max-height:480px){
     #startScreen .pf-cta{ width:min(46%,268px); padding:18px 18px; }
     #startScreen .pf-cta .menu-col{ gap:10px; }
-    #startScreen .brand__mark{ font-size:40px; }
-    #startScreen .brand__tag{ font-size:15px; }
+    #startScreen .pf-brand{ --brand-mark-fs:40px; }
   }
 
 /* ============================================================
