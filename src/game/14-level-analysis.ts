@@ -450,6 +450,22 @@
   // autoDifficulty упал бы в TDZ. Модуль исполняется между 05 и 06, т.е. ДО того, как
   // кто-либо (стейт, меню, validateGame) читает длину кампании. Детерминированно —
   // без Math.random: одни и те же 50 уровней в каждой сессии.
+  //
+  // МАКСИМУМ ТРИ ЦЕЛИ НА ТИР: autoDifficulty (для редактора) генерирует ВСЕ факторы,
+  // но на карточке целей 6 условий разом нечитаемы. Кампания оставляет основную
+  // метрику (борта) + до ДВУХ акцентных доп-условий архетипа (как в референсе:
+  // «счёт + деньги», «счёт + время» и т.п., star-conditions.md §2). Списки — в
+  // порядке приоритета: если условие не сгенерировано (напр. money опущен
+  // экономикой), берётся следующее. Снятие условий проходимость не ломает.
+  const CAMPAIGN_GOALS: Record<string, string[]> = {
+    mixed:    ['timeTier','lives','maxCrash'],
+    economy:  ['money','upg','lives'],
+    speed:    ['timeTier','maxLate','lives'],
+    flawless: ['maxLate','maxCrash','lives'],
+    upgrades: ['upg','timeTier','money'],
+    traffic:  ['lives','maxLate','timeTier'],
+  };
+  const EXTRA_GOAL_KEYS = ['upg','money','lives','timeTier','maxLate','maxCrash'];
   for(const spec of CAMPAIGN_PLAN){
     const n = LEVELS.length + 1;                        // 1-based номер собираемого уровня
     const layout = CAMPAIGN_LAYOUTS[spec.lay]();        // своя копия — цены штампуются per-уровень
@@ -457,6 +473,10 @@
     const arch   = spec.archetype ?? archetypeForIndex(n);
     const lv: Level = { layout, events: spec.events, target, archetype: arch } as Level;
     const k = autoDifficulty(target, lv, { archetype: arch });
+    const keep = (CAMPAIGN_GOALS[arch] || [])
+      .filter(key => (k.objective as any)[key] != null).slice(0, 2);
+    for(const key of EXTRA_GOAL_KEYS)
+      if(!keep.includes(key)) delete (k.objective as any)[key];
     lv.pace = k.pace; lv.objective = k.objective;
     lv.maxUp = k.maxUp; lv.minUp = k.minUp; lv.startMoney = k.startMoney;
     lv.crashPenalty = k.crashPenalty; lv.latePenalty = k.latePenalty;

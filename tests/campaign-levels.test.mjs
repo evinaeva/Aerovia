@@ -68,6 +68,16 @@ test('кривая: target собранных уровней следует camp
   });
 });
 
+test('максимум три цели на тир: борта + не больше двух акцентных доп-условий', () => {
+  const { game } = boot();
+  const EXTRA = ['upg', 'money', 'lives', 'timeTier', 'maxLate', 'maxCrash'];
+  game.LEVELS.forEach((lv, i) => {
+    const extras = EXTRA.filter(k => lv.objective[k] != null);
+    assert.ok(extras.length <= 2,
+      `L${i + 1}: целей больше трёх (борта + ${extras.join('+')}) — карточка целей нечитаема`);
+  });
+});
+
 test('пол фрустрации: 1★ ни на одном уровне не требует нулевой чистоты', () => {
   const { game } = boot();
   game.LEVELS.forEach((lv, i) => {
