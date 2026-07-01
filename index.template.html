@@ -233,7 +233,8 @@
     </div>
   </div>
 
-  <!-- Экран глобального рейтинга (каркас): срезы all-time/month/week, метрика survival = борта.
+  <!-- Экран глобального рейтинга (каркас): срезы all-time/month/week + вкладка «Сезон» (лига
+       сезона, MVP Фаза 1 — #lbSeason: дивизион/отсчёт/косметика), метрика survival = борта.
        Данные сейчас от mock-провайдера (Leaderboard.provider); реальный бэкенд — без правок UI. -->
   <div class="overlay hidden" id="leaderboardScreen">
     <div class="screen" style="padding:22px 24px 20px">
@@ -244,6 +245,7 @@
           <div class="m-counter" id="lbMode">✈ Survival</div>
         </div>
         <div id="lbTabs" style="display:flex;gap:8px;margin-top:14px"></div>
+        <div id="lbSeason" class="hidden" style="margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05)"></div>
         <div class="scroller" style="flex:1;min-height:0;margin-top:12px;justify-content:flex-start">
           <div id="lbList"></div>
         </div>
