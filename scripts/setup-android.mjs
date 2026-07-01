@@ -13,7 +13,7 @@
 //
 // Idempotent: safe to run repeatedly. local.properties + buildToolsVersion are derived from
 // ANDROID_HOME so the script stays portable across machines.
-import { readFileSync, writeFileSync, copyFileSync, existsSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, copyFileSync, existsSync, readdirSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -251,6 +251,19 @@ const PROGUARD_RULES = `# planeflow — генерируется scripts/setup-a
 -keepclassmembers class * { @com.getcapacitor.annotation.PluginMethod <methods>; }
 # Наши плагины и MainActivity (регистрируются по классу; методы — рефлексией).
 -keep class com.planeflow.game.** { *; }
+# Crashlytics: R8 full-mode strips line numbers by default — without this, crash stack
+# traces from the field are useless even after de-obfuscation with the uploaded mapping file.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+`;
+
+// Явный запрет cleartext-трафика (docs/play-featuring-plan.md, Privacy & Security). Всё, с чем
+// говорит приложение (Firebase, Play Games, Capgo OTA), уже HTTPS — этот файл просто закрывает
+// дефолтный Android-фолбэк на cleartext явным запретом, ничего не меняя в поведении.
+const NETWORK_SECURITY_CONFIG = `<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
 `;
 
 if (!existsSync(A)) {
@@ -342,6 +355,36 @@ patch('app/build.gradle', (s) => {
   return out;
 });
 
+// Crashlytics + Performance Monitoring: root build.gradle classpath (docs/play-featuring-plan.md,
+// Technical Quality → "healthy releases"/crash visibility). Same Firebase project as Analytics
+// above — no new console setup, just two more Gradle plugins on the already-wired google-services.json.
+patch('build.gradle', (s) => {
+  let out = s;
+  if (!out.includes('firebase-crashlytics-gradle'))
+    out = out.replace(
+      /classpath 'com\.android\.tools\.build:gradle:[^']+'/,
+      (m) => m + "\n        classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.7'");
+  if (!out.includes('com.google.firebase:perf-plugin'))
+    out = out.replace(
+      /classpath 'com\.android\.tools\.build:gradle:[^']+'/,
+      (m) => m + "\n        classpath 'com.google.firebase:perf-plugin:2.0.2'");
+  return out;
+});
+
+// Crashlytics + Performance Monitoring: apply plugins + dependencies (app/build.gradle).
+// Both auto-instrument (native crash capture, network/screen-render tracing) — no custom
+// Capacitor plugin/Java class needed, unlike Analytics' logEvent bridge.
+patch('app/build.gradle', (s) => {
+  let out = s;
+  if (!out.includes('com.google.firebase.crashlytics'))
+    out = out.replace("apply plugin: 'com.google.gms.google-services'",
+      "apply plugin: 'com.google.gms.google-services'\napply plugin: 'com.google.firebase.crashlytics'\napply plugin: 'com.google.firebase.firebase-perf'");
+  if (!out.includes('firebase-crashlytics'))
+    out = out.replace("implementation 'com.google.firebase:firebase-analytics'",
+      "implementation 'com.google.firebase:firebase-analytics'\n    implementation 'com.google.firebase:firebase-crashlytics'\n    implementation 'com.google.firebase:firebase-perf'");
+  return out;
+});
+
 // R8 / shrink для RELEASE (docs/memory-android17.md, Фаза 3). Capacitor по умолчанию
 // ставит `minifyEnabled false`, т.е. в релизе нет ни минификации кода (R8), ни отсева
 // неиспользуемых ресурсов. Включаем оба + optimize-профиль ProGuard (full-mode R8 —
@@ -388,6 +431,20 @@ patch('app/src/main/AndroidManifest.xml', (s) => {
     out = out.replace('<activity\n', '<activity\n            android:screenOrientation="sensorLandscape"\n');
   return out;
 });
+
+// 4b) Network security config: no cleartext, ever. Everything we talk to (Firebase, PGS,
+// Capgo OTA) is already HTTPS — this just makes that explicit and closes the gap flagged in
+// docs/play-featuring-plan.md (Privacy & Security → network security config not audited).
+patch('app/src/main/AndroidManifest.xml', (s) =>
+  s.includes('networkSecurityConfig') ? s
+    : s.replace('<application\n', '<application\n        android:networkSecurityConfig="@xml/network_security_config"\n'));
+
+{
+  const dir = join(A, 'app/src/main/res/xml');
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'network_security_config.xml'), NETWORK_SECURITY_CONFIG);
+  log('wrote: res/xml/network_security_config.xml (cleartext disabled)');
+}
 
 // 5) Launcher icon — our art into every density, adaptive background = our image
 {

@@ -828,7 +828,6 @@
     }
     lossLog.push({t:gameTime, reason});
     if(lossLog.length>12) lossLog.shift();
-    console.log('[PlaneFlow] '+(livesInfinite()?'(∞) ':'-1 ✈ ')+t(reason)+' | t='+fmtTime(gameTime)+' | lives='+lives);
   }
   function killAir(pl: any){ logLoss(pl, 'loss.airTimeout'); }
   function killCrash(pl: any, reason?: string){ logLoss(pl, reason||'loss.collision', LV.crashPenalty ?? 0); }

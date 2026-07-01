@@ -42,7 +42,9 @@
   // процедурную отрисовку (COL уважает THEME.tokens), и подписи/иконки.
   const NEON_TOKENS = {
     ink:'#070c1c', tarmac:'#0c1430', 'tarmac-2':'#0f1a3c', water:'#081024',
-    phosphor:'#3ad2ff', 'cream-100':'#dff4ff', muted:'#5f7bb0',
+    phosphor:'#3ad2ff', 'cream-100':'#dff4ff',
+    // was #5f7bb0 — only ~4:1 vs tarmac-2, under WCAG AA's 4.5:1; matches --m-text-muted's target.
+    muted:'#6f88b5',
     amber:'#ffb13b', teal:'#22e3c6', ice:'#5fd2ff', rose:'#ff4f9d',
     gold:'#ffd23b', life:'#ff3b6b',
     // neon-геймплей (handoff): праймари-зелёный (купленный апгрейд), сирень (цель/VIP),
