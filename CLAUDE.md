@@ -86,6 +86,28 @@ can be tightened later: plane objects and the transient forest `hazard`/`run`
 state are `any` (large mutable shapes), and the audio/Web-Audio nodes are `any`.
 If you add a `// @ts-nocheck` while mid-edit, the build strips it from the bundle.
 
+## Memory budget — must hold in every PR (Android 17)
+
+Android 17 enforces a **hard per-process RAM limit** and **silently kills** apps that
+exceed it (`ApplicationExitInfo` → `MemoryLimiter:AnonSwap`). We are a **WebView game**
+(Capacitor wraps `www/`), so "the process" is the WebView: memory = decoded sprite
+**bitmaps** + **canvas** backing store + **JS heap** + Web-Audio. Full rules, budgets and
+the remediation plan live in **[`docs/memory-android17.md`](docs/memory-android17.md)** —
+read it before touching assets, caches, canvases or the render loop. The non-negotiables:
+
+- **No duplicate bitmaps** (same-hash files) and no new raster if SVG/procedural or a
+  runtime tint of an existing sprite would do. Source raster ≤ max on-screen size at `dpr 2`;
+  drop the alpha channel where transparency isn't needed.
+- **Dev-only / tuning-only assets never ship in `www/`** (`assets/skins/**`,
+  `*_src_reference.png`). `www/assets` stays under budget (see the doc).
+- **No unbounded image/canvas caches** — bound them (LRU) or clear on
+  `visibilitychange:hidden` / `freeze`. Keep the rAF loop **paused while hidden**
+  (`10-scene-loop.ts`) and the `dpr = min(devicePixelRatio, 2)` cap (`06-state-layout.ts`).
+- **No per-frame allocations** in the render/step loop; big transient canvases (share
+  card, offscreen) are local and released right after use.
+- Release Android build keeps R8 shrink + resource shrink (don't regress
+  `scripts/setup-android.mjs`).
+
 ## Tracking development time
 
 If the user asks how many hours went into the project (e.g. "посчитай мои часы",

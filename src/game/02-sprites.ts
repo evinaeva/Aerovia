@@ -30,15 +30,30 @@
     // Скины-переопределения (для tuning-превью): проверяются до neon, каждый id берётся
     // из первого скина, у которого он есть, иначе фолбэк на neon. Пустой список = только neon.
     let skinOverrides: string[] = [];
+    // Ливрейные варианты борта (VIP/emergency/medevac) сейчас переиспользуют базовый
+    // neon-арт 'plane' — отдельных одинаковых PNG не держим, чтобы не тащить в бандл и
+    // не декодировать дубликаты битмапов (см. docs/memory-android17.md). В геймплее ливреи
+    // и так различаются тинтом HANDOFF-спрайта (13-init.js); эти PNG — лишь фолбэк до его
+    // готовности. Если когда-нибудь сгенерим РАЗНЫЕ ливреи (scripts/gen-neon-plane.mjs) и
+    // вернём их id в neon/manifest.json — вариант со своим файлом выиграет автоматически,
+    // фолбэк сработает только при отсутствии собственного PNG.
+    const PLANE_LIVERY_FALLBACK: Record<string, string> = {
+      'plane-vip': 'plane', 'plane-emergency': 'plane', 'plane-medevac': 'plane',
+    };
     function pngImg(id: string): HTMLImageElement | null {
       for (const skin of [...skinOverrides, 'neon']) {
         const set = pngIds.get(skin);
-        if (!set || !set.has(id)) continue;
-        const key = skin + '/' + id;
+        if (!set) continue;
+        let realId = id;
+        if (!set.has(realId)) {
+          const fb = PLANE_LIVERY_FALLBACK[id];
+          if (fb && set.has(fb)) realId = fb; else continue;
+        }
+        const key = skin + '/' + realId;   // общий ключ → один Image, один декод на все ливреи
         let im = pngCache.get(key);
         if (!im) {
           im = new Image(); im.decoding = 'async';
-          im.src = 'assets/sprites/' + skin + '/' + id + '.png';
+          im.src = 'assets/sprites/' + skin + '/' + realId + '.png';
           pngCache.set(key, im);
         }
         return im;   // может ещё грузиться — ok() ниже это учитывает (фолбэк до загрузки)
