@@ -1,6 +1,6 @@
 // ===== 04-config-levels — tuning constants, level/biome/bonus definitions & level math =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: K, LEVELS, BIOMES, BONUS, LV, levelEconomy, levelEffects, levelEvents, levelPace/paceInterval/paceCap, airPatience, dayCycle, objectiveDesc, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS, curBiome, curBonus.
+// Provides: K, LEVELS (L1–L11 рукописные; L12+ достраивает сборщик в 14-level-analysis из CAMPAIGN_LAYOUTS/CAMPAIGN_PLAN), BIOMES, BONUS, LV, levelEconomy, levelEffects, levelEvents, levelPace/paceInterval/paceCap, airPatience, dayCycle, objectiveDesc, EVENT_KEYS, SVC_TYPES, WEATHER_KINDS, curBiome, curBonus.
 // Reads: 03 (I18N, t, lang, DEFAULT_LANG); 06 (state: gameTime, served, runways, save, combo, debug, weather, effects, levelIdx).
 
   // ===== config shapes (types only; erased at build) =====
@@ -239,8 +239,9 @@
     WEATHER_SNOW_CHANCE: 0.5,         // доля снега среди непогоды (иначе дождь)
     WEATHER_RAIN_TAXI: 0.1,           // множитель скорости руления под дождём
     WEATHER_SNOW_TAXI: 0.09,          // множитель скорости руления под снегом (хуже дождя)
-    // разделение кампании: L1..TUTORIAL_COUNT — рукописные туториалы (монотонный pace),
-    // L(TUTORIAL_COUNT+1)..50 — генерируются процедурно (своя кривая сложности)
+    // разделение кампании: L1..TUTORIAL_COUNT — рукописные туториалы (монотонный pace);
+    // дальше pace живёт по кривой campaignTarget (L11 — рукописный тест штрафов,
+    // L12–L50 собираются из скелетов CAMPAIGN_PLAN, см. сборщик в 14-level-analysis)
     TUTORIAL_COUNT: 10,
   };
 
@@ -441,17 +442,159 @@
       latePenalty:0.40,
     },
   ];
-  // ── ВРЕМЕННЫЕ ЗАГЛУШКИ уровней до L50 — для проверки скролла карты уровней ──
-  // Клон валидной «спокойной» смены (структура L2): проходят validateLevels,
-  // analyzeLevel и экономический чек. TODO: убрать перед релизом — не настоящие уровни.
-  while (LEVELS.length < 50) {
-    LEVELS.push({
-      pace: 0.12,
-      objective: { metric: 'served', stars: [8, 10, 12] },
-      sides: { top:{type:'fuel',slots:3,open:1}, left:{type:'board',slots:3,open:1}, bottom:{type:'repair',slots:3,open:1} },
-      runways: 3, events: {},
-    });
-  }
+  // ── ГЕНЕРИРУЕМАЯ КАМПАНИЯ (L12–L50): скелеты уровней ──────────────────────
+  // Рукописная часть каждого уровня — РАСКЛАДКА и СОБЫТИЯ (autoDifficulty их принципиально
+  // не генерирует — это ручки оператора). Остальное (pace, пороги звёзд, доп-условия
+  // тиров, цены, штрафы) детерминированно выводится кривой campaignTarget(n) + ротацией
+  // акцентов archetypeForIndex(n) в сборщике в конце 14-level-analysis.ts (там объявлен
+  // ARCHETYPES — отсюда его звать нельзя, TDZ). Методичка — difficulty_curve.md;
+  // события кластерами «введение → консолидация», капстоуны L20/30/40/50 — все четыре.
+  //
+  // Фабрики раскладок (каждый уровень получает СВОЮ копию — сборщик штампует цены
+  // per-объект). Координаты как в конструкторе: hangar.x/y — доля апрона, runway.y — 0..1.
+  // Инварианты: есть ангар каждой услуги; открыт хотя бы один каждого типа; ≥1 открытая
+  // посадка и ≥1 открытый взлёт (validateLevels).
+  //
+  // ГЕОМЕТРИЯ ПРОВЕРЕНА против движка (06-state-layout: ворота по ближайшей кромке,
+  // ВПП идут от правой кромки апрона): ряды — y 0.04/0.96 при x∈{0.15,0.50,0.85} (на
+  // портрете ближайшая кромка остаётся верх/низ); левая колонна — x 0.02 (слева от
+  // апрона, зона ВПП недостижима); правые ангары (x 0.98) — ТОЛЬКО в просветах между
+  // полосами и не больше 1–2 на карту (на десктопе они задевают полосы так же, как
+  // правый ангар рукописного L11 — принятая база, на телефоне чисто).
+  const CAMPAIGN_LAYOUTS: Record<string, () => LevelLayout> = {
+    // самый щадящий: 6 ангаров (4 открыто), 2 полностью открытые ВПП
+    compact6: () => ({
+      hangars:[
+        { type:'fuel',   x:0.15, y:0.04, open:true  },
+        { type:'board',  x:0.50, y:0.04, open:true  },
+        { type:'repair', x:0.85, y:0.04, open:true  },
+        { type:'fuel',   x:0.15, y:0.96, open:true  },
+        { type:'board',  x:0.50, y:0.96, open:false },
+        { type:'repair', x:0.85, y:0.96, open:false },
+      ],
+      runways:[ { y:0.35 }, { y:0.65 } ],
+    }),
+    // по мотивам L11: 2 ВПП (нижний взлёт куплен отдельно), докупка по бокам
+    twinstrip: () => ({
+      hangars:[
+        { type:'fuel',   x:0.15, y:0.04, open:true  },
+        { type:'board',  x:0.85, y:0.04, open:true  },
+        { type:'repair', x:0.15, y:0.96, open:true  },
+        { type:'fuel',   x:0.50, y:0.96, open:false },
+        { type:'board',  x:0.98, y:0.50, open:false },  // просвет между ВПП 0.35/0.65
+        { type:'repair', x:0.02, y:0.50, open:false },
+      ],
+      runways:[ { y:0.35 }, { y:0.65, takeoffOpen:false } ],
+    }),
+    // классика: 9 ангаров — два ряда + левая колонна, 3 открытые ВПП
+    classic9: () => ({
+      hangars:[
+        { type:'fuel',   x:0.15, y:0.04, open:true  },
+        { type:'board',  x:0.50, y:0.04, open:true  },
+        { type:'repair', x:0.85, y:0.04, open:true  },
+        { type:'repair', x:0.15, y:0.96, open:false },
+        { type:'fuel',   x:0.50, y:0.96, open:false },
+        { type:'board',  x:0.85, y:0.96, open:false },
+        { type:'fuel',   x:0.02, y:0.20, open:false },
+        { type:'board',  x:0.02, y:0.50, open:false },
+        { type:'repair', x:0.02, y:0.80, open:false },
+      ],
+      runways:[ { y:0.25 }, { y:0.50 }, { y:0.75 } ],
+    }),
+    // «угловой апрон»: все службы снизу и справа, верх — чистое небо; 2 ВПП
+    corner: () => ({
+      hangars:[
+        { type:'fuel',   x:0.15, y:0.96, open:true  },
+        { type:'board',  x:0.50, y:0.96, open:true  },
+        { type:'repair', x:0.85, y:0.96, open:true  },
+        { type:'fuel',   x:0.98, y:0.34, open:false },  // просвет между ВПП 0.20/0.48
+        { type:'repair', x:0.98, y:0.88, open:false },  // ниже нижней полосы
+        { type:'board',  x:0.02, y:0.50, open:false },
+      ],
+      runways:[ { y:0.20 }, { y:0.48 } ],
+    }),
+    // большой хаб: 11 ангаров (4 открыто), 3 ВПП, посадка средней докупается
+    hub: () => ({
+      hangars:[
+        { type:'fuel',   x:0.15, y:0.04, open:true  },
+        { type:'board',  x:0.50, y:0.04, open:true  },
+        { type:'repair', x:0.85, y:0.04, open:true  },
+        { type:'fuel',   x:0.15, y:0.96, open:true  },
+        { type:'board',  x:0.50, y:0.96, open:false },
+        { type:'repair', x:0.85, y:0.96, open:false },
+        { type:'board',  x:0.02, y:0.14, open:false },
+        { type:'fuel',   x:0.02, y:0.42, open:false },
+        { type:'repair', x:0.02, y:0.66, open:false },
+        { type:'board',  x:0.02, y:0.95, open:false },
+        { type:'repair', x:0.98, y:0.36, open:false }, // просвет между ВПП 0.22/0.50
+      ],
+      runways:[ { y:0.22 }, { y:0.50, landingOpen:false }, { y:0.78 } ],
+    }),
+    // максимум полос: 4 ВПП (крайние направления докупаются), 8 ангаров
+    quadway: () => ({
+      hangars:[
+        { type:'fuel',   x:0.15, y:0.04, open:true  },
+        { type:'board',  x:0.50, y:0.04, open:true  },
+        { type:'repair', x:0.85, y:0.04, open:true  },
+        { type:'repair', x:0.15, y:0.96, open:false },
+        { type:'fuel',   x:0.50, y:0.96, open:false },
+        { type:'board',  x:0.85, y:0.96, open:false },
+        { type:'fuel',   x:0.02, y:0.30, open:false },
+        { type:'board',  x:0.02, y:0.70, open:false },
+      ],
+      runways:[ { y:0.14, landingOpen:false }, { y:0.38 }, { y:0.62 }, { y:0.86, takeoffOpen:false } ],
+      fitRunways:true,
+    }),
+  };
+  // План L12–L50 (порядок = номер уровня). lay — ключ CAMPAIGN_LAYOUTS; events — ручной
+  // ввод оператора; target/archetype опциональны (иначе кривая + ротация по номеру).
+  interface CampaignSpec { lay: string; events: Events; target?: number; archetype?: string; }
+  const CAMPAIGN_PLAN: CampaignSpec[] = [
+    // ── блок A (L12–L19): знакомые спецборты по одному-по два на НОВЫХ раскладках ──
+    { lay:'compact6',  events:{ vip:true } },                                    // L12
+    { lay:'twinstrip', events:{ emergency:true } },                              // L13
+    { lay:'classic9',  events:{ vip:true, emergency:true } },                    // L14 консолидация
+    { lay:'compact6',  events:{ rush:true } },                                   // L15
+    { lay:'corner',    events:{ vip:true, rush:true } },                         // L16
+    { lay:'twinstrip', events:{ medical:true } },                                // L17
+    { lay:'classic9',  events:{ vip:true, medical:true } },                      // L18
+    { lay:'hub'   ,     events:{ emergency:true, rush:true } },                   // L19
+    { lay:'classic9',  events:{ vip:true, emergency:true, rush:true, medical:true } }, // L20 КАПСТОУН
+    // ── блок B (L21–L29): пары → тройки, растущая ёмкость карт ──
+    { lay:'corner',    events:{ vip:true, medical:true } },                      // L21
+    { lay:'quadway',   events:{ emergency:true, rush:true } },                   // L22
+    { lay:'twinstrip', events:{ vip:true, emergency:true } },                    // L23
+    { lay:'classic9',  events:{ rush:true, medical:true } },                     // L24
+    { lay:'compact6',  events:{ vip:true, rush:true } },                         // L25
+    { lay:'hub'   ,     events:{ emergency:true, medical:true } },                // L26
+    { lay:'quadway',   events:{ vip:true, emergency:true, rush:true } },         // L27
+    { lay:'corner',    events:{ vip:true, rush:true, medical:true } },           // L28
+    { lay:'classic9',  events:{ emergency:true, rush:true, medical:true } },     // L29
+    { lay:'quadway',   events:{ vip:true, emergency:true, rush:true, medical:true } }, // L30 КАПСТОУН
+    // ── блок C (L31–L39): плато — ротация пар и троек ──
+    { lay:'twinstrip', events:{ vip:true, emergency:true } },                    // L31
+    { lay:'corner',    events:{ rush:true, medical:true } },                     // L32
+    { lay:'hub'   ,     events:{ vip:true, emergency:true, medical:true } },      // L33
+    { lay:'classic9',  events:{ vip:true, rush:true, medical:true } },           // L34
+    { lay:'quadway',   events:{ emergency:true, rush:true, medical:true } },     // L35
+    { lay:'compact6',  events:{ vip:true, emergency:true } },                    // L36
+    { lay:'hub'   ,     events:{ vip:true, emergency:true, rush:true } },         // L37
+    { lay:'twinstrip', events:{ rush:true, medical:true } },                     // L38
+    { lay:'quadway',   events:{ vip:true, emergency:true, medical:true } },      // L39
+    { lay:'hub'   ,     events:{ vip:true, emergency:true, rush:true, medical:true } }, // L40 КАПСТОУН
+    // ── блок D (L41–L49): плато — финальная ротация перед экзаменом ──
+    { lay:'compact6',  events:{ vip:true, rush:true } },                         // L41
+    { lay:'classic9',  events:{ emergency:true, medical:true } },                // L42
+    { lay:'corner',    events:{ vip:true, emergency:true, rush:true } },         // L43
+    { lay:'quadway',   events:{ emergency:true, rush:true, medical:true } },     // L44
+    { lay:'twinstrip', events:{ vip:true, medical:true } },                      // L45
+    { lay:'hub'   ,     events:{ vip:true, rush:true, medical:true } },           // L46
+    { lay:'classic9',  events:{ vip:true, emergency:true, rush:true } },         // L47
+    { lay:'corner',    events:{ emergency:true, rush:true, medical:true } },     // L48
+    { lay:'quadway',   events:{ vip:true, emergency:true, medical:true } },      // L49
+    // финальный экзамен: самый большой хаб на максимальном target (переопределяет кривую)
+    { lay:'hub'   ,     events:{ vip:true, emergency:true, rush:true, medical:true }, target:1.0 }, // L50 ФИНАЛЬНЫЙ КАПСТОУН
+  ];
   // ---- biome maps (отдельная от кампании ветка карт) ----
   // Каждый биом — это конфиг уровня (как в LEVELS) + флаг biome для темы/помех.
   // ready:false — биом в работе, на экране показан как «скоро». Сервисное здание

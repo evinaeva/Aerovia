@@ -1,9 +1,11 @@
 // ===== 14-level-analysis — static difficulty analysis for level configs =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: DifficultyComponent, DifficultyReport, analyzeLevel, countOpenHangars, countTotalHangars,
-//   countOpenRunwayDirections, validatePassable, campaignTarget, archetypeForIndex, ARCHETYPES, autoDifficulty.
-// Reads: 04 (K, Level, Objective, HangarDef, RunwayDef, LevelLayout, levelPace, levelEconomy, levelServices,
-//   levelMaxUp, paceInterval, SVC_TYPES). autoDifficulty НЕ генерирует events/weather — их ставит оператор.
+//   countOpenRunwayDirections, validatePassable, campaignTarget, archetypeForIndex, ARCHETYPES, autoDifficulty;
+//   ПЛЮС достраивает LEVELS до полной кампании (L12–L50) из скелетов CAMPAIGN_PLAN (см. сборщик в конце).
+// Reads: 04 (K, LEVELS, CAMPAIGN_LAYOUTS, CAMPAIGN_PLAN, Level, Objective, HangarDef, RunwayDef, LevelLayout,
+//   levelPace, levelEconomy, levelServices, levelMaxUp, paceInterval, SVC_TYPES).
+//   autoDifficulty НЕ генерирует events/weather — их ставит оператор (в кампании — скелет уровня).
 
   interface DifficultyComponent {
     label: string;
@@ -368,16 +370,27 @@
     const q = clamp(tg * A.quality, 0, 1.3);
     const lives = [1, Math.min(K.START_LIVES, 1 + r(q)), Math.min(K.START_LIVES, 1 + r(q*2))];
 
-    // — качество (≤): просрочки/крушения, от щедрых к нулю —
-    const maxLate  = [Math.max(0, r(25*(1-q))), Math.max(0, r(18*(1-q))), Math.max(0, r(12*(1-q)))];
-    const maxCrash = [Math.max(0, r(15*(1-q))), Math.max(0, r(10*(1-q))), Math.max(0, r(6*(1-q)))];
+    // — качество (≤): просрочки/крушения, от щедрых к нулю. «Пол фрустрации»
+    //   (difficulty_curve.md: 1★ — проходной порог): строгость q давит верхние тиры
+    //   сильнее нижних, а 1★ никогда не требует нулевой чистоты — иначе на капстоунах
+    //   (q→1.3) одна просрочка отбирала бы даже проходную звезду —
+    const maxLate  = [Math.max(2, r(25*(1-q*0.6))), Math.max(0, r(18*(1-q*0.85))), Math.max(0, r(12*(1-q)))];
+    const maxCrash = [Math.max(1, r(15*(1-q*0.6))), Math.max(0, r(10*(1-q*0.85))), Math.max(0, r(6*(1-q)))];
 
-    // — апгрейды (≥), если на карте есть апгрейдируемые ангары —
+    // — апгрейды (≥), если на карте есть апгрейдируемые ангары. Пороги привязаны к числу
+    //   шагов, которое ФИНАНСИРУЕТ экономика (та же модель, что упор kitCost в levelEconomy:
+    //   working·upgShare·UP_FRAC·spanFrac), а НЕ к теоретическому максимуму карты — иначе
+    //   верхние тиры требовали бы апгрейдов на суммы, которых смена не приносит (деньги
+    //   блокировали бы 3★: каждый шаг стоит upgCost, а kit финансирует лишь долю шагов).
+    //   Верх клампа 1.5 — добор сверх kit за счёт скилл-излишка (комбо/экспресс). —
     let upg: number[] | undefined;
     if(totalPossUpg > 0){
-      upg = [Math.max(1, r(totalPossUpg*clamp(tg*0.30*A.upg, 0.05, 0.40))),
-             Math.max(1, r(totalPossUpg*clamp(tg*0.55*A.upg, 0.10, 0.70))),
-             Math.max(1, r(totalPossUpg*clamp(tg*0.85*A.upg, 0.15, 1.00)))];
+      const working  = openH + Math.round((totalH - openH) * K.ECON_OPEN_FRAC);
+      const upgShare = totalH > 0 ? upgH / totalH : 0;
+      const spanFrac = maxUpV > 0 ? (maxUpV - minUpV) / maxUpV : 0;
+      const funded   = Math.min(totalPossUpg, working * upgShare * K.ECON_UP_FRAC * spanFrac);
+      const u3 = Math.max(1, Math.min(totalPossUpg, r(funded * clamp(0.6 + tg*0.7*A.upg, 0.6, 1.5))));
+      upg = [Math.max(1, r(u3*0.4)), Math.max(1, r(u3*0.7)), u3];
       if(upg[1] < upg[0]) upg[1] = upg[0];
       if(upg[2] < upg[1]) upg[2] = upg[1];               // монотонность после round
     }
@@ -426,4 +439,54 @@
       if(objective.money !== undefined){ const m = calcMoney(objective.stars || stars); if(m) objective.money = m; else delete (objective as any).money; }
     }
     return out;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // СБОРЩИК ГЕНЕРИРУЕМОЙ КАМПАНИИ (L12–L50). Скелеты (раскладка + события) — в
+  // CAMPAIGN_LAYOUTS / CAMPAIGN_PLAN (04-config-levels.ts); здесь каждый скелет
+  // достраивается до полного уровня: target из кривой campaignTarget(n) (или override
+  // скелета), акцент из ротации archetypeForIndex(n), пороги/цены/штрафы — autoDifficulty.
+  // Живёт в этом модуле, а не в 04: ARCHETYPES объявлен здесь const'ом — из 04 вызов
+  // autoDifficulty упал бы в TDZ. Модуль исполняется между 05 и 06, т.е. ДО того, как
+  // кто-либо (стейт, меню, validateGame) читает длину кампании. Детерминированно —
+  // без Math.random: одни и те же 50 уровней в каждой сессии.
+  //
+  // МАКСИМУМ ТРИ ЦЕЛИ НА ТИР: autoDifficulty (для редактора) генерирует ВСЕ факторы,
+  // но на карточке целей 6 условий разом нечитаемы. Кампания оставляет основную
+  // метрику (борта) + до ДВУХ акцентных доп-условий архетипа (как в референсе:
+  // «счёт + деньги», «счёт + время» и т.п., star-conditions.md §2). Списки — в
+  // порядке приоритета: если условие не сгенерировано (напр. money опущен
+  // экономикой), берётся следующее. Снятие условий проходимость не ломает.
+  const CAMPAIGN_GOALS: Record<string, string[]> = {
+    mixed:    ['timeTier','lives','maxCrash'],
+    economy:  ['money','upg','lives'],
+    speed:    ['timeTier','maxLate','lives'],
+    flawless: ['maxLate','maxCrash','lives'],
+    upgrades: ['upg','timeTier','money'],
+    traffic:  ['lives','maxLate','timeTier'],
+  };
+  const EXTRA_GOAL_KEYS = ['upg','money','lives','timeTier','maxLate','maxCrash'];
+  for(const spec of CAMPAIGN_PLAN){
+    const n = LEVELS.length + 1;                        // 1-based номер собираемого уровня
+    const layout = CAMPAIGN_LAYOUTS[spec.lay]();        // своя копия — цены штампуются per-уровень
+    const target = spec.target ?? campaignTarget(n);
+    const arch   = spec.archetype ?? archetypeForIndex(n);
+    const lv: Level = { layout, events: spec.events, target, archetype: arch } as Level;
+    const k = autoDifficulty(target, lv, { archetype: arch });
+    const keep = (CAMPAIGN_GOALS[arch] || [])
+      .filter(key => (k.objective as any)[key] != null).slice(0, 2);
+    for(const key of EXTRA_GOAL_KEYS)
+      if(!keep.includes(key)) delete (k.objective as any)[key];
+    lv.pace = k.pace; lv.objective = k.objective;
+    lv.maxUp = k.maxUp; lv.minUp = k.minUp; lv.startMoney = k.startMoney;
+    lv.crashPenalty = k.crashPenalty; lv.latePenalty = k.latePenalty;
+    // штамп единых цен карты на объекты раскладки (движок читает их per-объект) —
+    // та же схема, что при экспорте из «Разметки» (см. stampedLevel в тестах)
+    if(k.openCost != null) layout.hangars.forEach(h => { if(h.open === false) h.openCost = k.openCost; });
+    if(k.upgCost  != null) layout.hangars.forEach(h => { h.upgCost = k.upgCost; });
+    if(k.rwOpenCost != null) layout.runways.forEach(rw => {
+      if(rw.landingOpen === false) rw.landingCost = k.rwOpenCost;
+      if(rw.takeoffOpen === false) rw.takeoffCost = k.rwOpenCost;
+    });
+    LEVELS.push(lv);
   }
