@@ -1,6 +1,6 @@
 // ===== 09b-render-entities — draw bays, planes, the HUD, transient FX and the tutorial overlay =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: drawBay, drawBayUpgradePanel, drawBayGate, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawNeonBay, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
+// Provides: drawBay, drawBayUpgradePanel, drawBayGate, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawNeonBay, drawPlaneRoute, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
 // Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawPlaneShadow, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 04b (MT_META_VALUES); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
@@ -357,44 +357,48 @@
     ctx.restore();
   }
 
+  // маршрут — фосфорная линия со свечением: сплошная тонкая линия.
+  // Рисуется ОТДЕЛЬНЫМ проходом ДО всех бортов (см. scene-loop), чтобы траектория
+  // лежала на апроне ПОД самолётами — иначе линия борта, нарисованного позже,
+  // перекрывала бы корпус борта, нарисованного раньше.
+  // autoPath — системный маршрут (выкат на апрон, разгон на взлёте): игрок его не
+  // рисовал, поэтому линию не показываем (иначе она мелькает на секунду перед бортом).
+  function drawPlaneRoute(pl: any){
+    if(!((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving && !pl.autoPath)) return;
+    const _rc = COL.phosphor;
+    ctx.save();
+    ctx.strokeStyle=hexa(_rc, pl.selected?0.95:0.6);
+    ctx.lineWidth=Math.max(1.92, 4.8*ui); ctx.lineCap='round'; ctx.lineJoin='round'; // на 20% тоньше прежнего (было 6*ui): ≈7.2px @ui1.5, ≈3.4px на телефоне — линия тоньше, но различима
+    // Выбранный борт — полный glow; остальные — минимальный (горячий путь на мобилах).
+    ctx.shadowColor=_rc; ctx.shadowBlur=pl.selected?8:3;
+    ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
+    for(const w of pl.path) ctx.lineTo(w.x,w.y);
+    ctx.stroke(); ctx.shadowBlur=0;
+    // наконечник-стрелка по направлению последнего сегмента
+    {
+      const tp=pl.path[pl.path.length-1];
+      const pp=pl.path.length>1?pl.path[pl.path.length-2]:{x:pl.x,y:pl.y};
+      const aAng=Math.atan2(tp.y-pp.y, tp.x-pp.x);
+      ctx.setLineDash([]);
+      if(!(ATLAS && SPRITES.blitC('route-arrow', tp.x, tp.y, 15*ui, 15*ui, aAng, _rc))){
+        ctx.save(); ctx.translate(tp.x,tp.y); ctx.rotate(aAng);
+        ctx.fillStyle=hexa(_rc, pl.selected?0.9:0.55);
+        ctx.beginPath(); ctx.moveTo(7*ui,0); ctx.lineTo(-4*ui,-5*ui); ctx.lineTo(-4*ui,5*ui); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+      // статичная точка-цель у выбранного борта (без мерцания)
+      if(pl.selected){
+        ctx.beginPath(); ctx.arc(tp.x,tp.y,5*ui,0,7);
+        ctx.lineWidth=1.5; ctx.strokeStyle=hexa(_rc,.6); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
   function drawPlane(pl: any){
     const need=curNeed(pl);
     const ncol=(SVC as Record<string, {color: string}>)[need].color;
     const vs=planeScale(pl);   // визуальная «перспектива»: кольца/пузырёк тянутся за бортом
-
-    // маршрут — фосфорная линия со свечением: сплошная тонкая линия.
-    // autoPath — системный маршрут (выкат на апрон, разгон на взлёте): игрок его не
-    // рисовал, поэтому линию не показываем (иначе она мелькает на секунду перед бортом).
-    if((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving && !pl.autoPath){
-      const _rc = COL.phosphor;
-      ctx.save();
-      ctx.strokeStyle=hexa(_rc, pl.selected?0.95:0.6);
-      ctx.lineWidth=Math.max(1.92, 4.8*ui); ctx.lineCap='round'; ctx.lineJoin='round'; // на 20% тоньше прежнего (было 6*ui): ≈7.2px @ui1.5, ≈3.4px на телефоне — линия тоньше, но различима
-      // Выбранный борт — полный glow; остальные — минимальный (горячий путь на мобилах).
-      ctx.shadowColor=_rc; ctx.shadowBlur=pl.selected?8:3;
-      ctx.beginPath(); ctx.moveTo(pl.x,pl.y);
-      for(const w of pl.path) ctx.lineTo(w.x,w.y);
-      ctx.stroke(); ctx.shadowBlur=0;
-      // наконечник-стрелка по направлению последнего сегмента
-      {
-        const tp=pl.path[pl.path.length-1];
-        const pp=pl.path.length>1?pl.path[pl.path.length-2]:{x:pl.x,y:pl.y};
-        const aAng=Math.atan2(tp.y-pp.y, tp.x-pp.x);
-        ctx.setLineDash([]);
-        if(!(ATLAS && SPRITES.blitC('route-arrow', tp.x, tp.y, 15*ui, 15*ui, aAng, _rc))){
-          ctx.save(); ctx.translate(tp.x,tp.y); ctx.rotate(aAng);
-          ctx.fillStyle=hexa(_rc, pl.selected?0.9:0.55);
-          ctx.beginPath(); ctx.moveTo(7*ui,0); ctx.lineTo(-4*ui,-5*ui); ctx.lineTo(-4*ui,5*ui); ctx.closePath(); ctx.fill();
-          ctx.restore();
-        }
-        // статичная точка-цель у выбранного борта (без мерцания)
-        if(pl.selected){
-          ctx.beginPath(); ctx.arc(tp.x,tp.y,5*ui,0,7);
-          ctx.lineWidth=1.5; ctx.strokeStyle=hexa(_rc,.6); ctx.stroke();
-        }
-      }
-      ctx.restore();
-    }
 
     // короткий «толчок» при касании: корпус отскакивает вверх и оседает (затухающая дуга)
     let by = pl.y;
