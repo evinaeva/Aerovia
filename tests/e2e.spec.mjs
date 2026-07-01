@@ -77,3 +77,43 @@ test('MVP-аэропорт (forest, Survival): запуск, снег прово
   const hasDeiceBay = await page.evaluate(() => window.__GAME.bays.some(b => b.deice && b.open));
   expect(hasDeiceBay).toBe(true);
 });
+
+// --- Лига сезона (MVP Фаза 1): вкладка «Сезон» и шеринг-карточка (задел __GAME) ---
+test('экран рейтинга: вкладка «Сезон» показывает дивизион, отсчёт и не роняет консоль', async ({ page }) => {
+  const errors = [];
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('pageerror', e => errors.push(String(e)));
+
+  await page.goto('/index.html?test=1');
+  // отправляем survival-заход, чтобы в сезонном топе было место игрока
+  await page.evaluate(() => window.__GAME.Leaderboard.submitRun({ mode: 'survival', score: 12 }));
+  await page.evaluate(() => window.__GAME.showLeaderboard());
+  await expect(page.locator('#leaderboardScreen')).toBeVisible();
+
+  // «Сезон» — последняя вкладка в #lbTabs; жмём и ждём заполнения блока #lbSeason
+  await page.locator('#lbTabs button').last().click();
+  const box = page.locator('#lbSeason');
+  await expect(box).toBeVisible();
+  await expect(box).toContainText(/Season|Сезон/);       // заголовок с номером сезона
+  await expect(box).toContainText(/left|Осталось/);      // строка отсчёта до конца сезона
+  expect(errors, 'вкладка «Сезон» не должна ронять консоль').toEqual([]);
+});
+
+test('шеринг-карточка рисуется с сезонными данными без исключений', async ({ page }) => {
+  const errors = [];
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  page.on('pageerror', e => errors.push(String(e)));
+
+  await page.goto('/index.html?test=1');
+  const ok = await page.evaluate(() => {
+    const c = document.createElement('canvas'); c.width = c.height = 1080;
+    window.__GAME.drawShareCard(c, {
+      passed: true, stars: 0, surv: true, metric: 'served', v: 23,
+      money: 120, peak: 7, time: 180, levelName: 'Forest', samples: [],
+      season: { number: 13, division: 'silver', divisionIdx: 1, daysLeft: 5 },
+    });
+    return true;
+  });
+  expect(ok).toBe(true);
+  expect(errors, 'отрисовка карточки с дивизионом не должна ронять консоль').toEqual([]);
+});

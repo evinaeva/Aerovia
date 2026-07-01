@@ -315,14 +315,35 @@
     function loadAll(){ try{ const a=JSON.parse(ls.get(STORE_KEY) || 'null'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
     function saveAll(a: any[]){ ls.set(STORE_KEY, JSON.stringify(a.slice(-RING))); }
     function defaultName(id?: any){ return 'Player-'+String(id||'').slice(-4).toUpperCase(); }
-    // mock «как бы глобальная» таблица: подсев несколько ботов, чтобы каркас и UI было
-    // видно на пустом устройстве. На реальном бэкенде ботов нет — это деталь mock-провайдера.
+    // личный рекорд аккаунта в срезе (локальный кэш всех отправленных заходов)
+    function accountBest(mode?: string){ const acct=Account.current(); if(!acct) return 0;
+      return loadAll().filter(r=>r&&!r._seed&&r.accountId===acct.id&&(!mode||r.mode===mode)).reduce((m,r)=>Math.max(m,r.score),0); }
+    // mock «как бы глобальная» таблица: боты, чтобы каркас и UI было видно на пустом устройстве.
+    // На реальном бэкенде ботов нет — это деталь mock-провайдера, поэтому боты НЕ персистятся, а
+    // вычисляются на чтении и ПОДБИРАЮТСЯ ПОД УРОВЕНЬ ИГРОКА (season-leagues.md → «подбор ботов
+    // под уровень игрока»): при референсном уровне (~BOT_ANCHOR) раскладка совпадает с прежними
+    // фикс-скорами, выше/ниже — линейно масштабируется, чтобы игрок попадал в осмысленный бракет
+    // (не всегда последний и не всегда первый). BOT_BASE — относительные тиры силы.
+    const BOT_BASE: Array<[string, number]> = [['Skylark',38],['Maverick',31],['Tower-9',27],['Otto',22],['Foxtrot',18],['Breeze',14],['Cargo Joe',11],['Nimbus',8]];
+    const BOT_ANCHOR = 24;
+    // «уровень игрока» для подбора ботов = лучший survival-счёт из ПРОШЛЫХ сезонов (текущий сезон
+    // исключаем: иначе боты гнались бы за только что поставленным рекордом и игрок навсегда застрял
+    // бы в середине — прогресс внутри сезона был бы невозможен; так же сохраняются тесты «высокий
+    // счёт → 1-е место»: свежий аккаунт без прошлых сезонов → anchor 0 → референсная раскладка).
+    // Раз в сезон бракет пере-анкорится на новый уровень — как промо/релегейт в настоящих лигах.
+    function seasonBotAnchor(mode?: string){
+      const acct=Account.current(); if(!acct) return 0;
+      const cur=seasonKey(lbNow());
+      return loadAll().filter(r=>r&&!r._seed&&r.accountId===acct.id&&(!mode||r.mode===mode)&&seasonKey(r.ts)!==cur)
+        .reduce((m,r)=>Math.max(m,r.score),0);
+    }
     function seedBots(rows: any[]){
-      if(rows.some(r=>r&&r._seed)) return rows;
-      const bots=[['Skylark',38],['Maverick',31],['Tower-9',27],['Otto',22],['Foxtrot',18],['Breeze',14],['Cargo Joe',11],['Nimbus',8]];
+      const real=rows.filter(r=>!(r&&r._seed));            // прежних персистнутых ботов отбрасываем (миграция) — боты теперь вычисляются на чтении
+      const lvl=seasonBotAnchor('survival'), anchor=lvl>0?lvl:BOT_ANCHOR;
       const base=lbNow();
-      bots.forEach((b,i)=>rows.push({accountId:'bot-'+i, name:b[0], mode:'survival', score:b[1], ts:base-i*3600000, _seed:true}));
-      return rows;
+      BOT_BASE.forEach((b,i)=>real.push({accountId:'bot-'+i, name:b[0], mode:'survival',
+        score:Math.max(1, Math.round(b[1]*anchor/BOT_ANCHOR)), ts:base-i*3600000, _seed:true}));
+      return real;
     }
     function rankRows(rows: any[], period: string, mode?: string){
       const curB = periodBucket(lbNow()), wantAll = (period==='alltime'), best: Record<string, any>={};
@@ -337,13 +358,14 @@
     }
     // ПРОВАЙДЕР по умолчанию — локальный mock. Реальный бэкенд: тот же {submit, top}, но с сетью.
     const mockProvider = {
-      submit(entry: any){ const rows=seedBots(loadAll()); rows.push(entry); saveAll(rows); return Promise.resolve(true); },
+      // боты не персистятся (вычисляются на чтении) — при сохранении отбрасываем и любых прежних
+      submit(entry: any){ const rows=loadAll().filter(r=>!(r&&r._seed)); rows.push(entry); saveAll(rows); return Promise.resolve(true); },
       top(period: string, mode?: string){ return Promise.resolve(rankRows(seedBots(loadAll()), period, mode).slice(0,TOP_N)); },
     };
     let provider=mockProvider, started=false;
     // Лига сезона (MVP Фаза 1) — косметика сезона в СВОЁМ сторе, не в ACH.unlocked: ротирует
     // с сезоном, поэтому не может жить там же, где «медаль=навсегда» (см. season-leagues.md).
-    const SEASON_REWARDS_KEY='pf_season_rewards_v1', SEASON_DIVISION_KEY='pf_season_division_v1';
+    const SEASON_REWARDS_KEY='pf_season_rewards_v1', SEASON_DIVISION_KEY='pf_season_division_v1', SEASON_INVITE_KEY='pf_season_invite_v1';
     const SEASON_ACCENTS=['#c98a4b','#c7d0da','#ffd45e','#7fe0e8','#a9c8ff'];   // Bronze…Diamond
     function loadSeasonRewards(){ try{ const a=JSON.parse(ls.get(SEASON_REWARDS_KEY) || 'null'); return (a&&typeof a==='object')?a:{}; }catch(e){ return {}; } }
     function saveSeasonRewards(o: any){ ls.set(SEASON_REWARDS_KEY, JSON.stringify(o)); }
@@ -385,6 +407,17 @@
         return store[k];
       },
       reward(){ return loadSeasonRewards()[seasonKey(lbNow())] || null; },
+      // Приглашение в лигу — «сначала активным игрокам» (кейс SYBO: 75% записавшихся уже играли).
+      // Активный = есть личный рекорд (bestScore ≥ minBest, т.е. закончил хотя бы один заход).
+      // show — раз за сезон (до ackInvite). Чистая синхронная функция над локальным стором;
+      // при свопе на реальный бэкенд таргетинг/пуш делает сервер, эта же форма остаётся хуком UI.
+      invite(opts?: any){
+        opts=opts||{}; const minBest=opts.minBest==null?1:opts.minBest;
+        const active=accountBest(opts.mode||'survival')>=minBest;
+        const k=seasonKey(lbNow()), seen=(ls.get(SEASON_INVITE_KEY)===k);
+        return { number:seasonNumber(lbNow()), season:k, active, seen, show:active&&!seen };
+      },
+      ackInvite(){ const k=seasonKey(lbNow()); ls.set(SEASON_INVITE_KEY, k); return k; },
     };
     return {
       init(){ if(started) return; started=true; Account.init(); },
@@ -412,8 +445,7 @@
       me(period?: string, mode?: string){ const acct=Account.current(); if(!acct) return Promise.resolve(null);
         return Promise.resolve(provider.top(period||'alltime', mode||'survival')).then(list=>list.find(r=>r.accountId===acct.id)||null); },
       // личный рекорд (локальный кэш всех отправленных заходов этого аккаунта)
-      bestScore(mode?: string){ const acct=Account.current(); if(!acct) return 0;
-        return loadAll().filter(r=>r&&r.accountId===acct.id&&(!mode||r.mode===mode)).reduce((m,r)=>Math.max(m,r.score),0); },
+      bestScore(mode?: string){ return accountBest(mode); },
     };
   })();
   try{ (window as any).PFLeaderboard = Leaderboard; }catch(e){}
