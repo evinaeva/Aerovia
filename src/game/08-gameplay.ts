@@ -781,6 +781,32 @@
     window.addEventListener('touchend',up);
   }
 
+  // ---- keyboard shortcuts (accessibility: пауза/рестарт/обзор борта без пальца/мыши) ----
+  // Полный geympad-паритет с рисованием маршрута сознательно не делаем: drag&drop завязан
+  // на непрерывный жест (move(), выше), редизайн под дискретные шаги сломал бы фичел игры.
+  function cyclePlane(){
+    const list = planes.filter(p=>!p.dead && p.zone!=='bay');   // тот же фильтр, что в pickPlane
+    planes.forEach(x=>x.selected=false);
+    if(!list.length){ selected=null; return; }
+    const i = selected ? list.indexOf(selected) : -1;
+    selected = list[(i+1) % list.length];
+    selected.selected = true;
+  }
+  function onKeyDown(e: KeyboardEvent){
+    if(!running) return;
+    const ae = document.activeElement as HTMLElement|null;   // не перехватывать Space/Tab у сфокусированного чекбокса (экран отладки)
+    if(ae && /INPUT|TEXTAREA|SELECT|BUTTON/.test(ae.tagName)) return;
+    if(e.key==='Escape' || e.key===' '){ e.preventDefault(); setPaused(!paused); return; }
+    if(paused){
+      // рестарт — только открыть подтверждение (тот же путь, что кнопка на экране паузы),
+      // reset() зовётся лишь после явного подтверждения
+      if(e.key.toLowerCase()==='r'){ e.preventDefault(); document.getElementById('restartBtn')!.click(); }
+      return;
+    }
+    if(e.key==='Tab'){ e.preventDefault(); cyclePlane(); }
+  }
+  window.addEventListener('keydown', onKeyDown);
+
   // ---- crashes ----
   function freeRes(pl: any){
     if(pl.runway){ if(pl.runway.occupied===pl) pl.runway.occupied=null; pl.runway=null; }
