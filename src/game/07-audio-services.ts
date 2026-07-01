@@ -1,6 +1,8 @@
 // ===== 07-audio-services — sound synthesis + side services (haptics, analytics, leaderboard) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: SND, HAP, Analytics, Leaderboard, periodBucket, validateLeaderboard.
+// Provides: SND, HAP, Analytics, Leaderboard, periodBucket, validateLeaderboard,
+//   seasonKey, seasonNumber, seasonDaysLeft, SEASON_DIVISIONS, seasonDivisionIndex,
+//   seasonPercentile, seasonPromote, seasonIdxOf, resolveSeasonDivision.
 // Reads: 03 (t, I18N, lang); 06 (VERSION, served, debug); 12 (ACH).
 
   const SND = (() => {
@@ -225,7 +227,59 @@
     const week = dt.getUTCFullYear()+'-W'+String(
       1 + Math.round(((dt.getTime() - firstThu.getTime())/86400000 - 3 + ((firstThu.getUTCDay()+6)%7))/7)
     ).padStart(2,'0');
-    return { alltime:'all', month, week };
+    return { alltime:'all', month, week, season: seasonKey(ts) };
+  }
+
+  // Лига сезона (MVP Фаза 1 — план: docs/design/game-design/season-leagues.md). Как и
+  // week/month выше — чистая детерминированная функция, UTC, одинаковая на клиенте и
+  // будущем сервере: срез = фильтр того же журнала по текущему сезон-бакету, без
+  // разрушающего сброса. Окно фиксированное: 2 недели от якоря SEASON_EPOCH (понедельник
+  // 00:00 UTC). Овнер подтвердил старт Фазы 1 на mock 2026-07-01.
+  const SEASON_EPOCH = Date.UTC(2026, 0, 5), SEASON_LEN = 14*24*3600*1000;
+  function seasonIndex(ts: number){ return Math.floor((ts - SEASON_EPOCH) / SEASON_LEN); }
+  function seasonKey(ts: number){ return 'S' + seasonIndex(ts); }            // бакет журнала, напр. 'S37'
+  function seasonNumber(ts: number){ return seasonIndex(ts) + 1; }          // для показа: «Сезон 38»
+  function seasonEndsAt(ts: number){ return SEASON_EPOCH + (seasonIndex(ts) + 1) * SEASON_LEN; }
+  function seasonDaysLeft(ts: number){ return Math.max(0, Math.ceil((seasonEndsAt(ts) - ts) / 86400000)); }
+  // 5 дивизионов Bronze→Diamond (по кейсу Google Play «Leagues»). На mock-провайдере это
+  // честная демонстрация против сид-ботов (seedBots), не боевой матчмейкинг — см. план.
+  // idx: 0=Bronze … 4=Diamond. Пороги — квинтили по позиции в сезонном топе (0=лучший).
+  const SEASON_DIVISIONS = [
+    { id:'bronze',   ic:'🥉' },
+    { id:'silver',   ic:'🥈' },
+    { id:'gold',     ic:'🥇' },
+    { id:'platinum', ic:'💠' },
+    { id:'diamond',  ic:'💎' },
+  ];
+  // rank — 1-based место в сезонном топе (как из Leaderboard.top('season',…)); total — размер
+  // этого топа. Без ранга (только личный bestScore, вне топ-N) — худший перцентиль (база).
+  function seasonPercentile(rank: number|null, total: number){
+    if(!rank || !total || total<=1) return 1;           // без ранга / вырожденный случай — худший конец
+    return (rank - 1) / total;                          // 0 = лучший, ~1 = худший
+  }
+  function seasonDivisionIndex(rank: number|null, total: number){
+    const pct = seasonPercentile(rank, total);
+    return pct<0.2 ? 4 : pct<0.4 ? 3 : pct<0.6 ? 2 : pct<0.8 ? 1 : 0;
+  }
+  // Promotion/relegation (план, раздел «Дивизионы»): топ ~20% дивизиона за сезон повышается,
+  // низ ~20% понижается, середина остаётся. pct — перцентиль ИГРОКА в его сезонном топе на
+  // момент подведения итога (тот же расчёт, что seasonDivisionIndex — на mock-провайдере это
+  // общий список, не бракет по дивизиону, см. season-leagues.md).
+  function seasonPromote(prevDivisionIdx: number, pct: number){
+    if(pct<0.2) return Math.min(4, prevDivisionIdx+1);
+    if(pct>=0.8) return Math.max(0, prevDivisionIdx-1);
+    return prevDivisionIdx;
+  }
+  function seasonIdxOf(key: string){ return parseInt(String(key).slice(1), 10); }
+  // Назначение дивизиона на сезон — чистая функция от (сохранённая запись прошлого раунда,
+  // индекс ТЕКУЩЕГО сезона, место/размер топа): если рекорд уже за этот сезон — не пересчитываем
+  // (дивизион фиксирован на весь сезон); если рекорд за ПРЕДЫДУЩИЙ сезон — промо/релегейт; иначе
+  // (первый сезон игрока или пропущенные сезоны) — свежее назначение по перцентилю.
+  function resolveSeasonDivision(rec: any, curSeasonIdx: number, rank: number|null, total: number){
+    const pct = seasonPercentile(rank, total);
+    if(rec && seasonIdxOf(rec.seasonKey)===curSeasonIdx) return rec.divisionIdx;
+    if(rec && seasonIdxOf(rec.seasonKey)===curSeasonIdx-1) return seasonPromote(rec.divisionIdx, pct);
+    return seasonDivisionIndex(rank, total);
   }
 
   // Идентичность: реальные аккаунты (выбор продукт-овнера). Сейчас authProvider — mock
@@ -287,10 +341,55 @@
       top(period: string, mode?: string){ return Promise.resolve(rankRows(seedBots(loadAll()), period, mode).slice(0,TOP_N)); },
     };
     let provider=mockProvider, started=false;
+    // Лига сезона (MVP Фаза 1) — косметика сезона в СВОЁМ сторе, не в ACH.unlocked: ротирует
+    // с сезоном, поэтому не может жить там же, где «медаль=навсегда» (см. season-leagues.md).
+    const SEASON_REWARDS_KEY='pf_season_rewards_v1', SEASON_DIVISION_KEY='pf_season_division_v1';
+    const SEASON_ACCENTS=['#c98a4b','#c7d0da','#ffd45e','#7fe0e8','#a9c8ff'];   // Bronze…Diamond
+    function loadSeasonRewards(){ try{ const a=JSON.parse(ls.get(SEASON_REWARDS_KEY) || 'null'); return (a&&typeof a==='object')?a:{}; }catch(e){ return {}; } }
+    function saveSeasonRewards(o: any){ ls.set(SEASON_REWARDS_KEY, JSON.stringify(o)); }
+    // последний известный дивизион игрока (для promotion/relegation в следующем сезоне) —
+    // {seasonKey, divisionIdx, rank, total, ts}, один рекорд, не журнал.
+    function loadSeasonDivisionRec(){ try{ return JSON.parse(ls.get(SEASON_DIVISION_KEY) || 'null'); }catch(e){ return null; } }
+    function saveSeasonDivisionRec(o: any){ ls.set(SEASON_DIVISION_KEY, JSON.stringify(o)); }
+    const season = {
+      DIVISIONS: SEASON_DIVISIONS,
+      number(ts?: number){ return seasonNumber(ts==null?lbNow():ts); },
+      daysLeft(ts?: number){ return seasonDaysLeft(ts==null?lbNow():ts); },
+      // сезонный топ (тот же приём, что top()) + место игрока + дивизион. Дивизион фиксируется
+      // на весь сезон при первом вызове в этом сезоне; на границе сезонов — promotion/relegation
+      // от дивизиона прошлого сезона (см. resolveSeasonDivision); pf_season_division_v1 хранит
+      // последний рекорд для этого перехода.
+      standing(mode?: string){
+        if(!started) Leaderboard.init();
+        const acct=Account.current();
+        return Promise.resolve(provider.top('season', mode||'survival')).then(list=>{
+          const total=list.length, me=acct?list.find((r: any)=>r.accountId===acct.id):null;
+          const rank=me?me.rank:null, curIdx=seasonIndex(lbNow()), rec=loadSeasonDivisionRec();
+          const divisionIdx=resolveSeasonDivision(rec, curIdx, rank, total);
+          const fromPrevSeason = !!(rec && seasonIdxOf(rec.seasonKey)===curIdx-1);
+          const promoted = fromPrevSeason && divisionIdx>rec.divisionIdx;
+          const relegated = fromPrevSeason && divisionIdx<rec.divisionIdx;
+          saveSeasonDivisionRec({ seasonKey:seasonKey(lbNow()), divisionIdx, rank, total, ts:lbNow() });
+          return { number:seasonNumber(lbNow()), daysLeft:seasonDaysLeft(lbNow()),
+            rank, total, divisionIdx, division:SEASON_DIVISIONS[divisionIdx].id, list, promoted, relegated };
+        });
+      },
+      // один косметический приз на сезон — выдаётся раз, при первом достижении дивизиона
+      // в ЭТОМ сезоне (ключ = текущий seasonKey). Ротирует, «навсегда»-медали не трогает.
+      claimReward(divisionIdx: number){
+        const k=seasonKey(lbNow()), store=loadSeasonRewards();
+        if(store[k]) return store[k];
+        const idx=Math.max(0, Math.min(divisionIdx||0, SEASON_ACCENTS.length-1));
+        store[k]={divisionIdx:idx, accent:SEASON_ACCENTS[idx], ts:lbNow()};
+        saveSeasonRewards(store);
+        return store[k];
+      },
+      reward(){ return loadSeasonRewards()[seasonKey(lbNow())] || null; },
+    };
     return {
       init(){ if(started) return; started=true; Account.init(); },
       account: Account,
-      periodBucket, PERIODS,
+      periodBucket, PERIODS, season,
       get provider(){ return provider; }, set provider(p){ if(p&&typeof p.submit==='function'&&typeof p.top==='function') provider=p; },
       // отправить результат захода. score — число (survival: обслуженные борта). Возвращает
       // {score, ranks:{alltime,month,week}} — место игрока в каждом срезе (null, если вне TOP_N).
@@ -327,6 +426,14 @@
     PERIODS.forEach(per=>{ if((b as Record<string, string>)[per]==null) p.push('periodBucket() не даёт ключ для периода "'+per+'"'); });
     ['rank_top100','rank_top10','rank_1'].forEach(id=>{
       if(!ACH.defs.some(d=>d.id===id)) p.push('ранг-медаль "'+id+'" отсутствует в ACH.defs');
+      Object.keys(I18N).forEach(c=>{ if(I18N[c as LangCode]['ach.'+id+'.t']==null) p.push('нет перевода ach.'+id+'.t в языке "'+c+'"'); });
+    });
+    // Лига сезона (MVP Фаза 1): season-бакет + дивизион-бейджи + их переводы.
+    if((b as Record<string,string>).season==null) p.push('periodBucket() не даёт ключ "season"');
+    if(!Array.isArray(SEASON_DIVISIONS) || SEASON_DIVISIONS.length!==5) p.push('SEASON_DIVISIONS должен содержать 5 дивизионов');
+    SEASON_DIVISIONS.forEach(d=>{
+      const id='season_'+d.id;
+      if(!ACH.defs.some(x=>x.id===id)) p.push('бейдж дивизиона "'+id+'" отсутствует в ACH.defs');
       Object.keys(I18N).forEach(c=>{ if(I18N[c as LangCode]['ach.'+id+'.t']==null) p.push('нет перевода ach.'+id+'.t в языке "'+c+'"'); });
     });
     return p;
