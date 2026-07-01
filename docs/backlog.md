@@ -59,6 +59,15 @@
 
 ---
 
+## Google Play "Level Up" — чек-лист витрины
+
+> Программа Google Play, повышающая видимость игры в сторе (актуально **после** публикации).
+> Разбор чек-листа по трём блокам (Consistent Gamer Experience / Expand Reach / Stable &
+> Performant) и статус каждого пункта в planeflow — план целиком в
+> [`play-level-up-plan.md`](play-level-up-plan.md).
+
+---
+
 ## Глобальные рейтинги (Survival) — следующие шаги
 
 > **Геймплей Survival полностью реализован** (v0.25, см. [`done.md`](done.md)): условие
