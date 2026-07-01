@@ -207,6 +207,19 @@ test('validateBiomes ловит deice без weather на биоме', () => {
   assert.ok(game.validateBiomes().some(p => /deice/.test(p)));
 });
 
+test('реестр помех: каждый ready-биом зарегистрирован (biomeHasHazards), не-биом — нет', () => {
+  const { game } = boot();
+  // updateForest вызывается по biomeHasHazards(LV.biome): если добавить биом в BIOMES,
+  // но забыть строку в BIOME_DEFS (04-config-levels), помехи на его картах не заработают.
+  for (const b of game.BIOMES) {
+    if (!b.ready) continue;
+    assert.ok(game.biomeHasHazards(b.level.biome),
+      `биом «${b.id}» помечен ready, но отсутствует в реестре помех (BIOME_DEFS)`);
+  }
+  assert.equal(game.biomeHasHazards(undefined), false, 'кампания без биома — без движка помех');
+  assert.equal(game.biomeHasHazards('nope'), false, 'неизвестный биом — без движка помех');
+});
+
 // ---------- Шаг 7: погодный планировщик, де-айс как шаг routing, плуг расчищает ВПП ----------
 
 test('погодный планировщик: K.WEATHER_SNOW_CHANCE в [0,1], окно непогоды короче периода между окнами', () => {

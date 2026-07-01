@@ -313,6 +313,31 @@
     REWARD: 11,
   };
 
+  // ---- реестр биомов: единый источник правды «биом → правила помех» ----
+  // Раньше привязка биома к его конфигу/пулу помех была размазана по цепочкам
+  // тернарников в 08-gameplay (reset / spawnHazard / resolveHazard / biomeCfg): каждый
+  // новый биом требовал правок в нескольких местах. Теперь один стол — ключ = LV.biome.
+  // Добавить биом = одна строка ЗДЕСЬ (+ рендер-декор в 09/10, i18n в 03), без правок
+  // логики. Числа баланса по-прежнему в FOR/ARC/… выше; тут — только маппинг.
+  //   cfg      — конфиг помех биома (SPAWN_*/CREW_SPEED/WORK_TIME/REWARD).
+  //   pool     — виды помех, которые спавнит биом (spawnHazard).
+  //   snow     — постоянный снег/обледенение (аркт.: погода не меняется, deice всегда).
+  //   snowPool — доп. виды помех при weather==='snow' (лес: «занос» поверх базовых).
+  type BiomeCfg = { SPAWN_FIRST: number; SPAWN_MIN: number; SPAWN_MAX: number; CREW_SPEED: number; WORK_TIME: number; REWARD: number; [k: string]: number };
+  const BIOME_DEFS: Record<string, { cfg: BiomeCfg; pool: string[]; snow?: boolean; snowPool?: string[] }> = {
+    forest:   { cfg:FOR,  pool:['tree','deer','birds'], snowPool:['snow'] },
+    arctic:   { cfg:ARC,  pool:['icing'], snow:true },
+    tropical: { cfg:TROP, pool:['storm_wave'] },
+    desert:   { cfg:DSRT, pool:['sandstorm'] },
+    mountain: { cfg:MNTN, pool:['rockslide'] },
+    megacity: { cfg:CITY, pool:['vip_motorcade'] },
+  };
+  // Реестр читают функции 08-gameplay. biomeDef(): запись биома или null.
+  // biomeHasHazards(): есть ли у биома движок помех на ВПП (сейчас — у всех биомов;
+  // будущий чисто-косметический биом просто не попадёт в BIOME_DEFS и помех не получит).
+  function biomeDef(b?: string | null){ return (b && BIOME_DEFS[b]) || null; }
+  function biomeHasHazards(b?: string | null){ return !!biomeDef(b); }
+
   // ---- level config ----
   // КАЖДЫЙ уровень — один шаг кривой «медленного нарастания сложности» (паттерн —
   // в docs/design/game-design/level-pattern.md). По нему же делаем будущие карты.

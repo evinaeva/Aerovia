@@ -803,7 +803,7 @@
       const dw=sv.w*0.4, dh=sv.h*0.5;
       rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#16241b'; ctx.fill();
       ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.amber,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
-      emoji('🔧', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      emoji(THEME.emblem.forest, sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
       ctx.fillStyle=hexa(COL.amber,.8); ctx.font=`${7*ui}px ${MONO}`;
       ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
@@ -830,13 +830,13 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.phosphor,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        const ic = ({truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜', deice_truck:'🚒'} as Record<string, string>)[neededCrew(h)];
+        const ic = THEME.crew[neededCrew(h)];
         emoji(ic, h.x, h.y-32*ui, 14*ui, hexa(COL.teal,.5));
       }
     }
     // спец-авто в пути / за работой
     for(const c of crews){
-      const ic = ({truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜', deice_truck:'🚒'} as Record<string, string>)[c.kind];
+      const ic = THEME.crew[c.kind];
       emoji(ic, c.x, c.y, 16*ui, hexa(COL.amber,.4));
       if(c.phase==='work'){               // искорки работы
         const pulse=Math.abs(Math.sin(tm*0.02));
@@ -857,7 +857,7 @@
       const dw=sv.w*0.4, dh=sv.h*0.5;
       rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#0e1a26'; ctx.fill();
       ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.ice,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
-      emoji('❄️', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      emoji(THEME.emblem.arctic, sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
       ctx.fillStyle=hexa(COL.ice,.8); ctx.font=`${7*ui}px ${MONO}`;
       ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
@@ -879,12 +879,12 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.ice,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        emoji('🚒', h.x, h.y-32*ui, 14*ui, hexa(COL.ice,.5));
+        emoji(THEME.crew[neededCrew(h)], h.x, h.y-32*ui, 14*ui, hexa(COL.ice,.5));
       }
     }
     // деайсинг-грузовики в пути / за работой
     for(const c of crews){
-      emoji('🚒', c.x, c.y, 16*ui, hexa(COL.ice,.5));
+      emoji(THEME.crew[c.kind], c.x, c.y, 16*ui, hexa(COL.ice,.5));
       if(c.phase==='work'){
         const pulse=Math.abs(Math.sin(tm*0.018));
         ctx.fillStyle=hexa(COL.ice,.5+0.4*pulse);
@@ -903,7 +903,7 @@
       const dw=sv.w*0.4, dh=sv.h*0.5;
       rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#061a10'; ctx.fill();
       ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.teal,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
-      emoji('🌊', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      emoji(THEME.emblem.tropical, sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
       ctx.fillStyle=hexa(COL.teal,.8); ctx.font=`${7*ui}px ${MONO}`;
       ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
@@ -925,11 +925,11 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.teal,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        emoji('🚛', h.x, h.y-32*ui, 14*ui, hexa(COL.teal,.5));
+        emoji(THEME.crew[neededCrew(h)], h.x, h.y-32*ui, 14*ui, hexa(COL.teal,.5));
       }
     }
     for(const c of crews){
-      emoji('🚛', c.x, c.y, 16*ui, hexa(COL.teal,.6));
+      emoji(THEME.crew[c.kind], c.x, c.y, 16*ui, hexa(COL.teal,.6));
       if(c.phase==='work'){
         const pulse=Math.abs(Math.sin(tm*0.018));
         ctx.fillStyle=hexa(COL.teal,.5+0.4*pulse);
@@ -949,7 +949,7 @@
       const dw=sv.w*0.4, dh=sv.h*0.5;
       rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#1a0e04'; ctx.fill();
       ctx.lineWidth=1; ctx.strokeStyle=hexa(SAND,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
-      emoji('🌪️', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      emoji(THEME.emblem.desert, sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
       ctx.fillStyle=hexa(SAND,.8); ctx.font=`${7*ui}px ${MONO}`;
       ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
@@ -967,11 +967,11 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(SAND,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        emoji('🚛', h.x, h.y-32*ui, 14*ui, hexa(SAND,.5));
+        emoji(THEME.crew[neededCrew(h)], h.x, h.y-32*ui, 14*ui, hexa(SAND,.5));
       }
     }
     for(const c of crews){
-      emoji('🚛', c.x, c.y, 16*ui, hexa(SAND,.5));
+      emoji(THEME.crew[c.kind], c.x, c.y, 16*ui, hexa(SAND,.5));
       if(c.phase==='work'){
         const pulse=Math.abs(Math.sin(tm*0.018));
         ctx.fillStyle=hexa(SAND,.5+0.4*pulse);
@@ -991,7 +991,7 @@
       const dw=sv.w*0.4, dh=sv.h*0.5;
       rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#0a0e1e'; ctx.fill();
       ctx.lineWidth=1; ctx.strokeStyle=hexa(ROCK,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
-      emoji('⛰️', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      emoji(THEME.emblem.mountain, sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
       ctx.fillStyle=hexa(ROCK,.8); ctx.font=`${7*ui}px ${MONO}`;
       ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
@@ -1009,11 +1009,11 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(ROCK,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        emoji('🚜', h.x, h.y-32*ui, 14*ui, hexa(ROCK,.5));
+        emoji(THEME.crew[neededCrew(h)], h.x, h.y-32*ui, 14*ui, hexa(ROCK,.5));
       }
     }
     for(const c of crews){
-      emoji('🚜', c.x, c.y, 16*ui, hexa(ROCK,.5));
+      emoji(THEME.crew[c.kind], c.x, c.y, 16*ui, hexa(ROCK,.5));
       if(c.phase==='work'){
         const pulse=Math.abs(Math.sin(tm*0.018));
         ctx.fillStyle=hexa(ROCK,.5+0.4*pulse);
@@ -1032,7 +1032,7 @@
       const dw=sv.w*0.4, dh=sv.h*0.5;
       rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.fillStyle='#08101e'; ctx.fill();
       ctx.lineWidth=1; ctx.strokeStyle=hexa(COL.amber,.5); rr(sv.x+sv.w/2-dw/2, sv.y+sv.h-dh, dw, dh, 3*ui); ctx.stroke();
-      emoji('🚔', sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
+      emoji(THEME.emblem.megacity, sv.x+sv.w/2, sv.y+sv.h*0.34, 13*ui);
       ctx.fillStyle=hexa(COL.amber,.8); ctx.font=`${7*ui}px ${MONO}`;
       ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText(t('canvas.service'), sv.x+sv.w/2, sv.y+sv.h+2*ui);
@@ -1054,11 +1054,11 @@
         const pulse=0.5+0.5*Math.abs(Math.sin(tm*0.005));
         ctx.lineWidth=2; ctx.strokeStyle=hexa(COL.amber,.3+0.4*pulse);
         ctx.beginPath(); ctx.arc(h.x, h.y, (24+4*pulse)*ui, 0, 7); ctx.stroke();
-        emoji('🚔', h.x, h.y-32*ui, 14*ui, hexa(COL.amber,.5));
+        emoji(THEME.crew[neededCrew(h)], h.x, h.y-32*ui, 14*ui, hexa(COL.amber,.5));
       }
     }
     for(const c of crews){
-      emoji('🚔', c.x, c.y, 16*ui, hexa(COL.amber,.6));
+      emoji(THEME.crew[c.kind], c.x, c.y, 16*ui, hexa(COL.amber,.6));
       if(c.phase==='work'){
         const pulse=Math.abs(Math.sin(tm*0.025));
         ctx.fillStyle=hexa(COL.amber,.5+0.4*pulse);

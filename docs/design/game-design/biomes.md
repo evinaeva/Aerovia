@@ -36,7 +36,22 @@ const XYZ = {
 };
 ```
 
-**b) Запись в `BIOMES[]`**:
+**b) Строка в `BIOME_DEFS` — реестр помех (единственная точка привязки биома к логике).**
+Раньше связка «биом → конфиг/пул помех» была размазана по цепочкам тернарников в
+`08-gameplay` (`reset` / `spawnHazard` / `resolveHazard` / `biomeCfg`) — каждый биом
+требовал правок в нескольких местах. Теперь это один стол; добавить биом = одна строка:
+```typescript
+const BIOME_DEFS = {
+  // …
+  xyz: { cfg:XYZ, pool:['xyz_hazard'] },
+  // snow:true — постоянный снег/обледенение (как arctic);
+  // snowPool:['snow'] — доп. помехи при weather==='snow' (как forest).
+};
+```
+`08-gameplay` читает отсюда через `biomeDef(LV.biome)` / `biomeCfg()`, а
+`biomeHasHazards(LV.biome)` говорит, есть ли у биома движок помех вообще.
+
+**c) Запись в `BIOMES[]`**:
 ```typescript
 { id:'xyz', emoji:'🔣', ready:true,
   level:{ biome:'xyz', weather:true/false, deice:true/false,
@@ -47,41 +62,44 @@ const XYZ = {
 
 ### 2. `src/game/08-gameplay.ts`
 
-**a) `reset()`** — инициализация состояния биома:
+**a) `reset()`** — инициализация уже общая, через реестр; правки НЕ нужны, кроме
+редких one-off спецправил (например, постоянный снег арктики выражен флагом `def.snow`):
 ```typescript
-const xyz = LV.biome==='xyz';
-// примеры: постоянная погода, отключить ветер/туман
-if(xyz){ /* ... */ }
-nextHazard = forest ? FOR.SPAWN_FIRST : arctic ? ARC.SPAWN_FIRST : xyz ? XYZ.SPAWN_FIRST : Infinity;
+const def = biomeDef(LV.biome);                 // запись биома из BIOME_DEFS
+if(def?.snow){ /* постоянная погода */ }
+nextHazard = def ? def.cfg.SPAWN_FIRST : Infinity;
 ```
 
-**b) `neededCrew(h)`** — какая бригада нужна:
+**b) `neededCrew(h)`** — какая бригада нужна (по виду помехи `h.kind`):
 ```typescript
 if(h.kind==='xyz_hazard') return 'xyz_crew';
 ```
 
-**c) `spawnHazard()`** — пул помех для биома:
+**c) `spawnHazard()`** — пул помех берётся из реестра; правки НЕ нужны:
 ```typescript
-const pool = xyz ? ['xyz_hazard'] : arctic ? ['icing'] : (weather==='snow' ? ['tree','deer','birds','snow'] : ['tree','deer','birds']);
+const def = biomeDef(LV.biome);
+let pool = def ? def.pool : ['tree','deer','birds'];
+if(def?.snowPool && weather==='snow') pool = pool.concat(def.snowPool);
 ```
-Добавить spawn-логику для нового вида `kind` (позиция, `r.closed`, toast).
+Но: добавить spawn-логику для нового вида `kind` (позиция, `r.closed`, toast) — в цепочке `if(kind==='…')`.
 
 **d) `updateForest()` (или отдельная функция)** — поведение помехи во времени:
 - Уходит сама через N сек? → добавить в цикл как deer/birds
 - Не уходит без бригады? → ничего не добавлять (как snow/icing)
 
-**e) `resolveHazard()`** — если нужен другой reward или toast:
+**e) `resolveHazard()`** — reward/toast уже общие (через `biomeCfg()` и `LV.biome`);
+правки НЕ нужны:
 ```typescript
-const reward = LV.biome==='xyz' ? XYZ.REWARD : LV.biome==='arctic' ? ARC.REWARD : FOR.REWARD;
+const reward = biomeCfg().REWARD;               // из BIOME_DEFS[LV.biome].cfg
+toast = { text:t((LV.biome||'forest')+'.cleared'), t:0, good:true };
 ```
 
 ### 3. `src/game/08b-gameplay-step.ts`
 
-Добавить биом в условие вызова `updateForest`:
+Правки НЕ нужны — вызов уже общий (по реестру помех):
 ```typescript
-if(LV.biome==='forest' || LV.biome==='arctic' || LV.biome==='xyz') updateForest(dt);
+if(biomeHasHazards(LV.biome)) updateForest(dt);
 ```
-*(или перейти на общий `LV.biome && biomeHasHazards()` когда биомов станет больше 3)*
 
 ### 4. `src/game/09-render.ts`
 
@@ -91,15 +109,21 @@ if(LV.biome==='xyz') drawXyzDecor(tm, ax, ay, field.rwR!, ab);
 ```
 
 **b) Функция `drawXyz(tm)`** — сервисное здание + помехи + бригады. Структура:
-1. Сервисное здание (цвета биома, эмблема-эмодзи)
+1. Сервисное здание (цвета биома, эмблема-эмодзи из `THEME.emblem[biome]`)
 2. Рендер помех (цикл по `hazards`)
-3. Пульсирующее кольцо + иконка нужной бригады (`!h.dispatched`)
-4. Рендер бригад (`crews`): эмодзи + «искорки работы»
+3. Пульсирующее кольцо + иконка нужной бригады (`!h.dispatched`) — `THEME.crew[neededCrew(h)]`
+4. Рендер бригад (`crews`): `THEME.crew[c.kind]` + «искорки работы»
 
-Добавить эмодзи нового типа бригады в оба словаря (`neededCrew` hint и crew render):
+Эмодзи-иконки сведены в единый `THEME` (`01-bootstrap-theme.js`, см. mvp_plan §4.3/§11) —
+редизайн набора иконок = правка одного объекта, без правок рендера. Добавить новый
+биом = по строке в оба словаря:
 ```typescript
-({..., xyz_crew:'🚐'} as Record<string, string>)[c.kind]
+// 01-bootstrap-theme.js → THEME
+crew:   { …, xyz_crew:'🚐' },   // вид бригады → эмодзи (общий на все биомы)
+emblem: { …, xyz:'🔣' },        // биом → эмблема сервисного здания
 ```
+(Помеха-специфичные визуалы на полосе — 🌊/🪨/🌪️ и т.п. — остаются инлайн в `drawXyz`,
+они завязаны на форму отрисовки конкретной помехи.)
 
 ### 5. `src/game/10-scene-loop.ts`
 
@@ -125,14 +149,15 @@ else if(LV.biome==='xyz') drawXyz(ts);
 
 ## Чеклист добавления нового биома
 
-- [ ] `04-config-levels.ts`: константы XYZ, `BIOMES[n].ready = true` + `level` config
-- [ ] `08-gameplay.ts`: `reset()` init; `neededCrew`; `spawnHazard` pool; `updateForest` or new fn; `resolveHazard` biome-aware
-- [ ] `08b-gameplay-step.ts`: добавить биом в условие вызова обновления помех
-- [ ] `09-render.ts`: `drawNeonField` → вызов декора; `drawXyz(tm)` с сервисным зданием + помехами + бригадами; эмодзи во всех словарях
+- [ ] `04-config-levels.ts`: константы XYZ, **строка в `BIOME_DEFS`** (реестр помех), `BIOMES[n].ready = true` + `level` config
+- [ ] `08-gameplay.ts`: `neededCrew` (по `h.kind`); spawn-логика нового `kind` в `spawnHazard`; `updateForest` — поведение помехи во времени. `reset`/`spawnHazard`-pool/`resolveHazard` уже общие (читают `BIOME_DEFS`)
+- [ ] `08b-gameplay-step.ts`: правок нет — вызов общий (`biomeHasHazards`)
+- [ ] `09-render.ts`: `drawNeonField` → вызов декора; `drawXyz(tm)` с сервисным зданием + помехами + бригадами
+- [ ] `01-bootstrap-theme.js`: строки в `THEME.crew` (бригада → эмодзи) и `THEME.emblem` (биом → эмблема)
 - [ ] `10-scene-loop.ts`: dispatch рендера
 - [ ] `03-i18n.ts`: строки en + ru (name, tag, hint, hazard toast, cleared toast, crew name)
 - [ ] `npm run typecheck` — чисто
-- [ ] `npm test` — 155+ тестов зелёные
+- [ ] `npm test` — 155+ тестов зелёные (реестр проверяется тестом «каждый ready-биом зарегистрирован»)
 
 ---
 
@@ -180,9 +205,10 @@ else if(LV.biome==='xyz') drawXyz(ts);
 
 ```
 src/game/
-  04-config-levels.ts   — BIOMES[], FOR{}, ARC{}, level configs
-  08-gameplay.ts        — spawnHazard, neededCrew, updateForest, resolveHazard, dispatchCrew
-  08b-gameplay-step.ts  — update() → updateForest call
+  01-bootstrap-theme.js — THEME.crew / THEME.emblem (эмодзи-иконки биомов)
+  04-config-levels.ts   — BIOMES[], FOR{}, ARC{}…, BIOME_DEFS{} (реестр помех), biomeDef/biomeHasHazards, level configs
+  08-gameplay.ts        — spawnHazard, neededCrew, updateForest, resolveHazard, dispatchCrew, biomeCfg (читают BIOME_DEFS)
+  08b-gameplay-step.ts  — update() → if(biomeHasHazards(LV.biome)) updateForest()
   09-render.ts          — drawForest, drawArctic, drawForestDecor, drawArcticDecor, drawNeonField
   10-scene-loop.ts      — biome render dispatch
   03-i18n.ts            — все строки биомов en/ru

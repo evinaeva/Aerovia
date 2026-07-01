@@ -141,7 +141,7 @@
 
     updateTutorial();
     ACH.onTick(dt);
-    if(LV.biome) updateForest(dt);
+    if(biomeHasHazards(LV.biome)) updateForest(dt);   // биомы с движком помех на ВПП (реестр 04)
 
     for(const pl of planes){
       if(pl.dead) continue;

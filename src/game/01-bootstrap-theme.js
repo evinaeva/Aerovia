@@ -53,7 +53,24 @@
   };
   // Активная тема: неоновые переопределения PALETTE. SPRITES/COL читают THEME.tokens,
   // поэтому перекраска одинаково ложится и на спрайты, и на процедурную отрисовку.
-  const THEME = { tokens: NEON_TOKENS };
+  //
+  // THEME — единый слой «облика» (см. docs/design/game-design/mvp_plan.md §4.3/§11):
+  // редизайн правит THEME, а не логику. Помимо `tokens` (цвета) сюда сведены эмодзи-
+  // иконки биомов, раньше зашитые инлайном в каждую biome-draw в 09-render (и местами
+  // продублированные — крестик 🔧, бригады 🚙/🚒/…). Теперь смена набора иконок = правка
+  // одного объекта. Толщины/размеры пока живут в рендере — их вынос сюда остаётся на §11.
+  //   crew   — вид спец-бригады (neededCrew / crew.kind) → эмодзи (общий на все биомы).
+  //   emblem — эмблема сервисного здания биома (LV.biome → эмодзи).
+  const THEME = {
+    tokens: NEON_TOKENS,
+    crew: {
+      truck:'🚙', eagle:'🦅', chainsaw:'🪚', plow:'🚜', deice_truck:'🚒',
+      pump:'🚛', sweeper:'🚛', bulldozer:'🚜', police:'🚔',
+    },
+    emblem: {
+      forest:'🔧', arctic:'❄️', tropical:'🌊', desert:'🌪️', mountain:'⛰️', megacity:'🚔',
+    },
+  };
 
   // ---- спрайт-атлас (canvas) ----
   // Базовые листы (assets/sprites/planeflow-*.svg) и neon-арт (assets/sprites/neon/)
