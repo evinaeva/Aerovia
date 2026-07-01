@@ -44,13 +44,21 @@
 | `FOR.CREW_SPEED` | `04-config-levels.ts` | `260` | `60..600` | скорость спец-бригады | реакция на помехи лесного биома |
 | `FOR.WORK_TIME` | `04-config-levels.ts` | `1.4` | `0.2..8` | работа бригады | время закрытия ВПП |
 
-### Параметры, зашитые в код (пока не редактируемые)
+### Параметры, вынесенные из кода → в `MT_PARAMS` (2026-07-02)
 
-- Множители внутри симуляции: landing speed `K.SPEED_AIR * 0.8`, bay movement `taxiSpeed * 0.85`,
-  bonus fly `K.SPEED_TAKEOFF * 0.7`, lerp `dt*6` / `dt*8` / `dt*2`, угловой порог `0.12`,
-  геометрия парковки `L=13*ui`, `gap=4*ui`.
-- Визуальные тайминги: CSS `transition:.15s` / `transition:.32s`, `--m-dur`, `starPop 0.5s`.
-- Таймеры инфраструктуры: revocation/export `setTimeout(..., 5000)`, achievement toast, cloud push debounce.
+Почти все множители симуляции теперь редактируемы через панель:
+- посадочная скорость — `K.APPROACH_SPEED_MULT` (бывш. `SPEED_AIR*0.8`);
+- движение в боксе — `K.BAY_DOCK_SPEED` (бывш. `taxiSpeed*0.85`);
+- lerp-выравнивание — `K.LAND_ALIGN_SPEED` / `K.BAY_ALIGN_SPEED` (бывш. `dt*8` / `dt*2`);
+- множитель посадочного докатывания — `K.LAND_ROLLOUT_MIN` (бывш. `landSpeed*0.1`);
+- порог разворота в боксе — `K.BAY_TURN_THRESHOLD` (бывш. хардкод `0.04`);
+- толщина/яркость превью маршрута — `K.ROUTE_WIDTH` / `K.ROUTE_ALPHA`;
+- длительности CSS-анимаций — `MT.UI_ANIM_DUR` / `MT.ACH_TOAST_DUR` / `MT.STAR_POP_DUR`
+  (пишут `--m-dur` / `--ach-toast-dur` / `--star-pop-dur` через `mtSyncCssVars`).
+
+Сознательно оставлено в коде (чистая геометрия / бонус-мир / инфраструктура — не motion-параметры):
+- геометрия парковки в боксе `L=13*ui`, `gap=4*ui`; lerp окукливания бонус-гусеницы `dt*6` (только бонус-мир);
+- таймеры инфраструктуры: revocation/export `setTimeout(..., 5000)`, cloud push debounce.
 
 ## Этапы 2–7. Реализация
 
@@ -70,8 +78,10 @@
    spawn pace, столкновений, near-miss, погодных множителей и лесных бригад.
 2. **Оставить в коде**: чистую геометрию экрана, safe-area, константы тестовой инфраструктуры,
    art-only размеры, привязанные к конкретному skin/handoff.
-3. **Новые параметры на будущее**: множитель посадочного докатывания, скорость заезда/выезда из бокса,
-   lerp alignment speed, порог разворота в боксе, длительность HUD/toast/achievement-анимаций,
-   визуальная толщина/яркость route preview.
+3. **Вынесено (2026-07-02)**: множитель посадочного докатывания (`K.LAND_ROLLOUT_MIN`), скорость
+   заезда/выезда из бокса (`K.BAY_DOCK_SPEED`), lerp alignment speed
+   (`K.LAND_ALIGN_SPEED`/`K.BAY_ALIGN_SPEED`), порог разворота в боксе (`K.BAY_TURN_THRESHOLD`),
+   длительность HUD/toast/achievement-анимаций (`MT.UI_ANIM_DUR`/`ACH_TOAST_DUR`/`STAR_POP_DUR`),
+   толщина/яркость route preview (`K.ROUTE_WIDTH`/`K.ROUTE_ALPHA`) — все через `MT_PARAMS`.
 4. **Архитектура**: расширять `MT_PARAMS`, а не добавлять слайдеры вручную. Если параметр перестаёт
    быть числом `K`/`FOR`, добавить адаптер `target` в `mtTarget`.

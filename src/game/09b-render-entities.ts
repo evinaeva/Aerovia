@@ -391,8 +391,8 @@
     if(!((pl.zone==='air'||pl.zone==='field'||pl.zone==='runway') && pl.path.length && pl.moving && !pl.autoPath)) return;
     const _rc = COL.phosphor;
     ctx.save();
-    ctx.strokeStyle=hexa(_rc, pl.selected?0.95:0.6);
-    ctx.lineWidth=Math.max(1.92, 4.8*ui); ctx.lineCap='round'; ctx.lineJoin='round'; // на 20% тоньше прежнего (было 6*ui): ≈7.2px @ui1.5, ≈3.4px на телефоне — линия тоньше, но различима
+    ctx.strokeStyle=hexa(_rc, pl.selected?Math.min(1,K.ROUTE_ALPHA+0.35):K.ROUTE_ALPHA);
+    ctx.lineWidth=Math.max(K.ROUTE_WIDTH*0.4, K.ROUTE_WIDTH*ui); ctx.lineCap='round'; ctx.lineJoin='round'; // толщина/яркость — Motion Tuning (K.ROUTE_WIDTH/ROUTE_ALPHA); пол 0.4× держит линию различимой на телефоне (ui≈0.7)
     // Выбранный борт — полный glow; остальные — минимальный (горячий путь на мобилах).
     ctx.shadowColor=_rc; ctx.shadowBlur=pl.selected?8:3;
     ctx.beginPath(); ctx.moveTo(pl.x,pl.y);

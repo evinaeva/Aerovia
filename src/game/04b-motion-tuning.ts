@@ -22,7 +22,7 @@
     aircraft_scale:'Масштаб борта', timing:'Тайминги', service:'Обслуживание',
     spawn:'Поток', collisions:'Столкновения', effects:'Эффекты', bay_nav:'Бокс: заезд/выезд',
     events:'События', weather:'Погода', forest:'Лесной биом', ctrl:'Контроль событий',
-    safe_areas:'Безопасные зоны и жесты',
+    ui_anim:'Анимации UI', safe_areas:'Безопасные зоны и жесты',
   };
 
   const MT_PLANNED_PARAMS: MtParam[] = [
@@ -45,6 +45,11 @@
     {key:'MT.SHOW_ALIGN_PT',       group:'flight_overlay', category:'Отладочные слои', label:'Точка выравнивания', target:'META', name:'SHOW_ALIGN_PT',       def:true,  note:'Показать точку начала выравнивания по оси ВПП (голубая линия). Работает только при включённом «Показать точки».', impact:'Скрыть — убирает точку с превью, не мешает остальным.', visualsOnly:true, liveSafe:true, exportable:true},
     {key:'MT.SHOW_TAKEOFF_ALIGN_PT',group:'flight_overlay',category:'Отладочные слои', label:'Точка взлётн. выравн.',target:'META', name:'SHOW_TAKEOFF_ALIGN_PT',def:true,  note:'Показать точку начала выравнивания по оси ВПП при рулении на взлёт (оранжевая линия). Работает только при включённом «Показать точки».', impact:'Скрыть — убирает взлётную точку с превью.', visualsOnly:true, liveSafe:true, exportable:true},
     {key:'MT.SCENARIO', group:'mobile_preview', category:'Превью', label:'Сценарий превью', target:'META', name:'SCENARIO', def:'none', note:'Автопилот превью: борт сам выполняет выбранный манёвр. «Выкл» — автопилот отключён, управляй вручную.', impact:'Сохраняется вместе с настройками.', liveSafe:false, requiresReplay:true, exportable:true},
+
+    // ── Длительности анимаций UI (мс) — пишутся в CSS-переменные :root (mtSyncCssVars) ──
+    {key:'MT.UI_ANIM_DUR',   group:'ui_anim', category:'Анимации UI', label:'Анимации HUD/меню', target:'META', name:'UI_ANIM_DUR',   def:240, min:0, max:1000, step:10, unit:'мс', note:'Длительность общих переходов интерфейса (CSS --m-dur): доска, кнопки, карточки, чипы.', impact:'Меньше — интерфейс резче/отзывчивее; больше — плавнее.', visualsOnly:true, liveSafe:true, exportable:true},
+    {key:'MT.ACH_TOAST_DUR', group:'ui_anim', category:'Анимации UI', label:'Тост достижения',   target:'META', name:'ACH_TOAST_DUR', def:320, min:0, max:1500, step:10, unit:'мс', note:'Длительность появления/скрытия всплывашки достижения (#achToast).', impact:'Больше — тост дольше выезжает и тает.', visualsOnly:true, liveSafe:true, exportable:true},
+    {key:'MT.STAR_POP_DUR',  group:'ui_anim', category:'Анимации UI', label:'Появление звёзд',    target:'META', name:'STAR_POP_DUR',  def:500, min:0, max:2000, step:10, unit:'мс', note:'Длительность анимации «выскакивания» звёзд на экране результатов (starPop).', impact:'Больше — звёзды появляются медленнее.', visualsOnly:true, liveSafe:true, exportable:true},
 
     // ── Безопасные зоны: ручной override safe-area insets (Workbench) ────────
     {key:'MT.SA_INSET_TOP',    group:'safe_areas', category:'Safe insets', label:'Safe inset сверху',    target:'META', name:'SA_INSET_TOP',    def:0,   min:0, max:120, step:1, unit:'px', note:'Ручной override safe-area-inset-top. 0 = читать из env(). Применяется для симуляции в Workbench.',        impact:'Смещает верхний край contentSafeRect.', liveSafe:true, exportable:true },
@@ -99,6 +104,7 @@
     {key:'K.TAKEOFF_LIFT_DIST', group:'aircraft_scale', label:'Дистанция набора масштаба', target:'K', name:'TAKEOFF_LIFT_DIST', def:K.TAKEOFF_LIFT_DIST, min:0, max:600, step:10, unit:'px', visualsOnly:true, note:'[Визуал] За сколько пикселей после отрыва от ВПП борт «вырастает» с наземного масштаба до воздушного. На физику не влияет.',              impact:'Меньше — резче «вырастает» после взлёта; больше — растёт плавнее.'},
     // ── пробег и остановка после посадки ────────────────────────────────────
     {key:'K.LAND_ROLLOUT', group:'rollout_stop', label:'Выкат на апрон', target:'K', name:'LAND_ROLLOUT', def:K.LAND_ROLLOUT, min:0, max:160, step:2, unit:'px', note:'На сколько пикселей вглубь апрона борт выкатывается после посадки и встаёт перед заездом в бокс. 0 — встаёт у самой кромки ВПП.', impact:'Больше — борт заезжает глубже на апрон; 0 — встаёт у самой кромки.'},
+    {key:'K.LAND_ROLLOUT_MIN', group:'rollout_stop', label:'Мин. скорость доката ×', target:'K', name:'LAND_ROLLOUT_MIN', def:K.LAND_ROLLOUT_MIN, min:0, max:1, step:.05, note:'Множитель посадочного докатывания: при пробеге борт тормозит (см. «Торможение при пробеге») не ниже этой доли скорости захода и докатывается на ней до остановки. 0.1 — докатывается почти до остановки; 1 — не замедляется.', impact:'Ниже — медленнее докат в конце пробега; выше — борт дольше катится быстро.'},
     // ── заход на посадку ─────────────────────────────────────────────────────
     {key:'K.APPROACH_SPEED_MULT',group:'approach',label:'Скорость захода ×',        target:'K',  name:'APPROACH_SPEED_MULT',def:K.APPROACH_SPEED_MULT,min:.2,  max:1,   step:.05,  note:'Множитель скорости при финальном заходе на посадку (× к базовой скорости в воздухе). 1.0 — заход на полной воздушной скорости; 0.5 — вдвое медленнее.',  impact:'Ниже — медленнее и точнее; выше — быстрее, сложнее попасть.'},
     {key:'K.PLANE_SKY_SCALE',   group:'aircraft_scale', label:'Масштаб борта в небе',     target:'K',  name:'PLANE_SKY_SCALE',   def:K.PLANE_SKY_SCALE,   min:.5,  max:3,   step:.05,  visualsOnly:true, note:'Визуальный масштаб борта в воздухе.',                         impact:'Больше — заметнее самолёты; влияет только на рендер.'},
@@ -119,6 +125,8 @@
     // ── маршрутизация ─────────────────────────────────────────────────────────
     {key:'K.ARRIVE', group:'routing', label:'Захват точки маршрута',          target:'K',  name:'ARRIVE',       def:K.ARRIVE,       min:2,   max:60,  step:1,    note:'На каком расстоянии борт считает точку маршрута пройденной и поворачивает к следующей.',                    impact:'Больше — плавнее, но менее точное следование линии.'},
     {key:'K.GRAB',   group:'routing', label:'Радиус выбора борта',            target:'K',  name:'GRAB',         def:K.GRAB,         min:16,  max:90,  step:1,    note:'Радиус вокруг борта, в пределах которого касание выбирает его для прокладки маршрута.',                                      impact:'Влияет на удобство взаимодействия.'},
+    {key:'K.ROUTE_WIDTH', group:'routing', label:'Толщина маршрута', target:'K', name:'ROUTE_WIDTH', def:K.ROUTE_WIDTH, min:1, max:12, step:.1, visualsOnly:true, note:'[Визуал] Толщина фосфорной линии превью маршрута (× ui; на телефоне действует пол 0.4× для читаемости).', impact:'Больше — толще линия маршрута; на геймплей не влияет.'},
+    {key:'K.ROUTE_ALPHA', group:'routing', label:'Яркость маршрута', target:'K', name:'ROUTE_ALPHA', def:K.ROUTE_ALPHA, min:.1, max:1, step:.05, visualsOnly:true, note:'[Визуал] Непрозрачность линии превью маршрута у невыбранного борта; выбранный борт ярче на 0.35.', impact:'Выше — ярче линия маршрута; на геймплей не влияет.'},
     // ── столкновения ──────────────────────────────────────────────────────────
     {key:'K.CRASH_DIST', group:'collisions', label:'Дистанция столкновения',  target:'K',  name:'CRASH_DIST',   def:K.CRASH_DIST,   min:8,   max:60,  step:1,    note:'Расстояние, ближе которого два наземных борта считаются столкнувшимися.',                       impact:'Выше — игра строже к разъездам.'},
     // ── эффекты ───────────────────────────────────────────────────────────────
@@ -162,6 +170,7 @@
     {key:'K.BAY_DOCK_SPEED',  group:'bay_nav', label:'Скорость в боксе ×',   target:'K', name:'BAY_DOCK_SPEED',  def:K.BAY_DOCK_SPEED,  min:.1, max:2,   step:.05, note:'Скорость движения внутри бокса как доля от обычной скорости руления.',     impact:'Ниже — медленнее и аккуратнее; выше — короче стоянка.'},
     {key:'K.BAY_ALIGN_SPEED', group:'bay_nav', label:'Выравнивание по оси',  target:'K', name:'BAY_ALIGN_SPEED', def:K.BAY_ALIGN_SPEED, min:1,  max:30,  step:.5,  note:'Скорость подстройки борта к оси ворот при заезде и выезде.',   impact:'Выше — резче прилипание к оси; ниже — плавнее.'},
     {key:'K.BAY_HEAD_SPEED',  group:'bay_nav', label:'Скорость разворота',   target:'K', name:'BAY_HEAD_SPEED',  def:K.BAY_HEAD_SPEED,  min:.5, max:15,  step:.5,  note:'Скорость поворота носа при заезде и выезде из бокса.',   impact:'Выше — резче разворот; ниже — плавнее.'},
+    {key:'K.BAY_TURN_THRESHOLD', group:'bay_nav', label:'Порог разворота в боксе', target:'K', name:'BAY_TURN_THRESHOLD', def:K.BAY_TURN_THRESHOLD, min:0, max:.5, step:.01, unit:'рад', note:'При выезде борт разворачивается на месте носом наружу, пока угол до направления «наружу» больше этого порога (радианы); ниже — доворот считается завершённым и борт едет прямо по оси.', impact:'Меньше — точнее доворот перед выездом; больше — раньше трогается, возможен лёгкий боковой снос.'},
     {key:'K.BAY_APPROACH_DIST', group:'bay_nav', label:'Точка подъезда к ангару', target:'K', name:'BAY_APPROACH_DIST', def:K.BAY_APPROACH_DIST, min:0, max:300, step:2, unit:'px', note:'Дистанция точки подъезда от ворот ангара наружу по оси захода. Борт доезжает до неё, центрируется по оси ворот и заезжает прямо. 0 = заезжает сразу при касании бокса. Перетаскивается на превью (слой «Точки ВПП/ангара»).', impact:'Определяет, с какого места перед ангаром борт центрирует траекторию и заезжает прямо.'},
     // ── настраиваемые точки ВПП (перетаскиваются на превью) ───────────────────
     {key:'K.RW_TOUCHDOWN_OFF', group:'landing',  label:'Точка касания (сдвиг)',       target:'K', name:'RW_TOUCHDOWN_OFF', def:K.RW_TOUCHDOWN_OFF, min:-200, max:400, step:2, unit:'px', note:'Сдвигает место касания полосы вдоль ВПП. «+» = дальше в небо (касается раньше по пути, дальше от апрона); «−» = ближе к апрону. Можно перетащить мышью на превью.', impact:'Определяет, в каком месте ВПП борт касается земли при посадке.'},
@@ -202,7 +211,7 @@
     bay_nav:'Бокс: заезд/выезд', service_bay_geometry:'Геометрия боксов', service_bay_exit:'Выезд из бокса', aircraft_state:'Состояние борта', aircraft_scale:'Масштаб борта',
     events:'События', weather:'Погода', sound_haptics:'Звук и вибрация', debug_overlays:'Отладочные слои', presets_persistence:'Пресеты',
     forest:'Лесной биом', ctrl:'⚙ Контроль событий', mobile_preview:'Превью',
-    safe_areas:'📐 Безопасные зоны и жесты',
+    ui_anim:'Анимации UI', safe_areas:'📐 Безопасные зоны и жесты',
   };
 
   function mtTarget(p: MtParam): any { return p.target === 'META' ? MT_META_VALUES : p.target === 'FOR' ? FOR as any : K as any; }
@@ -228,6 +237,23 @@
     return true;
   }
 
+  // META-параметры длительностей UI (мс) → CSS-переменные :root. CSS-анимации не читают
+  // K/FOR/MT_META напрямую, поэтому переносим значения в document.documentElement.
+  // Дефолты (240/320/500 мс) совпадают с записанными в styles.css (0.24s/0.32s/0.5s),
+  // так что применение при значениях по умолчанию ничего не меняет.
+  function mtSyncCssVars(): void {
+    const el = typeof document !== 'undefined' && document.documentElement;
+    const s: any = el && el.style;
+    if (!s || typeof s.setProperty !== 'function') return;   // не-браузер / тест-заглушка
+    const set = (cssVar: string, key: string) => {
+      const v = MT_META_VALUES[key];
+      if (typeof v === 'number') s.setProperty(cssVar, v + 'ms');
+    };
+    set('--m-dur', 'UI_ANIM_DUR');
+    set('--ach-toast-dur', 'ACH_TOAST_DUR');
+    set('--star-pop-dur', 'STAR_POP_DUR');
+  }
+
   function mtSnapshot(): Record<string, any> {
     const o: Record<string, any> = {};
     MT_PARAMS.forEach(p => o[p.key] = mtGet(p));
@@ -243,6 +269,7 @@
       MT_PARAMS.filter(p => p.group === 'ctrl').forEach(p => delete snap[p.key]);
       localStorage.setItem(MT_STORE_KEY, JSON.stringify(snap));
     } catch (_) {}
+    mtSyncCssVars();
     mtRenderPanel();
   }
 
@@ -382,6 +409,7 @@
 
     root.querySelectorAll('[data-mt]').forEach((el: any) => el.addEventListener('input', (e: any) => {
       mtSet(e.target.dataset.mt, e.target.type === 'checkbox' ? e.target.checked : e.target.value);
+      mtSyncCssVars();
       try { localStorage.setItem(MT_STORE_KEY, JSON.stringify(mtSnapshot())); } catch (_) {}
       // синхронизировать slider ↔ number для того же параметра
       root.querySelectorAll('[data-mt="' + e.target.dataset.mt + '"]').forEach((x: any) => {
