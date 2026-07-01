@@ -44,7 +44,9 @@ Aerovia/PlaneFlow — это веб-игра (`src/`), которую Capacitor 
 ## Требования к КАЖДОМУ PR
 
 Это чек-лист, который обязан выполняться в любом изменении. CI-гард
-(см. «Автоматический контроль») проверяет пункты, которые можно проверить машинно.
+([`scripts/check-asset-budget.mjs`](../scripts/check-asset-budget.mjs), шаг в
+[`deploy.yml`](../.github/workflows/deploy.yml) — Фаза 4) проверяет пункты, которые
+можно проверить машинно: байт-бюджет `www/assets`, размер битмапов, дубликаты по хэшу.
 
 ### Ассеты
 - [ ] Новый битмап не добавляется, если то же самое можно нарисовать **SVG/процедурно**
@@ -91,7 +93,10 @@ Aerovia/PlaneFlow — это веб-игра (`src/`), которую Capacitor 
 | Пиксельный размер битмапа | **≤ 2048 px** по большей стороне | — | CI-гард (по возможности) |
 | Дубликаты по хэшу в `www/assets` | **0** | 0 | CI-гард |
 
-Замер после Фазы 0: `www/assets` ≈ **18 МБ** (было ~28 МБ до чистки skins/dupes).
+Замер после Фазы 4: `www/assets` ≈ **15.6 МБ** (Фаза 0 свела ~28 → ~18 МБ чисткой
+skins/dupes; Фаза 4 добила до ~15.6 МБ, убрав из бандла дубль/dev-мусор). CI-гард
+стоит на потолке 19 МБ (запас под текущим — намеренный; потолок опускаем отдельным
+решением, чтобы не блокировать несвязанные PR случайным ростом).
 «Потолок» — это то, что CI не даёт превысить (защита от регресса); «Цель» — куда
 двигаемся Фазой 2. Главное правило: **потолок только опускается**, любое увеличение
 требует явного обоснования в описании PR.
@@ -108,12 +113,45 @@ Aerovia/PlaneFlow — это веб-игра (`src/`), которую Capacitor 
   3 дубля удалены, id убраны из манифеста. Итог: `www/assets` ~28 → ~18 МБ.
 - Правила зафиксированы (этот документ + раздел «Memory budget» в [`CLAUDE.md`](../CLAUDE.md)).
 
-**Фазы 1–4 — не сделаны; отслеживаются в бэклоге:**
-[`backlog.md` → «Память / Android 17»](backlog.md). Кратко:
-1. Сброс регенерируемых кэшей на `hidden`/`freeze` + границы SVG-`cache` (LRU).
-2. Даунсемплинг крупных PNG (доводит `www/assets` до цели ≤12 МБ; без альфы, где не нужна).
-3. R8 для release в `scripts/setup-android.mjs` + опц. чтение `ApplicationExitInfo` в аналитику.
-4. CI-гард по байт-бюджету/дубликатам в [`deploy.yml`](../.github/workflows/deploy.yml) — делает правила машинно-обязательными.
+**Фаза 1 — сброс регенерируемых кэшей — ✅ СДЕЛАНО:**
+- `releaseTransientMemory()` в [`10-scene-loop.ts`](../src/game/10-scene-loop.ts) на
+  `visibilitychange:hidden` и `freeze` (Page Lifecycle API) освобождает SVG-raster
+  `cache`, `zoneImgCache` и производные `patterns` (метод `SPRITES.releaseCaches()` в
+  [`02-sprites.ts`](../src/game/02-sprites.ts)) и обнуляет offscreen-буфер неон-линии
+  апрона (`_apronNeonCv` в [`09-render.ts`](../src/game/09-render.ts)). Всё пересоздаётся
+  по требованию при возврате (до готовности — процедурный фолбэк).
+- SVG-`cache` получил границу вытеснения (`CACHE_MAX=160`, FIFO на промахе) — Map больше
+  не растёт неограниченно от уникальных ключей (id×размер×тема×dpr).
+- rAF-цикл остаётся остановленным в фоне (поведение `10-scene-loop.ts` не тронуто).
+- PNG-атлас (`pngCache`) и загруженные SVG-символы НЕ чистятся — повторный декод дал бы
+  видимое мигание, а весят они мало.
+
+**Фаза 3 — R8 для release — ✅ СДЕЛАНО (конфиг; ждёт проверки сборкой):**
+- [`setup-android.mjs`](../scripts/setup-android.mjs) патчит release-buildType на
+  `minifyEnabled true` + `shrinkResources true` + `proguard-android-optimize.txt`,
+  фиксирует `android.enableR8.fullMode=true` в `gradle.properties` и пишет
+  `app/proguard-rules.pro` с keep-правилами для Capacitor-плагинов (мост зовёт
+  `@CapacitorPlugin`/`@PluginMethod` рефлексией — без keep их вырежет R8).
+- ⚠️ В CI/песочнице нет Android SDK, release-сборка здесь не проверялась. Перед
+  публикацией AAB **обязателен смоук**: собрать release и убедиться, что Snapshots
+  (облачные сейвы), InstallReferrer и FirebaseAnalytics работают (не съедены шринком).
+- Опц. (НЕ сделано): чтение `ApplicationExitInfo` на старте → `MemoryLimiter:AnonSwap`
+  в аналитику ([`12e-firebase-sink.ts`](../src/game/12e-firebase-sink.ts)).
+
+**Фаза 4 — CI-гард — ✅ СДЕЛАНО:**
+- [`scripts/check-asset-budget.mjs`](../scripts/check-asset-budget.mjs) сканирует
+  собранный `www/assets` и падает при превышении байт-бюджета, слишком крупном битмапе
+  (> 2.3 МБ) или дубликатах по хэшу; > 2048 px — warning (в доке «по возможности»).
+  Шаг в [`deploy.yml`](../.github/workflows/deploy.yml) собирает `www/` и гоняет гард
+  на каждый push в `main` — правила из этой доки стали машинно-обязательными.
+- Заодно `shipAsset()` в [`build-www.mjs`](../scripts/build-www.mjs) перестал тащить в
+  бандл мёртвый вес (дубль `app-icon.png`, dev-контакт-лист `_overview.png`, dev-карточки
+  `*.card.html`, незалинкованный `hud/wow-bar.png`): `www/assets` ~18 → **~15.6 МБ**.
+
+**Фаза 2 — правильный размер арта — не сделана; отслеживается в бэклоге:**
+[`backlog.md` → «Память / Android 17»](backlog.md). Даунсемплинг крупных PNG до цели
+`www/assets` ≤12 МБ (без альфы, где не нужна). ⚠️ Требует image-тулинга и визуальной
+проверки — делать с обзором овнером.
 
 ---
 

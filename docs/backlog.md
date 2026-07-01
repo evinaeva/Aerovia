@@ -198,23 +198,33 @@
 > **Фаза 0 (чистка мёртвого веса: `www/assets` ~28 → ~18 МБ) — сделана**
 > ([PR #376](https://github.com/evinaeva/Aerovia/pull/376)). Ниже — что ещё не сделано.
 
-1. **Фаза 1 — сброс регенерируемых кэшей.** На `visibilitychange:hidden` и событие
-   `freeze` (Page Lifecycle) чистить SVG-raster `cache`, `zoneImgCache` и offscreen-буферы
-   (`_apronNeonCv`) в [`02-sprites.ts`](../src/game/02-sprites.ts) / [`09-render.ts`](../src/game/09-render.ts);
-   дать SVG-`cache` границу (LRU/лимит ключей). rAF-пауза в фоне уже есть — не регрессировать.
-   **Сложность:** низкая.
+1. ~~**Фаза 1 — сброс регенерируемых кэшей.**~~ **Готово.** На `visibilitychange:hidden`
+   и событие `freeze` (Page Lifecycle) `releaseTransientMemory()` в
+   [`10-scene-loop.ts`](../src/game/10-scene-loop.ts) чистит SVG-raster `cache`,
+   `zoneImgCache` и производные `patterns` (`SPRITES.releaseCaches()` в
+   [`02-sprites.ts`](../src/game/02-sprites.ts)) и отпускает offscreen-буфер неон-линии
+   апрона (`_apronNeonCv` в [`09-render.ts`](../src/game/09-render.ts)). SVG-`cache`
+   получил границу (`CACHE_MAX`, FIFO-вытеснение на промахе). rAF-пауза в фоне не тронута.
 2. **Фаза 2 — правильный размер арта.** Замерить пиксельные размеры крупнейших PNG
-   (`sprite_back_full.png` 2.25 МБ и т.п.), даунсемплить до макс. экранного при `dpr 2`;
-   где нет прозрачности — хранить без альфа-канала. Это доводит бюджет `www/assets` до цели ≤12 МБ.
-   **Сложность:** средняя.
-3. **Фаза 3 — нативная оболочка + наблюдаемость.** В [`setup-android.mjs`](../scripts/setup-android.mjs)
-   включить R8 для release (`minifyEnabled` / `shrinkResources` / `proguard-android-optimize.txt` / full-mode).
-   Опц.: на старте читать `ApplicationExitInfo`, ловить `MemoryLimiter:AnonSwap` и слать в
-   аналитику ([`12e-firebase-sink.ts`](../src/game/12e-firebase-sink.ts)) — знать, ловим ли лимит в поле.
-   **Сложность:** средняя.
-4. **Фаза 4 — CI-гард (делает правила машинно-обязательными).** В
-   [`deploy.yml`](../.github/workflows/deploy.yml) падать при превышении байт-бюджета
-   `www/assets`, при слишком крупном битмапе или при дубликатах по хэшу. **Сложность:** низкая.
+   (`sprite_back_full.png` 1672×941, `svc_*` 1254×1223 ×8 и т.п.), даунсемплить до макс.
+   экранного при `dpr 2`; где нет прозрачности — хранить без альфа-канала. Это доводит
+   бюджет `www/assets` до цели ≤12 МБ. **Сложность:** средняя. ⚠️ Требует image-тулинга
+   (sharp/ImageMagick) и **визуальной проверки результата** — делать с обзором овнером,
+   а не вслепую (риск замыленного арта).
+3. ~~**Фаза 3 — нативная оболочка (R8).**~~ **Готово (конфиг; нужна проверка сборкой).**
+   [`setup-android.mjs`](../scripts/setup-android.mjs) включает для release `minifyEnabled`
+   + `shrinkResources` + `proguard-android-optimize.txt` (full-mode R8 фиксируется в
+   `gradle.properties`) и пишет `app/proguard-rules.pro` с keep-правилами для наших
+   Capacitor-плагинов (мост зовёт их рефлексией). ⚠️ В песочнице нет Android SDK —
+   **обязательно прогнать release-сборку и смоук плагинов** (Snapshots/InstallReferrer/
+   FirebaseAnalytics) перед публикацией AAB. Опц. (не сделано): чтение `ApplicationExitInfo`
+   на старте → аналитика ([`12e-firebase-sink.ts`](../src/game/12e-firebase-sink.ts)).
+4. ~~**Фаза 4 — CI-гард.**~~ **Готово.** [`deploy.yml`](../.github/workflows/deploy.yml)
+   собирает `www/` и гоняет [`scripts/check-asset-budget.mjs`](../scripts/check-asset-budget.mjs):
+   падает при `www/assets` > 19 МБ, битмапе > 2.3 МБ или дубликатах по хэшу (>2048 px —
+   warning). Заодно из бандла убран мёртвый вес (дубль `app-icon.png`, `_overview.png`,
+   `*.card.html`, `hud/wow-bar.png` — фильтр `shipAsset()` в
+   [`build-www.mjs`](../scripts/build-www.mjs)): `www/assets` ~18 → **~15.6 МБ**.
 
 ---
 

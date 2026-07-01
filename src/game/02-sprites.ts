@@ -5,6 +5,16 @@
 
   const SPRITES = (() => {
     const cache = new Map<string, HTMLImageElement>();
+    // Граница SVG-raster кэша (docs/memory-android17.md, Фаза 1): без неё Map рос бы
+    // с каждым уникальным ключом (id×размер×тема×dpr) — ресайзы/смены темы плодят
+    // декодированные битмапы. Держим последние CACHE_MAX; при переполнении вытесняем
+    // самые старые (Map хранит порядок вставки → FIFO). Вставка только на промахе кэша
+    // (после прогрева редка), так что оверхед не в кадре.
+    const CACHE_MAX = 160;
+    function capCache(){
+      if(cache.size <= CACHE_MAX) return;
+      for(const k of cache.keys()){ if(cache.size <= CACHE_MAX) break; cache.delete(k); }
+    }
     const stripF = (s: string) => s.replace(/\s*filter="url\([^)]*\)"/g, ''); // drop filter refs (defs live in the sheet, not the standalone svg)
     // детерминированная подпись набора токенов для ключа кэша (sorted)
     function tokSig(t: Record<string, string>){
@@ -85,7 +95,7 @@
                     (tokens ? styleBlock(tokens) : '') + stripF(sym.innerHTML) + '</svg>';
         im = new Image(); im.decoding = 'async';
         im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-        cache.set(key, im);
+        cache.set(key, im); capCache();
       }
       return im;
     }
@@ -141,6 +151,7 @@
       zoneSkin?: (zone: string, state?: string) => HTMLImageElement | null;
       hasZoneSkin?: (zone: string, state?: string) => boolean;
       getZoneSkins?: () => ZoneSkinMap;
+      releaseCaches?: () => void;
     }
     const A: SpriteApi = {
       ready: false,
@@ -233,6 +244,13 @@
     };
     A.hasZoneSkin = (zone, state) => !!A.zoneSkin!(zone, state);
     A.getZoneSkins = () => zoneSkins;
+    // Сброс регенерируемых кэшей (docs/memory-android17.md, Фаза 1): вызывается при
+    // уходе в фон (visibilitychange:hidden / freeze). Отпускаем декодированные
+    // SVG-raster битмапы, per-зонные картинки и производные CanvasPattern'ы — всё
+    // это пересоздаётся по требованию при следующей отрисовке (до готовности рисуем
+    // процедурный фолбэк). PNG-атлас (pngCache) и загруженные SVG-символы НЕ трогаем:
+    // их повторный декод дал бы видимое мигание, а весят они мало.
+    A.releaseCaches = function(){ cache.clear(); zoneImgCache.clear(); patterns.clear(); };
     A.loadSkin = function(skin: string){
       if (!skin || loadedSkins.has(skin)) return;
       loadedSkins.add(skin);

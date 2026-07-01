@@ -261,16 +261,28 @@ function drawMenuScene(tm: number){
     rafId=requestAnimationFrame(frame);
   }
 
+  // Сброс регенерируемой памяти при уходе в фон (docs/memory-android17.md, Фаза 1 —
+  // WebView-эквивалент onTrimMemory). Отпускаем декодированные SVG-битмапы, per-зонные
+  // картинки, производные паттерны (SPRITES), кэш пред-масштабированных спрайтов
+  // (clearScaledSpriteCache в 09-render) и offscreen-буфер неон-линии апрона
+  // (_apronNeonCv из 09-render). Всё пересоздаётся по требованию при возврате — до этого
+  // короткий процедурный фолбэк. rAF уже остановлен фоном (frame()), не регрессируем это.
+  function releaseTransientMemory(){
+    if(SPRITES.releaseCaches) SPRITES.releaseCaches();
+    clearScaledSpriteCache();              // пред-масштабированные спрайты (bays/zones/planes) — регенерируемы
+    _apronNeonCv=null; _apronNeonSig='';   // отпустить offscreen-канвас; drawApronNeon пересоздаст
+  }
+
   document.addEventListener('visibilitychange', ()=>{
-    if(document.visibilityState==='hidden'){
-      clearScaledSpriteCache();   // регенерируемый кэш — освобождаем в фоне (memory-android17)
-      return;
-    }
+    if(document.visibilityState==='hidden'){ releaseTransientMemory(); return; }
     if(!rafId){
       lastTs=0; // сбрасываем dt — иначе первый кадр после фона получит огромный прыжок
       rafId=requestAnimationFrame(frame);
     }
   });
+  // freeze (Page Lifecycle API) — вкладка заморожена системой; освобождаем то же, что
+  // и на hidden. Событие есть не везде — вешаем в try, как остальные lifecycle-хуки.
+  try{ document.addEventListener('freeze', releaseTransientMemory); }catch(e){}
 
   function endLevel(reasonKey: string){          // reasonKey — ключ i18n (end.*)
     running=false; const prevBest = save.best[levelKey]||0; recordResult();
