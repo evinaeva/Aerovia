@@ -100,33 +100,20 @@ Aerovia/PlaneFlow — это веб-игра (`src/`), которую Capacitor 
 
 ## План приведения кода в соответствие
 
-**Фаза 0 — мёртвый вес (быстро, крупный эффект):**
-1. Исключить `assets/skins/**` (~6 МБ, только tuning-воркбенч) и `*_src_reference.png`
-   из `www/` в [`scripts/build-www.mjs`](../scripts/build-www.mjs). Воркбенч грузит их
-   из репозитория, не из `www/`.
-2. Схлопнуть 4 байт-в-байт идентичных `assets/sprites/neon/plane*.png` (`plane`,
-   `plane-vip`, `plane-medevac`, `plane-emergency` — один md5) в один файл или удалить,
-   если геймплей уже рисует ливреи рантайм-тинтом ([`13-init.js`](../src/game/13-init.js)).
+**Фаза 0 — мёртвый вес — ✅ СДЕЛАНО** ([PR #376](https://github.com/evinaeva/Aerovia/pull/376)):
+- Из `www/` (APK/OTA/PWA) исключены tuning-only `assets/skins/**` (~6 МБ) и dev-референс
+  `*_src_reference.png` — фильтр `shipAsset()` в [`build-www.mjs`](../scripts/build-www.mjs).
+- 4 байт-идентичных `neon/plane*.png` схлопнуты в один: варианты алиасятся на базовый
+  `plane.png` (`PLANE_LIVERY_FALLBACK` в [`02-sprites.ts`](../src/game/02-sprites.ts)),
+  3 дубля удалены, id убраны из манифеста. Итог: `www/assets` ~28 → ~18 МБ.
+- Правила зафиксированы (этот документ + раздел «Memory budget» в [`CLAUDE.md`](../CLAUDE.md)).
 
-**Фаза 1 — рантайм-кэши:**
-3. На `visibilitychange:hidden` и событие `freeze` — чистить регенерируемые кэши
-   (SVG-raster `cache`, `zoneImgCache`, offscreen-буферы вроде `_apronNeonCv`).
-4. Дать SVG-`cache` в [`02-sprites.ts`](../src/game/02-sprites.ts) границу (LRU/лимит ключей).
-
-**Фаза 2 — правильный размер арта:**
-5. Замерить реальные пиксельные размеры крупнейших PNG, даунсемплить до макс. экранного
-   при `dpr 2`; где нет прозрачности — сохранять без альфы.
-
-**Фаза 3 — нативная оболочка и наблюдаемость:**
-6. В `scripts/setup-android.mjs` для release включить R8 (`minifyEnabled`,
-   `shrinkResources`, `proguard-android-optimize.txt`, full-mode).
-7. (Опц.) Нативный хук: на следующем старте читать `ApplicationExitInfo`, ловить
-   `MemoryLimiter:AnonSwap`, слать в аналитику ([`12e-firebase-sink.ts`](../src/game/12e-firebase-sink.ts)).
-
-**Фаза 4 — чтобы правила соблюдались (гардрейлы):**
-8. Этот документ + раздел «Memory budget» в [`CLAUDE.md`](../CLAUDE.md).
-9. CI-гард в [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml): падать при
-   превышении байт-бюджета `www/assets`, при слишком крупном битмапе или при дубликатах по хэшу.
+**Фазы 1–4 — не сделаны; отслеживаются в бэклоге:**
+[`backlog.md` → «Память / Android 17»](backlog.md). Кратко:
+1. Сброс регенерируемых кэшей на `hidden`/`freeze` + границы SVG-`cache` (LRU).
+2. Даунсемплинг крупных PNG (доводит `www/assets` до цели ≤12 МБ; без альфы, где не нужна).
+3. R8 для release в `scripts/setup-android.mjs` + опц. чтение `ApplicationExitInfo` в аналитику.
+4. CI-гард по байт-бюджету/дубликатам в [`deploy.yml`](../.github/workflows/deploy.yml) — делает правила машинно-обязательными.
 
 ---
 
