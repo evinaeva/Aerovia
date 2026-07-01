@@ -102,6 +102,96 @@ test('currentMode отражает survival-флаг (логика над ски
   assert.equal(game.currentMode(), 'campaign');
 });
 
+// --- анти-чит (клиентский, первый слой): debug-читы не попадают в рейтинг ---
+test('isCleanRun: infiniteLives/richStart во время захода помечают его нечистым', () => {
+  const { game } = boot();
+  game.ACH.onLevelStart();
+  assert.equal(game.ACH.isCleanRun(), true, 'свежий заход без читов — чист');
+  game.debug.infiniteLives = true;
+  game.ACH.onTick(0);
+  assert.equal(game.ACH.isCleanRun(), false, 'infiniteLives во время захода помечает его нечистым');
+  game.debug.infiniteLives = false;
+  assert.equal(game.ACH.isCleanRun(), false, 'метка держится до конца захода даже после выключения чита');
+  game.ACH.onLevelStart();   // новый заход сбрасывает метку
+  assert.equal(game.ACH.isCleanRun(), true);
+});
+
+test('isCleanRun: richStart тоже помечает заход нечистым', () => {
+  const { game } = boot();
+  game.ACH.onLevelStart();
+  game.debug.richStart = true;
+  game.ACH.onTick(0);
+  assert.equal(game.ACH.isCleanRun(), false);
+});
+
+// --- Лига сезона (MVP Фаза 1, план: docs/design/game-design/season-leagues.md) ---
+test('seasonKey/seasonNumber: детерминированное 2-недельное окно UTC от якоря', () => {
+  const { game } = boot();
+  const epoch = Date.UTC(2026, 0, 5);          // якорь SEASON_EPOCH (понедельник)
+  assert.equal(game.seasonKey(epoch), 'S0');
+  assert.equal(game.seasonNumber(epoch), 1);
+  assert.equal(game.seasonKey(epoch + 13*86400000), 'S0', 'весь сезон — один бакет');
+  assert.equal(game.seasonKey(epoch + 14*86400000), 'S1', 'ровно через 14 дней — следующий сезон');
+  assert.equal(game.periodBucket(epoch).season, 'S0', 'periodBucket() отдаёт тот же бакет');
+});
+
+test('seasonDaysLeft: полный отсчёт в начале сезона, 0 после его конца', () => {
+  const { game } = boot();
+  const epoch = Date.UTC(2026, 0, 5);
+  assert.equal(game.seasonDaysLeft(epoch), 14);
+  assert.equal(game.seasonDaysLeft(epoch + 14*86400000 - 1), 1, 'последняя миллисекунда — округляем вверх до 1 дня');
+});
+
+test('seasonDivisionIndex: перцентиль в сезонном топе → 5 дивизионов Bronze(0)…Diamond(4)', () => {
+  const { game } = boot();
+  const idx = game.seasonDivisionIndex;
+  assert.equal(idx(1, 10), 4, '1-е место из 10 — Diamond');
+  assert.equal(idx(10, 10), 0, 'последнее место — Bronze');
+  assert.equal(idx(null, 10), 0, 'без ранга (вне топа) — Bronze, база');
+  assert.equal(idx(1, 1), 0, 'единственный участник — вырожденный случай, Bronze');
+});
+
+test('Leaderboard.season.standing: высокий счёт в сезоне даёт топ-дивизион (Diamond)', async () => {
+  const { game } = boot();
+  await game.Leaderboard.submitRun({ mode: 'survival', score: 1000 });
+  const st = await game.Leaderboard.season.standing('survival');
+  assert.equal(st.rank, 1);
+  assert.equal(st.divisionIdx, 4);
+  assert.equal(st.division, 'diamond');
+  assert.equal(st.number, game.seasonNumber(Date.now()));
+});
+
+test('ACH.onSeasonDivision: бейджи дивизиона кумулятивны, comp:true, вне «Легенды»', () => {
+  const { game } = boot();
+  game.ACH.onSeasonDivision(2);   // Gold (idx 2) → Bronze+Silver+Gold, НЕ Platinum/Diamond
+  assert.ok(game.save.ach.includes('season_bronze'));
+  assert.ok(game.save.ach.includes('season_silver'));
+  assert.ok(game.save.ach.includes('season_gold'));
+  assert.ok(!game.save.ach.includes('season_platinum'));
+  assert.ok(!game.save.ach.includes('season_diamond'));
+  const ids = ['season_bronze','season_silver','season_gold','season_platinum','season_diamond'];
+  const defs = game.ACH.defs.filter(d => ids.includes(d.id));
+  assert.equal(defs.length, 5, 'все пять бейджей дивизиона в реестре');
+  assert.ok(defs.every(d => d.comp === true), 'помечены comp — не входят в требование «Легенды»');
+});
+
+test('Лига сезона: косметика ротирует в СВОЁМ сторе — не трогает ACH.unlocked/Легенду', () => {
+  const { game } = boot();
+  const before = game.save.ach.slice();
+  const r1 = game.Leaderboard.season.claimReward(4);   // Diamond-приз этого сезона
+  assert.ok(r1 && r1.accent, 'приз выдан с акцентным цветом');
+  const r2 = game.Leaderboard.season.claimReward(0);   // повторный вызов в том же сезоне — идемпотентно
+  // сравниваем поля, не объекты целиком: r2 идёт через JSON.parse (перечитан из стора),
+  // r1 — свежий литерал; в тест-харнессе (vm) это разные реализации Object, deepEqual
+  // на них падает по прототипу, а не по значению — сравниваем то, что реально важно.
+  assert.equal(r2.divisionIdx, r1.divisionIdx, 'один приз на сезон, дивизион второго вызова не переигрывает первый');
+  assert.equal(r2.accent, r1.accent);
+  assert.equal(r2.ts, r1.ts);
+  assert.deepEqual(game.save.ach, before, 'косметика не пишется в ACH.unlocked (нет привязки к сезону = навсегда)');
+  const r3 = game.Leaderboard.season.reward();
+  assert.equal(r3.divisionIdx, r1.divisionIdx); assert.equal(r3.accent, r1.accent);
+});
+
 // --- конфиг-чек ---
 test('validateLeaderboard() не находит проблем; включён в validateGame()', () => {
   const { game } = boot();

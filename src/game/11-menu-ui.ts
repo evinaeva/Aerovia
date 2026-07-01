@@ -1,7 +1,7 @@
 // ===== 11-menu-ui — menus & screens (start, level select, biomes, goals, settings, leaderboard, pause), menu icons, save/load & pause wiring =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: showStart, showLevels, showBiomes, showGoals, showLeaderboard, openSettings, buildLevel/Biome/Bonus, startLevel, setPaused, loadGame, saveGame, resetProgress, SVGIC, applyMenuIcons, hideAllScreens, updateStartChips, goalRowsHTML.
-// Reads: 04 (LEVELS, LV, curBiome, curBonus, Biome, Bonus); 06 (save, bays, runways, layout, levelIdx/levelKey, survival, debug, SAVE_KEY); 03 (I18N, lang); 09 (heart).
+// Reads: 04 (LEVELS, LV, curBiome, curBonus, Biome, Bonus); 06 (save, bays, runways, layout, levelIdx/levelKey, survival, debug, SAVE_KEY); 03 (I18N, lang, fmtNum); 09 (heart); 07 (Leaderboard, PERIODS).
 
   function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') || JSON.parse(localStorage.getItem(LEGACY_SAVE_KEY) || 'null'); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang as LangCode])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; save.eco=!!s.eco; save.tutorialDone=!!s.tutorialDone; } }catch(e){} }
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} try{ (window as any).PFCloud && (window as any).PFCloud.onLocalSave(); }catch(e){} }
@@ -64,15 +64,38 @@
 
   // ---- экран рейтинга (каркас): срезы all-time/month/week из Leaderboard (mock-провайдер) ----
   let lbPeriod = 'alltime';
+  // «Сезон» — отдельная вкладка UI, НЕ входит в PERIODS (тот массив питает ranks/rank-медали
+  // в submitRun/onRank — лига сезона намеренно отдельный класс наград, см. season-leagues.md).
+  const LB_TABS = PERIODS.concat(['season']);
   function lbEsc(s: any){ const _m: Record<string,string>={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}; return String(s==null?'':s).replace(/[&<>"]/g, (c: string)=>_m[c]); }
   function showLeaderboard(){ hideAllScreens(); document.getElementById('leaderboardScreen')!.classList.remove('hidden'); renderLeaderboard(); }
   function renderLeaderboard(){
     const acct = Leaderboard.account.current();
     const tabs = document.getElementById('lbTabs');
     if(tabs){ tabs.innerHTML='';
-      PERIODS.forEach(p=>{ const b=document.createElement('button');
+      LB_TABS.forEach(p=>{ const b=document.createElement('button');
         b.className='m-btn '+(p===lbPeriod?'m-btn--primary':'m-btn--ghost'); b.style.cssText='flex:1;min-width:0;padding:8px 4px';
         b.textContent=t('lb.tab.'+p); b.onclick=()=>{ if(lbPeriod!==p){ lbPeriod=p; renderLeaderboard(); } }; tabs.appendChild(b); });
+    }
+    const seasonBox = document.getElementById('lbSeason');
+    if(seasonBox){
+      if(lbPeriod!=='season'){ seasonBox.classList.add('hidden'); seasonBox.innerHTML=''; }
+      else {
+        seasonBox.classList.remove('hidden'); seasonBox.innerHTML='<div class="muted" style="text-align:center;padding:6px">…</div>';
+        Leaderboard.season.standing('survival').then((st: any)=>{
+          const div = Leaderboard.season.DIVISIONS[st.divisionIdx], reward = Leaderboard.season.reward();
+          seasonBox.innerHTML =
+            '<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">'+
+              '<b>'+lbEsc(t('lb.season.title',{n:st.number}))+'</b>'+
+              '<span class="muted">'+lbEsc(t('lb.season.daysLeft',{n:st.daysLeft, unit:t('unit.days',{n:st.daysLeft})}))+'</span>'+
+            '</div>'+
+            '<div style="display:flex;align-items:center;gap:8px;font-size:14px;margin-top:6px">'+
+              '<span style="font-size:20px;line-height:1">'+div.ic+'</span>'+
+              '<span>'+lbEsc(t('lb.season.div.'+div.id))+'</span>'+
+              (reward ? '<span title="'+lbEsc(t('lb.season.reward'))+'" style="margin-left:auto;width:14px;height:14px;border-radius:50%;background:'+reward.accent+';box-shadow:0 0 6px '+reward.accent+'"></span>' : '')+
+            '</div>';
+        }).catch(()=>{ seasonBox.innerHTML=''; });
+      }
     }
     const list = document.getElementById('lbList');
     if(list) list.innerHTML='<div class="muted" style="padding:16px;text-align:center">…</div>';

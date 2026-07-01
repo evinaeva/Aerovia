@@ -1,7 +1,7 @@
 // ===== 12-achievements-medals — achievements engine (ACH) + the medals screen =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: ACH, openMedals, renderMedals, MEDAL_RAR.
-// Reads: 06 (save, planes, money, combo, gameTime, runCrashes, runPenalties, debug); 04 (K, LEVELS); 03 (t); 07 (SND); 11 (SVGIC, hideAllScreens, saveGame).
+// Reads: 06 (save, planes, money, combo, gameTime, runCrashes, runPenalties, debug); 04 (K, LEVELS); 03 (t); 07 (SND, SEASON_DIVISIONS); 11 (SVGIC, hideAllScreens, saveGame).
 
   const ACH = (() => {
     // анти-шум: не больше RUN_CAP медалей за раунд (остальные придут в следующих
@@ -63,6 +63,15 @@
       {id:'rank_top100', tier:4, ic:'🏅', comp:true},
       {id:'rank_top10',  tier:4, ic:'🏆', comp:true},
       {id:'rank_1',      tier:4, ic:'👑', comp:true},
+      // --- Лига сезона (MVP Фаза 1, план: docs/design/game-design/season-leagues.md):
+      //     пороговые НАВСЕГДА бейджи дивизиона — тот же приём, что ранг-медали выше
+      //     (comp:true, мимо «Легенды»). Ротирующаяся косметика сезона — ОТДЕЛЬНО, в
+      //     Leaderboard.season (стор pf_season_rewards_v1), не в этом Set. ---
+      {id:'season_bronze',   tier:4, ic:'🥉', comp:true},
+      {id:'season_silver',   tier:4, ic:'🥈', comp:true},
+      {id:'season_gold',     tier:4, ic:'🥇', comp:true},
+      {id:'season_platinum', tier:4, ic:'💠', comp:true},
+      {id:'season_diamond',  tier:4, ic:'💎', comp:true},
       {id:'legend',  tier:4, ic:'🛐'},
       // --- Тир 5: секретные / фановые (скрыты до получения) ---
       {id:'crash10s',tier:5, ic:'💥', hidden:true},
@@ -223,8 +232,20 @@
         if(best===1)  giveForce('rank_1');
         flushMirror();
       },
+      // сезонные дивизион-бейджи (пороговые навсегда): достиг дивизиона хоть раз в этом
+      // сезоне — бейдж твой, и все дивизионы НИЖЕ засчитываются кумулятивно (как выше у
+      // ранг-медалей top100→top10→#1). Зовётся после Leaderboard.season.standing().
+      onSeasonDivision(divisionIdx: number|null){
+        if(divisionIdx==null || divisionIdx<0) return;
+        SEASON_DIVISIONS.forEach((d,i)=>{ if(i<=divisionIdx) giveForce('season_'+d.id); });
+        flushMirror();
+      },
       flushToasts, flushMirror,
       setMirror(fn: ((id: string) => void) | null){ mirror = (typeof fn === 'function') ? fn : null; },
+      // анти-чит (клиентский, первый слой): та же метка run.debug, что гейтит достижения
+      // (`clean` в onLevelEnd) — Survival зовёт это перед отправкой в Leaderboard.submitRun,
+      // чтобы читовые заходы (infiniteLives/richStart) не попадали в рейтинг и ранг-медали.
+      isCleanRun(){ return !run.debug; },
       list(){
         const out: any[]=[];
         for(const d of defs){

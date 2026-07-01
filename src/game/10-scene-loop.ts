@@ -300,11 +300,25 @@ function drawMenuScene(tm: number){
     // Не-survival режимы рейтинг не трогают (кампания/бонусы остаются как есть).
     if(currentMode()==='survival'){
       const runScore = served;
-      Leaderboard.submitRun({mode:'survival', score:runScore}).then(res=>{
-        lastShift.survivalScore = runScore;
-        if(res){ lastShift.ranks = res.ranks; ACH.onRank(res.ranks); }
-        refreshOverLeaderboard(res);                 // «твоё место» — место в мире
-      }).catch(()=>{ refreshOverLeaderboard(null); }); // submit упал → виджет показывает личный рекорд, не зависает на «…»
+      lastShift.survivalScore = runScore;
+      // Анти-чит (клиентский, первый слой): заход с активными debug-читами
+      // (infiniteLives/richStart — та же метка, что гейтит достижения, см. ACH.isCleanRun)
+      // в рейтинг НЕ уходит — иначе накрученный served тривиально даёт ранг-медали.
+      if(ACH.isCleanRun()){
+        Leaderboard.submitRun({mode:'survival', score:runScore}).then(res=>{
+          if(res){ lastShift.ranks = res.ranks; ACH.onRank(res.ranks); }
+          refreshOverLeaderboard(res);                 // «твоё место» — место в мире
+          // Лига сезона (MVP Фаза 1): дивизион по перцентилю в сезонном топе → пороговые
+          // бейджи (навсегда) + один косметический приз на сезон (ротирует, отдельный стор).
+          Leaderboard.season.standing('survival').then((st: any)=>{
+            lastShift.season = st;
+            ACH.onSeasonDivision(st.divisionIdx);
+            Leaderboard.season.claimReward(st.divisionIdx);
+          }).catch(()=>{});
+        }).catch(()=>{ refreshOverLeaderboard(null); }); // submit упал → виджет показывает личный рекорд, не зависает на «…»
+      } else {
+        refreshOverLeaderboard(null);                  // читовый заход — не в рейтинге, показываем личный рекорд
+      }
     }
     document.getElementById('overKicker')!.textContent = survival ? t('over.survival') : t(passed?'over.passed':'over.failed');
     document.getElementById('finalStars')!.innerHTML = survival
