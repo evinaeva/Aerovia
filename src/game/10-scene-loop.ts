@@ -39,7 +39,7 @@
   }
   // компактный оверлей с усреднёнными мс по секциям + fps + сумма; цвет строки = «горячесть»
   function drawProfiler(){
-    const order = inMenu ? ['menu'] : ['field','runways','decor','bays','zones','planes','fx','vignette','floaters','hud'];
+    const order = inMenu ? ['mbg','mradar','mland','mvig'] : ['field','runways','decor','bays','zones','planes','fx','vignette','floaters','hud'];
     let total = 0; for(const k of order) total += _profAvg[k] || 0;
     const pad = 6, lh = 13, fs = 11, bw = 152;
     const bh = pad*2 + (order.length + 2)*lh;
@@ -66,7 +66,7 @@
   }
   // Кэши градиентов для меню — пересоздаются только при изменении размера экрана.
   let _menuBgGrad: CanvasGradient|null=null, _menuHgGrad: CanvasGradient|null=null;
-  let _menuCoreGrad: CanvasGradient|null=null;
+  let _menuCoreGrad: CanvasGradient|null=null, _menuSweepGrad: CanvasGradient|null=null;
   let _menuGradW=0, _menuGradH=0;
 
   const _qss=(a: number,b: number,x: number)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
@@ -140,7 +140,7 @@ function drawMenuScene(tm: number){
     if(!_menuBgGrad||_menuGradW!==W||_menuGradH!==H){
       _menuBgGrad=ctx.createRadialGradient(bx,by,0, bx,by,brad);
       _menuBgGrad.addColorStop(0,COL.core); _menuBgGrad.addColorStop(0.5,COL.tarmac); _menuBgGrad.addColorStop(1,COL.ink);
-      _menuHgGrad=null; _menuCoreGrad=null; _menuGradW=W; _menuGradH=H;
+      _menuHgGrad=null; _menuCoreGrad=null; _menuSweepGrad=null; _menuGradW=W; _menuGradH=H;
     }
     ctx.fillStyle=_menuBgGrad; ctx.fillRect(0,0,W,H);
     // «дышащее» ядро-свечение — кэшируем градиент, пульс через globalAlpha (не аллоцируем каждый кадр).
@@ -149,12 +149,14 @@ function drawMenuScene(tm: number){
       _menuCoreGrad=ctx.createRadialGradient(bx,by,0, bx,by,120);
       _menuCoreGrad.addColorStop(0,hexa(COL.phosphor,.20)); _menuCoreGrad.addColorStop(1,hexa(COL.phosphor,0));
     }
-    ctx.globalAlpha=0.5+0.5*corePulse; ctx.fillStyle=_menuCoreGrad; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
+    // градиент прозрачен за r=120 от центра → заливаем только его пятно, а не весь холст (пиксельно то же, меньше fillrate)
+    ctx.globalAlpha=0.5+0.5*corePulse; ctx.fillStyle=_menuCoreGrad; ctx.fillRect(bx-120,by-120,240,240); ctx.globalAlpha=1;
     // тонкая неон-сетка 54px
     ctx.strokeStyle=hexa(COL.phosphor,.05); ctx.lineWidth=1; ctx.beginPath();
     for(let gx=0;gx<=W;gx+=54){ ctx.moveTo(gx,0); ctx.lineTo(gx,H); }
     for(let gy=0;gy<=H;gy+=54){ ctx.moveTo(0,gy); ctx.lineTo(W,gy); }
     ctx.stroke();
+    _pseg('mbg');   // фон: bg-градиент + ядро + сетка
     if(!REDUCED_MOTION) starfield(tm);
     const rx=W*0.5, ry=H*0.52, R=Math.min(W,H)*0.42;   // центр кадра (как RadarBg 50%/52%)
     ctx.save(); ctx.translate(rx,ry);
@@ -167,10 +169,14 @@ function drawMenuScene(tm: number){
     // Радар-развёртка и пульсирующие засечки — пропускаем при prefers-reduced-motion.
     if(!REDUCED_MOTION){
       ctx.save(); ctx.rotate(tm*0.0013);
-      const grad=ctx.createLinearGradient(0,0,R,0);
-      grad.addColorStop(0,hexa(COL.phosphor,.28)); grad.addColorStop(1,hexa(COL.phosphor,0));
+      // кэш градиента развёртки: его координаты трактуются под текущим CTM в момент заливки,
+      // так что поворот применяется на месте — пересоздаём только при resize (вместе с bgGrad).
+      if(!_menuSweepGrad){
+        _menuSweepGrad=ctx.createLinearGradient(0,0,R,0);
+        _menuSweepGrad.addColorStop(0,hexa(COL.phosphor,.28)); _menuSweepGrad.addColorStop(1,hexa(COL.phosphor,0));
+      }
       ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R,-0.5,0); ctx.closePath();
-      ctx.fillStyle=grad; ctx.fill(); ctx.restore();
+      ctx.fillStyle=_menuSweepGrad; ctx.fill(); ctx.restore();
       [[0.55,1.1],[0.8,3.0],[0.35,4.6],[0.62,5.6]].forEach((b2,i)=>{
         const x=Math.cos(b2[1])*R*b2[0], y=Math.sin(b2[1])*R*b2[0];
         const f=0.4+0.6*Math.abs(Math.sin(tm*0.002+i));
@@ -184,8 +190,11 @@ function drawMenuScene(tm: number){
       _menuHgGrad.addColorStop(0,'rgba(16,48,58,0)'); _menuHgGrad.addColorStop(1,hexa(COL.teal,.10));
     }
     ctx.fillStyle=_menuHgGrad; ctx.fillRect(0,H-120*ui,W,120*ui);
+    _pseg('mradar');   // радар: звёзды + кольца/крест + развёртка/засечки + горизонт
     drawMenuLanding(tm);
+    _pseg('mland');    // посадочная анимация: шлейф (32 сегмента) + контур борта + боксы
     vignette();
+    _pseg('mvig');     // виньетка (полноэкранная заливка)
   }
 
   function frame(ts: number){
@@ -216,8 +225,7 @@ function drawMenuScene(tm: number){
     if(_profOn){ _profFps = sinceDraw>0 ? 1000/sinceDraw : 0; _pseg(null); }   // fps = интервал между РИСУЕМЫМИ кадрами
     const _t0 = _slowDevice ? 0 : performance.now();
     if(inMenu){
-      drawMenuScene(ts);
-      _pseg('menu');
+      drawMenuScene(ts);   // сам расставляет метки профайлера: mbg/mradar/mland/mvig
     } else {
       drawField(ts);              _pseg('field');
       drawRunways(ts);            _pseg('runways');
