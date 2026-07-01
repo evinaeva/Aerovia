@@ -263,11 +263,13 @@ function drawMenuScene(tm: number){
 
   // Сброс регенерируемой памяти при уходе в фон (docs/memory-android17.md, Фаза 1 —
   // WebView-эквивалент onTrimMemory). Отпускаем декодированные SVG-битмапы, per-зонные
-  // картинки, производные паттерны (SPRITES) и offscreen-буфер неон-линии апрона
+  // картинки, производные паттерны (SPRITES), кэш пред-масштабированных спрайтов
+  // (clearScaledSpriteCache в 09-render) и offscreen-буфер неон-линии апрона
   // (_apronNeonCv из 09-render). Всё пересоздаётся по требованию при возврате — до этого
   // короткий процедурный фолбэк. rAF уже остановлен фоном (frame()), не регрессируем это.
   function releaseTransientMemory(){
     if(SPRITES.releaseCaches) SPRITES.releaseCaches();
+    clearScaledSpriteCache();              // пред-масштабированные спрайты (bays/zones/planes) — регенерируемы
     _apronNeonCv=null; _apronNeonSig='';   // отпустить offscreen-канвас; drawApronNeon пересоздаст
   }
 

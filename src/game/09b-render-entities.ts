@@ -187,14 +187,15 @@
       ctx.save();
       ctx.translate(b.x + b.w/2, b.y + b.h/2);
       ctx.rotate(ang);
-      ctx.drawImage(hiBase as HTMLImageElement, -b.w/2, -b.h/2, b.w, b.h);
+      const baseC = scaledSprite(hiBase, b.w, b.h);
+      ctx.drawImage((baseC || hiBase) as CanvasImageSource, -b.w/2, -b.h/2, b.w, b.h);
       ctx.restore();
       if(b.open){
         const _svcTop  = (b.type==='fuel' ? HANDOFF_IMG.svcFuel      : b.type==='repair' ? HANDOFF_IMG.svcRepair      : b.type==='board' ? HANDOFF_IMG.svcBoard      : null) as HTMLImageElement | null;
         const _svcBot  = (b.type==='fuel' ? HANDOFF_IMG.svcFuelBot   : b.type==='repair' ? HANDOFF_IMG.svcRepairBot   : b.type==='board' ? HANDOFF_IMG.svcBoardBot   : null) as HTMLImageElement | null;
         const _svcSide = (b.type==='fuel' ? HANDOFF_IMG.svcFuelSide  : b.type==='repair' ? HANDOFF_IMG.svcRepairSide  : b.type==='board' ? HANDOFF_IMG.svcBoardSide  : null) as HTMLImageElement | null;
         const svcDraw = (b.side==='top' ? _svcTop : b.side==='bottom' ? _svcBot : _svcSide) as HTMLImageElement | null;
-        if(svcDraw && _hiOk(svcDraw)) ctx.drawImage(svcDraw, b.x, b.y, b.w, b.h);
+        if(svcDraw && _hiOk(svcDraw)){ const svcC = scaledSprite(svcDraw, b.w, b.h); ctx.drawImage((svcC || svcDraw) as CanvasImageSource, b.x, b.y, b.w, b.h); }
       }
       ctx.restore();
       return;
@@ -351,7 +352,8 @@
         const ang = o.dy===1 ? 0 : o.dy===-1 ? Math.PI : o.dx===1 ? -Math.PI/2 : Math.PI/2;
         ctx.translate(b.x+b.w/2, b.y+b.h/2);
         ctx.rotate(ang);
-        ctx.drawImage(arrow as HTMLImageElement, -b.w/2, -b.h/2, b.w, b.h);
+        const arrowC = scaledSprite(arrow, b.w, b.h);
+        ctx.drawImage((arrowC || arrow) as CanvasImageSource, -b.w/2, -b.h/2, b.w, b.h);
       }
     }
     ctx.restore();
@@ -459,8 +461,10 @@
       const _ny = pl.y-28*ui*vs;
       const _svcNeed = (need==='fuel' ? HANDOFF_IMG.svcFuel : need==='repair' ? HANDOFF_IMG.svcRepair : need==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
       const _sz = 33*ui;
-      if(_svcNeed && _hiOk(_svcNeed))
-        ctx.drawImage(_svcNeed, pl.x-_sz/2, _ny-_sz/2, _sz, _sz);
+      if(_svcNeed && _hiOk(_svcNeed)){
+        const _svcNeedC = scaledSprite(_svcNeed, _sz, _sz);
+        ctx.drawImage((_svcNeedC || _svcNeed) as CanvasImageSource, pl.x-_sz/2, _ny-_sz/2, _sz, _sz);
+      }
       else if(!(ATLAS && SPRITES.blitC('svc-'+need, pl.x, _ny, _sz, _sz)))
         drawIcon(need, pl.x, _ny, 12.7*ui, ncol, COL.ink);
     }
@@ -519,8 +523,10 @@
         // те же новые PNG-иконки услуг, что в ангаре и на пузырьке борта; PNG→атлас→процедура
         const _svcImg = (ty==='fuel' ? HANDOFF_IMG.svcFuel : ty==='repair' ? HANDOFF_IMG.svcRepair : ty==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
         const _sz = 28*ui;
-        if(_svcImg && _hiOk(_svcImg))
-          ctx.drawImage(_svcImg, bx+bw2/2-_sz/2, bcy-_sz/2, _sz, _sz);
+        if(_svcImg && _hiOk(_svcImg)){
+          const _svcImgC = scaledSprite(_svcImg, _sz, _sz);
+          ctx.drawImage((_svcImgC || _svcImg) as CanvasImageSource, bx+bw2/2-_sz/2, bcy-_sz/2, _sz, _sz);
+        }
         else if(!(ATLAS && SPRITES.blitC('svc-'+ty, bx+bw2/2, bcy, _sz, _sz)))
           drawIcon(ty, bx+bw2/2, bcy, 12*ui, c, '#211d33');
       }
