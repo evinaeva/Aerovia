@@ -262,7 +262,11 @@ function drawMenuScene(tm: number){
   }
 
   document.addEventListener('visibilitychange', ()=>{
-    if(document.visibilityState!=='hidden' && !rafId){
+    if(document.visibilityState==='hidden'){
+      clearScaledSpriteCache();   // регенерируемый кэш — освобождаем в фоне (memory-android17)
+      return;
+    }
+    if(!rafId){
       lastTs=0; // сбрасываем dt — иначе первый кадр после фона получит огромный прыжок
       rafId=requestAnimationFrame(frame);
     }
