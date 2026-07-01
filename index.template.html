@@ -16,7 +16,13 @@
 <meta name="theme-color" content="#16131f">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+<!-- non-blocking: a synchronous script element after a pending stylesheet link waits for it,
+     so a slow/unreachable Google Fonts CDN would stall the whole game boot (measured ~13s
+     hang before failing in a network-restricted sandbox — see play-featuring-plan.md
+     «Время старта»). preload+swap lets the game script run immediately; fonts apply
+     whenever they arrive, falling back to the CSS font stack (var(--ui) etc.) until then. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Orbitron:wght@600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&family=Orbitron:wght@600;700&display=swap"></noscript>
 <style>
 /*__BUILD_CSS__*/
 </style>
