@@ -59,8 +59,13 @@
           b:parseFloat(cs.paddingBottom)||0, l:parseFloat(cs.paddingLeft)||0};
   }
   // HUD PNG — 640×67; рисуется по центру шириной 50% W → высота = W/2 * 67/640 = W*67/1280
-  // высота HUD-полосы сверху; уровень с layout.noHud скрывает HUD и не резервирует место
-  const HUD_H = () => (LV && LV.layout && LV.layout.noHud) ? 0 : Math.round(W * 67 / 1280);
+  // HUD убран со всех «уровней» (кампания / бонус / свой уровень): на поле только
+  // кнопка паузы в левом верхнем углу — как в custom level. В режиме ВЫЖИВАНИЯ
+  // (биом-карты) HUD остаётся — там нужны жизни и счёт захода. Прежний per-level
+  // layout.noHud поглощён этим правилом (custom level тоже сюда попадает).
+  const hudHidden = () => !survival;
+  // высота HUD-полосы сверху (0, когда HUD скрыт — место не резервируется)
+  const HUD_H = () => hudHidden() ? 0 : Math.round(W * 67 / 1280);
   function resize(){
     dpr = Math.min(window.devicePixelRatio||1, 2);
     W = window.innerWidth; H = window.innerHeight;
@@ -111,11 +116,12 @@
   function layout(){
     const hud = HUD_H();
     const M = 12*ui;
-    // полоса под инфо-бар нужды борта (drawPlaneCard) между HUD и апроном — как
-    // зарезервированная лента в макете (PlaneCard на y100); верхняя ангара садится под неё
-    // Положение апрона по умолчанию (из тюнинга, доли экрана).
-    // LV.layout.apron переопределяет для уровней конструктора.
-    const _defAp = { x:0.0689, y:0.1329, w:0.6177, h:0.7877 };
+    // Положение апрона по умолчанию (доли экрана) — выровнено по custom level
+    // (BUILTIN_CUSTOM_LEVEL): апрон компактнее и сдвинут вниз, чтобы над верхней и
+    // под нижней кромкой оставалось место для квадратных ангаров (раньше апрон был
+    // крупнее и ангары выпадали за экран сверху/снизу). LV.layout.apron
+    // переопределяет для уровней конструктора.
+    const _defAp = { x:0.155, y:0.17, w:0.495, h:0.63 };
     let fx0 = 0, fy0 = 0, fx1 = 0, fy1 = 0;
     { const ap = (LV.layout && LV.layout.apron) || _defAp;
       fx0 = ap.x*W; fx1 = (ap.x+ap.w)*W; fy0 = Math.max(hud+M, ap.y*H); fy1 = (ap.y+ap.h)*H; }
@@ -196,8 +202,11 @@
       const bayRight = fx1 - 8*ui;
       const packRow = (arr: Bay[], yTop: number) => {
         const n=arr.length; if(!n) return;
+        // КВАДРАТНЫЙ ангар (сторона bw из K.HANGAR_RATIO) по центру своего слота —
+        // как в конструкторе / custom level. Раньше ширина растягивалась на весь слот
+        // (cellW), и ангары выглядели непомерно крупными и вытянутыми.
         const cellW=(bayRight-fx0)/n;
-        arr.forEach((b,i)=>{ b.w=cellW; b.h=hangH; b.x=fx0+i*cellW; b.y=yTop; });
+        arr.forEach((b,i)=>{ b.w=bw; b.h=hangH; b.x=fx0+i*cellW+(cellW-bw)/2; b.y=yTop; });
       };
       packRow(bySide('top'), fy0 - hangH);
       packRow(bySide('bottom'), fy1);
@@ -274,14 +283,15 @@
 
     // кнопка паузы отодвинута от правого края на запас + safe-area, чтобы не
     // оказаться под скруглением/вырезом телефона и нормально нажиматься
-    if(LV.layout && LV.layout.noHud){
-      // noHud (кастом-уровень / чистая композиция): HUD-кнопки паузы нет, поэтому
+    if(hudHidden()){
+      // HUD скрыт (кампания / бонус / свой уровень): HUD-кнопки паузы нет, поэтому
       // ставим отдельную круглую кнопку в ЗАВЕДОМО не-интерактивный верх-левый угол.
       // Борты прилетают справа и садятся в полосы; апрон/ангары — центр и право —
       // сюда не доходят ни тапы по технике, ни траектории. Учтён safe-area выреза.
       const d=44*ui;
       pauseBtn = {x: safe.l + 12*ui, y: safe.t + 12*ui, w:d, h:d};
     } else {
+      // ВЫЖИВАНИЕ (биом-карты): HUD есть — пауза в его правом верхнем углу.
       pauseBtn = {x: W - safe.r - 16*ui - 36*ui, y: safe.t + 6*ui, w: 36*ui, h: 30*ui};
     }
 
