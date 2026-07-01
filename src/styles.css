@@ -907,6 +907,44 @@
     #startScreen .pf-brand{ --brand-mark-fs:40px; }
   }
 
+  /* ── ПОРТРЕТ (телефон вертикально — основной формфактор). Ландшафтная раскладка
+     «бренд слева·по центру + панель справа·по центру» в портрете схлопывается:
+     бренд перекрывается панелью, тэглайн и подписи кнопок («Survival»/«Custom»)
+     срезаются. Перекладываем в вертикальный стек — бренд сверху · CTA-панель снизу
+     во всю ширину · ряд угловых иконок у самого низа; между ними просвечивает
+     живая сцена-радар. Идёт ПОСЛЕ landscape-медиа выше, чтобы перебить их. ── */
+  @media (orientation:portrait){
+    /* scrim становится вертикальным: тёмный верх (бренд) и низ (панель+иконки),
+       прозрачная середина (сцена) — вместо диагонали под боковые кластеры */
+    #startScreen .pf-scrim{
+      background:linear-gradient(180deg, var(--m-scrim) 0%, transparent 32%,
+        transparent 60%, var(--m-scrim) 100%); }
+
+    /* бренд: сверху·по центру; марка масштабируется по ширине экрана */
+    #startScreen .pf-brand{
+      --brand-mark-fs:clamp(34px, 11vw, 58px);
+      left:0; right:0; margin-inline:auto; transform:none;
+      top:max(26px, env(safe-area-inset-top, 0px)); bottom:auto;
+      max-width:min(92%, 460px); text-align:center; }
+    #startScreen .brand__mark{ justify-content:center; }
+    #startScreen .brand__tag{ margin-left:0; text-align:center; white-space:normal; }
+
+    /* CTA-панель: снизу·по центру, во всю доступную ширину (лечит срезанные
+       подписи кнопок). Центрируем ПОЛЯМИ (margin-inline:auto), не transform —
+       иначе fitOverlays (06-state-layout: scale панели) и центрирование
+       перетирают transform друг друга, см. коммент к landscape-версии выше. */
+    #startScreen .pf-cta{
+      left:0; right:0; margin-inline:auto; margin-block:0;
+      top:auto; bottom:calc(84px + env(safe-area-inset-bottom, 0px));
+      width:min(92%, 360px); }
+
+    /* угловой кластер: строкой·по центру у самого низа (в ландшафте он справа-снизу
+       и налез бы на нижнюю панель) */
+    #startScreen .pf-corner{
+      left:0; right:0; justify-content:center;
+      bottom:calc(16px + env(safe-area-inset-bottom, 0px)); }
+  }
+
 /* ============================================================
    АДАПТИВ модальных экранов (Пауза · Цели · Итоги).
    Панель = flex-колонка с потолком высоты в единицах контейнера
