@@ -259,7 +259,7 @@
     z-index:9;display:flex;gap:13px;align-items:center;padding:12px 20px;border-radius:12px;
     background:rgba(10,22,34,.95);border:1.5px solid var(--gold);color:var(--paper);
     box-shadow:0 0 18px rgba(244,207,94,.35), 0 6px 24px rgba(0,0,0,.4);opacity:0;pointer-events:none;
-    transition:opacity .32s ease, transform .32s ease;max-width:86%}
+    transition:opacity var(--ach-toast-dur) ease, transform var(--ach-toast-dur) ease;max-width:86%}
   #achToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   #achToast .ic{font-size:28px}
   #achToast .lbl{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
@@ -349,7 +349,11 @@
   /* motion */
   --m-ease: cubic-bezier(0.4, 0, 0.2, 1);
   --m-ease-bounce: cubic-bezier(0.34, 1.56, 0.5, 1);
+  /* длительности анимаций — переопределяются из Motion Tuning (MT.UI_ANIM_DUR /
+     MT.ACH_TOAST_DUR / MT.STAR_POP_DUR пишут эти переменные в document.documentElement) */
   --m-dur: 0.24s;
+  --ach-toast-dur: 0.32s;
+  --star-pop-dur: 0.5s;
 }
 
 /* ============================================================
@@ -613,7 +617,7 @@
   filter: drop-shadow(0 0 14px rgba(244,207,94,0.55)); }
 .star-row .off { color: var(--m-text-muted); opacity: 0.3; filter: none; }
 @media (prefers-reduced-motion: no-preference) {
-  .star-row .pop { animation: starPop 0.5s var(--m-ease-bounce) both; }
+  .star-row .pop { animation: starPop var(--star-pop-dur) var(--m-ease-bounce) both; }
 }
 @keyframes starPop { 0% { transform: scale(0.6) rotate(-14deg); } 100% { transform: none; } }
 

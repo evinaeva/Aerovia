@@ -214,7 +214,7 @@
           if(!pl.touched && pl.x <= tdX) touchdown(pl);
           if(pl.touched){
             // замедление при пробеге после касания
-            pl.rollSpeed = Math.max(landSpeed * 0.1,
+            pl.rollSpeed = Math.max(landSpeed * K.LAND_ROLLOUT_MIN,
               (((pl.rollSpeed as number) ?? landSpeed) - K.LAND_ROLLOUT_DECEL * dt));
           }
           const curLandSpd = pl.touched ? (pl.rollSpeed as number) : landSpeed;
@@ -404,7 +404,7 @@
           // ворот возникал «рывок»/боковой снос). Боковой lerp выше держит его ровно на
           // оси. Как только нос смотрит наружу — плавно выезжаем по оси к точке остановки.
           let d=angOut-pl.ang; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
-          if(Math.abs(d)>0.04){
+          if(Math.abs(d)>K.BAY_TURN_THRESHOLD){
             turnTo(pl, angOut, dt*K.BAY_HEAD_SPEED);             // разворот вокруг своей оси
           } else {
             pl.ang=angOut;                                       // довёрнут — едем строго по оси
