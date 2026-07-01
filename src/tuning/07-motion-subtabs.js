@@ -66,6 +66,7 @@
     { owner:'motion',     key:'landing', icon:'🛬', label:'Посадка',  groups:['approach','landing','rollout_stop'] },
     { owner:'motion',     key:'bays',    icon:'🅿', label:'Боксы',    groups:['service','bay_nav','service_bay_geometry','snap_zones'] },
     { owner:'motion',     key:'runway',  icon:'🛤', label:'ВПП',      groups:['runway_geometry','debug_overlays'] },
+    { owner:'motion',     key:'ui',      icon:'🎬', label:'Анимации', groups:['ui_anim'] },
     // «Сложность» tab — движковые ручки тест/демо-сессии (один подтаб).
     { owner:'difficulty', key:'control', icon:'⚙',  label:'Настройки',      groups:['ctrl','spawn','timing','events'] },
     // 'zones' (safe_areas) intentionally not surfaced — see HIDDEN_GROUPS below.
