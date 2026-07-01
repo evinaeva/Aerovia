@@ -12,7 +12,11 @@ declare const cv: HTMLCanvasElement;
 declare const ctx: CanvasRenderingContext2D;
 declare const PALETTE: Record<string, string>;
 declare const NEON_TOKENS: Record<string, string>;
-declare const THEME: { tokens: Record<string, string> };
+declare const THEME: {
+  tokens: Record<string, string>;
+  crew: Record<string, string>;    // вид спец-бригады → эмодзи (общий на все биомы)
+  emblem: Record<string, string>;  // биом → эмодзи эмблемы сервисного здания
+};
 declare let ATLAS: boolean;
 
 declare const HANDOFF_IMG: {

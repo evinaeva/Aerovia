@@ -25,24 +25,17 @@
     // атмосфера: «часы» суток идут всегда; погода — опциональный движок (флаг weather)
     dayPhase=0; nightAmount=0; weatherUntil=0;
     hazards=[]; crews=[]; hazardSeq=0;
-    const forest   = LV.biome==='forest';
-    const arctic   = LV.biome==='arctic';
-    const tropical = LV.biome==='tropical';
-    const desert   = LV.biome==='desert';
-    const mountain = LV.biome==='mountain';
-    const megacity = LV.biome==='megacity';
-    const biomHazard = forest||arctic||tropical||desert||mountain||megacity;
-    // Арктика всегда в снегу: постоянное обледенение, де-айсинг обязателен без перерывов
-    if(arctic){ weather='snow'; weatherUntil=Infinity; nextWeather=Infinity; }
+    const def = biomeDef(LV.biome);       // запись биома в реестре (04) или null
+    const biomHazard = !!def;             // биом с движком помех на ВПП
+    // Арктика (def.snow) всегда в снегу: постоянное обледенение, де-айсинг без перерывов
+    if(def?.snow){ weather='snow'; weatherUntil=Infinity; nextWeather=Infinity; }
     else { weather='clear'; nextWeather = LV.weather ? K.WEATHER_PERIOD : Infinity; }
     if(LV.biome){
       // биом-карты (Survival) сохраняют динамику час-пика; помехи на полосах вместо ветра/тумана
       nextRush = K.RUSH_PERIOD;
       nextWind = (biomHazard||K.WEATHER_EVENTS_OFF)?Infinity:K.WIND_PERIOD;
       nextFog  = (biomHazard||K.WEATHER_EVENTS_OFF)?Infinity:K.FOG_PERIOD;
-      nextHazard = forest ? FOR.SPAWN_FIRST : arctic   ? ARC.SPAWN_FIRST  :
-                   tropical ? TROP.SPAWN_FIRST : desert ? DSRT.SPAWN_FIRST :
-                   mountain ? MNTN.SPAWN_FIRST : megacity ? CITY.SPAWN_FIRST : Infinity;
+      nextHazard = def ? def.cfg.SPAWN_FIRST : Infinity;   // первая помеха — из конфига биома
     } else {
       // кампания: динамические события включаются только если разрешены уровнем
       const evs = levelEvents();
@@ -222,13 +215,11 @@
     const free = runways.filter(r=>!r.closed && r.hazard==null);
     if(!free.length) return;
     const r = free[Math.floor(Math.random()*free.length)];
-    const biome = LV.biome;
-    const pool = biome==='arctic'     ? ['icing'] :
-                 biome==='tropical'   ? ['storm_wave'] :
-                 biome==='desert'     ? ['sandstorm'] :
-                 biome==='mountain'   ? ['rockslide'] :
-                 biome==='megacity'   ? ['vip_motorcade'] :
-                 (weather==='snow' ? ['tree','deer','birds','snow'] : ['tree','deer','birds']);
+    const def = biomeDef(LV.biome);
+    // пул помех биома — из реестра (04); лес в снегопад добавляет «занос» (snowPool).
+    // concat() возвращает новый массив — реестр не мутируем.
+    let pool = def ? def.pool : ['tree','deer','birds'];
+    if(def?.snowPool && weather==='snow') pool = pool.concat(def.snowPool);
     const kind = pool[Math.floor(Math.random()*pool.length)];
     const h: any = { id:++hazardSeq, kind, runway:r, t:0, dispatched:false, done:false };
     if(kind==='icing'){
@@ -282,8 +273,8 @@
     crews.push({ kind:neededCrew(h), hazard:h, phase:'out',
                  x:home.x, y:home.y, hx:home.x, hy:home.y,
                  tx:h.x, ty:h.y, workT:0, done:false });
-    const biomePfx: Record<string,string> = {arctic:'arctic',tropical:'tropical',desert:'desert',mountain:'mountain',megacity:'megacity'};
-    const crewNameKey = (biomePfx[LV.biome!] || 'forest') + '.crew.' + neededCrew(h);
+    // ключ имени бригады = сам биом (forest→forest.crew.*, arctic→arctic.crew.*, …)
+    const crewNameKey = (LV.biome || 'forest') + '.crew.' + neededCrew(h);
     addFloat(home.x, home.y-14*ui, t(crewNameKey), COL.teal);
     SND.build(); HAP.tap();
   }
@@ -295,16 +286,16 @@
     h.runway.closed = false;
     hazards = hazards.filter(x=>x!==h);
     if(rewarded){
-      const biomeRewards: Record<string,number> = {arctic:ARC.REWARD,tropical:TROP.REWARD,desert:DSRT.REWARD,mountain:MNTN.REWARD,megacity:CITY.REWARD};
-      const reward = biomeRewards[LV.biome!] ?? FOR.REWARD;
+      const reward = biomeCfg().REWARD;                 // премия — из конфига биома (реестр 04)
       money += reward;
       addFloat(h.x, h.y-18*ui, '+'+fmtMoney(reward), COL.coin);
       SND.served(); HAP.ok();
-      const clearedKey = LV.biome && LV.biome!=='forest' ? LV.biome+'.cleared' : 'forest.cleared';
-      toast = {text:t(clearedKey), t:0, good:true};
+      // toast «убрано» = сам биом (forest→forest.cleared, arctic→arctic.cleared, …)
+      toast = {text:t((LV.biome || 'forest')+'.cleared'), t:0, good:true};
     }
   }
-  function biomeCfg(){ const b=LV.biome; return b==='arctic'?ARC:b==='tropical'?TROP:b==='desert'?DSRT:b==='mountain'?MNTN:b==='megacity'?CITY:FOR; }
+  // конфиг помех текущего биома из реестра (04); дефолт — FOR (лес)
+  function biomeCfg(){ return biomeDef(LV.biome)?.cfg ?? FOR; }
   function updateForest(dt: number){
     if(K.DISABLE_FOREST){
       for(const h of [...hazards]) resolveHazard(h, false);

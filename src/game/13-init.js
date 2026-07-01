@@ -166,7 +166,7 @@
       t, levelEvents, levelName, objectiveDesc, computeStars, metricValue, recordResult, goalRowsHTML, bayUpCost, bayMaxLvl,
       levelEconomy, levelEffects, levelDifficulty, levelPace, paceInterval, paceCap, airPatience, levelServices, levelMaxUp, levelMinUp, sidesToLayout, levelToEditorObj,
       analyzeLevel, countOpenHangars, countTotalHangars, countOpenRunwayDirections, autoDifficulty, validatePassable, campaignTarget, archetypeForIndex,
-      dayCycle, weatherTaxiMult, neededCrew, planePrimaryState, fmtNum, fmtMoney,
+      dayCycle, weatherTaxiMult, neededCrew, biomeHasHazards, planePrimaryState, fmtNum, fmtMoney,
       followPath, smoothRoute,   // тесты следования/сглаживания маршрута (см. tests/logic.test.mjs)
       runwayGrabZone, inGrabZone, bayGrabZone,   // геометрия зон захвата (tests/grab-zone.test.mjs)
       bonusAfter, bonusUnlocked, bonusName,
