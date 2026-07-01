@@ -862,8 +862,10 @@
      Кегль марки адаптивен по ширине окна (clamp по vw): на десктопе 60px, на узком
      ландшафте ужимается, чтобы слово+тэглайн (обе строки ~7em/6em кегля) не налезали
      на CTA-панель справа — раньше фикс. 60/40px оставлял «дыру» в ~561–770px, где
-     бренд перекрывал панель (iPhone SE в ландшафте). Портрет задаёт свой кегль ниже. */
-  #startScreen .pf-brand{ --brand-mark-fs:clamp(24px, 5vw, 60px); left:calc(100% * 128 / 960); top:50%; transform:translateY(-50%);
+     бренд перекрывал панель (iPhone SE в ландшафте). Наклон рампы (5.5vw − 2px) подобран
+     так, чтобы полный 60px наступал уже к ~1127px (планшеты в ландшафте — iPad 1024px
+     ≈54px, iPad Air/Pro → 60px), а телефоны ужимались без перекрытия. Портрет — ниже. */
+  #startScreen .pf-brand{ --brand-mark-fs:clamp(24px, calc(5.5vw - 2px), 60px); left:calc(100% * 128 / 960); top:50%; transform:translateY(-50%);
     max-width:min(46%,460px); text-align:left; z-index:2; }
   #startScreen .brand__mark{ font-family:var(--m-font-display); font-weight:700; font-size:var(--brand-mark-fs);
     line-height:1; letter-spacing:0; color:var(--m-text-strong); display:inline-flex; align-items:center;
