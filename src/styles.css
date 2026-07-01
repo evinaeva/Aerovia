@@ -901,6 +901,16 @@
   #startScreen .pf-cta .m-btn--lg{ height:calc(60px * var(--pf-s)); font-size:calc(17px * var(--pf-s));
     padding:0 calc(28px * var(--pf-s)); gap:calc(10px * var(--pf-s)); border-radius:calc(var(--m-r-btn) * var(--pf-s)); }
   #startScreen .pf-cta .m-btn--lg svg{ width:calc(18px * var(--pf-s)); height:calc(18px * var(--pf-s)); }
+  /* отсчёт лиги сезона — пилюля-чип под кнопками CTA (переиспользует .chip); центрируем,
+     чтобы не растягивалась на всю ширину колонки, как кнопки. Скрыта до updateSeasonChip. */
+  #startScreen .pf-season{ align-self:center; max-width:100%; cursor:pointer;
+    font-family:var(--m-font-ui); height:calc(38px * var(--pf-s)); font-size:calc(14px * var(--pf-s));
+    color:var(--m-text-body); }
+  /* .chip (display:inline-flex) стоит в файле ПОСЛЕ утилиты .hidden (display:none) при равной
+     специфичности → без этого правила скрытый чип всё равно бы рисовался. Специфичность важнее. */
+  #startScreen .pf-season.hidden{ display:none; }
+  #startScreen .pf-season .chip__ic svg{ color:var(--m-accent); }
+  #startScreen .pf-season:hover{ filter:brightness(1.08); }
 
   /* ---- неон-акценты старт-экрана: стеклянная панель (радар просвечивает) ---- */
   #startScreen .pf-cta{ background:var(--m-panel-glass); backdrop-filter:blur(var(--m-board-blur)); }

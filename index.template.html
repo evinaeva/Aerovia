@@ -48,6 +48,8 @@
           <button class="m-btn m-btn--ghost m-btn--lg m-btn--block" id="survivalBtn"><span class="mic" data-mic="inf"></span><span class="m-btn__t" data-i18n="start.survival"></span></button>
           <!-- «Свой уровень» из конструктора (tuning.html). Скрыта, пока конструктор не положил уровень в localStorage. -->
           <button class="m-btn m-btn--ghost m-btn--lg m-btn--block hidden" id="customLevelBtn"><span class="mic" data-mic="hand"></span><span class="m-btn__t" data-i18n="start.custom"></span></button>
+          <!-- отсчёт лиги сезона: показывается только «активным» игрокам (есть survival-рекорд) через updateSeasonChip; тап → вкладка «Сезон». Текст с параметром ставит JS, не data-i18n. -->
+          <button class="chip pf-season hidden" id="startSeason" data-i18n-aria="menu.leaderboard"><span class="chip__ic mic" data-mic="clock"></span><span class="pf-season__txt" id="startSeasonTxt"></span></button>
         </div>
       </div>
       <!-- corner icon cluster: settings · medals · Play Games · language -->
