@@ -173,6 +173,22 @@
     const v=document.getElementById('startStars'), mx=document.getElementById('startStarsMax');
     if(v) v.textContent=fmtNum(got);
     if(mx) mx.textContent='/'+fmtNum(LEVELS.length*3);
+    updateSeasonChip();
+  }
+  // Чип-отсчёт лиги сезона на старт-экране («До конца сезона: N дн.»). Показываем только
+  // «активным» игрокам (есть личный survival-рекорд) — тот же таргетинг, что тост-приглашение
+  // «Стартовал Сезон N» (Leaderboard.season.invite → «сначала своим активным», season-leagues.md).
+  // Тап открывает вкладку «Сезон» экрана рейтинга. Init идемпотентен (грузит аккаунт из
+  // localStorage без sign-in) — иначе у вернувшегося игрока invite() не видел бы его рекорд.
+  function updateSeasonChip(){
+    const chip=document.getElementById('startSeason'); if(!chip) return;
+    let active=false, days=0;
+    try{ Leaderboard.init(); if(Leaderboard.season.invite().active){ active=true; days=Leaderboard.season.daysLeft(); } }catch(e){}
+    if(!active){ chip.classList.add('hidden'); return; }
+    const txt=document.getElementById('startSeasonTxt');
+    if(txt) txt.textContent=t('start.season',{n:days, unit:t('unit.days',{n:days})});
+    chip.classList.remove('hidden');
+    (chip as HTMLElement).onclick=()=>{ lbPeriod='season'; showLeaderboard(); };
   }
   function showStart(){ inMenu=true; hideAllScreens(); updateStartChips(); document.getElementById('startScreen')!.classList.remove('hidden'); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen')!.classList.remove('hidden'); }
@@ -541,6 +557,7 @@
   document.getElementById('langFlagBtn')!.onclick=()=>{
     const codes=Object.keys(I18N); const i=codes.indexOf(lang);
     setLang(codes[(i+1)%codes.length]);
+    updateStartChips();   // освежить чип сезона: его текст с параметром applyI18n не перерисовывает
   };
   // звук/вибро — иконки-кнопки в экране «Настройки», меняют SVG и класс при переключении
   function syncSettingsUI(){
