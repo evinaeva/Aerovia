@@ -847,7 +847,12 @@
      MAIN SCREEN (PlaneFlow main-screen handoff) — единый облик neon:
      бренд слева·по центру · стеклянная панель CTA справа·по центру.
      ============================================================ */
-  #startScreen .pf-main{ display:block; }              /* full-bleed canvas, children placed absolutely */
+  /* --pf-s — коэффициент «крупности» CTA-кластера (панель·кнопки·марка·угловые
+     иконки) в ЛАНДШАФТЕ. На телефоне/планшете (≤1024px) = 1 (базовые размеры), на
+     широких экранах растёт до 1.45, иначе панель min(40%,308px) занимала всё меньшую
+     долю ширины (30% при 1024 → 24% при 1280 → 16% при 1920) и выглядела крошечной
+     в углу. Портрет сбрасывает его в 1 (там панель и так во всю ширину). */
+  #startScreen .pf-main{ display:block; --pf-s:clamp(1, calc(1 + (100vw - 1024px) / 1900px), 1.45); }
   #startScreen .pf-main > *{ position:absolute; }
   /* scrim: диагональ — читаемость и слева (бренд), и справа (панель) над живым canvas */
   #startScreen .pf-scrim{ inset:0; pointer-events:none; z-index:1;
@@ -858,8 +863,14 @@
   /* brand: wordmark · tagline (kicker/ver убраны). Блок сдвинут вправо так, чтобы левый
      край самолёта (= левый край блока) совпал с левым краем полосы ВПП меню-сцены:
      drawMenuLanding (10-scene-loop) рисует полосу от x1=128 (лев. край) в лок.коорд.,
-     масштаб x*W/960 → 128/960 ≈ 13.33% ширины. */
-  #startScreen .pf-brand{ --brand-mark-fs:60px; left:calc(100% * 128 / 960); top:50%; transform:translateY(-50%);
+     масштаб x*W/960 → 128/960 ≈ 13.33% ширины.
+     Кегль марки адаптивен по ширине окна (clamp по vw): на десктопе 60px, на узком
+     ландшафте ужимается, чтобы слово+тэглайн (обе строки ~7em/6em кегля) не налезали
+     на CTA-панель справа — раньше фикс. 60/40px оставлял «дыру» в ~561–770px, где
+     бренд перекрывал панель (iPhone SE в ландшафте). Наклон рампы (5.5vw − 2px) подобран
+     так, чтобы полный 60px наступал уже к ~1127px (планшеты в ландшафте — iPad 1024px
+     ≈54px, iPad Air/Pro → 60px), а телефоны ужимались без перекрытия. Портрет — ниже. */
+  #startScreen .pf-brand{ --brand-mark-fs:clamp(24px, calc(5.5vw - 2px), calc(60px * var(--pf-s))); left:calc(100% * 128 / 960); top:50%; transform:translateY(-50%);
     max-width:min(46%,460px); text-align:left; z-index:2; }
   #startScreen .brand__mark{ font-family:var(--m-font-display); font-weight:700; font-size:var(--brand-mark-fs);
     line-height:1; letter-spacing:0; color:var(--m-text-strong); display:inline-flex; align-items:center;
@@ -879,8 +890,13 @@
   /* CTA group — vertical centering via margin (NOT transform: the .panel
      entrance keyframe ends at transform:none and would clobber translateY). */
   #startScreen .pf-cta{ right:7%; top:0; bottom:0; height:fit-content; margin-block:auto;
-    width:min(40%,308px); padding:24px 22px; z-index:3; }
-  #startScreen .pf-cta .menu-col{ width:100%; gap:13px; }
+    width:min(40%, calc(308px * var(--pf-s))); padding:calc(24px * var(--pf-s)) calc(22px * var(--pf-s)); z-index:3; }
+  #startScreen .pf-cta .menu-col{ width:100%; gap:calc(13px * var(--pf-s)); }
+  /* кнопки и их иконки растут вместе с панелью (--pf-s), чтобы на широких экранах
+     CTA не выглядел крошечным. На ≤1024px --pf-s=1 → базовые --lg-размеры. */
+  #startScreen .pf-cta .m-btn--lg{ height:calc(60px * var(--pf-s)); font-size:calc(17px * var(--pf-s));
+    padding:0 calc(28px * var(--pf-s)); gap:calc(10px * var(--pf-s)); border-radius:calc(var(--m-r-btn) * var(--pf-s)); }
+  #startScreen .pf-cta .m-btn--lg svg{ width:calc(18px * var(--pf-s)); height:calc(18px * var(--pf-s)); }
 
   /* ---- неон-акценты старт-экрана: стеклянная панель (радар просвечивает) ---- */
   #startScreen .pf-cta{ background:var(--m-panel-glass); backdrop-filter:blur(var(--m-board-blur)); }
@@ -892,19 +908,59 @@
     background:rgba(58,210,255,0.18); color:#eaffff;
     border:1.5px solid #3ad2ff; box-shadow:0 0 20px rgba(58,210,255,0.6); }
   #startScreen .pf-cta .m-btn--primary:hover{ filter:brightness(1.08); }
-  /* corner icon-кнопки — синий неон-чип вместо тёмно-фиолетового */
-  #startScreen .pf-corner .icon-btn{ background:rgba(16,30,66,0.6); }
+  /* corner icon-кнопки — синий неон-чип вместо тёмно-фиолетового; растут с --pf-s */
+  #startScreen .pf-corner{ gap:calc(10px * var(--pf-s)); }
+  #startScreen .pf-corner .icon-btn{ background:rgba(16,30,66,0.6);
+    width:calc(48px * var(--pf-s)); height:calc(48px * var(--pf-s)); border-radius:calc(14px * var(--pf-s)); }
+  #startScreen .pf-corner .icon-btn svg{ width:calc(22px * var(--pf-s)); height:calc(22px * var(--pf-s)); }
 
-  /* small landscape: keep the two side clusters from colliding */
-  @media (max-width:560px){
-    #startScreen .pf-brand{ --brand-mark-fs:40px; }
-    #startScreen .pf-cta{ width:min(46%,260px); }
-  }
-  /* короткий landscape на телефоне: компактнее панель и бренд (spec §8) */
+  /* короткий landscape на телефоне: компактнее панель (spec §8). Кегль бренда и
+     ширину панели больше не форсим отдельными брейкпоинтами — марка адаптивна
+     по vw (clamp выше), а базовая ширина панели min(40%,308px) уже не даёт бренду
+     налезть. Прежний оверрайд ширины до 46% лишь усиливал перекрытие — убран. */
   @media (max-height:480px){
-    #startScreen .pf-cta{ width:min(46%,268px); padding:18px 18px; }
+    #startScreen .pf-cta{ padding:18px 18px; }
     #startScreen .pf-cta .menu-col{ gap:10px; }
-    #startScreen .pf-brand{ --brand-mark-fs:40px; }
+  }
+
+  /* ── ПОРТРЕТ (телефон вертикально — основной формфактор). Ландшафтная раскладка
+     «бренд слева·по центру + панель справа·по центру» в портрете схлопывается:
+     бренд перекрывается панелью, тэглайн и подписи кнопок («Survival»/«Custom»)
+     срезаются. Перекладываем в вертикальный стек — бренд сверху · CTA-панель снизу
+     во всю ширину · ряд угловых иконок у самого низа; между ними просвечивает
+     живая сцена-радар. Идёт ПОСЛЕ landscape-медиа выше, чтобы перебить их. ── */
+  @media (orientation:portrait){
+    /* панель в портрете и так во всю ширину — ландшафтный up-scale не нужен */
+    #startScreen .pf-main{ --pf-s:1; }
+    /* scrim становится вертикальным: тёмный верх (бренд) и низ (панель+иконки),
+       прозрачная середина (сцена) — вместо диагонали под боковые кластеры */
+    #startScreen .pf-scrim{
+      background:linear-gradient(180deg, var(--m-scrim) 0%, transparent 32%,
+        transparent 60%, var(--m-scrim) 100%); }
+
+    /* бренд: сверху·по центру; марка масштабируется по ширине экрана */
+    #startScreen .pf-brand{
+      --brand-mark-fs:clamp(34px, 11vw, 58px);
+      left:0; right:0; margin-inline:auto; transform:none;
+      top:max(26px, env(safe-area-inset-top, 0px)); bottom:auto;
+      max-width:min(92%, 460px); text-align:center; }
+    #startScreen .brand__mark{ justify-content:center; }
+    #startScreen .brand__tag{ margin-left:0; text-align:center; white-space:normal; }
+
+    /* CTA-панель: снизу·по центру, во всю доступную ширину (лечит срезанные
+       подписи кнопок). Центрируем ПОЛЯМИ (margin-inline:auto), не transform —
+       иначе fitOverlays (06-state-layout: scale панели) и центрирование
+       перетирают transform друг друга, см. коммент к landscape-версии выше. */
+    #startScreen .pf-cta{
+      left:0; right:0; margin-inline:auto; margin-block:0;
+      top:auto; bottom:calc(84px + env(safe-area-inset-bottom, 0px));
+      width:min(92%, 360px); }
+
+    /* угловой кластер: строкой·по центру у самого низа (в ландшафте он справа-снизу
+       и налез бы на нижнюю панель) */
+    #startScreen .pf-corner{
+      left:0; right:0; justify-content:center;
+      bottom:calc(16px + env(safe-area-inset-bottom, 0px)); }
   }
 
 /* ============================================================
