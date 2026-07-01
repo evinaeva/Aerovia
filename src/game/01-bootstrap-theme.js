@@ -83,15 +83,9 @@
     ready: false,     // set once plane base loaded
     hangarBase: null,   // sprite_hangar_base.png  (base for all bays)
     hangarArrow: null,  // sprite_hangar_arrow.png (вход-шеврон, оверлей размером с ангар)
-    svcFuel: null,      // svc_fuel.png        — иконка услуги (верхние боксы)
+    svcFuel: null,      // svc_fuel.png        — иконка услуги (общая для всех сторон бокса)
     svcRepair: null,    // svc_repair.png
     svcBoard: null,     // svc_board.png
-    svcFuelBot: null,    // svc_fuel_bot.png    — иконка услуги (нижние боксы)
-    svcRepairBot: null,  // svc_repair_bot.png
-    svcBoardBot: null,   // svc_board_bot.png
-    svcFuelSide: null,   // svc_fuel_side.png   — иконка услуги (боковые боксы)
-    svcRepairSide: null, // svc_repair_side.png
-    svcBoardSide: null,  // svc_board_side.png
   };
   // Returns true if the image/canvas is ready to draw.
   function _hiOk(im) {

@@ -154,6 +154,17 @@
     ctx.restore();
   }
 
+  // Иконка услуги на PNG-ангаре: один файл на услугу (fuel/repair/board), общий для
+  // всех сторон бокса (до 2026-07-02 было по 3 предрисованных обрезка top/bot/side —
+  // консолидированы, см. memory-android17.md). Она должна визуально сидеть у задней
+  // стены бокса (как раньше — за счёт разных обрезков), но сама читаться прямо, не
+  // поворачиваясь вместе с ангаром — см. drawBay. Первая прикидка размера/отступа,
+  // рассчитана на глаз по пропорциям исходных svc_*.png — тронуть эти два числа,
+  // если по месту (после ресайза) захочется иконку крупнее/мельче или ближе/дальше
+  // от стены.
+  const SVC_ICON_SCALE = 0.46;   // диаметр иконки / сторона бокса
+  const SVC_ICON_INSET = 6;      // отступ иконки от задней стены, ui-единиц
+
   function drawBay(b: any){
     // Без активного скин-оверрайда обычные боксы рисует drawNeonBay (полная neon-отрисовка).
     // При активном скине — пробуем спрайт; спрайт не загружен ещё → neon-fallback.
@@ -191,11 +202,22 @@
       ctx.drawImage((baseC || hiBase) as CanvasImageSource, -b.w/2, -b.h/2, b.w, b.h);
       ctx.restore();
       if(b.open){
-        const _svcTop  = (b.type==='fuel' ? HANDOFF_IMG.svcFuel      : b.type==='repair' ? HANDOFF_IMG.svcRepair      : b.type==='board' ? HANDOFF_IMG.svcBoard      : null) as HTMLImageElement | null;
-        const _svcBot  = (b.type==='fuel' ? HANDOFF_IMG.svcFuelBot   : b.type==='repair' ? HANDOFF_IMG.svcRepairBot   : b.type==='board' ? HANDOFF_IMG.svcBoardBot   : null) as HTMLImageElement | null;
-        const _svcSide = (b.type==='fuel' ? HANDOFF_IMG.svcFuelSide  : b.type==='repair' ? HANDOFF_IMG.svcRepairSide  : b.type==='board' ? HANDOFF_IMG.svcBoardSide  : null) as HTMLImageElement | null;
-        const svcDraw = (b.side==='top' ? _svcTop : b.side==='bottom' ? _svcBot : _svcSide) as HTMLImageElement | null;
-        if(svcDraw && _hiOk(svcDraw)){ const svcC = scaledSprite(svcDraw, b.w, b.h); ctx.drawImage((svcC || svcDraw) as CanvasImageSource, b.x, b.y, b.w, b.h); }
+        const svcDraw = (b.type==='fuel' ? HANDOFF_IMG.svcFuel : b.type==='repair' ? HANDOFF_IMG.svcRepair : b.type==='board' ? HANDOFF_IMG.svcBoard : null) as HTMLImageElement | null;
+        if(svcDraw && _hiOk(svcDraw)){
+          // Якорь иконки сдвигаем к задней стене В ЛОКАЛЬНОЙ (повёрнутой под сторону
+          // бокса) системе — тем же `ang`, что и hiBase выше, — а затем поворот
+          // отменяем, чтобы сама иконка отрисовалась прямо, не боком/вверх ногами.
+          const iconSize = b.w * SVC_ICON_SCALE;
+          const anchorY = -(b.h/2 - SVC_ICON_INSET*ui - iconSize/2);
+          const svcC = scaledSprite(svcDraw, iconSize, iconSize);
+          ctx.save();
+          ctx.translate(b.x + b.w/2, b.y + b.h/2);
+          ctx.rotate(ang);
+          ctx.translate(0, anchorY);
+          ctx.rotate(-ang);
+          ctx.drawImage((svcC || svcDraw) as CanvasImageSource, -iconSize/2, -iconSize/2, iconSize, iconSize);
+          ctx.restore();
+        }
       }
       ctx.restore();
       return;
