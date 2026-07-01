@@ -41,6 +41,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(SnapshotsPlugin.class);
         registerPlugin(InstallReferrerPlugin.class);
         registerPlugin(FirebaseAnalyticsPlugin.class);
+        registerPlugin(InAppReviewPlugin.class);
         super.onCreate(savedInstanceState);
         hideSystemBars();
     }
@@ -239,11 +240,50 @@ public class FirebaseAnalyticsPlugin extends Plugin {
 }
 `;
 
+// Тонкий мост к Google Play In-App Review (Play Core Review API).
+// JS видит его как window.Capacitor.Plugins.InAppReview (метод requestReview).
+// docs/play-featuring-plan.md, User Experience: системный промпт оценки вместо кастомного
+// диалога, дёргается из src/game/12g-in-app-review.ts на удачном моменте (победа на уровне).
+// Google сам решает, показать ли промпт реально (внутренняя годовая квота) — этот мост просто
+// запускает флоу и не сообщает вызывающей стороне, был ли оставлен отзыв (так делает сам API).
+const IN_APP_REVIEW_PLUGIN = `package com.planeflow.game;
+
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.play.core.review.ReviewInfo;
+import com.google.android.play.core.review.ReviewManager;
+import com.google.android.play.core.review.ReviewManagerFactory;
+
+@CapacitorPlugin(name = "InAppReview")
+public class InAppReviewPlugin extends Plugin {
+
+    @PluginMethod
+    public void requestReview(final PluginCall call) {
+        final ReviewManager manager = ReviewManagerFactory.create(getContext());
+        manager.requestReviewFlow().addOnCompleteListener(request -> {
+            if (!request.isSuccessful()) {
+                call.reject("requestReviewFlow failed: " + request.getException());
+                return;
+            }
+            final ReviewInfo reviewInfo = request.getResult();
+            manager.launchReviewFlow(getActivity(), reviewInfo).addOnCompleteListener(flow -> {
+                // launchReviewFlow всегда завершается успешно и НЕ сообщает, показался ли
+                // промпт реально или был ли оставлен отзыв — так задумано самим API.
+                JSObject ret = new JSObject(); ret.put("ok", true); call.resolve(ret);
+            });
+        });
+    }
+}
+`;
+
 // ProGuard/R8 keep-правила для RELEASE-шринка (Фаза 3, docs/memory-android17.md).
 // R8 в релизе минифицирует и переименовывает код; наши Capacitor-плагины мост зовёт
 // РЕФЛЕКСИЕЙ по имени класса/метода (@CapacitorPlugin / @PluginMethod), поэтому их надо
-// явно сохранить — иначе Snapshots/InstallReferrer/FirebaseAnalytics молча отвалятся в
-// релизе. Capacitor-core, play-services и firebase несут свои consumer-правила в AAR,
+// явно сохранить — иначе Snapshots/InstallReferrer/FirebaseAnalytics/InAppReview молча
+// отвалятся в релизе. Capacitor-core, play-services и firebase несут свои consumer-правила в AAR,
 // их держать не нужно. Наши классы все в пакете com.planeflow.game — сохраняем целиком.
 const PROGUARD_RULES = `# planeflow — генерируется scripts/setup-android.mjs (Фаза 3, docs/memory-android17.md).
 # R8-шринк релиза не должен трогать Capacitor-плагины (мост зовёт их рефлексией по имени).
@@ -327,6 +367,11 @@ patch('app/build.gradle', (s) =>
 patch('app/build.gradle', (s) =>
   s.includes('play-services-games-v2') ? s
     : s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "com.google.android.gms:play-services-games-v2:+"'));
+
+// In-App Review: Play Core Review API, для InAppReviewPlugin выше.
+patch('app/build.gradle', (s) =>
+  s.includes('com.google.android.play:review') ? s
+    : s.replace(/dependencies\s*\{/, 'dependencies {\n    implementation "com.google.android.play:review:2.0.2"'));
 
 // Install Referrer: нужен чтобы знать источник трафика при установке из Play Store (attribution).
 // Stable 2.2 — последняя на момент написания; pin к конкретной версии (не +), т.к. API стабильный.
@@ -489,6 +534,10 @@ log('wrote: InstallReferrerPlugin.java (Install Referrer attribution)');
 // 9) Firebase Analytics плагин
 writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/FirebaseAnalyticsPlugin.java'), FIREBASE_ANALYTICS_PLUGIN);
 log('wrote: FirebaseAnalyticsPlugin.java (Firebase Analytics sink)');
+
+// 9b) In-App Review плагин (docs/play-featuring-plan.md, User Experience)
+writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/InAppReviewPlugin.java'), IN_APP_REVIEW_PLUGIN);
+log('wrote: InAppReviewPlugin.java (Play Core In-App Review)');
 
 // 10) google-services.json → android/app/ (нужен Google Services Gradle plugin)
 {
