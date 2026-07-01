@@ -19,8 +19,6 @@ declare const HANDOFF_IMG: {
   bg:         HTMLImageElement | null;
   apron:      HTMLImageElement | null;
   vpp:        HTMLImageElement | null;
-  hangar:     HTMLImageElement | null;
-  gate:       HTMLImageElement | null;
   hud:        HTMLImageElement | null;
   plane:      HTMLImageElement | null;
   planes:     (HTMLImageElement | HTMLCanvasElement)[];

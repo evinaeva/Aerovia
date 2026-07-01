@@ -77,8 +77,6 @@
     bg: null,         // sprite_back_full.png
     apron: null,      // sprite_apron.png
     vpp: null,        // sprite_vpp.png  (runway strip)
-    hangar: null,     // sprite_hangar.png  (top bays, legacy fallback)
-    gate: null,       // sprite_gate.png    (bottom bays, legacy fallback)
     hud: null,        // sprite_hud.png
     plane: null,      // sprite_plane2.png  base
     planes: [],       // [0..3]: livery variants
