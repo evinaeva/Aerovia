@@ -238,12 +238,12 @@ function drawMenuScene(tm: number){
       drawEffects(dt);            _pseg('fx');
       vignette();                 _pseg('vignette');
       drawFloaters(dt);           _pseg('floaters');
-      if(!(LV && LV.layout && LV.layout.noHud)){   // HUD/туториал скрыты на уровнях с layout.noHud (чистая композиция)
-        drawHUD();
-        if(tut) drawTutorial();
+      if(hudHidden()){          // кампания / бонус / свой уровень — чистая композиция без HUD
+        drawCustomPauseBtn();   // HUD спрятан, но кнопка паузы нужна — рисуем её отдельно
       } else {
-        drawCustomPauseBtn();   // noHud: HUD спрятан, но кнопка паузы нужна — рисуем её отдельно
+        drawHUD();              // выживание (биом-карты) — полный HUD (жизни/счёт/таймер)
       }
+      if(tut) drawTutorial();   // тихий туториал — независимо от HUD (только в кампании при первом запуске)
       if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
       _pseg('hud');
     }
