@@ -135,6 +135,43 @@
       },
     }),
   };
+  // Тема-роли (01b-theme-roles): точка входа для родительского tuning.html (same-origin
+  // iframe) и для ручной проверки из консоли. Переключение биома перекрашивает все три
+  // слоя (canvas-процедурка + SVG-атлас + PNG gradient-map) без правки кода отрисовки.
+  //   __THEME.getRole('accent-warm')      → текущий hex роли
+  //   __THEME.roles()                     → снимок всех ролей активного биома
+  //   __THEME.setBiome({name,tokens,roles[,gradientMaps]})  → переключить биом
+  //   __THEME.reset()                     → вернуть дефолтный dark-neon
+  //   __THEME.demo()                      → применить ЗАГЛУШЕЧНЫЙ яркий биом (быстрая
+  //                                         визуальная проверка перекраски; не «tropical»)
+  window.__THEME = {
+    getRole: (r) => theme.getRole(r),
+    getToken: (n) => theme.getToken(n),
+    active: () => theme.activeBiome.name,
+    roles: () => Object.assign({}, theme.activeBiome.roles),
+    setBiome: (b) => theme.setBiome(b),
+    reset: () => theme.setBiome(DEFAULT_BIOME),
+    DEFAULT_BIOME,
+    // Тестовый биом: берём дефолтные токены/роли и ЯВНО перекрашиваем несколько ролей в
+    // заведомо «ненеоновые» цвета + включаем PNG gradient-map на ВПП. Это НЕ дизайн будущего
+    // tropical-shore (значения намеренно кричащие) — только чтобы глазами убедиться, что
+    // прослойка ролей реально доходит до всех трёх слоёв рендера.
+    demo: () => theme.setBiome({
+      name: 'demo-warm',
+      tokens: Object.assign({}, NEON_TOKENS, {
+        ink:'#241206', tarmac:'#3a1e08', amber:'#ff9838', phosphor:'#ffd089',
+        led:'#ffb347', 'led-core':'#fff0d0', 'hud-glow':'#ffb347', 'hud-text':'#fff3e0',
+      }),
+      roles: {
+        'bg-primary':'#241206', 'bg-secondary':'#3a1e08',
+        'structure-1':'#ffb347', 'structure-2':'#fff0d0',
+        'accent-active':'#ffd089', 'accent-warm':'#ff9838',
+        'hazard':'#ff3b6b', 'success':'#5de08a',
+        'ui-text':'#fff3e0', 'ui-glow':'#ffb347',
+      },
+      gradientMaps: { runway: [ {stop:0, color:'#5a3410'}, {stop:1, color:'#ffcf8a'} ] },
+    }),
+  };
   // Конструктор уровней (tuning.html): сыграть произвольный уровень сразу (custom),
   // либо положить его в localStorage, чтобы стартовый экран предложил «Свой уровень».
   window.__PLAY = {
