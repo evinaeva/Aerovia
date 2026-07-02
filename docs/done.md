@@ -183,8 +183,11 @@
   last-writer-wins по `savedAt`, debounce, flush при сворачивании; хук в `saveGame()`. Offline-first:
   `localStorage` — источник правды, облако — зеркало. Архитектура — [`cloud-saves.md`](cloud-saves.md).
   Осталось ручное (в [`backlog.md`](backlog.md)): включить Saved Games в Play Console + тест на устройстве.
-- **Privacy / Data Safety** — `privacy.html` (раздел «Google Play Games») и
-  [`play-data-safety.md`](play-data-safety.md) готовы; при публикации внести в форму Play Console.
+- **Privacy / Data Safety** — `privacy.html` (Google Play Games + Firebase Analytics/Crashlytics/
+  Performance + рекламный ID) и [`play-data-safety.md`](play-data-safety.md) готовы; **форма Data Safety
+  в Play Console заполнена** (сценарий B: Analytics + App functionality, Optional, Shared=No; AD_ID =
+  «Да / Аналитика»). Осталось только держать сбор Firebase привязанным к согласию — см. блокер
+  «вернуть окно согласия» в [`backlog.md`](backlog.md).
 
 ## VPS и OTA-инфраструктура (завершено 2026-06-18)
 - **Безопасность VPS** — `PermitRootLogin prohibit-password`, `PasswordAuthentication no`
