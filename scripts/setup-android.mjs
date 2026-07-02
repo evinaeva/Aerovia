@@ -602,8 +602,11 @@ patch('app/src/main/AndroidManifest.xml', (s) => {
 // роутинг разбирает src/game/12i-deep-links.ts). autoVerify=true → Android сверяет
 // /.well-known/assetlinks.json на домене (лежит в репо, публикуется на Pages) с SHA-256
 // релизного ключа; до заливки отпечатка ссылки просто открываются как обычные (не падают).
+// Гард идемпотентности — по нашему маркеру autoVerify (шаблон Capacitor его не ставит), а НЕ по
+// подстроке хоста: включение хоста в манифест не является проверкой безопасности (CodeQL иначе
+// принимает это за неполную санитизацию URL-хоста).
 patch('app/src/main/AndroidManifest.xml', (s) =>
-  s.includes(APP_LINK_HOST) ? s
+  s.includes('android:autoVerify="true"') ? s
     : s.replace('</activity>',
 `    <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
