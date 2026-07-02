@@ -190,8 +190,20 @@
     }
     return {
       init, track,
-      // consent-гейт под сторы: при отказе sink молчит; при согласии дольём накопленное
-      setConsent(v: boolean){ consent=!!v; if(consent) buffer.forEach(e=>{ if(!e._sent){ try{ sink(e); e._sent=true; }catch(_){} } }); persistBuffer(); },
+      // consent-гейт под сторы: при отказе sink молчит; при согласии дольём накопленное.
+      // Заодно гейтим НАТИВНЫЙ сбор Firebase (Analytics/Crashlytics/Performance): по умолчанию он
+      // выключен через meta-data манифеста (setup-android.mjs) и включается ТОЛЬКО здесь при согласии.
+      // Иначе Firebase собирал бы данные (и рекламный ID) до consent — нарушение GDPR и расхождение
+      // с Data Safety (docs/play-data-safety.md, сценарий B: типы помечены Optional = по согласию).
+      setConsent(v: boolean){
+        consent=!!v;
+        if(consent) buffer.forEach(e=>{ if(!e._sent){ try{ sink(e); e._sent=true; }catch(_){} } });
+        persistBuffer();
+        try{
+          const FA: any = (window as any).Capacitor?.Plugins?.FirebaseAnalytics;
+          if(FA && typeof FA.setCollectionEnabled==='function') FA.setCollectionEnabled({ enabled: consent });
+        }catch(_){}
+      },
       get sink(){ return sink; }, set sink(fn){ if(typeof fn==='function') sink=fn; },
       dump(){ return buffer.slice(); }, clear(){ buffer=[]; persistBuffer(); },
       get userId(){ return userId; }, get sessionId(){ return sessionId; },
