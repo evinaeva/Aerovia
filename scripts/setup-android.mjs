@@ -392,6 +392,39 @@ const NETWORK_SECURITY_CONFIG = `<?xml version="1.0" encoding="utf-8"?>
 </network-security-config>
 `;
 
+// Релизная подпись (upload-key) для AAB — docs/capacitor-android.md.
+// Секреты НЕ в git: сам keystore и keystore.properties лежат локально (репо-корень, gitignored);
+// setup:android копирует keystore.properties → android/ (как google-services.json). Инъекция —
+// ГАРДИРОВАННАЯ: если android/keystore.properties нет (CI, чистый клон), release остаётся
+// НЕподписанным, а debug не трогается — блок целиком no-op. `android {}` можно объявлять повторно
+// (Gradle сливает блоки). Идемпотентно — гард по маркеру `planeflow release signing`.
+const SIGNING_BLOCK = `
+
+// planeflow release signing — upload-key для AAB (scripts/setup-android.mjs, docs/capacitor-android.md).
+// keystore.properties и .keystore лежат локально и gitignored; setup:android кладёт properties сюда.
+// Нет файла (CI/чистый клон) → блок no-op: release неподписан, debug не затронут.
+def pfKeystoreProps = rootProject.file('keystore.properties')
+if (pfKeystoreProps.exists()) {
+    def pfKs = new Properties()
+    pfKeystoreProps.withInputStream { pfKs.load(it) }
+    android {
+        signingConfigs {
+            release {
+                storeFile file(pfKs['storeFile'])
+                storePassword pfKs['storePassword']
+                keyAlias pfKs['keyAlias']
+                keyPassword pfKs['keyPassword']
+            }
+        }
+        buildTypes {
+            release {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+`;
+
 if (!existsSync(A)) {
   console.error('android/ not found — run `npx cap add android` first.');
   process.exit(1);
@@ -546,6 +579,18 @@ patch('app/build.gradle', (s) => {
 // регресса, если Capacitor-шаблон когда-нибудь выставит false).
 patch('gradle.properties', (s) =>
   s.includes('android.enableR8.fullMode') ? s : s.replace(/\s*$/, '\nandroid.enableR8.fullMode=true\n'));
+
+// 1b) Release signing (upload-key) для подписанного AAB. keystore.properties лежит в репо-корне
+// (gitignored, машинно-локальный, переживает `cap add`); копируем в android/ как google-services.json,
+// gradle читает его через rootProject.file(). Инъекция гардирована в самом gradle — без файла no-op,
+// так что CI и debug не ломаются. Как создать keystore и заполнить properties — docs/capacitor-android.md.
+{
+  const ks = join(ROOT, 'keystore.properties');
+  if (existsSync(ks)) { copyFileSync(ks, join(A, 'keystore.properties')); log('copied: keystore.properties → android/ (release signing)'); }
+  else log('skip keystore.properties — release AAB останется НЕподписанным, пока не создашь его (docs/capacitor-android.md)');
+}
+patch('app/build.gradle', (s) =>
+  s.includes('planeflow release signing') ? s : s + SIGNING_BLOCK);
 
 // 2) local.properties (machine-specific SDK path; never committed)
 {
