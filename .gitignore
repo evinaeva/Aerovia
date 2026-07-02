@@ -16,6 +16,12 @@ build/
 www/
 android/
 
+# Release signing (upload-key) — машинно-локальные СЕКРЕТЫ, НИКОГДА не коммитить.
+# Формат/инструкция — keystore.properties.example + docs/capacitor-android.md.
+keystore.properties
+*.keystore
+*.jks
+
 # СБОРОЧНЫЙ артефакт: index.html собирается из src/ (node scripts/build.mjs),
 # его публикует робот при деплое. В git хранится только исходник в src/.
 /index.html

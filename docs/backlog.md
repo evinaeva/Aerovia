@@ -75,6 +75,22 @@
 - ⚠️ **Подписанный AAB + закрытое тестирование.** Собрать подписанный AAB (нужен **release
   keystore**), загрузить в Play Console; закрытый трек **≥12 человек, 14 дней**. Developer-аккаунт
   верифицирован (2026-06-15). Чек-лист — [`capacitor-android.md`](capacitor-android.md).
+  - ✅ **Каркас подписи в коде — сделано (2026-07-02).** [`setup-android.mjs`](../scripts/setup-android.mjs)
+    гардированно подключает `signingConfigs.release` из gitignored `keystore.properties` (нет файла →
+    блок no-op: release неподписан, debug/CI не ломаются); шаблон формата — `keystore.properties.example`;
+    секреты в git не попадают (`.gitignore`: `keystore.properties`/`*.keystore`/`*.jks`); шаги подписи
+    задокументированы в [`capacitor-android.md`](capacitor-android.md) → «Подписанный AAB».
+  - **Осталось (owner) — ручные шаги, требуют keystore/машины/аккаунта:**
+    1. **Создать upload-keystore.** `keytool -genkeypair` (пароли выбираешь сам, хранить вечно — при
+       Play App Signing это upload-key) → скопировать `keystore.properties.example` в `keystore.properties`
+       (репо-корень) и заполнить `storeFile`/`storePassword`/`keyAlias`/`keyPassword`.
+    2. **Собрать подписанный AAB** из `main` (гейт Firebase из **PR #399 уже в `main`**):
+       `build:www → cap add → setup:android → cap sync → gradlew bundleRelease` →
+       `app/build/outputs/bundle/release/app-release.aab`. Это **заодно закрывает** блокер
+       [«Смоук release-сборки с R8»](#блокеры-релиза) (release — единственный build type с R8-шринком).
+    3. **Загрузить в Play Console** на закрытый трек (**≥12 человек, 14 дней**); там же взять **SHA-256**
+       из Play App Signing (App Integrity) для [`assetlinks.json`](../.well-known/assetlinks.json) и второй
+       записи в «Учётные данные» PGS; на первом релизе — **staged rollout** + managed publishing.
 - ⚠️ **Смоук release-сборки с R8** (Фаза 3 памяти). Конфиг включён
   ([`setup-android.mjs`](../scripts/setup-android.mjs): `minifyEnabled` + `shrinkResources` +
   keep-правила), **но release-сборкой не проверялся** (в облачной песочнице нет Android SDK; на машине
@@ -84,7 +100,7 @@
   - Частичное подтверждение (2026-07-02): в **debug**-сборке мост уже видит все эти нативные плагины
     (`Snapshots`/`InstallReferrer`/`FirebaseAnalytics` присутствуют в `window.Capacitor.Plugins`) — это
     снижает риск, но R8-шринк живёт только в release build type, поэтому debug-прогон его **не заменяет**.
-  - Собирать AAB **из `main` после PR #399** (иначе в бинаре старый манифест без гейта Firebase).
+  - Собирать AAB **из `main`** (гейт Firebase из PR #399 **уже смержен в `main`** — 2026-07-02).
     В merged-манифесте проверить: присутствуют `firebase_{analytics,crashlytics,performance}_collection_enabled=false`,
     разрешение `com.google.android.gms.permission.AD_ID` на месте (держим для аналитики, декларация = «Да»),
     и на устройстве сбор Firebase реально стартует **только после** «Принять» на баннере согласия.
