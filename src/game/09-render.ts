@@ -345,11 +345,11 @@
     c.save();
     c.lineCap='round'; c.lineJoin='round';
     trace();                                           // 1) свечение
-    c.shadowColor=hexa('#27E6FF',.9); c.shadowBlur=12*ui;
-    c.strokeStyle=hexa('#27E6FF',.85); c.lineWidth=3.2*ui; c.stroke();
+    c.shadowColor=hexa(NEON_TOKENS.led,.9); c.shadowBlur=12*ui;
+    c.strokeStyle=hexa(NEON_TOKENS.led,.85); c.lineWidth=3.2*ui; c.stroke();
     trace();                                           // 2) яркое ядро
     c.shadowBlur=0;
-    c.strokeStyle=hexa('#bfefff',.95); c.lineWidth=1.4*ui; c.stroke();
+    c.strokeStyle=hexa(NEON_TOKENS['led-core'],.95); c.lineWidth=1.4*ui; c.stroke();
     c.restore();
   }
   // Кэш неон-линии апрона: offscreen-канвас + подпись (размер + прямоугольники ангаров).
@@ -461,7 +461,7 @@
   function drawField(tm: number){ drawNeonField(tm); }   // единственная сцена поля — неоновая
 
   function drawRunways(tm: number){
-    const WOW_BLUE = '#27E6FF';
+    const WOW_BLUE = NEON_TOKENS.led;
     runways.forEach((r,i)=>{
       const rwSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('runway');
       const rwHandoff = !rwSkin && _hiOk(HANDOFF_IMG.vpp);

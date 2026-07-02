@@ -566,7 +566,7 @@
   // поэтому база = spec_px/1.5 и всё множится на ui → меню масштабируется на телефонах
   // и держится в safe-area. Рисуется процедурно (без PNG): полупрозрачная скруглённая
   // заливка + неоновая обводка с мягким свечением.
-  const HUD_GLOW='#59AFFF', HUD_TXT='#E6F1FF', HUD_FILL='rgba(7,16,34,0.45)', HUD_DIV='rgba(255,255,255,0.12)';
+  const HUD_GLOW=NEON_TOKENS['hud-glow'], HUD_TXT=NEON_TOKENS['hud-text'], HUD_FILL='rgba(7,16,34,0.45)', HUD_DIV='rgba(255,255,255,0.12)';
   // скруглённый бокс меню: заливка + обводка с мягким свечением (~70% яркой версии).
   function hudBox(x: number,y: number,w: number,h: number,r: number){
     rr(x,y,w,h,r); ctx.fillStyle=HUD_FILL; ctx.fill();
