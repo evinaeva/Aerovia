@@ -423,18 +423,24 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
 - **Прокол рисков Play Games** — вход (тост «Welcome»), посадка/сервис/взлёт/прохождение → ачивка
   всплывает в PGS, Survival-счёт уходит в лидерборд (системный оверлей); canvas плавно рисует в
   WebView, тач работает. Часть уже проверена на Pixel 9 (2026-06-17), пере-сверить перед релизом. (capacitor-android.md)
-- **Remote Config килсвитч** — завести в Firebase Remote Config ключи `survival_leaderboard` и
-  `new_achievements` (Boolean), выставить `false` → на устройстве кнопка/экран рейтинга и
-  соревновательные медали исчезают без релиза; вернуть `true` → возвращаются. Код готов
-  (`12h-remote-config.ts`). **Сложность:** низкая (ручная). (play-featuring-plan.md)
-- **App Links авто-верификация** — вписать SHA-256 ключа **Play App Signing** (Play Console → App
-  Integrity) в [`.well-known/assetlinks.json`](../.well-known/assetlinks.json), задеплоить на Pages, затем на
-  устройстве: `adb shell pm verify-app-links --re-verify com.planeflow.game` + открыть
-  `https://planeflow.jevgenia.com/?screen=survival` → приложение открывается сразу на Survival, а не
-  в браузере. Прогнать и сам шеринг (карточка + ссылка). **Сложность:** низкая (ручная). (play-featuring-plan.md)
-- **`android:exported` аудит** — прочитать таблицу компонентов в выводе `npm run setup:android` на
-  реальной сборке (мерж-манифест с компонентами плагинов); убедиться, что нет `⚠ НЕТ android:exported`
-  и что `exported=true` только у MainActivity. **Сложность:** низкая (ручная). (play-featuring-plan.md)
+- **Remote Config килсвитч** — ✅ мост + механизм килсвитча **проверены на устройстве** (debug-сборка
+  2026-07-02, Pixel-класс: плагин `RemoteConfig` зарегистрирован, `PFFlags` на дефолтах = вкл;
+  имитация выключения `survival_leaderboard` + событие `pf:flags` **live прячет** кнопку рейтинга,
+  возврат — показывает). Осталось (owner): завести ключи `survival_leaderboard`/`new_achievements`
+  (Boolean) в Firebase Remote Config консоли, выставить `false` и проверить реальный флип на сборке.
+  **Сложность:** низкая (консоль). (play-featuring-plan.md)
+- **App Links / deep links** — ✅ роутинг **проверен на устройстве** (VIEW-intent на
+  `https://planeflow.jevgenia.com/?screen=survival` → экран Survival, `?screen=leaderboard` → экран
+  рейтинга; `appUrlOpen` → `12i-deep-links.ts` отрабатывает). Осталось (owner): вписать SHA-256 ключа
+  **Play App Signing** (Play Console → App Integrity) в
+  [`.well-known/assetlinks.json`](../.well-known/assetlinks.json), задеплоить на Pages, затем
+  `adb shell pm verify-app-links --re-verify com.planeflow.game` → ссылка открывает приложение **без
+  чузера**; прогнать сам шеринг (карточка + ссылка). **Сложность:** низкая (отпечаток + прогон). (play-featuring-plan.md)
+- **`android:exported` аудит** — ✅ **проверено на устройстве** (2026-07-02): `npm run setup:android`
+  после `assembleDebug` печатает **мерж-манифест — 30 компонентов**, ни одного `⚠ НЕТ android:exported`;
+  `exported=true` только у MainActivity (launcher + App Links, намеренно) и стандартных системных
+  компонентов (WorkManager `SystemJobService`/`DiagnosticsReceiver`, `ProfileInstallReceiver`, PGS
+  `AppShortcutsActivity`). Действий не требует. (play-featuring-plan.md)
 
 ---
 
