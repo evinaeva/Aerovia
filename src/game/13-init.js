@@ -190,6 +190,7 @@
       get levelIdx(){ return levelIdx; },
       get levelKey(){ return levelKey; },
       get survival(){ return survival; }, set survival(v){ survival=v; },
+      Flags, Content,   // Remote Config: killswitch-флаги + контент-гейты поэтапного релиза
       currentMode, periodBucket, Leaderboard, ACH, validateLeaderboard,
       seasonKey, seasonNumber, seasonDaysLeft, seasonDivisionIndex, SEASON_DIVISIONS,
       seasonPercentile, seasonPromote, seasonIdxOf, resolveSeasonDivision,
