@@ -27,7 +27,7 @@
 <body>
 <main>
   <h1>Privacy Policy — PlaneFlow</h1>
-  <p class="muted">Last updated: 16 June 2026</p>
+  <p class="muted">Last updated: 2 July 2026</p>
 
   <p>PlaneFlow (“the game”, “we”) is a casual air-traffic-control game. This policy
   explains what data the game handles and how. We keep it minimal on purpose: the game
@@ -45,7 +45,8 @@
       (not linked to you or any account), session timing, and in-game events such as
       level start/finish, tutorial steps, settings changes, and error/crash details.
       Alongside each event we store basic technical context: app version, interface
-      language, platform, and screen size.</li>
+      language, platform, and screen size. On the web this stays on your device; in the
+      Android app, once you consent, it is also sent to Firebase (see below).</li>
   </ul>
 
   <h2>Google Play Games (Android, optional)</h2>
@@ -67,23 +68,36 @@
   (including your gamer-tag visibility and deleting your Play Games data). If you never sign in,
   no Play Games data leaves your device.</p>
 
+  <h2>Analytics &amp; diagnostics — Firebase (Android app, with your consent)</h2>
+  <p>The Android app uses Google’s <strong>Firebase</strong> for anonymous analytics
+  (<em>Google Analytics for Firebase</em>), crash reporting (<em>Crashlytics</em>) and
+  performance monitoring (<em>Performance Monitoring</em>). This collection is <strong>off by
+  default</strong> and starts only <strong>after you agree</strong> on the consent screen; if you
+  decline, nothing is sent. The web version does not use Firebase.</p>
+  <p>When enabled, Firebase collects the anonymous gameplay events and technical context described
+  above, crash and performance diagnostics, a Firebase installation identifier, and — for analytics
+  attribution — your device’s <strong>advertising ID</strong>. This data is not linked to your
+  identity, is used only to understand aggregate usage and fix problems, is <strong>not shared with
+  third parties</strong> for their own purposes, and is <strong>never sold</strong>. It is processed
+  by Google under <a href="https://policies.google.com/privacy">Google’s Privacy Policy</a>. You can
+  stop it at any time by declining consent or clearing the app’s data. No ads are shown in the game.</p>
+
   <h2>What we do NOT collect</h2>
   <ul>
     <li>No name, email, phone number, or any data that identifies you personally
       (your Play Games gamer tag is a public alias you choose in Google Play Games, not
       collected by us as your identity).</li>
     <li>No precise location, contacts, photos, microphone or camera access.</li>
-    <li>No advertising and no selling of data to anyone.</li>
+    <li>No ads are shown in the game, and we never sell your data to anyone.</li>
   </ul>
 
   <h2>Where the data goes</h2>
-  <p>Game progress, settings and analytics <strong>stay on your device</strong> and are not
-  transmitted to any server. The only data that leaves your device is the Google Play Games
-  information above, and only if you sign in. If we later enable an analytics service to
-  understand aggregate, anonymous usage (for example, how many players complete the tutorial),
-  we will use it <strong>only to improve the game</strong>, send only the anonymous events
-  described above, and update this policy and the Google Play “Data safety” information
-  accordingly. We never sell your data.</p>
+  <p>Game progress and settings <strong>stay on your device</strong> and are not transmitted to any
+  server. Data that leaves your device is limited to: (1) the Google Play Games information above,
+  only if you sign in; and (2) in the Android app, the Firebase analytics and diagnostics described
+  above, only after you consent. On the web, analytics stay on your device. We use analytics
+  <strong>only to improve the game</strong> and to understand aggregate, anonymous usage (for
+  example, how many players complete the tutorial). We never sell your data.</p>
 
   <h2>Children</h2>
   <p>PlaneFlow is suitable for a general audience and is not directed at children under
@@ -99,7 +113,7 @@
 
   <h2>Security</h2>
   <p>The game is served over HTTPS. Any data transmitted off your device — Google Play Games
-  sign-in data, and any analytics in future versions — is sent over encrypted connections.</p>
+  sign-in data and the Firebase analytics/diagnostics above — is sent over encrypted connections.</p>
 
   <h2>Changes to this policy</h2>
   <p>If this policy changes, we will update the “Last updated” date above and, where

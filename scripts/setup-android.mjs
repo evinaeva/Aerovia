@@ -203,6 +203,8 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.google.firebase.analytics.FirebaseAnalytics;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.google.firebase.perf.FirebasePerformance;
 
 @CapacitorPlugin(name = "FirebaseAnalytics")
 public class FirebaseAnalyticsPlugin extends Plugin {
@@ -212,6 +214,19 @@ public class FirebaseAnalyticsPlugin extends Plugin {
     @Override
     public void load() {
         fa = FirebaseAnalytics.getInstance(getContext());
+    }
+
+    // Гейт сбора по согласию. Сбор выключен по умолчанию (meta-data в манифесте), JS зовёт это из
+    // Analytics.setConsent(): setConsent(true) → включаем Analytics/Crashlytics/Performance,
+    // setConsent(false) → держим выключенными. Так Firebase не собирает ничего до consent.
+    @PluginMethod
+    public void setCollectionEnabled(final PluginCall call) {
+        boolean enabled = Boolean.TRUE.equals(call.getBoolean("enabled", false));
+        try { fa.setAnalyticsCollectionEnabled(enabled); } catch (Exception ignored) {}
+        try { FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(enabled); } catch (Exception ignored) {}
+        try { FirebasePerformance.getInstance().setPerformanceCollectionEnabled(enabled); } catch (Exception ignored) {}
+        JSObject ret = new JSObject(); ret.put("ok", true);
+        call.resolve(ret);
     }
 
     @PluginMethod
@@ -483,6 +498,19 @@ patch('app/src/main/AndroidManifest.xml', (s) => {
 patch('app/src/main/AndroidManifest.xml', (s) =>
   s.includes('networkSecurityConfig') ? s
     : s.replace('<application\n', '<application\n        android:networkSecurityConfig="@xml/network_security_config"\n'));
+
+// 4c) Firebase: сбор ВЫКЛЮЧЕН по умолчанию — включаем только при согласии
+// (Analytics.setConsent → нативный FirebaseAnalyticsPlugin.setCollectionEnabled). Иначе
+// Analytics/Crashlytics/Performance собирали бы данные (и рекламный ID) до consent — нарушение
+// GDPR и расхождение с Data Safety (docs/play-data-safety.md, сценарий B: типы Optional = по согласию).
+patch('app/src/main/AndroidManifest.xml', (s) => {
+  let out = s;
+  for (const name of ['firebase_analytics_collection_enabled', 'firebase_crashlytics_collection_enabled', 'firebase_performance_collection_enabled']) {
+    if (!out.includes(name))
+      out = out.replace('</application>', `        <meta-data android:name="${name}" android:value="false" />\n    </application>`);
+  }
+  return out;
+});
 
 {
   const dir = join(A, 'app/src/main/res/xml');
