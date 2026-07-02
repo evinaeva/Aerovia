@@ -96,6 +96,13 @@
 - ⚠️ **Лидерборд на mock.** Экран рейтинга работает на mock-данных (сид-боты). До публикации —
   **либо** подключить боевой бэкенд ([Рейтинги/бэкенд](#глобальные-рейтинги-лига-сезона-и-бэкенд)),
   **либо** смягчить формулировку «попади в глобальный рейтинг» в [`store-copy.md`](store-copy.md).
+- ⚠️ **Расписание открытий контента (`content_flags`) — выставить в Remote Config до релиза.** Дефолт,
+  запечённый в сборку, — **всё закрыто** («coming soon»): бонус-уровни, Survival+биомы, второй пак биом
+  и лига сезона не видны, пока их не откроют в консоли. Перед публикацией (owner) завести **JSON**-параметр
+  `content_flags` в Firebase Remote Config и решить по каждому ключу: открыть сразу (`enabled:true`),
+  открыть по дате (`unlock_at`, ISO-UTC) или пока держать закрытым. Иначе на проде весь этот контент
+  останется «скоро». Форма и типовые операции — [`docs/remote-config.md`](remote-config.md). **Сложность:**
+  низкая (консоль, без кода). (play-featuring-plan.md)
 - ⚠️ **Публикация PGS — только после теста на телефоне.** Завести release-SHA из Play App Signing
   вторым в «Учётные данные»; на первом релизе — **staged rollout** (не 100% сразу) + **managed
   publishing**. Пере-сверить минимум Play SDK на момент подачи (`targetSdk=36` сейчас с запасом,
@@ -345,6 +352,13 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
   `new_achievements`, дефолты = включено); мост и механизм проверены на устройстве (2026-07-02, см.
   [Проверки на устройстве](#проверки-на-устройстве)). Осталось (owner): завести ключи в RC-консоли и
   проверить реальный флип. (play-featuring-plan.md)
+- ✅ **Поэтапный релиз готового контента без пересборки** — тот же Remote Config расширен с «выключить
+  в экстренном» до «включить по плану»: JSON-параметр `content_flags` + резолвер `Content.isOpen(key)`
+  (`12h-remote-config.ts`) гейтит `bonus_levels`/`survival_mode`/`biomes_pack_2`/`season_league`
+  (уровни-бонусы, Survival+биомы, лига сезона). Приоритет `enabled` > `unlock_at` (UTC) > закрыто;
+  единая плашка «coming soon»; дефолт = всё закрыто; дев-галочка «открыть все coming soon». Осталось
+  (owner, ⚠️ до релиза): **завести JSON `content_flags` и проставить расписание** — см. блокер ниже.
+  Инструкция: [`docs/remote-config.md`](remote-config.md). (play-featuring-plan.md)
 - ✅ **App Links / deep links** для шеринга результата — код готов (`12i-deep-links.ts` + App Links
   intent-filter в `setup-android.mjs` + `.well-known/assetlinks.json`; шеринг кладёт deep-link в
   `navigator.share`); роутинг проверен на устройстве (2026-07-02). Осталось (owner): SHA-256 ключа
@@ -471,7 +485,9 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
   имитация выключения `survival_leaderboard` + событие `pf:flags` **live прячет** кнопку рейтинга,
   возврат — показывает). Осталось (owner): завести ключи `survival_leaderboard`/`new_achievements`
   (Boolean) в Firebase Remote Config консоли, выставить `false` и проверить реальный флип на сборке.
-  **Сложность:** низкая (консоль). (play-featuring-plan.md)
+  Тем же прогоном проверить **`content_flags`** (JSON): выставить `enabled:true`/`unlock_at` на ключ и
+  убедиться, что запертый контент открывается live (плашка «coming soon» → доступно). **Сложность:**
+  низкая (консоль). (play-featuring-plan.md, remote-config.md)
 - **App Links / deep links** — ✅ роутинг **проверен на устройстве** (VIEW-intent на
   `https://planeflow.jevgenia.com/?screen=survival` → экран Survival, `?screen=leaderboard` → экран
   рейтинга; `appUrlOpen` → `12i-deep-links.ts` отрабатывает). Осталось (owner): вписать SHA-256 ключа
