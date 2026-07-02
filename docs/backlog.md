@@ -62,17 +62,15 @@
   `show()` в [`12d-consent.ts`](../src/game/12d-consent.ts), `ConsentBanner.init()`). Логика цела,
   согласие пока `false`. Перед публикацией — раскомментировать `show()`
   и проверить показ/принятие/отказ. **Сложность:** низкая. (analytics.md)
-  - ⚠️ **Критично (пререквизит Data Safety «сценарий B»): JS-consent-гейт не глушит нативный Firebase.**
-    `Analytics.setConsent(false)` держит только наш буфер PFAnalytics, но нативные **Firebase
-    Analytics / Crashlytics / Performance инициализируются на старте** и по умолчанию **авто-собирают**
-    (session_start/first_open, краши, трейсы, + рекламный ID) **до** согласия. В форме Data Safety
-    мы задекларировали эти данные как **Optional (пользователь может отказаться)** — это правда только
-    если сбор реально привязан к согласию. Нужно: `setAnalyticsCollectionEnabled(false)` +
-    `setCrashlyticsCollectionEnabled(false)` + Performance `setPerformanceCollectionEnabled(false)`
-    по умолчанию, включать при `setConsent(true)` (или default-off через meta-data
-    `firebase_analytics_collection_enabled` / `firebase_crashlytics_collection_enabled` /
-    `firebase_performance_collection_enabled` = false). Иначе в EU это сбор без согласия И расхождение
-    с формой. **Сложность:** средняя.
+  - **Гейт нативного Firebase — КОД ГОТОВ (PR #399), осталось только включить баннер и проверить сборкой.**
+    Нативные **Firebase Analytics / Crashlytics / Performance** теперь **выключены по умолчанию**
+    (meta-data манифеста `firebase_{analytics,crashlytics,performance}_collection_enabled=false` в
+    [`setup-android.mjs`](../scripts/setup-android.mjs)) и включаются только по согласию:
+    `Analytics.setConsent()` → нативный `FirebaseAnalyticsPlugin.setCollectionEnabled()` (все три SDK).
+    Это делает «Optional» в Data Safety правдой и убирает сбор до consent (важно для EU). **Осталось:**
+    (1) вернуть баннер (`show()` выше) — без него сбор вообще не включится; (2) проверить release-сборкой,
+    что meta-data в merged-манифесте на месте и сбор стартует только после «Принять» (см. смоук R8 ниже).
+    **Сложность:** низкая.
 - ⚠️ **Подписанный AAB + закрытое тестирование.** Собрать подписанный AAB (нужен **release
   keystore**), загрузить в Play Console; закрытый трек **≥12 человек, 14 дней**. Developer-аккаунт
   верифицирован (2026-06-15). Чек-лист — [`capacitor-android.md`](capacitor-android.md).
@@ -83,6 +81,10 @@
   keep-правила), **но сборкой не проверялся** — в песочнице нет Android SDK. Обязательно прогнать
   release-сборку и убедиться, что шринк не съел плагины **Snapshots** (облачные сейвы),
   **InstallReferrer** и **FirebaseAnalytics** (мост зовёт их рефлексией). (memory-android17.md)
+  - Собирать AAB **из `main` после PR #399** (иначе в бинаре старый манифест без гейта Firebase).
+    В merged-манифесте проверить: присутствуют `firebase_{analytics,crashlytics,performance}_collection_enabled=false`,
+    разрешение `com.google.android.gms.permission.AD_ID` на месте (держим для аналитики, декларация = «Да»),
+    и на устройстве сбор Firebase реально стартует **только после** «Принять» на баннере согласия.
 - ⚠️ **Декларация «Рекламный идентификатор» (Android 13+) = «Да», цель = «Аналитика».** Заполняется
   в Play Console (Контент приложения). AD_ID приходит из **Firebase Analytics** (`play-services-measurement`
   тянет разрешение `com.google.android.gms.permission.AD_ID` и по умолчанию использует его). Рекламы нет,
@@ -265,12 +267,11 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
   определится модель. (store-copy.md)
 - **Аналитика → реальный провайдер.** Сейчас `sink` = `console.debug` + буфер; при выходе в прод
   подменить на Firebase/GA4 или свой бэкенд. (analytics.md)
-- **Data Safety при живой аналитике — решено: сценарий B.** Firebase Analytics/Crashlytics/Performance
-  активны в сборке → форму Data Safety заполняем по сценарию B (типы: Device/adv ID, действия в
-  приложении, диагностика, отчёты об ошибках; цель Analytics; Optional; Shared = No). Осталось:
-  (1) привязать сбор к согласию (см. пререквизит у «Вернуть окно согласия» в блокерах) и
-  (2) обновить `privacy.html` — дописать про Firebase Analytics/Crashlytics/Performance и рекламный ID
-  (сейчас privacy.html описывает только Play Games). **Сложность:** низкая-средняя. (play-data-safety.md)
+- ✅ **Data Safety при живой аналитике — сделано (сценарий B; PR #399/#400).** Firebase
+  Analytics/Crashlytics/Performance активны → форма Data Safety заполнена по сценарию B (Device/adv ID,
+  действия в приложении, диагностика, отчёты об ошибках; цель Analytics; Optional; Shared = No),
+  `privacy.html` дополнен про Firebase + рекламный ID, сбор завязан на согласие в коде. Остаточный
+  хвост — в блокерах: вернуть баннер согласия + проверить сборкой. (play-data-safety.md)
 
 ---
 
