@@ -74,8 +74,6 @@
 - ⚠️ **Подписанный AAB + закрытое тестирование.** Собрать подписанный AAB (нужен **release
   keystore**), загрузить в Play Console; закрытый трек **≥12 человек, 14 дней**. Developer-аккаунт
   верифицирован (2026-06-15). Чек-лист — [`capacitor-android.md`](capacitor-android.md).
-- ⚠️ **Анкета контент-рейтинга** (Content rating questionnaire) в Play Console — добавить отдельным
-  шагом в чек-лист публикации. **Сложность:** низкая (ручная). (play-featuring-plan.md, capacitor-android.md)
 - ⚠️ **Смоук release-сборки с R8** (Фаза 3 памяти). Конфиг включён
   ([`setup-android.mjs`](../scripts/setup-android.mjs): `minifyEnabled` + `shrinkResources` +
   keep-правила), **но сборкой не проверялся** — в песочнице нет Android SDK. Обязательно прогнать
@@ -85,12 +83,6 @@
     В merged-манифесте проверить: присутствуют `firebase_{analytics,crashlytics,performance}_collection_enabled=false`,
     разрешение `com.google.android.gms.permission.AD_ID` на месте (держим для аналитики, декларация = «Да»),
     и на устройстве сбор Firebase реально стартует **только после** «Принять» на баннере согласия.
-- ⚠️ **Декларация «Рекламный идентификатор» (Android 13+) = «Да», цель = «Аналитика».** Заполняется
-  в Play Console (Контент приложения). AD_ID приходит из **Firebase Analytics** (`play-services-measurement`
-  тянет разрешение `com.google.android.gms.permission.AD_ID` и по умолчанию использует его). Рекламы нет,
-  поэтому цель — **только «Аналитика»**, НЕ «Реклама или маркетинг». Цель «Реклама» добавить позже,
-  когда реально подключим AdMob (см. «Декларации Play при добавлении рекламы» в разделе Монетизация).
-  **Сложность:** низкая (ручная). (play-data-safety.md)
 - ✅ **Убрать клоны уровней L12–L50 — сделано.** Цикл клонов L2 заменён настоящими уровнями:
   рукописные скелеты (раскладка + события; `CAMPAIGN_LAYOUTS`/`CAMPAIGN_PLAN` в
   [`04-config-levels.ts`](../src/game/04-config-levels.ts)) + детерминированный сборщик в
