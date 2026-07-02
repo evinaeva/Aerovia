@@ -59,13 +59,12 @@
           b:parseFloat(cs.paddingBottom)||0, l:parseFloat(cs.paddingLeft)||0};
   }
   // HUD PNG — 640×67; рисуется по центру шириной 50% W → высота = W/2 * 67/640 = W*67/1280
-  // HUD убран со всех «уровней» (кампания / бонус / свой уровень): на поле только
-  // кнопка паузы в левом верхнем углу — как в custom level. В режиме ВЫЖИВАНИЯ
-  // (биом-карты) HUD остаётся — там нужны жизни и счёт захода. Прежний per-level
-  // layout.noHud поглощён этим правилом (custom level тоже сюда попадает).
-  const hudHidden = () => !survival;
-  // высота HUD-полосы сверху (0, когда HUD скрыт — место не резервируется)
-  const HUD_H = () => hudHidden() ? 0 : Math.round(W * 67 / 1280);
+  // HUD — «левое меню» (вертикальная панель у левого края): кнопка паузы сверху +
+  // плашка Таймер/Валюта/Жизни под ней (drawHUD в 09b). Панель живёт в левом поле-
+  // маргине (левее апрона) и рисуется на ВСЕХ сценах игры. Верхней HUD-полосы больше
+  // нет, поэтому высота, резервируемая сверху, = 0 (место под панель не режется —
+  // она вертикальная и умещается в пустой левый отступ поля).
+  const HUD_H = () => 0;
   function resize(){
     dpr = Math.min(window.devicePixelRatio||1, 2);
     W = window.innerWidth; H = window.innerHeight;
@@ -106,6 +105,11 @@
   interface Field { x0: number; y0: number; x1: number; y1: number; hoverX?: number; arrivalY0?: number; arrivalY1?: number; arrivalX0?: number; arrivalX1?: number; rwL?: number; rwR?: number; service?: any; }
   interface Rect { x: number; y: number; w: number; h: number; }
   let bays: Bay[] = [], runways: Runway[] = [], field: Field = {x0:0,y0:0,x1:0,y1:0}, pauseBtn: Rect = {} as Rect;
+  // Прямоугольник спрайта «левого меню HUD» (assets/sprites/neon/hud-menu.png) на
+  // канвасе — кнопка паузы + плашка Таймер/Валюта/Жизни одним PNG. drawHUD (09b)
+  // рисует спрайт по нему и кладёт значения поверх; pauseBtn (хит-зона) выводится из
+  // верхнего блока PNG. Пропорции PNG: 328×1855.
+  let hudMenu: Rect = {} as Rect;
   // Единый масштаб «крупности» техники: размеры борта, ВПП и бокса выводятся из него
   // ОДНОЙ общей формулой (общая для всех скинов — меняется лишь число). Само число —
   // визуальный масштаб техники (×1; геометрия выводится из него одной формулой).
@@ -281,19 +285,16 @@
     }
     field.rwL = rwL; field.rwR = rwR;
 
-    // кнопка паузы отодвинута от правого края на запас + safe-area, чтобы не
-    // оказаться под скруглением/вырезом телефона и нормально нажиматься
-    if(hudHidden()){
-      // HUD скрыт (кампания / бонус / свой уровень): HUD-кнопки паузы нет, поэтому
-      // ставим отдельную круглую кнопку в ЗАВЕДОМО не-интерактивный верх-левый угол.
-      // Борты прилетают справа и садятся в полосы; апрон/ангары — центр и право —
-      // сюда не доходят ни тапы по технике, ни траектории. Учтён safe-area выреза.
-      const d=44*ui;
-      pauseBtn = {x: safe.l + 12*ui, y: safe.t + 12*ui, w:d, h:d};
-    } else {
-      // ВЫЖИВАНИЕ (биом-карты): HUD есть — пауза в его правом верхнем углу.
-      pauseBtn = {x: W - safe.r - 16*ui - 36*ui, y: safe.t + 6*ui, w: 36*ui, h: 30*ui};
-    }
+    // «Левое меню HUD» (спрайт hud-menu.png 328×1855: кнопка паузы сверху + плашка
+    // Таймер/Валюта/Жизни). Ширину меню берём ≈66·ui (кнопка внутри ≈ спек-88px@1920,
+    // с учётом свечения по краям PNG), высота — по пропорции спрайта. Отступ от угла =
+    // safe-area (вырез) + спек-паддинг. Кнопка паузы (хит-зона) = верхний блок PNG
+    // (доли 8/1855..306/1855). Борты прилетают справа — левый-верхний угол заведомо
+    // не-интерактивный. drawHUD рисует спрайт по hudMenu и кладёт значения поверх.
+    { const menuW=66*ui, pad=18*ui;
+      const menuH=Math.round(menuW*1855/328);
+      hudMenu={ x:Math.round(safe.l+pad), y:Math.round(safe.t+pad), w:Math.round(menuW), h:menuH };
+      pauseBtn={ x:hudMenu.x, y:Math.round(hudMenu.y+menuH*8/1855), w:hudMenu.w, h:Math.round(menuH*(306-8)/1855) }; }
 
     // сервисное здание биом-карт — сверху по центру апрона, между верхними боксами;
     // отсюда выезжают спец-бригады. У классических уровней его нет.
@@ -402,8 +403,10 @@
     const rtB = Math.max(saB,   gestB)  + routeTargetPad;
     const routeTargetAllowedRect: Rect = { x: rtL, y: rtT, w: W - rtL - rtR, h: H - rtT - rtB };
 
+    // «Левое меню HUD» — вертикальная зона у левого края (спрайт hudMenu: кнопка
+    // паузы + плашка). Держим борта/маршруты правее этой полосы.
     const uiReservedRects: Array<Rect & { label: string }> = [
-      { label: 'HUD',       x: 0, y: 0, w: W, h: HUD_H() + Math.max(effSaT, gestT) },
+      { label: 'HUD',       x: 0, y: 0, w: hudMenu.x + hudMenu.w, h: hudMenu.y + hudMenu.h },
       { label: 'PauseBtn',  x: pauseBtn.x, y: pauseBtn.y, w: pauseBtn.w, h: pauseBtn.h },
     ];
 

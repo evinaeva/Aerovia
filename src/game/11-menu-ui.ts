@@ -1,7 +1,7 @@
 // ===== 11-menu-ui — menus & screens (start, level select, biomes, goals, settings, leaderboard, pause), menu icons, save/load & pause wiring =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: showStart, showLevels, showBiomes, showGoals, showLeaderboard, openSettings, buildLevel/Biome/Bonus, startLevel, setPaused, loadGame, saveGame, resetProgress, SVGIC, applyMenuIcons, hideAllScreens, updateStartChips, goalRowsHTML.
-// Reads: 04 (LEVELS, LV, curBiome, curBonus, Biome, Bonus); 06 (save, bays, runways, layout, levelIdx/levelKey, survival, debug, SAVE_KEY); 03 (I18N, lang, fmtNum); 09 (heart); 07 (Leaderboard, PERIODS).
+// Reads: 04 (LEVELS, LV, curBiome, curBonus, Biome, Bonus); 06 (save, bays, runways, layout, levelIdx/levelKey, survival, debug, SAVE_KEY); 03 (I18N, lang, fmtNum); 07 (Leaderboard, PERIODS).
 
   function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') || JSON.parse(localStorage.getItem(LEGACY_SAVE_KEY) || 'null'); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang as LangCode])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; save.eco=!!s.eco; save.tutorialDone=!!s.tutorialDone; } }catch(e){} }
   function saveGame(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){} try{ (window as any).PFCloud && (window as any).PFCloud.onLocalSave(); }catch(e){} }

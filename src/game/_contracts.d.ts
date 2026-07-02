@@ -23,7 +23,7 @@ declare const HANDOFF_IMG: {
   bg:         HTMLImageElement | null;
   apron:      HTMLImageElement | null;
   vpp:        HTMLImageElement | null;
-  hud:        HTMLImageElement | null;
+  hudMenu:    HTMLImageElement | null;   // assets/sprites/neon/hud-menu.png — «левое меню HUD»
   plane:      HTMLImageElement | null;
   planes:     (HTMLImageElement | HTMLCanvasElement)[];
   ready:      boolean;

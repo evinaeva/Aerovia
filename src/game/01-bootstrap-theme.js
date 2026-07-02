@@ -94,7 +94,7 @@
     bg: null,         // sprite_back_full.png
     apron: null,      // sprite_apron.png
     vpp: null,        // sprite_vpp.png  (runway strip)
-    hud: null,        // sprite_hud.png
+    hudMenu: null,    // assets/sprites/neon/hud-menu.png  («левое меню»: кнопка паузы + плашка с иконками, без значений)
     plane: null,      // sprite_plane2.png  base
     planes: [],       // [0..3]: livery variants
     ready: false,     // set once plane base loaded

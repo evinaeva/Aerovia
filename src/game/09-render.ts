@@ -1,6 +1,6 @@
 // ===== 09-render — draw primitives, the neon field/runways and biome decor (forest/arctic/tropical/desert/mountain/megacity/butterfly/bonus) =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: rr, hexa, heart, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneShadow, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, emoji, drawForest, drawArctic, drawTropical, drawDesert, drawMountain, drawCity, drawBonusDecor, BSP/BTYPE/bSpec.
+// Provides: rr, hexa, drawIcon, iconTarget, NUM, planeShape, planeScale, drawPlaneShadow, drawPlaneBodyAt, drawNeonField, drawField, drawRunways, emoji, drawForest, drawArctic, drawTropical, drawDesert, drawMountain, drawCity, drawBonusDecor, BSP/BTYPE/bSpec.
 // Reads: 01 (ctx); 02 (COL, SPRITES); 06 (field, runways, hazards, crews, W/H, ui, save); 04 (K, LV); 03 (t); 08 (neededCrew).
 
   function rr(x: number,y: number,w: number,h: number,r: number){
@@ -76,16 +76,6 @@
     return c;
   }
   function clearScaledSpriteCache(){ _ssCache.clear(); }
-
-  function heart(x: number,y: number,r: number,fill?: string|null){ // жизни в HUD
-    if(ATLAS && SPRITES.blitC(fill?'heart':'heart-empty', x, y, r*6, r*6)) return;
-    ctx.save(); ctx.translate(x,y); ctx.beginPath(); ctx.moveTo(0,r*0.7);
-    ctx.bezierCurveTo(-r*1.3,-r*0.4,-r*0.5,-r*1.1,0,-r*0.35);
-    ctx.bezierCurveTo(r*0.5,-r*1.1,r*1.3,-r*0.4,0,r*0.7); ctx.closePath();
-    if(fill){ ctx.fillStyle=fill; ctx.shadowColor=hexa(fill,.6); ctx.shadowBlur=7; ctx.fill(); ctx.shadowBlur=0; }
-    else { ctx.lineWidth=1.5; ctx.strokeStyle=hexa(COL.muted,.45); ctx.stroke(); }
-    ctx.restore();
-  }
 
   // иконки услуг (центр в (cx,cy), размер r)
   // ремонт = гаечный ключ (handoff NIcon.repair): открытый зев + рукоять под 45°.
