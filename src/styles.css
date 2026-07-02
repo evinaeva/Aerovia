@@ -741,6 +741,14 @@
 .biome__lock { display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
   font-weight: 800; color: var(--m-coin); }
 .biome__lock svg { width: 14px; height: 14px; }
+/* Единый бейдж запертого контента (staged rollout, Content/Remote Config): 🔒 + «скоро»/дата.
+   Один компонент для биомов, бонус-ячеек и кнопки Survival — консистентный вид на всех экранах. */
+.content-soon { display: inline-flex; align-items: center; gap: 6px; font-size: 12px;
+  font-weight: 700; color: var(--m-text-muted); white-space: nowrap; }
+.content-soon svg { width: 13px; height: 13px; opacity: .85; }
+/* Кнопка входа (Survival) в состоянии «ещё не открыто»: приглушена, курсор обычный, бейдж рядом. */
+.m-btn.content-locked { opacity: .6; cursor: default; }
+.m-btn.content-locked .content-soon { margin-left: 8px; }
 
 /* ============================================================
    MEDALS — trophy case (Медали)

@@ -71,9 +71,13 @@
   function showLeaderboard(){ hideAllScreens(); document.getElementById('leaderboardScreen')!.classList.remove('hidden'); renderLeaderboard(); }
   function renderLeaderboard(){
     const acct = Leaderboard.account.current();
+    // Вкладка «Сезон» — поэтапный релиз (Content): показываем, только когда лига открыта.
+    const seasonOn = Content.isOpen('season_league');
+    const tabList = seasonOn ? LB_TABS : PERIODS.slice();
+    if(!seasonOn && lbPeriod==='season') lbPeriod = PERIODS[0];   // лига закрыта → уводим со вкладки сезона
     const tabs = document.getElementById('lbTabs');
     if(tabs){ tabs.innerHTML='';
-      LB_TABS.forEach(p=>{ const b=document.createElement('button');
+      tabList.forEach(p=>{ const b=document.createElement('button');
         b.className='m-btn '+(p===lbPeriod?'m-btn--primary':'m-btn--ghost'); b.style.cssText='flex:1;min-width:0;padding:8px 4px';
         b.textContent=t('lb.tab.'+p); b.onclick=()=>{ if(lbPeriod!==p){ lbPeriod=p; renderLeaderboard(); } }; tabs.appendChild(b); });
     }
@@ -182,7 +186,8 @@
   // localStorage без sign-in) — иначе у вернувшегося игрока invite() не видел бы его рекорд.
   function updateSeasonChip(){
     const chip=document.getElementById('startSeason'); if(!chip) return;
-    if(!Flags.enabled('survival_leaderboard')){ chip.classList.add('hidden'); return; }   // лидерборд выключен удалённо → и лига сезона скрыта
+    // Лига сезона скрыта, если лидерборд выключен killswitch'ем ИЛИ ещё не открыт по релизу (season_league).
+    if(!Flags.enabled('survival_leaderboard') || !Content.isOpen('season_league')){ chip.classList.add('hidden'); return; }
     let active=false, days=0;
     try{ Leaderboard.init(); if(Leaderboard.season.invite().active){ active=true; days=Leaderboard.season.daysLeft(); } }catch(e){}
     if(!active){ chip.classList.add('hidden'); return; }
@@ -198,12 +203,24 @@
   function applyFeatureFlags(){
     const lbOn=Flags.enabled('survival_leaderboard');
     const b=document.getElementById('leaderboardBtn'); if(b) b.classList.toggle('hidden', !lbOn);
+    // Survival — поэтапный релиз (Content/Remote Config): пока закрыт, кнопка помечена «скоро»,
+    // клик не ведёт на экран биомов (навигацию гейтит showBiomes). Открылась дата/оверрайд → как раньше.
+    const survOn=Content.isOpen('survival_mode');
+    const sb=document.getElementById('survivalBtn');
+    if(sb){
+      sb.classList.toggle('content-locked', !survOn);
+      const old=sb.querySelector('.content-soon'); if(old) old.remove();
+      if(!survOn){
+        const wrap=document.createElement('span'); wrap.innerHTML=contentSoonHTML('survival_mode');
+        const badge=wrap.firstElementChild; if(badge) sb.appendChild(badge);
+      }
+    }
     updateSeasonChip();
   }
   function showStart(){ inMenu=true; hideAllScreens(); updateStartChips(); document.getElementById('startScreen')!.classList.remove('hidden'); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen')!.classList.remove('hidden'); }
   function startLevel(idx: number){ survival=false; buildLevel(idx); hideAllScreens(); reset(); }
-  function startBonus(b: Bonus){ if(!bonusUnlocked(b)) return; survival=false; buildBonus(b); hideAllScreens(); reset(); }
+  function startBonus(b: Bonus){ if(!Content.isOpen('bonus_levels') || !bonusUnlocked(b)) return; survival=false; buildBonus(b); hideAllScreens(); reset(); }
   // КАСТОМНЫЙ уровень из конструктора (tuning.html → «Разметка»). Играется инлайново,
   // как бонус: строковый ключ 'custom' → recordResult не двигает прогресс кампании
   // (см. recordResult: unlocked растёт лишь при числовом levelKey). Так «Сыграть черновик»
@@ -291,8 +308,11 @@
   // ИМЕННО на картах — бесконечный заход с жизнями, счёт = обслуженные борта; на конце (потеря
   // всех жизней) счёт уходит в глобальный рейтинг (см. endLevel → Leaderboard). Интенсивность
   // нарастает со временем (survivalPace); карты различаются своим pace/survRamp и помехами.
-  function showBiomes(){ inMenu=true; renderBiomes(); hideAllScreens(); document.getElementById('biomeScreen')!.classList.remove('hidden'); }
-  function startBiome(b: Biome){ if(!b.ready) return; survival=true; buildBiome(b); hideAllScreens(); reset(); }
+  function showBiomes(){ if(!Content.isOpen('survival_mode')) return; inMenu=true; renderBiomes(); hideAllScreens(); document.getElementById('biomeScreen')!.classList.remove('hidden'); }
+  // Биом доступен, если он реализован (ready) И открыт по релизу: базовый набор — по 'survival_mode',
+  // помеченные `content` — по своей волне (напр. 'biomes_pack_2'). Поэтапный релиз без пересборки.
+  function biomeReleased(b: Biome){ return !!b.ready && Content.isOpen('survival_mode') && (!b.content || Content.isOpen(b.content)); }
+  function startBiome(b: Biome){ if(!biomeReleased(b)) return; survival=true; buildBiome(b); hideAllScreens(); reset(); }
   function renderBiomes(){
     const list=document.getElementById('biomeList')!; list.innerHTML='';
     const tot=document.getElementById('biomeTotal');
@@ -300,17 +320,22 @@
     const grid=document.createElement('div'); grid.className='biome-grid';
     BIOMES.forEach(b=>{
       const best=save.best['b_'+b.id]||0;
+      const open=biomeReleased(b);
       const card=document.createElement('div');
-      card.className='biome'+(b.ready?'':' locked');
-      card.style.cursor=b.ready?'pointer':'default';
-      const foot = b.ready
+      card.className='biome'+(open?'':' locked');
+      card.style.cursor=open?'pointer':'default';
+      // Открыт → рекорд; закрыт по релизу (есть content-волна) → плашка «скоро» с датой;
+      // просто не готов (ready:false) → прежнее «Скоро».
+      const foot = open
         ? `<span class="biome__stars">${SVGIC('trophy')}<span class="biome__best">${t('biomes.best')}</span> ✈ ${fmtNum(best)}</span>`
-        : `<span class="biome__lock">${SVGIC('lock')} ${t('biomes.soon')}</span>`;
+        : (b.ready && b.content
+            ? contentSoonHTML(b.content,'biome__lock')
+            : `<span class="biome__lock">${SVGIC('lock')} ${t('biomes.soon')}</span>`);
       card.innerHTML=`<div class="biome__ic">${b.emoji}</div>`+
         `<div class="biome__name">${t('biome.'+b.id+'.name')}</div>`+
         `<div class="biome__desc">${t('biome.'+b.id+'.tag')}</div>`+
         `<div class="biome__foot">${foot}</div>`;
-      if(b.ready) card.onclick=()=>startBiome(b);
+      if(open) card.onclick=()=>startBiome(b);
       grid.appendChild(card);
     });
     list.appendChild(grid);
@@ -345,6 +370,19 @@
   const LOCK_SVG='<svg class="case-lock" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">'+
     '<rect x="5" y="11" width="14" height="9" rx="2" fill="#8a8c99"/>'+
     '<path d="M7.5 11V8a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="#8a8c99" stroke-width="2" stroke-linecap="round"/></svg>';
+  // ISO unlock_at → короткая локализованная дата для плашки «скоро» (падение → без даты).
+  function fmtUnlockDate(iso: string): string {
+    try{ return new Date(iso).toLocaleDateString(lang==='ru'?'ru-RU':'en-US',{day:'numeric',month:'short'}); }
+    catch(e){ return iso.slice(0,10); }
+  }
+  // Единый бейдж запертого контента (staged rollout, Content/Remote Config): 🔒 + «скоро»
+  // или «Открытие {дата}», если задан unlock_at. Один компонент на биомы/бонусы/вкладки —
+  // не плодим отдельные реализации. Возвращает готовый HTML-фрагмент.
+  function contentSoonHTML(key: string, cls?: string): string {
+    const st = Content.state(key);
+    const label = st.unlockAt ? t('content.soonDate',{date:fmtUnlockDate(st.unlockAt)}) : t('content.soon');
+    return `<span class="content-soon${cls?' '+cls:''}">${SVGIC('lock')} ${label}</span>`;
+  }
   // карта уровней (дизайн-система v2): вертикальная 6-колоночная сетка
   // (5 уровней + 1 бонус в ряду), стиль «Заливка». Данные те же (LEVELS,
   // save.stars, save.unlocked, bonusAfter/bonusUnlocked) — меняется только облик.
@@ -395,18 +433,23 @@
       // Бонус-ячейка после каждого 5-го уровня
       const bn=bonusAfter(i+1);
       if(bn){
-        const unl=bonusUnlocked(bn);
+        // Поэтапный релиз (Content/Remote Config): пока фича 'bonus_levels' закрыта — плашка «скоро»
+        // независимо от прогресса. Открылась → прежний гейт по звёздам (bonusUnlocked).
+        const released=Content.isOpen('bonus_levels');
+        const unl=released && bonusUnlocked(bn);
         const bel=document.createElement('div');
         bel.className='lvlcard lvlcard--bonus'+(unl?'':' lvlcard--bns-locked');
         bel.title=unl
           ? bonusName(bn)+(bn.emoji?' '+bn.emoji:'')
-          : t('bonus.req',{n:bn.after});
+          : (released ? t('bonus.req',{n:bn.after}) : t('content.soon'));
         bel.innerHTML=`<div class="lvlcard__bns">
           <div class="lvlcard__bns-emoji">${bn.emoji||'★'}</div>
           <div class="lvlcard__bns-name">${bonusName(bn)}</div>
           ${unl
             ? '<span class="lvlcard__bns-cta">✨</span>'
-            : `<span class="lvlcard__bns-lock">${t('bonus.req',{n:bn.after})}</span>`}
+            : (released
+                ? `<span class="lvlcard__bns-lock">${t('bonus.req',{n:bn.after})}</span>`
+                : contentSoonHTML('bonus_levels','lvlcard__bns-lock'))}
         </div>`;
         if(unl) bel.onclick=()=>startBonus(bn);
         grid.appendChild(bel);
@@ -558,6 +601,9 @@
   document.getElementById('optLives')!.onchange=e=>{ debug.infiniteLives=(e.target as HTMLInputElement).checked; saveDebug(); };
   document.getElementById('optMoney')!.onchange=e=>{ debug.richStart=(e.target as HTMLInputElement).checked; if(debug.richStart) money=BIG_MONEY; saveDebug(); };
   document.getElementById('optUnlockAll')!.onchange=e=>{ debug.unlockAll=(e.target as HTMLInputElement).checked; saveDebug(); renderLevels(); };
+  // Дев-превью всего запертого staged-контента (Content/Remote Config): открыть/закрыть все
+  // «coming soon» разом → перерисовываем карту уровней (бонусы) и старт-экран (Survival/лига/рейтинг).
+  { const el=document.getElementById('optUnlockContent'); if(el) el.onchange=e=>{ debug.unlockContent=(e.target as HTMLInputElement).checked; saveDebug(); renderLevels(); applyFeatureFlags(); }; }
   document.getElementById('optProfiler')!.onchange=e=>{ debug.profiler=(e.target as HTMLInputElement).checked; saveDebug(); };
   // иконка Debug в настройках открывает отдельный экран отладки
   { const btn=document.getElementById('debugToggleBtn');

@@ -89,6 +89,7 @@
       'settings.eco':'Battery saver', 'settings.ecoSlow':'Recommended for this device',
       'settings.debug':'Debug',
       'settings.optLives':'Infinite lives', 'settings.optMoney':'Unlimited money', 'settings.optUnlockAll':'Unlock all levels',
+      'settings.optUnlockContent':'Unlock all coming soon',
       'settings.optProfiler':'Frame profiler (ms/section)',
       'tut.land':'Drag the plane onto a runway',
       'tut.service':'Now lead it into the {svc} bay',
@@ -117,6 +118,7 @@
       'fmt.money':'{n} ₿',
       // --- biomes / maps + forest biome ---
       'biomes.kicker':'Airport maps', 'biomes.title':'Survival', 'biomes.back':'Back', 'biomes.soon':'Coming soon', 'biomes.best':'Best', 'biomes.total':'Landed',
+      'content.soon':'Coming soon', 'content.soonDate':'Opens {date}',
       'biome.forest.name':'Forest Airport', 'biome.forest.tag':'Wind, wildlife and trees falling on the strip.',
       'biome.forest.hint':'Keep the runways clear — tap a hazard to send the right crew.',
       'biome.arctic.name':'Arctic Airport', 'biome.arctic.tag':'De-icing, snow and runway ice.',
@@ -317,6 +319,7 @@
       'settings.eco':'Экономия батареи', 'settings.ecoSlow':'Рекомендуется для этого устройства',
       'settings.debug':'Отладка',
       'settings.optLives':'Бесконечные жизни', 'settings.optMoney':'Безлимит денег', 'settings.optUnlockAll':'Открыть все уровни',
+      'settings.optUnlockContent':'Открыть все coming soon',
       'settings.optProfiler':'Профайлер кадра (мс/секция)',
       'tut.land':'Веди борт пальцем на полосу',
       'tut.service':'Теперь отведи его в бокс «{svc}»',
@@ -345,6 +348,7 @@
       'fmt.money':'{n} ₿',
       // --- биомы / карты + лесной биом ---
       'biomes.kicker':'Карты аэропортов', 'biomes.title':'Выживание', 'biomes.back':'Назад', 'biomes.soon':'Скоро', 'biomes.best':'Рекорд', 'biomes.total':'Посажено',
+      'content.soon':'Скоро', 'content.soonDate':'Открытие {date}',
       'biome.forest.name':'Лесной аэропорт', 'biome.forest.tag':'Ветер, звери и падающие на полосу деревья.',
       'biome.forest.hint':'Держи полосы свободными — тапни по помехе, чтобы выслать нужную бригаду.',
       'biome.arctic.name':'Арктический аэропорт', 'biome.arctic.tag':'Обледенение, снег и лёд на полосе.',

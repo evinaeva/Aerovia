@@ -63,7 +63,10 @@
     // (0..1, иначе берётся campaignTarget(index)); archetype — акцент факторов уровня.
     target?: number; archetype?: string;
   }
-  interface Biome { id: string; emoji: string; ready: boolean; level?: Level; }
+  // content?: ключ контент-флага поэтапного релиза (Content/Remote Config). Без него биом
+  // входит в базовый набор режима Survival (гейт 'survival_mode'); с ним — в отдельную волну
+  // (напр. 'biomes_pack_2'), которую можно открыть по расписанию из консоли без пересборки.
+  interface Biome { id: string; emoji: string; ready: boolean; content?: string; level?: Level; }
   interface Bonus { id: number; after: number; emoji: string; level: Level; }
   const K = {
     TURN: 0.5,            // rad/sec поворот в полёте
@@ -612,15 +615,16 @@
       level:{ biome:'tropical', weather:true, deice:false, objective:{ metric:'served', stars:[9,11,13] },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
         runways:3 } },
-    { id:'desert',   emoji:'🐪', ready:true,
+    // Второй набор биом-карт (biomes_pack_2) — реализованы, но открываются отдельной волной релиза.
+    { id:'desert',   emoji:'🐪', ready:true, content:'biomes_pack_2',
       level:{ biome:'desert', weather:false, deice:false, objective:{ metric:'served', stars:[9,11,13] },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
         runways:3 } },
-    { id:'mountain', emoji:'🏔️', ready:true,
+    { id:'mountain', emoji:'🏔️', ready:true, content:'biomes_pack_2',
       level:{ biome:'mountain', weather:false, deice:false, objective:{ metric:'served', stars:[7,9,11] },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
         runways:3 } },
-    { id:'megacity', emoji:'🌆', ready:true,
+    { id:'megacity', emoji:'🌆', ready:true, content:'biomes_pack_2',
       level:{ biome:'megacity', weather:false, deice:false, objective:{ metric:'served', stars:[11,13,15] },
         sides:{ top:{type:'fuel',slots:2,open:1}, left:{type:'board',slots:2,open:1}, bottom:{type:'repair',slots:2,open:1} },
         runways:3 } },

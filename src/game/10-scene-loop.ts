@@ -318,7 +318,8 @@ function drawMenuScene(tm: number){
           refreshOverLeaderboard(res);                 // «твоё место» — место в мире
           // Лига сезона (MVP Фаза 1): дивизион по перцентилю в сезонном топе → пороговые
           // бейджи (навсегда) + один косметический приз на сезон (ротирует, отдельный стор).
-          Leaderboard.season.standing('survival').then((st: any)=>{
+          // Поэтапный релиз (Content): считаем/начисляем сезон, только когда лига открыта.
+          if(Content.isOpen('season_league')) Leaderboard.season.standing('survival').then((st: any)=>{
             lastShift.season = st;
             ACH.onSeasonDivision(st.divisionIdx);
             Leaderboard.season.claimReward(st.divisionIdx);
