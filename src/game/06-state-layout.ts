@@ -120,6 +120,19 @@
   function layout(){
     const hud = HUD_H();
     const M = 12*ui;
+
+    // «Левое меню HUD» (спрайт hud-menu.png 328×1855: кнопка паузы сверху + плашка
+    // Таймер/Валюта/Жизни). Ширину меню берём ≈66·ui (кнопка внутри ≈ спек-88px@1920,
+    // с учётом свечения по краям PNG), высота — по пропорции спрайта. Отступ от угла =
+    // safe-area (вырез) + спек-паддинг. Кнопка паузы (хит-зона) = верхний блок PNG
+    // (доли 8/1855..306/1855). Борты прилетают справа — левый-верхний угол заведомо
+    // не-интерактивный. drawHUD рисует спрайт по hudMenu и кладёт значения поверх.
+    // Считается ДО поля: ниже апрон отодвигается от меню (клэмп fx0).
+    { const menuW=66*ui, pad=18*ui;
+      const menuH=Math.round(menuW*1855/328);
+      hudMenu={ x:Math.round(safe.l+pad), y:Math.round(safe.t+pad), w:Math.round(menuW), h:menuH };
+      pauseBtn={ x:hudMenu.x, y:Math.round(hudMenu.y+menuH*8/1855), w:hudMenu.w, h:Math.round(menuH*(306-8)/1855) }; }
+
     // Положение апрона по умолчанию (доли экрана) — выровнено по custom level
     // (BUILTIN_CUSTOM_LEVEL): апрон компактнее и сдвинут вниз, чтобы над верхней и
     // под нижней кромкой оставалось место для квадратных ангаров (раньше апрон был
@@ -136,6 +149,26 @@
     // всех картах. Верхний предел — чтобы ангар не съедал апрон на узких полях.
     const bw = Math.min(PLANE_LEN()*K.HANGAR_RATIO, (fx1-fx0)/2.4);
     const bh = bw;   // квадрат
+
+    // Апрон не должен попадать под «левое меню». На 1920 меню помещается в левом
+    // маргине ЛЕВЕЕ левой колонны ангаров (мокап), но на телефонах ui зажат полом 0.7
+    // (меню не сжимается пропорционально W), а safe-area выреза толкает его вправо —
+    // без поправки меню накрывает левые боксы (Pixel 9). Клэмп: fx0 ≥ правый край
+    // меню (+зазор), а при ЛЕВЫХ ангарах (ворота 'right', бокс x=fx0-bw) — ещё +bw,
+    // чтобы бокс целиком лёг между меню и кромкой апрона. fx1 не трогаем (ВПП и их
+    // длина не меняются) — апрон лишь слегка ужимается, и только когда есть дефицит.
+    { const isLeft = (hg: {x?: number; y?: number; gate?: string}) => {
+        if(hg.gate) return hg.gate==='right';
+        // авто-вывод ворот «ближайшая кромка» — зеркалит позиционирование ниже
+        const cx = fx0 + (hg.x||0)*(fx1-fx0), cy = fy0 + (hg.y||0)*(fy1-fy0);
+        const dT=cy-fy0, dB=fy1-cy, dL=cx-fx0, dR=fx1-cx, m=Math.min(dT,dB,dL,dR);
+        return m!==dT && m!==dB && m===dL;
+      };
+      const hasLeftBays = bays.length
+        ? bays.some(b=>b.gate==='right')
+        : !!(LV.layout && LV.layout.hangars && LV.layout.hangars.some(isLeft));
+      const minFx0 = hudMenu.x + hudMenu.w + 8*ui + (hasLeftBays ? bw : 0);
+      if(fx0 < minFx0){ fx0 = Math.round(minFx0); field.x0 = fx0; } }
 
     // build bays once (preserve open/level state across resize)
     // НЕОН-КОМПОЗИЦИЯ (handoff, docs/design/skins/neon/handoff/): боксы всех услуг
@@ -284,17 +317,6 @@
       }
     }
     field.rwL = rwL; field.rwR = rwR;
-
-    // «Левое меню HUD» (спрайт hud-menu.png 328×1855: кнопка паузы сверху + плашка
-    // Таймер/Валюта/Жизни). Ширину меню берём ≈66·ui (кнопка внутри ≈ спек-88px@1920,
-    // с учётом свечения по краям PNG), высота — по пропорции спрайта. Отступ от угла =
-    // safe-area (вырез) + спек-паддинг. Кнопка паузы (хит-зона) = верхний блок PNG
-    // (доли 8/1855..306/1855). Борты прилетают справа — левый-верхний угол заведомо
-    // не-интерактивный. drawHUD рисует спрайт по hudMenu и кладёт значения поверх.
-    { const menuW=66*ui, pad=18*ui;
-      const menuH=Math.round(menuW*1855/328);
-      hudMenu={ x:Math.round(safe.l+pad), y:Math.round(safe.t+pad), w:Math.round(menuW), h:menuH };
-      pauseBtn={ x:hudMenu.x, y:Math.round(hudMenu.y+menuH*8/1855), w:hudMenu.w, h:Math.round(menuH*(306-8)/1855) }; }
 
     // сервисное здание биом-карт — сверху по центру апрона, между верхними боксами;
     // отсюда выезжают спец-бригады. У классических уровней его нет.
