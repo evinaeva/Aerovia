@@ -1,7 +1,7 @@
 // ===== 09b-render-entities — draw bays, planes, the HUD, transient FX and the tutorial overlay =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
 // Provides: drawBay, drawBayUpgradePanel, drawBayGate, drawBaySnapZones, drawRunwaySnapZones, drawMotionPoints, drawNeonBay, drawPlaneRoute, drawPlane, drawPlaneCard, drawHUD, drawToast, drawEffects, drawFloaters, drawTutorial, boom, nearMiss, pulseFx, fmtTime, completeTutorial, updateTutorial.
-// Reads: 01 (ctx); 09 (rr, hexa, heart, drawPlaneBodyAt, drawPlaneShadow, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 04b (MT_META_VALUES); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
+// Reads: 01 (ctx); 09 (rr, hexa, drawPlaneBodyAt, drawPlaneShadow, drawIcon, planeScale, bSpec, BSP); 02 (COL, SPRITES, SVC); 06 (bays, runways, money, lives, served, combo, save, toast, ui…); 04 (K, LV, lvFx); 04b (MT_META_VALUES); 03 (t, fmtNum, fmtMoney); 08 (bayUpCost, comboMult, curNeed, selected, touchdown, up); 08b (dirOut); 07 (Analytics).
 
   // контур трёх стен бокса: сторона к полю (out) — открытые ворота, борт внутри виден
   function bayWalls(b: any,out: any,r: number){
@@ -558,111 +558,129 @@
 
   // Шрифт для HUD-цифр.
   const HUD_F = "'Orbitron','Fredoka',sans-serif";
-  // PNG 640×67 рисуется центрированным шириной W/2.
-  // Перевод доли x в PNG (0..1) → x на канвасе: W/4 + frac * W/2
-  // Якоря из hud_example.png: ❤ 45/640, $ 225/640, ⏱ 407/640, pause 605/640
-  const hudPx = (frac: number) => W * (0.25 + frac * 0.5);
 
-  function drawHUD(){
-    const hud=HUD_H();
-    const barH=hud+safe.t;
-    const cy=safe.t+hud/2;
-    const NEON='#27E6FF';
-    const fs=Math.round(hud*0.42);
-
-    // ── PNG по центру, 50% ширины, пропорции 640:67 сохранены ──
-    // Тёмного фона нет — HUD плавает поверх фона поля.
-    const hudImg=HANDOFF_IMG.hud;
-    const hudPngW=Math.round(W*0.5);
-    const hudPngX=Math.round((W-hudPngW)/2);
-    if(hudImg && _hiOk(hudImg)) ctx.drawImage(hudImg, hudPngX, safe.t, hudPngW, hud);
-
-    ctx.textBaseline='middle';
-
-    // ── Сердца (left-anchor в PNG x=45) ──
-    const hSp=Math.round(hud*0.50);
-    const hR=Math.round(hud*0.20);
-    const hx0=hudPx(45/640);
-    for(let i=0;i<K.START_LIVES;i++)
-      heart(hx0+i*hSp, cy, hR, i<lives?COL.life:null);
-
-    // ── Деньги (left-anchor в PNG x=225): $ + число ──
-    const mnAnchor=hudPx(225/640);
-    const moneyStr=fmtMoney(money);
-    const dolFs=Math.round(fs*0.75);
-    const dolW=Math.round(dolFs*0.65);
+  // «Левое меню HUD» (спек: левое меню, Вариант 1). Вертикальная колонка у левого
+  // края: квадратная кнопка паузы сверху + плашка из трёх блоков (Таймер → Валюта →
+  // Жизни), каждый блок = контурная иконка над значением, между блоками — тонкий
+  // разделитель (после «Жизни» его нет). Спек-размеры даны для 1920×1080 (там ui≈1.5),
+  // поэтому база = spec_px/1.5 и всё множится на ui → меню масштабируется на телефонах
+  // и держится в safe-area. Рисуется процедурно (без PNG): полупрозрачная скруглённая
+  // заливка + неоновая обводка с мягким свечением.
+  const HUD_GLOW='#59AFFF', HUD_TXT='#E6F1FF', HUD_FILL='rgba(7,16,34,0.45)', HUD_DIV='rgba(255,255,255,0.12)';
+  // скруглённый бокс меню: заливка + обводка с мягким свечением (~70% яркой версии).
+  function hudBox(x: number,y: number,w: number,h: number,r: number){
+    rr(x,y,w,h,r); ctx.fillStyle=HUD_FILL; ctx.fill();
     ctx.save();
-    ctx.shadowColor=NEON; ctx.shadowBlur=6;
-    ctx.textAlign='left';
-    ctx.fillStyle=hexa(NEON,.70); ctx.font=`700 ${dolFs}px ${HUD_F}`;
-    ctx.fillText('$', mnAnchor, cy);
-    ctx.font=`700 ${fs}px ${HUD_F}`;
-    ctx.fillStyle=money<0?COL.life:NEON;
-    ctx.fillText(moneyStr, mnAnchor+dolW+4*ui, cy);
+    ctx.lineWidth=Math.max(1.4,1.5*ui); ctx.strokeStyle=HUD_GLOW;
+    ctx.shadowColor=HUD_GLOW; ctx.shadowBlur=9*ui;
+    rr(x,y,w,h,r); ctx.stroke();
     ctx.restore();
-
-    // ── Таймер (left-anchor в PNG x=407): иконка часов + строка ──
-    const tmAnchor=hudPx(407/640);
-    const tShown=LV.objective.time?Math.max(0,LV.objective.time-gameTime):gameTime;
-    const urgent=!!(LV.objective.time&&tShown<=10);
-    const timerStr=fmtTime(tShown);
-    const clkR=Math.round(hud*0.18);
-    const clkCX=tmAnchor+clkR;
-    const clkCol=urgent?COL.life:NEON;
-    ctx.save();
-    ctx.shadowColor=clkCol; ctx.shadowBlur=5;
-    ctx.strokeStyle=clkCol; ctx.lineWidth=Math.max(1.5,clkR*0.17); ctx.lineCap='round';
-    ctx.beginPath(); ctx.arc(clkCX,cy,clkR,0,Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(clkCX,cy); ctx.lineTo(clkCX,cy-clkR*0.55); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(clkCX,cy); ctx.lineTo(clkCX+clkR*0.42,cy); ctx.stroke();
-    ctx.fillStyle=clkCol;
-    ctx.font=`700 ${fs}px ${HUD_F}`;
-    ctx.textAlign='left'; ctx.fillText(timerStr, clkCX+clkR+5*ui, cy);
-    ctx.restore();
-
-    // ── Пауза (cx в PNG x=605): || в PNG; при паузе рисуем ► поверх ──
-    const pzcx=hudPx(605/640);
-    pauseBtn.x=Math.round(pzcx-pauseBtn.w/2);
-    pauseBtn.y=Math.round(cy-pauseBtn.h/2);
-    if(paused){
-      const ps=Math.round(hud*0.28);
-      ctx.save();
-      ctx.shadowColor=NEON; ctx.shadowBlur=6;
-      ctx.fillStyle=NEON;
-      ctx.beginPath();
-      ctx.moveTo(pzcx-ps, cy-ps*1.1);
-      ctx.lineTo(pzcx+ps*1.2, cy);
-      ctx.lineTo(pzcx-ps, cy+ps*1.1);
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
-    }
-
-    drawPlaneCard();
+  }
+  // контурные иконки левого меню (центр (cx,cy), радиус r) — рисуются текущими
+  // strokeStyle/fillStyle/lineWidth (их выставляет drawHUD; цвет = HUD_TXT).
+  function hudIconClock(cx: number,cy: number,r: number){
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.stroke();                            // циферблат
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx,cy-r*0.55); ctx.stroke();     // минутная стрелка
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+r*0.44,cy+r*0.1); ctx.stroke(); // часовая стрелка
+  }
+  function hudIconCoin(cx: number,cy: number,r: number){
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.stroke();                            // кольцо-монета
+    const f=ctx.font, ta=ctx.textAlign, tb=ctx.textBaseline;
+    ctx.font=`700 ${r*1.3}px ${HUD_F}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('$', cx, cy+r*0.08);                                              // $ по центру кольца
+    ctx.font=f; ctx.textAlign=ta; ctx.textBaseline=tb;
+  }
+  function hudIconHeart(cx: number,cy: number,r: number){                          // контур сердца
+    ctx.beginPath();
+    ctx.moveTo(cx, cy+r*0.62);
+    ctx.bezierCurveTo(cx-r*1.15, cy-r*0.28, cx-r*0.5, cy-r*1.02, cx, cy-r*0.28);
+    ctx.bezierCurveTo(cx+r*0.5, cy-r*1.02, cx+r*1.15, cy-r*0.28, cx, cy+r*0.62);
+    ctx.closePath(); ctx.stroke();
   }
 
-  // Отдельная кнопка паузы для noHud-композиций (кастом-уровень): HUD не рисуется,
-  // поэтому показываем самостоятельную круглую кнопку прямо в её хит-зоне (pauseBtn,
-  // которую layout() ставит в не-интерактивный верх-левый угол). Тап по ней →
-  // setPaused (см. down() в 08): пауза + меню паузы.
-  function drawCustomPauseBtn(){
-    const NEON='#27E6FF';
-    const cx=pauseBtn.x+pauseBtn.w/2, cy=pauseBtn.y+pauseBtn.h/2;
-    const r=Math.min(pauseBtn.w,pauseBtn.h)/2;
+  // Fallback-отрисовка левого меню, если спрайт hud-menu.png ещё не загрузился (или
+  // отсутствует) — рисуем всё процедурно: коробка кнопки + плашка с контурными
+  // иконками и значениями. «Игра никогда не рисует пусто» (как ATLAS-фолбэк).
+  function drawHudProcedural(){
+    const R=9*ui, gap=12*ui;                             // радиус скругления, зазор кнопка↔панель
     ctx.save();
-    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
-    ctx.fillStyle='rgba(10,16,28,.70)'; ctx.fill();
-    ctx.lineWidth=Math.max(1.5,r*0.10); ctx.strokeStyle=hexa(NEON,.85);
-    ctx.shadowColor=NEON; ctx.shadowBlur=8; ctx.stroke();
-    ctx.shadowBlur=6; ctx.fillStyle=NEON;
-    if(paused){
-      const ps=r*0.45;
-      ctx.beginPath(); ctx.moveTo(cx-ps*0.8,cy-ps); ctx.lineTo(cx+ps,cy); ctx.lineTo(cx-ps*0.8,cy+ps); ctx.closePath(); ctx.fill();
-    } else {
-      const bw=r*0.26, bh=r*0.92, gap=r*0.24;
-      rr(cx-gap-bw, cy-bh/2, bw, bh, bw*0.4); ctx.fill();
-      rr(cx+gap,    cy-bh/2, bw, bh, bw*0.4); ctx.fill();
+    ctx.textBaseline='middle'; ctx.textAlign='center';
+
+    // ── Кнопка паузы (коробка; хит-зона pauseBtn задаётся layout в 06) ──
+    const bx=pauseBtn.x, by=pauseBtn.y, bw=pauseBtn.w, bh=pauseBtn.h;
+    const pcx=bx+bw/2, pcy=by+bh/2;
+    hudBox(bx,by,bw,bh,R);
+    ctx.save();
+    ctx.shadowColor=HUD_GLOW; ctx.shadowBlur=7*ui; ctx.fillStyle=HUD_TXT;
+    if(paused){                                          // ► play
+      const s=bh*0.22;
+      ctx.beginPath(); ctx.moveTo(pcx-s*0.8,pcy-s); ctx.lineTo(pcx+s,pcy); ctx.lineTo(pcx-s*0.8,pcy+s); ctx.closePath(); ctx.fill();
+    } else {                                             // ‖ pause
+      const barW=bw*0.11, barH=bh*0.34, g=bw*0.10;
+      rr(pcx-g-barW, pcy-barH/2, barW, barH, barW*0.4); ctx.fill();
+      rr(pcx+g,      pcy-barH/2, barW, barH, barW*0.4); ctx.fill();
     }
     ctx.restore();
+
+    // ── Панель показателей (центрирована под кнопкой, ниже с зазором) ──
+    const pw=64*ui, ph=287*ui;                           // 96×430 @1920 → /1.5·ui
+    const px=Math.round(pcx-pw/2), py=Math.round(by+bh+gap);
+    hudBox(px,py,pw,ph,R);
+
+    // значения блоков
+    const tShown=LV.objective.time?Math.max(0,LV.objective.time-gameTime):gameTime;
+    const urgent=!!(LV.objective.time&&tShown<=10);
+    const cx=px+pw/2, blockH=ph/3, iconR=8*ui, valFs=12*ui, lw=Math.max(1.4,1.7*ui);
+
+    // блок: контурная иконка сверху + значение снизу; под блоком (кроме последнего) — разделитель.
+    const block=(i: number, drawIco: (cx: number,cy: number,r: number)=>void, val: string, col: string, glow: string)=>{
+      const top=py+i*blockH, iy=top+blockH*0.37, vy=top+blockH*0.72;
+      ctx.save();
+      ctx.shadowColor=glow; ctx.shadowBlur=6*ui;
+      ctx.strokeStyle=HUD_TXT; ctx.fillStyle=HUD_TXT; ctx.lineWidth=lw; ctx.lineCap='round'; ctx.lineJoin='round';
+      drawIco(cx,iy,iconR);
+      ctx.font=`600 ${valFs}px ${HUD_F}`; ctx.fillStyle=col; ctx.textAlign='center';
+      ctx.fillText(val, cx, vy);
+      ctx.restore();
+      if(i<2){                                           // разделительная линия под блоком (без свечения)
+        ctx.strokeStyle=HUD_DIV; ctx.lineWidth=Math.max(1,0.8*ui);
+        ctx.beginPath(); ctx.moveTo(px+10*ui, top+blockH); ctx.lineTo(px+pw-10*ui, top+blockH); ctx.stroke();
+      }
+    };
+    block(0, hudIconClock, fmtTime(tShown),           urgent?COL.life:HUD_TXT, urgent?COL.life:HUD_GLOW);
+    block(1, hudIconCoin,  fmtMoney(money),           money<0?COL.life:HUD_TXT, HUD_GLOW);
+    block(2, hudIconHeart, String(Math.max(0,lives)), HUD_TXT,                  HUD_GLOW);
+
+    ctx.restore();
+  }
+
+  // Основная отрисовка левого меню: спрайт hud-menu.png (кнопка + плашка + иконки +
+  // разделители запечены) рисуется одним куском по hudMenu, а «живые» значения
+  // (таймер / деньги / жизни — в PNG НЕ запечены) кладём поверх по вертикальным
+  // якорям (доли высоты спрайта = центры стёртых числовых зон исходника 328×1855).
+  function drawHudSprite(){
+    const m=hudMenu;
+    ctx.drawImage(HANDOFF_IMG.hudMenu as CanvasImageSource, m.x, m.y, m.w, m.h);
+    const tShown=LV.objective.time?Math.max(0,LV.objective.time-gameTime):gameTime;
+    const urgent=!!(LV.objective.time&&tShown<=10);
+    const cx=m.x+m.w/2, fs=Math.round(m.h*0.040);
+    ctx.save();
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`600 ${fs}px ${HUD_F}`;
+    const val=(f: number, s: string, col: string, glow: string)=>{
+      ctx.fillStyle=col; ctx.shadowColor=glow; ctx.shadowBlur=fs*0.5;
+      ctx.fillText(s, cx, m.y+m.h*f);
+    };
+    val(0.3876, fmtTime(tShown),           urgent?COL.life:HUD_TXT, urgent?COL.life:HUD_GLOW); // Таймер
+    val(0.6553, fmtMoney(money),           money<0?COL.life:HUD_TXT, HUD_GLOW);                // Валюта
+    val(0.9116, String(Math.max(0,lives)), HUD_TXT,                 HUD_GLOW);                 // Жизни
+    ctx.restore();
+  }
+
+  // Диспетчер: спрайт если загружен, иначе процедурный фолбэк; карта борта — поверх обоих.
+  function drawHUD(){
+    if(_hiOk(HANDOFF_IMG.hudMenu)) drawHudSprite();
+    else drawHudProcedural();
+    drawPlaneCard();
   }
 
   function fmtTime(s: number){ const m=String(Math.floor(s/60)).padStart(2,'0'); const ss=String(Math.floor(s%60)).padStart(2,'0'); return m+':'+ss; }

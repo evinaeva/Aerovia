@@ -249,11 +249,7 @@ function drawMenuScene(tm: number){
       drawEffects(dt);            _pseg('fx');
       vignette();                 _pseg('vignette');
       drawFloaters(dt);           _pseg('floaters');
-      if(hudHidden()){          // кампания / бонус / свой уровень — чистая композиция без HUD
-        drawCustomPauseBtn();   // HUD спрятан, но кнопка паузы нужна — рисуем её отдельно
-      } else {
-        drawHUD();              // выживание (биом-карты) — полный HUD (жизни/счёт/таймер)
-      }
+      drawHUD();                // «левое меню»: кнопка паузы + плашка Таймер/Валюта/Жизни — на всех сценах
       if(tut) drawTutorial();   // тихий туториал — независимо от HUD (только в кампании при первом запуске)
       if(toast){ toast.t+=dt; if(toast.t>2.4) toast=null; else drawToast(); }
       _pseg('hud');
