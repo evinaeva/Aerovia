@@ -58,27 +58,30 @@
 Всё, что реально держит публикацию в Google Play. По возможности параллелить, но без этого не
 выкатываемся.
 
-- ⚠️ **Вернуть окно согласия на аналитику.** Показ баннера временно отключён (закомментирован
-  `show()` в [`12d-consent.ts`](../src/game/12d-consent.ts), `ConsentBanner.init()`). Логика цела,
-  согласие пока `false`. Перед публикацией — раскомментировать `show()`
-  и проверить показ/принятие/отказ. **Сложность:** низкая. (analytics.md)
-  - **Гейт нативного Firebase — КОД ГОТОВ (PR #399), осталось только включить баннер и проверить сборкой.**
-    Нативные **Firebase Analytics / Crashlytics / Performance** теперь **выключены по умолчанию**
-    (meta-data манифеста `firebase_{analytics,crashlytics,performance}_collection_enabled=false` в
-    [`setup-android.mjs`](../scripts/setup-android.mjs)) и включаются только по согласию:
-    `Analytics.setConsent()` → нативный `FirebaseAnalyticsPlugin.setCollectionEnabled()` (все три SDK).
-    Это делает «Optional» в Data Safety правдой и убирает сбор до consent (важно для EU). **Осталось:**
-    (1) вернуть баннер (`show()` выше) — без него сбор вообще не включится; (2) проверить release-сборкой,
-    что meta-data в merged-манифесте на месте и сбор стартует только после «Принять» (см. смоук R8 ниже).
-    **Сложность:** низкая.
+- ✅ **Окно согласия возвращено и проверено на устройстве (2026-07-02, Pixel 9, Android 16).** `show()` в
+  [`12d-consent.ts`](../src/game/12d-consent.ts) раскомментирован (`ConsentBanner.init()` показывает баннер на
+  первом запуске). На устройстве прогнаны все три состояния:
+  - **до выбора** — сбор выключен (`I/FA: App measurement disabled via the manifest`,
+    `deferred collection: true`, `Event not sent since app measurement is disabled`);
+  - **«Принять»** — мост зовёт `FirebaseAnalyticsPlugin.setCollectionEnabled({enabled:true})` →
+    `Setting app measurement enabled (FE): true` → летят отложенные `first_open`/`session_start`/`attribution`;
+  - **«Нет»** — мост зовёт `setCollectionEnabled({enabled:false})`, сбор остаётся выключен.
+
+  Гейт нативного Firebase (PR #399) работает как задумано — «Optional» в Data Safety правдива, сбора до
+  согласия нет. **Осталось только:** подтвердить то же на **release-сборке с R8** (meta-data в merged-манифесте +
+  старт сбора лишь после «Принять» — см. смоук R8 ниже). **Сложность:** низкая. (analytics.md, play-data-safety.md)
 - ⚠️ **Подписанный AAB + закрытое тестирование.** Собрать подписанный AAB (нужен **release
   keystore**), загрузить в Play Console; закрытый трек **≥12 человек, 14 дней**. Developer-аккаунт
   верифицирован (2026-06-15). Чек-лист — [`capacitor-android.md`](capacitor-android.md).
 - ⚠️ **Смоук release-сборки с R8** (Фаза 3 памяти). Конфиг включён
   ([`setup-android.mjs`](../scripts/setup-android.mjs): `minifyEnabled` + `shrinkResources` +
-  keep-правила), **но сборкой не проверялся** — в песочнице нет Android SDK. Обязательно прогнать
-  release-сборку и убедиться, что шринк не съел плагины **Snapshots** (облачные сейвы),
-  **InstallReferrer** и **FirebaseAnalytics** (мост зовёт их рефлексией). (memory-android17.md)
+  keep-правила), **но release-сборкой не проверялся** (в облачной песочнице нет Android SDK; на машине
+  овнера SDK есть — там и собирать). Обязательно прогнать release-сборку и убедиться, что шринк не съел
+  плагины **Snapshots** (облачные сейвы), **InstallReferrer** и **FirebaseAnalytics** (мост зовёт их
+  рефлексией). (memory-android17.md)
+  - Частичное подтверждение (2026-07-02): в **debug**-сборке мост уже видит все эти нативные плагины
+    (`Snapshots`/`InstallReferrer`/`FirebaseAnalytics` присутствуют в `window.Capacitor.Plugins`) — это
+    снижает риск, но R8-шринк живёт только в release build type, поэтому debug-прогон его **не заменяет**.
   - Собирать AAB **из `main` после PR #399** (иначе в бинаре старый манифест без гейта Firebase).
     В merged-манифесте проверить: присутствуют `firebase_{analytics,crashlytics,performance}_collection_enabled=false`,
     разрешение `com.google.android.gms.permission.AD_ID` на месте (держим для аналитики, декларация = «Да»),
@@ -97,11 +100,15 @@
   вторым в «Учётные данные»; на первом релизе — **staged rollout** (не 100% сразу) + **managed
   publishing**. Пере-сверить минимум Play SDK на момент подачи (`targetSdk=36` сейчас с запасом,
   минимум меняется ежегодно). Формат — AAB (не OBB). (capacitor-android.md, play-games-setup.md, play-featuring-plan.md)
-- ⚠️ **Смоук моста на устройстве при первом запуске** (см. также [Проверки на устройстве](#проверки-на-устройстве)):
-  сверить имя плагина в `window.Capacitor.Plugins` (мост ждёт `CapacitorGameConnect`) и поправить
-  [`12b-native-play-games.ts`](../src/game/12b-native-play-games.ts), если вход не срабатывает;
-  проверить содержимое `www/` (нет спрайтов → дополнить копирование в
-  [`build-www.mjs`](../scripts/build-www.mjs)). (capacitor-android.md)
+  - Проверено на устройстве (2026-07-02): PGS-вход сейчас падает с `DEVELOPER_ERROR`, т.к. debug-SHA-1
+    сборки не привязан к OAuth-клиенту. **Разблокирует** вписывание debug SHA-1 в Play Console (см.
+    [Play Games и медали](#play-games-и-медали) → Credentials).
+- ✅ **Смоук моста на устройстве — пройден (2026-07-02, Pixel 9).** `window.Capacitor.Plugins` содержит
+  `CapacitorGameConnect` под точным именем (+ `window.PFPlayGames` выставлен → `12b` прошёл проверку
+  `if(!PG) return`), а также `FirebaseAnalytics`/`Snapshots`/`InstallReferrer`/`InAppReview`/`CapacitorUpdater`.
+  55 неон-спрайтов — в `www/` и отдаются (200; несуществующий → 404), поле рисуется (канвас непустой).
+  Патчить [`12b-native-play-games.ts`](../src/game/12b-native-play-games.ts)/[`build-www.mjs`](../scripts/build-www.mjs)
+  не потребовалось. (capacitor-android.md)
 
 ---
 
@@ -313,6 +320,10 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
 - **Включить Sidekick по умолчанию** (тумблер в Play Console → Play Games Services). **Сложность:** низкая.
 - **Credentials** — вписать debug SHA-1 Capacitor-сборки (package `com.planeflow.game`); release-SHA
   из Play App Signing — позже. При тесте с другим аккаунтом — добавить его в тестеры.
+  - Проверено на устройстве (2026-07-02): без этого PGS-вход падает с `DEVELOPER_ERROR`. Debug SHA-1
+    сборки с машины овнера — `F5:CF:9B:64:09:50:A4:ED:0D:27:8F:85:3B:B7:40:DB:58:01:1E:41` (специфичен
+    для debug-ключа именно этой машины; gradle создаёт `~/.android/debug.keystore` при первой сборке,
+    так что на другой машине SHA-1 будет другим — при необходимости добавить оба).
 - (опц., не блокер) **Game Stats API** (данные под Leagues/Quests) — новый код. **Сложность:** средняя.
 - **Медали, ждущие несуществующих режимов (⏳):** 🏃 Марафонец (15 мин за заход), 📅 Идеальная
   неделя (Daily Challenge 7 дней), 🌙 Бессонная вышка (60 мин), 🔥🔥 Комбо-бог (50 чистых вылетов
@@ -331,15 +342,16 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
 **Можно/нужно до публикации:**
 - ✅ **«Healthy releases» — фиче-килсвитч без релиза** через **Firebase Remote Config** — код готов
   (нативный `RemoteConfigPlugin.java` + `12h-remote-config.ts`, флаги `survival_leaderboard`/
-  `new_achievements`, дефолты = включено). Осталось: завести ключи в RC-консоли + прогон на устройстве.
-  (play-featuring-plan.md)
+  `new_achievements`, дефолты = включено); мост и механизм проверены на устройстве (2026-07-02, см.
+  [Проверки на устройстве](#проверки-на-устройстве)). Осталось (owner): завести ключи в RC-консоли и
+  проверить реальный флип. (play-featuring-plan.md)
 - ✅ **App Links / deep links** для шеринга результата — код готов (`12i-deep-links.ts` + App Links
   intent-filter в `setup-android.mjs` + `.well-known/assetlinks.json`; шеринг кладёт deep-link в
-  `navigator.share`). Осталось: SHA-256 ключа Play App Signing в `assetlinks.json` + верификация на
-  устройстве. (play-featuring-plan.md)
+  `navigator.share`); роутинг проверен на устройстве (2026-07-02). Осталось (owner): SHA-256 ключа
+  Play App Signing в `assetlinks.json` + авто-верификация без чузера. (play-featuring-plan.md)
 - ✅ **`android:exported`** — автоматизировано в `setup-android.mjs` (явный `exported` на MainActivity +
-  аудит-таблица всех компонентов манифеста с предупреждением о пропущенных). Ручная сверка свелась к
-  чтению вывода `setup:android`. (play-featuring-plan.md)
+  аудит-таблица всех компонентов манифеста с предупреждением о пропущенных); мерж-манифест проверен на
+  устройстве (2026-07-02, 30 компонентов, чисто). Действий не требует. (play-featuring-plan.md)
 - **Пре-регистрация** в Play Console (доступна и раньше; поднимает day-1 retention/монетизацию).
   **Сложность:** низкая (без кода). (play-featuring-plan.md)
 - (опц., низкий приоритет) **VDP** (Vulnerability Disclosure Program). (play-featuring-plan.md)
@@ -370,8 +382,15 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
 
 - **Пере-снять профайлер кадра на реальном бюджетном телефоне** (цель 60 FPS). Если не хватает —
   искать резерв по факту замера, не вслепую. **Сложность:** средняя. (play-level-up-plan.md)
+  - Замер на флагмане (2026-07-02, Pixel 9, 120 Гц): rAF-петля выдаёт **120 fps, интервал 8.3 мс, 0
+    пропущенных кадров** (>16.7 мс и >33 мс — ноль). Рендер-путь чист и с запасом. **Но** это флагман —
+    пункт про **бюджетный** телефон остаётся. NB: `dumpsys gfxinfo` даёт ложные «99% janky» для WebView-canvas
+    (меряет HWUI, не композитор Chromium; `Missed Vsync: 0`) — мерить надо каденцию `requestAnimationFrame`.
 - **Memory profiler в Android Studio на длинной сессии** (спрайт-атлас, канвас-градиенты) — под
   лимиты памяти Android 17. **Сложность:** низкая (ручная). (play-level-up-plan.md)
+  - Короткий соак на устройстве (2026-07-02, `dumpsys meminfo`, Pixel 9): **утечки нет** — TOTAL PSS ровно
+    ~451 МБ через 4 цикла resize; **доминирует Graphics (~213–280 МБ)**, рабочий PSS ~450 МБ — это величина под
+    лимит Android 17. Полноценная **30-мин** профилировка в Android Studio всё ещё нужна.
 
 ---
 
@@ -398,31 +417,55 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
 - **Фаза 3 — смоук release-сборки с R8** — дубль из [Блокеров релиза](#блокеры-релиза).
 - (опц., не сделано) **Нативный хук `ApplicationExitInfo`** на старте → отправлять
   `MemoryLimiter:AnonSwap` в аналитику ([`12e-firebase-sink.ts`](../src/game/12e-firebase-sink.ts)). (memory-android17.md)
+- ✅ **Подтверждено на устройстве (2026-07-02, Pixel 9):** кап `dpr≤2` реально применяется на dpr-2.875
+  экране (backing = css×2 при любом resize); `releaseTransientMemory` работает — при уходе в фон Graphics
+  падает **280→156 МБ** (−124 МБ). Рабочий PSS ~450 МБ (Graphics доминирует), без OOM-килла за сессию —
+  см. [Производительность](#производительность-и-рендер).
 
 ---
 
 ## Проверки на устройстве
 
-Код готов — нужен реальный телефон (в песочнице нет Android SDK). Многое пересекается с блокерами.
+Код готов — нужен реальный телефон (в облачной песочнице нет Android SDK; на машине овнера — есть).
+Многое пересекается с блокерами.
+
+> **Прогон на устройстве 2026-07-02** (Pixel 9, Android 16, 120 Гц; debug-APK, собранный с машины овнера
+> `build:www → cap add android → setup:android → cap sync → gradlew assembleDebug`, JBR 21). **Пройдено:**
+> смоук моста, кнопка «назад», жизненный цикл pause/resume, resize-пропорции, отсутствие крашей/ANR/OOM
+> за сессию, `releaseTransientMemory` и кап `dpr≤2` на железе, гейт Firebase + баннер согласия (детали — в
+> [Блокерах](#блокеры-релиза) и [Производительности](#производительность-и-рендер)). **Осталось
+> внешне-заблокированное:** PGS (SHA-1 в Play Console), 2 устройства для сейвов, трек Play для in-app review,
+> release-подпись для R8, **бюджетный** телефон для FPS/памяти.
 
 - **Облачные сейвы — тест на ДВУХ устройствах.** Сценарий «два устройства, один аккаунт» (реальный
   LWW-конфликт): A — вход, пройти пару уровней, свернуть (flush); B (тот же аккаунт) — вход, прогресс
   подтягивается (`reconcile`); новый прогресс на B → вход на A → A берёт более свежую версию (LWW).
   **Предусловие:** включить **Saved Games** в Play Console (Grow users → Play Games Services →
   Configuration → Saved Games: ON; активация до 24 ч). **Сложность:** низкая (ручная). (cloud-saves.md)
-- **Кнопка «назад» (`12f-back-button.ts`)** — прогнать на устройстве из паузы/меню/уровня после
-  `npx cap sync android` + сборки (в браузере прогнана, на устройстве — нет). (capacitor-android.md, play-featuring-plan.md)
-- **In-app review (`12g-in-app-review.ts`)** — прогнать флоу через Internal App Sharing (код готов). (play-featuring-plan.md)
-- **Жизненный цикл (`pause`/`resume`)** — возврат из Recents / после блокировки экрана / релонча
-  должен **восстанавливать состояние**, а не сбрасывать в меню. **Сложность:** низкая-средняя. (play-featuring-plan.md)
-- **Смена пропорций и resize окна** (не только поворот) — планшеты/foldables/split-screen через
-  [`06-state-layout.ts`](../src/game/06-state-layout.ts)/[`10-scene-loop.ts`](../src/game/10-scene-loop.ts):
-  риск letterbox/растяжения у fixed-playfield canvas. Плюс прогон UI/хитбоксов на планшете. **Сложность:** средняя. (play-featuring-plan.md, play-level-up-plan.md)
-- **Краши/ANR на паре реальных телефонов** (adb + logcat), особенно после включения OTA (Capgo).
-  **Сложность:** низкая (ручная). (play-level-up-plan.md)
+- ✅ **Кнопка «назад» (`12f-back-button.ts`) — проверена на устройстве (2026-07-02).** Аппаратный BACK:
+  из подменю (Настройки) → закрывает и возвращает на старт; в бою без оверлея → пауза (`pauseScreen`), а не
+  выход; в паузе → резюм (`resumeBtn`). Топовый оверлей → его собственная кнопка «назад», как задумано.
+  (capacitor-android.md, play-featuring-plan.md)
+- **In-app review (`12g-in-app-review.ts`)** — прогнать флоу через Internal App Sharing (код готов; реальный
+  диалог показывается только через трек Play, на голом sideload не всплывёт). (play-featuring-plan.md)
+- ✅ **Жизненный цикл (`pause`/`resume`) — проверен на устройстве (2026-07-02).** Сворачивание играющего
+  уровня (HOME) и возврат **сохраняют сессию**: страница не перезагружается (метка в `window` уцелевала),
+  игра авто-паузится (`pauseScreen`), а не сбрасывается в меню — держится даже при «Don't keep activities»
+  (`configChanges` в манифесте обрабатывает resize/recreate без reload). Был один невоспроизведённый заход
+  в `startScreen` — за 3 повтора не повторился, как баг не фиксируется. (play-featuring-plan.md)
+- **Смена пропорций и resize окна** — *частично проверено* на устройстве (2026-07-02) через `wm size`
+  (5:4/16:9/21:9): канвас релэйаутится под каждую пропорцию, всегда заполняет вьюпорт, backing строго ×2
+  (dpr-кап держится, пикселей не растягивает), поле остаётся отрисованным, без крашей/reload
+  ([`06-state-layout.ts`](../src/game/06-state-layout.ts)/[`10-scene-loop.ts`](../src/game/10-scene-loop.ts)).
+  **Осталось глазами:** реальный split-screen/foldable/планшет — леттербокс поля рисует сам движок внутри
+  канваса, это визуальная сверка + прогон UI/хитбоксов на планшете. **Сложность:** средняя. (play-featuring-plan.md, play-level-up-plan.md)
+- **Краши/ANR** — *частично* (одно устройство): за ~7-мин сессию на Pixel 9 (2026-07-02): **ноль** FATAL/ANR/tombstone/OOM/`MemoryLimiter:AnonSwap`,
+  процесс ни разу не падал (exit-info пуст). Остаётся прогон на **паре** телефонов и особенно **после включения
+  OTA (Capgo)**. **Сложность:** низкая (ручная). (play-level-up-plan.md)
 - **Прокол рисков Play Games** — вход (тост «Welcome»), посадка/сервис/взлёт/прохождение → ачивка
   всплывает в PGS, Survival-счёт уходит в лидерборд (системный оверлей); canvas плавно рисует в
-  WebView, тач работает. Часть уже проверена на Pixel 9 (2026-06-17), пере-сверить перед релизом. (capacitor-android.md)
+  WebView, тач работает. Часть уже проверена на Pixel 9 (2026-06-17). ⚠️ Сейчас вход даёт `DEVELOPER_ERROR`
+  (нужен debug SHA-1 в Play Console — см. [Credentials](#play-games-и-медали)); пере-сверить перед релизом. (capacitor-android.md)
 - **Remote Config килсвитч** — ✅ мост + механизм килсвитча **проверены на устройстве** (debug-сборка
   2026-07-02, Pixel-класс: плагин `RemoteConfig` зарегистрирован, `PFFlags` на дефолтах = вкл;
   имитация выключения `survival_leaderboard` + событие `pf:flags` **live прячет** кнопку рейтинга,
