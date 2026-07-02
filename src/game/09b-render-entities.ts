@@ -566,9 +566,13 @@
   // поэтому база = spec_px/1.5 и всё множится на ui → меню масштабируется на телефонах
   // и держится в safe-area. Рисуется процедурно (без PNG): полупрозрачная скруглённая
   // заливка + неоновая обводка с мягким свечением.
-  const HUD_GLOW=NEON_TOKENS['hud-glow'], HUD_TXT=NEON_TOKENS['hud-text'], HUD_FILL='rgba(7,16,34,0.45)', HUD_DIV='rgba(255,255,255,0.12)';
+  // ui-glow / ui-text читаются per-draw через theme.getRole() (не снимок на загрузке),
+  // чтобы смена биома перекрашивала HUD без правки кода. На дефолтном биоме роли === прежние
+  // NEON_TOKENS['hud-glow']/['hud-text'] → цвет 1-в-1. Статичные rgba остаются модульными.
+  const HUD_FILL='rgba(7,16,34,0.45)', HUD_DIV='rgba(255,255,255,0.12)';
   // скруглённый бокс меню: заливка + обводка с мягким свечением (~70% яркой версии).
   function hudBox(x: number,y: number,w: number,h: number,r: number){
+    const HUD_GLOW=theme.getRole('ui-glow');
     rr(x,y,w,h,r); ctx.fillStyle=HUD_FILL; ctx.fill();
     ctx.save();
     ctx.lineWidth=Math.max(1.4,1.5*ui); ctx.strokeStyle=HUD_GLOW;
@@ -602,6 +606,7 @@
   // отсутствует) — рисуем всё процедурно: коробка кнопки + плашка с контурными
   // иконками и значениями. «Игра никогда не рисует пусто» (как ATLAS-фолбэк).
   function drawHudProcedural(){
+    const HUD_GLOW=theme.getRole('ui-glow'), HUD_TXT=theme.getRole('ui-text');
     const R=9*ui, gap=12*ui;                             // радиус скругления, зазор кнопка↔панель
     ctx.save();
     ctx.textBaseline='middle'; ctx.textAlign='center';
@@ -659,6 +664,7 @@
   // (таймер / деньги / жизни — в PNG НЕ запечены) кладём поверх по вертикальным
   // якорям (доли высоты спрайта = центры стёртых числовых зон исходника 328×1855).
   function drawHudSprite(){
+    const HUD_GLOW=theme.getRole('ui-glow'), HUD_TXT=theme.getRole('ui-text');
     const m=hudMenu;
     ctx.drawImage(HANDOFF_IMG.hudMenu as CanvasImageSource, m.x, m.y, m.w, m.h);
     const tShown=LV.objective.time?Math.max(0,LV.objective.time-gameTime):gameTime;

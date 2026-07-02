@@ -171,6 +171,9 @@
         <button class="t-tab" data-tab="asset-calibration">
           <span class="tab-icon">🎯</span><span>Калибровка ассетов</span>
         </button>
+        <button class="t-tab" data-tab="theme">
+          <span class="tab-icon">🌈</span><span>Тема</span>
+        </button>
       </div>
       <div id="search-wrap">
         <input id="search" placeholder="Поиск…" autocomplete="off" spellcheck="false">
@@ -640,6 +643,29 @@
       <h3>Состояние ангара <span class="h3-sub" id="skin-state-cur">по типу</span></h3>
       <div class="lab-chips" id="skin-hangar-state"></div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px"><span class="lbl-main">Точки апгрейда</span><div class="ly-seg" id="skin-hangar-pips"></div></div>
+    </div>
+  </div>
+
+  <!-- «Тема»: редактор ролей цвета по биомам. Крутит цвета семантических ролей
+       (Theme Roles) активного биома с живым превью в игровом iframe через __THEME.
+       Дефолтный «Неон» + все имеющиеся биомы; каждый стартует копией неона. -->
+  <div id="theme-view" class="lab-view">
+    <div class="lab-section">
+      <h3>Биом</h3>
+      <div class="lab-row" style="align-items:center;gap:10px;flex-wrap:wrap">
+        <select id="theme-biome" class="lab-select"></select>
+        <button type="button" class="p-btn" id="theme-reset">Сбросить на неон</button>
+        <button type="button" class="p-btn" id="theme-copy">Копировать JSON</button>
+      </div>
+      <p class="lab-hint" id="theme-hint" style="margin-top:8px">Крути цвета ролей — превью в игре меняется вживую. Токены без роли (teal/ice/rose/gold…) остаются неоновыми.</p>
+    </div>
+    <div class="lab-section">
+      <h3>Роли цвета</h3>
+      <div id="theme-roles"><span class="lab-empty">Ждём запуска игры…</span></div>
+    </div>
+    <div class="lab-section collapsible collapsed">
+      <h3>Экспорт палитры (JSON)</h3>
+      <textarea id="theme-json" class="lab-json" readonly rows="10" spellcheck="false" style="width:100%;box-sizing:border-box;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px"></textarea>
     </div>
   </div>
 

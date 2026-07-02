@@ -76,6 +76,10 @@
     return c;
   }
   function clearScaledSpriteCache(){ _ssCache.clear(); }
+  // Сброс регенерируемых рендер-кэшей, зависящих от активной темы (зовётся из theme.setBiome
+  // при смене биома). Offscreen неон-линия апрона печётся под цвет темы, а пред-масштаб
+  // спрайтов может хранить перекрашенный растр — оба пересоздаются со следующего кадра.
+  function invalidateRenderThemeCaches(){ _apronNeonCv=null; _apronNeonSig=''; _ssCache.clear(); }
 
   // иконки услуг (центр в (cx,cy), размер r)
   // ремонт = гаечный ключ (handoff NIcon.repair): открытый зев + рукоять под 45°.
@@ -345,11 +349,11 @@
     c.save();
     c.lineCap='round'; c.lineJoin='round';
     trace();                                           // 1) свечение
-    c.shadowColor=hexa(NEON_TOKENS.led,.9); c.shadowBlur=12*ui;
-    c.strokeStyle=hexa(NEON_TOKENS.led,.85); c.lineWidth=3.2*ui; c.stroke();
+    c.shadowColor=hexa(theme.getRole('structure-1'),.9); c.shadowBlur=12*ui;
+    c.strokeStyle=hexa(theme.getRole('structure-1'),.85); c.lineWidth=3.2*ui; c.stroke();
     trace();                                           // 2) яркое ядро
     c.shadowBlur=0;
-    c.strokeStyle=hexa(NEON_TOKENS['led-core'],.95); c.lineWidth=1.4*ui; c.stroke();
+    c.strokeStyle=hexa(theme.getRole('structure-2'),.95); c.lineWidth=1.4*ui; c.stroke();
     c.restore();
   }
   // Кэш неон-линии апрона: offscreen-канвас + подпись (размер + прямоугольники ангаров).
@@ -359,7 +363,8 @@
   function drawApronNeon(fx: number,fy: number,fw: number,fh: number,arc: number){
     // подпись кэша: геометрия рамки + dpr/ui + позиции/типы ангаров (округлены до пикселя)
     const sig=[fx,fy,fw,fh,arc,ui,dpr].map(n=>Math.round(n*100)).join(',')+'|'+
-      bays.map(b=>b.deice?'d':`${b.side||''}${b.gate||''}:${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.w)},${Math.round(b.h)}`).join(';');
+      bays.map(b=>b.deice?'d':`${b.side||''}${b.gate||''}:${Math.round(b.x)},${Math.round(b.y)},${Math.round(b.w)},${Math.round(b.h)}`).join(';')+'|'+
+      theme.getRole('structure-1')+theme.getRole('structure-2');   // цвет в подписи → кэш пересобирается при смене биома, а не только по геометрии
     if(sig!==_apronNeonSig || !_apronNeonCv){
       const pad=Math.ceil(16*ui);                      // запас под свечение/толщину линии
       const bx=fx-pad, by=fy-pad, bw=fw+2*pad, bh=fh+2*pad;
@@ -461,13 +466,23 @@
   function drawField(tm: number){ drawNeonField(tm); }   // единственная сцена поля — неоновая
 
   function drawRunways(tm: number){
-    const WOW_BLUE = NEON_TOKENS.led;
+    const WOW_BLUE = theme.getRole('structure-1');
+    // POC PNG gradient-map recolor (шаг 4): декоративный/повторяющийся растр ВПП красится
+    // под палитру биома. На дефолтном биоме gradientMaps пусто → getGradientMap('runway')
+    // === null → обычный drawImage, пиксель-в-пиксель как раньше. Recolor включается только
+    // у биома, задавшего 'runway'-мап (напр. будущий tropical-shore). Выбор ВПП как POC —
+    // это наименее детальный повторяющийся наземный растр (мелкий, memory-friendly для
+    // Android-17), рисуемый одним вызовом.
+    const rwGmap = theme.getGradientMap('runway');
     runways.forEach((r,i)=>{
       const rwSkin = SPRITES.zoneSkin && SPRITES.zoneSkin('runway');
       const rwHandoff = !rwSkin && _hiOk(HANDOFF_IMG.vpp);
       if(rwSkin || rwHandoff){
         const im = rwSkin || HANDOFF_IMG.vpp!;
-        ctx.save(); rr(r.x,r.y,r.w,r.h,7*ui); ctx.clip(); ctx.drawImage(im, r.x, r.y, r.w, r.h); ctx.restore();
+        ctx.save(); rr(r.x,r.y,r.w,r.h,7*ui); ctx.clip();
+        if(!(rwGmap && _hiDrawGradientMapped(im, r.x+r.w/2, r.y+r.h/2, r.w, r.h, 0, rwGmap)))
+          ctx.drawImage(im, r.x, r.y, r.w, r.h);
+        ctx.restore();
         if(r.closed){
           const cx=r.x+r.w/2, s=Math.min(r.w,r.h)*0.16;
           ctx.strokeStyle=hexa(COL.life,.8); ctx.lineWidth=3.5; ctx.lineCap='round';
