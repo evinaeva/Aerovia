@@ -23,6 +23,7 @@ const A = join(ROOT, 'android');
 // Combo verified on JDK 21 + SDK 36 (tune here if the toolchain moves):
 const AGP = '8.7.2', GRADLE = '8.9', COMPILE_SDK = 36, TARGET_SDK = 36, MIN_SDK = 23;
 const PGS_APP_ID = '533472253687'; // docs/play-games-setup.md
+const APP_LINK_HOST = 'planeflow.jevgenia.com'; // домен сайта (CNAME) — App Links для deep-link шеринга
 const APP_VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version; // Android versionName = эта версия (база сравнения Capgo OTA)
 
 const MAIN_ACTIVITY = `package com.planeflow.game;
@@ -42,6 +43,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(InstallReferrerPlugin.class);
         registerPlugin(FirebaseAnalyticsPlugin.class);
         registerPlugin(InAppReviewPlugin.class);
+        registerPlugin(RemoteConfigPlugin.class);
         super.onCreate(savedInstanceState);
         hideSystemBars();
     }
@@ -294,6 +296,75 @@ public class InAppReviewPlugin extends Plugin {
 }
 `;
 
+// Тонкий мост к Firebase Remote Config — «healthy releases»: фиче-килсвитч без релиза
+// (docs/play-featuring-plan.md, Technical Quality). JS видит его как
+// window.Capacitor.Plugins.RemoteConfig (метод fetchAndActivate) — см. src/game/12h-remote-config.ts.
+// Тот же Firebase-проект, что Analytics/Crashlytics — новый консольный сетап не нужен, только
+// ещё одна зависимость (firebase-config) на уже подключённый google-services.json.
+//
+// Контракт: fetchAndActivate({defaults:{key:'true'|'false'}, minIntervalSeconds?:number}) →
+// {values:{key:stringValue,…}}. Дефолты задаёт JS (единый источник истины — DEFAULTS в 12h),
+// нативная часть их только регистрирует, тянет свежие с сервера и активирует. На вебе плагина
+// нет → 12h остаётся на дефолтах (все фичи включены). Сбор данных Remote Config не открывает
+// (это доставка конфига, а не аналитика) — килсвитч обязан работать и ДО согласия на аналитику.
+const REMOTE_CONFIG_PLUGIN = `package com.planeflow.game;
+
+import com.getcapacitor.JSObject;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigValue;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@CapacitorPlugin(name = "RemoteConfig")
+public class RemoteConfigPlugin extends Plugin {
+
+    @PluginMethod
+    public void fetchAndActivate(final PluginCall call) {
+        final FirebaseRemoteConfig rc;
+        try { rc = FirebaseRemoteConfig.getInstance(); }
+        catch (Exception e) { call.reject("remote config unavailable: " + e.getMessage()); return; }
+
+        // Дефолты из JS (строки 'true'/'false') — единый источник истины живёт в 12h.
+        JSObject defaults = call.getObject("defaults");
+        if (defaults != null) {
+            Map<String, Object> map = new HashMap<>();
+            java.util.Iterator<String> keys = defaults.keys();
+            while (keys.hasNext()) {
+                String k = keys.next();
+                map.put(k, defaults.optString(k, "true"));
+            }
+            rc.setDefaultsAsync(map);
+        }
+
+        // Интервал минимального фетча (сек): прод по умолчанию 3600, тест-сборка может слать 0.
+        long minInterval = call.getLong("minIntervalSeconds", 3600L);
+        rc.setConfigSettingsAsync(new FirebaseRemoteConfigSettings.Builder()
+            .setMinimumFetchIntervalInSeconds(minInterval)
+            .build());
+
+        rc.fetchAndActivate().addOnCompleteListener(task -> {
+            // Даже при неуспехе отдаём то, что есть (дефолты/прошлый кэш) — 12h переживёт любой
+            // исход, а килсвитч не должен падать из-за офлайна.
+            JSObject values = new JSObject();
+            Map<String, FirebaseRemoteConfigValue> all = rc.getAll();
+            for (Map.Entry<String, FirebaseRemoteConfigValue> e : all.entrySet()) {
+                values.put(e.getKey(), e.getValue().asString());
+            }
+            JSObject ret = new JSObject();
+            ret.put("activated", task.isSuccessful() && Boolean.TRUE.equals(task.getResult()));
+            ret.put("values", values);
+            call.resolve(ret);
+        });
+    }
+}
+`;
+
 // ProGuard/R8 keep-правила для RELEASE-шринка (Фаза 3, docs/memory-android17.md).
 // R8 в релизе минифицирует и переименовывает код; наши Capacitor-плагины мост зовёт
 // РЕФЛЕКСИЕЙ по имени класса/метода (@CapacitorPlugin / @PluginMethod), поэтому их надо
@@ -445,6 +516,13 @@ patch('app/build.gradle', (s) => {
   return out;
 });
 
+// Remote Config: та же Firebase BOM, ещё одна зависимость (для RemoteConfigPlugin выше).
+// «Healthy releases»/фиче-килсвитч без релиза (docs/play-featuring-plan.md, Technical Quality).
+patch('app/build.gradle', (s) =>
+  s.includes('firebase-config') ? s
+    : s.replace("implementation 'com.google.firebase:firebase-analytics'",
+        "implementation 'com.google.firebase:firebase-analytics'\n    implementation 'com.google.firebase:firebase-config'"));
+
 // R8 / shrink для RELEASE (docs/memory-android17.md, Фаза 3). Capacitor по умолчанию
 // ставит `minifyEnabled false`, т.е. в релизе нет ни минификации кода (R8), ни отсева
 // неиспользуемых ресурсов. Включаем оба + optimize-профиль ProGuard (full-mode R8 —
@@ -519,6 +597,30 @@ patch('app/src/main/AndroidManifest.xml', (s) => {
   log('wrote: res/xml/network_security_config.xml (cleartext disabled)');
 }
 
+// 4d) App Links (deep links) — https://<host>/… открывает приложение вместо браузера, чтобы
+// шеринг результата вёл обратно в игру (docs/play-featuring-plan.md → «App Links / deep links»;
+// роутинг разбирает src/game/12i-deep-links.ts). autoVerify=true → Android сверяет
+// /.well-known/assetlinks.json на домене (лежит в репо, публикуется на Pages) с SHA-256
+// релизного ключа; до заливки отпечатка ссылки просто открываются как обычные (не падают).
+patch('app/src/main/AndroidManifest.xml', (s) =>
+  s.includes(APP_LINK_HOST) ? s
+    : s.replace('</activity>',
+`    <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${APP_LINK_HOST}" />
+            </intent-filter>
+        </activity>`));
+
+// 4e) Явный android:exported на MainActivity (docs/play-featuring-plan.md → Privacy & Security).
+// Шаблон Capacitor его уже ставит (launcher-активити на SDK 31+ обязана быть exported), но
+// фиксируем явно — гард от регресса и предусловие App Links intent-filter выше. В ИСХОДНОМ
+// манифесте объявлена только MainActivity (компоненты плагинов подмешиваются из AAR при
+// merge), поэтому единственное вхождение android:exported — она и есть.
+patch('app/src/main/AndroidManifest.xml', (s) =>
+  /android:exported/.test(s) ? s : s.replace('<activity\n', '<activity\n            android:exported="true"\n'));
+
 // 5) Launcher icon — our art into every density, adaptive background = our image
 {
   const ICON = join(ROOT, 'assets', 'icon');
@@ -567,6 +669,11 @@ log('wrote: FirebaseAnalyticsPlugin.java (Firebase Analytics sink)');
 writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/InAppReviewPlugin.java'), IN_APP_REVIEW_PLUGIN);
 log('wrote: InAppReviewPlugin.java (Play Core In-App Review)');
 
+// 9c) Remote Config плагин — «healthy releases»/фиче-килсвитч (docs/play-featuring-plan.md,
+// Technical Quality). Мост для src/game/12h-remote-config.ts.
+writeFileSync(join(A, 'app/src/main/java/com/planeflow/game/RemoteConfigPlugin.java'), REMOTE_CONFIG_PLUGIN);
+log('wrote: RemoteConfigPlugin.java (Firebase Remote Config killswitch)');
+
 // 10) google-services.json → android/app/ (нужен Google Services Gradle plugin)
 {
   const gservices = join(ROOT, 'google-services.json');
@@ -575,6 +682,65 @@ log('wrote: InAppReviewPlugin.java (Play Core In-App Review)');
     log('copied: google-services.json → android/app/');
   } else {
     console.warn('  WARNING: google-services.json not found at repo root — Firebase Analytics won\'t build');
+  }
+}
+
+// 11) Аудит android:exported (docs/play-featuring-plan.md → Privacy & Security). Частый недосмотр
+// у Capacitor/PGS-плагинов: компонент с <intent-filter> без явного android:exported — это и
+// build-блокер на SDK 31+, и риск невольно экспортированного компонента. Печатаем таблицу всех
+// компонентов + их exported, предупреждаем о пропущенных. Полную картину даёт МЕРЖ-манифест
+// (компоненты плагинов подмешиваются из AAR при сборке) — если он уже собран, аудируем его;
+// иначе исходный (там только MainActivity) + подсказка собрать. Никогда не роняет setup.
+function componentsWithExported(xml) {
+  // опенинг-тег компонента до первого '>' (атрибуты '>' не содержат); + есть ли <intent-filter> внутри блока
+  const out = [];
+  const re = /<(activity|service|receiver|provider)\b([\s\S]*?)>/g;
+  let m;
+  while ((m = re.exec(xml)) !== null) {
+    const kind = m[1], attrs = m[2];
+    const nameM = /android:name="([^"]*)"/.exec(attrs);
+    const expM = /android:exported="([^"]*)"/.exec(attrs);
+    // блок компонента (для поиска intent-filter) — от конца опенинг-тега до закрывающего тега
+    const rest = xml.slice(re.lastIndex);
+    const close = rest.indexOf('</' + kind + '>');
+    const body = close >= 0 ? rest.slice(0, close) : '';
+    out.push({ kind, name: nameM ? nameM[1] : '(?)', exported: expM ? expM[1] : null, hasFilter: /<intent-filter/.test(body) });
+  }
+  return out;
+}
+
+function findMergedManifests(dir) {
+  const root = join(A, dir);
+  if (!existsSync(root)) return [];
+  const hits = [];
+  const walk = (d) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const p = join(d, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name === 'AndroidManifest.xml') hits.push(p);
+    }
+  };
+  try { walk(root); } catch { /* нет прав/гонка — пропускаем */ }
+  return hits;
+}
+
+{
+  const merged = findMergedManifests('app/build/intermediates/merged_manifests');
+  const src = join(A, 'app/src/main/AndroidManifest.xml');
+  const target = merged[0] || (existsSync(src) ? src : null);
+  if (!target) {
+    log('exported-аудит: манифест не найден — пропуск');
+  } else {
+    const label = merged[0] ? 'merged' : 'source (собери APK для полного аудита плагинов)';
+    const comps = componentsWithExported(readFileSync(target, 'utf8'));
+    log(`exported-аудит (${label}): ${comps.length} компонент(ов)`);
+    for (const c of comps) {
+      const flag = c.exported == null ? '  ⚠ НЕТ android:exported' : (c.exported === 'true' ? '  ← exported (проверь намеренность)' : '');
+      log(`    ${c.kind} ${c.name} · exported=${c.exported ?? '—'}${c.hasFilter ? ' · intent-filter' : ''}${flag}`);
+    }
+    const missing = comps.filter((c) => c.exported == null && c.hasFilter);
+    if (missing.length)
+      console.warn(`  WARNING: ${missing.length} компонент(ов) с intent-filter без явного android:exported — build-блокер на SDK 31+: ` + missing.map((c) => c.name).join(', '));
   }
 }
 

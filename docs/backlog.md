@@ -329,12 +329,17 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
 > [`play-level-up-plan.md`](play-level-up-plan.md) и [`play-featuring-plan.md`](play-featuring-plan.md).
 
 **Можно/нужно до публикации:**
-- **«Healthy releases» — фиче-килсвитч без релиза** через **Firebase Remote Config** для рискованных
-  фич (Survival-лидерборд, новые ачивки). **Сложность:** средняя. (play-featuring-plan.md)
-- **App Links / deep links** для шеринга результата (счёт/ачивка → ссылка обратно в игру).
-  **Сложность:** средняя. (play-featuring-plan.md)
-- **`android:exported`** явно проверить на всех компонентах сгенерированного `AndroidManifest.xml`
-  после `setup:android`. **Сложность:** низкая. (play-featuring-plan.md)
+- ✅ **«Healthy releases» — фиче-килсвитч без релиза** через **Firebase Remote Config** — код готов
+  (нативный `RemoteConfigPlugin.java` + `12h-remote-config.ts`, флаги `survival_leaderboard`/
+  `new_achievements`, дефолты = включено). Осталось: завести ключи в RC-консоли + прогон на устройстве.
+  (play-featuring-plan.md)
+- ✅ **App Links / deep links** для шеринга результата — код готов (`12i-deep-links.ts` + App Links
+  intent-filter в `setup-android.mjs` + `.well-known/assetlinks.json`; шеринг кладёт deep-link в
+  `navigator.share`). Осталось: SHA-256 ключа Play App Signing в `assetlinks.json` + верификация на
+  устройстве. (play-featuring-plan.md)
+- ✅ **`android:exported`** — автоматизировано в `setup-android.mjs` (явный `exported` на MainActivity +
+  аудит-таблица всех компонентов манифеста с предупреждением о пропущенных). Ручная сверка свелась к
+  чтению вывода `setup:android`. (play-featuring-plan.md)
 - **Пре-регистрация** в Play Console (доступна и раньше; поднимает day-1 retention/монетизацию).
   **Сложность:** низкая (без кода). (play-featuring-plan.md)
 - (опц., низкий приоритет) **VDP** (Vulnerability Disclosure Program). (play-featuring-plan.md)
@@ -418,6 +423,18 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
 - **Прокол рисков Play Games** — вход (тост «Welcome»), посадка/сервис/взлёт/прохождение → ачивка
   всплывает в PGS, Survival-счёт уходит в лидерборд (системный оверлей); canvas плавно рисует в
   WebView, тач работает. Часть уже проверена на Pixel 9 (2026-06-17), пере-сверить перед релизом. (capacitor-android.md)
+- **Remote Config килсвитч** — завести в Firebase Remote Config ключи `survival_leaderboard` и
+  `new_achievements` (Boolean), выставить `false` → на устройстве кнопка/экран рейтинга и
+  соревновательные медали исчезают без релиза; вернуть `true` → возвращаются. Код готов
+  (`12h-remote-config.ts`). **Сложность:** низкая (ручная). (play-featuring-plan.md)
+- **App Links авто-верификация** — вписать SHA-256 ключа **Play App Signing** (Play Console → App
+  Integrity) в [`.well-known/assetlinks.json`](../.well-known/assetlinks.json), задеплоить на Pages, затем на
+  устройстве: `adb shell pm verify-app-links --re-verify com.planeflow.game` + открыть
+  `https://planeflow.jevgenia.com/?screen=survival` → приложение открывается сразу на Survival, а не
+  в браузере. Прогнать и сам шеринг (карточка + ссылка). **Сложность:** низкая (ручная). (play-featuring-plan.md)
+- **`android:exported` аудит** — прочитать таблицу компонентов в выводе `npm run setup:android` на
+  реальной сборке (мерж-манифест с компонентами плагинов); убедиться, что нет `⚠ НЕТ android:exported`
+  и что `exported=true` только у MainActivity. **Сложность:** низкая (ручная). (play-featuring-plan.md)
 
 ---
 

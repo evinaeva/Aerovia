@@ -1,6 +1,6 @@
 // ===== 11-menu-ui — menus & screens (start, level select, biomes, goals, settings, leaderboard, pause), menu icons, save/load & pause wiring =====
 // One fragment of the single game IIFE (01 opens, 13 closes) — shared script scope, not ES modules.
-// Provides: showStart, showLevels, showBiomes, showGoals, showLeaderboard, openSettings, buildLevel/Biome/Bonus, startLevel, setPaused, loadGame, saveGame, resetProgress, SVGIC, applyMenuIcons, hideAllScreens, updateStartChips, goalRowsHTML.
+// Provides: showStart, showLevels, showBiomes, showGoals, showLeaderboard, openSettings, buildLevel/Biome/Bonus, startLevel, setPaused, loadGame, saveGame, resetProgress, SVGIC, applyMenuIcons, hideAllScreens, updateStartChips, applyFeatureFlags, goalRowsHTML.
 // Reads: 04 (LEVELS, LV, curBiome, curBonus, Biome, Bonus); 06 (save, bays, runways, layout, levelIdx/levelKey, survival, debug, SAVE_KEY); 03 (I18N, lang, fmtNum); 09 (heart); 07 (Leaderboard, PERIODS).
 
   function loadGame(){ try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY) || 'null') || JSON.parse(localStorage.getItem(LEGACY_SAVE_KEY) || 'null'); if(s&&typeof s==='object'){ save.unlocked=s.unlocked||1; save.best=s.best||{}; save.stars=s.stars||{}; save.lang=(s.lang&&I18N[s.lang as LangCode])?s.lang:null; save.ach=Array.isArray(s.ach)?s.ach:[]; save.stats=(s.stats&&typeof s.stats==='object')?s.stats:{}; save.sound=s.sound!==false; save.vibro=s.vibro!==false; save.eco=!!s.eco; save.tutorialDone=!!s.tutorialDone; } }catch(e){} }
@@ -182,6 +182,7 @@
   // localStorage без sign-in) — иначе у вернувшегося игрока invite() не видел бы его рекорд.
   function updateSeasonChip(){
     const chip=document.getElementById('startSeason'); if(!chip) return;
+    if(!Flags.enabled('survival_leaderboard')){ chip.classList.add('hidden'); return; }   // лидерборд выключен удалённо → и лига сезона скрыта
     let active=false, days=0;
     try{ Leaderboard.init(); if(Leaderboard.season.invite().active){ active=true; days=Leaderboard.season.daysLeft(); } }catch(e){}
     if(!active){ chip.classList.add('hidden'); return; }
@@ -189,6 +190,15 @@
     if(txt) txt.textContent=t('start.season',{n:days, unit:t('unit.days',{n:days})});
     chip.classList.remove('hidden');
     (chip as HTMLElement).onclick=()=>{ lbPeriod='season'; showLeaderboard(); };
+  }
+  // Применить фиче-флаги (Flags/Remote Config) к меню: кнопка рейтинга + сезонный чип видны,
+  // только если Survival-лидерборд включён. «Healthy releases»-килсвитч (docs/play-featuring-plan.md):
+  // фичу гасим удалённо без релиза. Зовётся на старте (13-init) и при обновлении конфига (событие
+  // 'pf:flags'). Идемпотентно; безопасно до прихода удалённого конфига (Flags отдаёт дефолт=вкл).
+  function applyFeatureFlags(){
+    const lbOn=Flags.enabled('survival_leaderboard');
+    const b=document.getElementById('leaderboardBtn'); if(b) b.classList.toggle('hidden', !lbOn);
+    updateSeasonChip();
   }
   function showStart(){ inMenu=true; hideAllScreens(); updateStartChips(); document.getElementById('startScreen')!.classList.remove('hidden'); }
   function showLevels(){ inMenu=true; renderLevels(); hideAllScreens(); document.getElementById('levelScreen')!.classList.remove('hidden'); }
