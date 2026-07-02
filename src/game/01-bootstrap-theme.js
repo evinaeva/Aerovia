@@ -43,6 +43,10 @@
   const NEON_TOKENS = {
     ink:'#070c1c', tarmac:'#0c1430', 'tarmac-2':'#0f1a3c', water:'#081024',
     phosphor:'#3ad2ff', 'cream-100':'#dff4ff',
+    // неон-подсветка покрытий: кант апрона (drawApronNeon) + рамка/LED-точки ВПП (drawRunways).
+    // Осознанно ОТЛИЧАЕТСЯ от phosphor (#3ad2ff) — не путать. 'led-core' — яркое светлое ядро,
+    // рисуемое поверх свечения канта апрона.
+    led:'#27E6FF', 'led-core':'#bfefff',
     // was #5f7bb0 — only ~4:1 vs tarmac-2, under WCAG AA's 4.5:1; matches --m-text-muted's target.
     muted:'#6f88b5',
     amber:'#ffb13b', teal:'#22e3c6', ice:'#5fd2ff', rose:'#ff4f9d',
@@ -50,6 +54,9 @@
     // neon-геймплей (handoff): праймари-зелёный (купленный апгрейд), сирень (цель/VIP),
     // тёмно-синий «сердечник» апрона — см. docs/design/skins/neon/handoff/
     green:'#5de08a', 'green-bright':'#7df0a4', purple:'#b98cff', core:'#16245e',
+    // левое меню HUD (drawHudSprite/drawHudProcedural в 09b): неон-свечение рамки и
+    // цвет значений/иконок (таймер·валюта·жизни).
+    'hud-glow':'#59AFFF', 'hud-text':'#E6F1FF',
   };
   // Активная тема: неоновые переопределения PALETTE. SPRITES/COL читают THEME.tokens,
   // поэтому перекраска одинаково ложится и на спрайты, и на процедурную отрисовку.
