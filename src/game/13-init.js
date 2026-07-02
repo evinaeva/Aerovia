@@ -89,6 +89,7 @@
   applyI18n();
   applyMenuIcons();                   // заполнить статические иконки меню (data-mic)
   updateStartChips();                 // чип звёзд на главном экране
+  applyFeatureFlags();                // фиче-флаги (Remote Config): кнопка рейтинга/сезонный чип по killswitch
   // Кнопка «Свой уровень» на старте: видна только если конструктор положил уровень
   // в localStorage (обычный игрок её не видит). Клик — играем сохранённый уровень.
   function refreshCustomLevelBtn(){
@@ -155,6 +156,13 @@
   };
   resize();
   rafId = requestAnimationFrame(frame);
+
+  // Remote Config пришёл асинхронно (12h) → перечитать флаги в меню (кнопка рейтинга/сезон).
+  try{ window.addEventListener('pf:flags', ()=>{ try{ applyFeatureFlags(); }catch(e){} }); }catch(e){}
+  // Deep link: приложение открыто по ссылке-шерингу (?screen=…) → увести на нужный экран ПОСЛЕ
+  // синхронного бута (loadGame/ACH.init выше). Веб — из текущего URL; нативный appUrlOpen висит
+  // своим слушателем в 12i-deep-links. setTimeout(0) откладывает роутинг за конец бута.
+  try{ if(typeof location!=='undefined' && location.search) setTimeout(()=>{ try{ DeepLink.handle(location.href); }catch(e){} }, 0); }catch(e){}
 
   // ---- тест-API (только при ?test=1) ----
   // Даёт тестам дотянуться до чистой логики и до путей завершения уровня без

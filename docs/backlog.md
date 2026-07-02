@@ -340,12 +340,18 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
 > [`play-level-up-plan.md`](play-level-up-plan.md) и [`play-featuring-plan.md`](play-featuring-plan.md).
 
 **Можно/нужно до публикации:**
-- **«Healthy releases» — фиче-килсвитч без релиза** через **Firebase Remote Config** для рискованных
-  фич (Survival-лидерборд, новые ачивки). **Сложность:** средняя. (play-featuring-plan.md)
-- **App Links / deep links** для шеринга результата (счёт/ачивка → ссылка обратно в игру).
-  **Сложность:** средняя. (play-featuring-plan.md)
-- **`android:exported`** явно проверить на всех компонентах сгенерированного `AndroidManifest.xml`
-  после `setup:android`. **Сложность:** низкая. (play-featuring-plan.md)
+- ✅ **«Healthy releases» — фиче-килсвитч без релиза** через **Firebase Remote Config** — код готов
+  (нативный `RemoteConfigPlugin.java` + `12h-remote-config.ts`, флаги `survival_leaderboard`/
+  `new_achievements`, дефолты = включено); мост и механизм проверены на устройстве (2026-07-02, см.
+  [Проверки на устройстве](#проверки-на-устройстве)). Осталось (owner): завести ключи в RC-консоли и
+  проверить реальный флип. (play-featuring-plan.md)
+- ✅ **App Links / deep links** для шеринга результата — код готов (`12i-deep-links.ts` + App Links
+  intent-filter в `setup-android.mjs` + `.well-known/assetlinks.json`; шеринг кладёт deep-link в
+  `navigator.share`); роутинг проверен на устройстве (2026-07-02). Осталось (owner): SHA-256 ключа
+  Play App Signing в `assetlinks.json` + авто-верификация без чузера. (play-featuring-plan.md)
+- ✅ **`android:exported`** — автоматизировано в `setup-android.mjs` (явный `exported` на MainActivity +
+  аудит-таблица всех компонентов манифеста с предупреждением о пропущенных); мерж-манифест проверен на
+  устройстве (2026-07-02, 30 компонентов, чисто). Действий не требует. (play-featuring-plan.md)
 - **Пре-регистрация** в Play Console (доступна и раньше; поднимает day-1 retention/монетизацию).
   **Сложность:** низкая (без кода). (play-featuring-plan.md)
 - (опц., низкий приоритет) **VDP** (Vulnerability Disclosure Program). (play-featuring-plan.md)
@@ -460,6 +466,24 @@ Capgo; выравнивание срезов лидерборда PGS (daily/wee
   всплывает в PGS, Survival-счёт уходит в лидерборд (системный оверлей); canvas плавно рисует в
   WebView, тач работает. Часть уже проверена на Pixel 9 (2026-06-17). ⚠️ Сейчас вход даёт `DEVELOPER_ERROR`
   (нужен debug SHA-1 в Play Console — см. [Credentials](#play-games-и-медали)); пере-сверить перед релизом. (capacitor-android.md)
+- **Remote Config килсвитч** — ✅ мост + механизм килсвитча **проверены на устройстве** (debug-сборка
+  2026-07-02, Pixel-класс: плагин `RemoteConfig` зарегистрирован, `PFFlags` на дефолтах = вкл;
+  имитация выключения `survival_leaderboard` + событие `pf:flags` **live прячет** кнопку рейтинга,
+  возврат — показывает). Осталось (owner): завести ключи `survival_leaderboard`/`new_achievements`
+  (Boolean) в Firebase Remote Config консоли, выставить `false` и проверить реальный флип на сборке.
+  **Сложность:** низкая (консоль). (play-featuring-plan.md)
+- **App Links / deep links** — ✅ роутинг **проверен на устройстве** (VIEW-intent на
+  `https://planeflow.jevgenia.com/?screen=survival` → экран Survival, `?screen=leaderboard` → экран
+  рейтинга; `appUrlOpen` → `12i-deep-links.ts` отрабатывает). Осталось (owner): вписать SHA-256 ключа
+  **Play App Signing** (Play Console → App Integrity) в
+  [`.well-known/assetlinks.json`](../.well-known/assetlinks.json), задеплоить на Pages, затем
+  `adb shell pm verify-app-links --re-verify com.planeflow.game` → ссылка открывает приложение **без
+  чузера**; прогнать сам шеринг (карточка + ссылка). **Сложность:** низкая (отпечаток + прогон). (play-featuring-plan.md)
+- **`android:exported` аудит** — ✅ **проверено на устройстве** (2026-07-02): `npm run setup:android`
+  после `assembleDebug` печатает **мерж-манифест — 30 компонентов**, ни одного `⚠ НЕТ android:exported`;
+  `exported=true` только у MainActivity (launcher + App Links, намеренно) и стандартных системных
+  компонентов (WorkManager `SystemJobService`/`DiagnosticsReceiver`, `ProfileInstallReceiver`, PGS
+  `AppShortcutsActivity`). Действий не требует. (play-featuring-plan.md)
 
 ---
 

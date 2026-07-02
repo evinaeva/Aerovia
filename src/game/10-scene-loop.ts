@@ -303,7 +303,10 @@ function drawMenuScene(tm: number){
     // Survival → счёт захода (обслуженные борта) уходит в глобальный рейтинг; место в
     // таблице открывает пороговые ранг-медали. Каркас: mock-провайдер сейчас, бэкенд потом.
     // Не-survival режимы рейтинг не трогают (кампания/бонусы остаются как есть).
-    if(currentMode()==='survival'){
+    // Фиче-килсвитч (docs/play-featuring-plan.md → «healthy releases»): глобальный рейтинг можно
+    // выключить удалённо (Flags/Remote Config) без релиза — тогда счёт не отправляем и виджет прячем.
+    const lbOn = Flags.enabled('survival_leaderboard');
+    if(currentMode()==='survival' && lbOn){
       const runScore = served;
       lastShift.survivalScore = runScore;
       // Анти-чит (клиентский, первый слой): заход с активными debug-читами
@@ -338,8 +341,8 @@ function drawMenuScene(tm: number){
     // «твоё место» — глобальный ранг (только Survival). Место приходит асинхронно из submitRun →
     // показываем заглушку-ожидание, refreshOverLeaderboard() её заменит (или покажет личный рекорд).
     const rankBox=document.getElementById('overRank')!;
-    rankBox.classList.toggle('hidden', !survival);
-    if(survival) rankBox.innerHTML='<div class="over-rank__cap">'+t('over.rankTitle')+'</div><div class="over-rank__row"><span class="muted">…</span></div>';
+    rankBox.classList.toggle('hidden', !(survival && lbOn));
+    if(survival && lbOn) rankBox.innerHTML='<div class="over-rank__cap">'+t('over.rankTitle')+'</div><div class="over-rank__row"><span class="muted">…</span></div>';
     else { rankBox.innerHTML=''; rankBox.onclick=null; }
     // снимок смены — для карточки статистики, графика и шеринга
     lastShift = {
@@ -472,9 +475,12 @@ function drawMenuScene(tm: number){
     card.toBlob(async blob=>{
       if(!blob) return;
       const file=new File([blob], 'planeflow-shift.png', {type:'image/png'});
+      // deep link обратно в игру (docs/play-featuring-plan.md → «App Links / deep links»):
+      // открытая на устройстве ссылка запускает приложение и ведёт в Survival (см. 12i-deep-links).
+      const link=DeepLink.url({screen:'survival'});
       try{
         if(navigator.canShare && navigator.canShare({files:[file]})){
-          await navigator.share({files:[file], title:t('app.name')}); return;
+          await navigator.share({files:[file], title:t('app.name'), text:t('share.text'), url:link}); return;
         }
       }catch(e){ /* отмена/нет поддержки — падаем в скачивание */ }
       const url=URL.createObjectURL(blob);

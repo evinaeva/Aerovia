@@ -14,7 +14,9 @@
       landTimes:[], types:new Set(), debug:false, time:0, given:0}; }
     newRun();
 
-    interface Def { id: string; tier: number; ic: string; prog?: (s: Record<string, number>) => number[]; pending?: boolean; comp?: boolean; hidden?: boolean; }
+    // flag?: имя фиче-флага (Flags/Remote Config). Медаль выдаётся, только если флаг включён —
+    // «healthy releases»-килсвитч для свежих/рисковых медалей без релиза (docs/play-featuring-plan.md).
+    interface Def { id: string; tier: number; ic: string; prog?: (s: Record<string, number>) => number[]; pending?: boolean; comp?: boolean; hidden?: boolean; flag?: string; }
     const defs: Def[] = [
       // --- Тир 1: лайтовые ---
       {id:'land1',   tier:1, ic:'🛬'},
@@ -60,18 +62,18 @@
       // --- Соревновательные (ранговые): пороговые НАВСЕГДА, по глобальному рейтингу.
       //     comp:true → НЕ входят в требование «Легенды» (Легенда = мастерство соло-игры,
       //     не зависит от чужих результатов и наличия сервера). См. ACH.onRank / Leaderboard. ---
-      {id:'rank_top100', tier:4, ic:'🏅', comp:true},
-      {id:'rank_top10',  tier:4, ic:'🏆', comp:true},
-      {id:'rank_1',      tier:4, ic:'👑', comp:true},
+      {id:'rank_top100', tier:4, ic:'🏅', comp:true, flag:'new_achievements'},
+      {id:'rank_top10',  tier:4, ic:'🏆', comp:true, flag:'new_achievements'},
+      {id:'rank_1',      tier:4, ic:'👑', comp:true, flag:'new_achievements'},
       // --- Лига сезона (MVP Фаза 1, план: docs/design/game-design/season-leagues.md):
       //     пороговые НАВСЕГДА бейджи дивизиона — тот же приём, что ранг-медали выше
       //     (comp:true, мимо «Легенды»). Ротирующаяся косметика сезона — ОТДЕЛЬНО, в
       //     Leaderboard.season (стор pf_season_rewards_v1), не в этом Set. ---
-      {id:'season_bronze',   tier:4, ic:'🥉', comp:true},
-      {id:'season_silver',   tier:4, ic:'🥈', comp:true},
-      {id:'season_gold',     tier:4, ic:'🥇', comp:true},
-      {id:'season_platinum', tier:4, ic:'💠', comp:true},
-      {id:'season_diamond',  tier:4, ic:'💎', comp:true},
+      {id:'season_bronze',   tier:4, ic:'🥉', comp:true, flag:'new_achievements'},
+      {id:'season_silver',   tier:4, ic:'🥈', comp:true, flag:'new_achievements'},
+      {id:'season_gold',     tier:4, ic:'🥇', comp:true, flag:'new_achievements'},
+      {id:'season_platinum', tier:4, ic:'💠', comp:true, flag:'new_achievements'},
+      {id:'season_diamond',  tier:4, ic:'💎', comp:true, flag:'new_achievements'},
       {id:'legend',  tier:4, ic:'🛐'},
       // --- Тир 5: секретные / фановые (скрыты до получения) ---
       {id:'crash10s',tier:5, ic:'💥', hidden:true},
@@ -103,6 +105,7 @@
       if(unlocked.has(id)) return;
       if(run.given>=RUN_CAP) return;
       const d=defs.find(x=>x.id===id); if(!d) return;
+      if(d.flag && !Flags.enabled(d.flag)) return;   // фиче-килсвитч: свежая/рисковая медаль выключена удалённо
       run.given++;
       unlocked.add(id); persist(); toastAch(d); mirrorAch(id);
       checkLegend();
@@ -117,6 +120,7 @@
     function giveForce(id: string){
       if(unlocked.has(id)) return;
       const d=defs.find(x=>x.id===id); if(!d) return;
+      if(d.flag && !Flags.enabled(d.flag)) return;   // фиче-килсвитч (см. give): ранг/сезон-медали выключаемы удалённо
       unlocked.add(id); persist(); toastAch(d); mirrorAch(id); checkLegend();
     }
 
