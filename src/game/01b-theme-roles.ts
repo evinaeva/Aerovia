@@ -50,6 +50,17 @@ const DEFAULT_BIOME: ThemeBiome = {
   gradientMaps: {},   // дефолт: recolor выключен → растр 1-в-1 как раньше
 };
 
+// Порядок ролей для UI-редактора (tuning.html «Тема») + обратный маппинг роль→токен.
+// ROLE_TOKEN — какой сырой NEON_TOKENS-токен несёт эта роль в дефолтном облике; нужен,
+// чтобы правка роли в редакторе перекрашивала И роль-точки (canvas), И все COL/SVG
+// использования соответствующего токена (иначе поменялись бы только 4 роль-места).
+const ROLE_KEYS = ['bg-primary','bg-secondary','structure-1','structure-2','accent-active','accent-warm','hazard','success','ui-text','ui-glow'] as const;
+const ROLE_TOKEN: Record<string, string> = {
+  'bg-primary':'ink', 'bg-secondary':'tarmac', 'structure-1':'led', 'structure-2':'led-core',
+  'accent-active':'phosphor', 'accent-warm':'amber', 'hazard':'life', 'success':'green',
+  'ui-text':'hud-text', 'ui-glow':'hud-glow',
+};
+
 // ── ThemeManager: активный биом + доступ к ролям/токенам/градиент-мапам ─────────────
 // Без фреймворков: module-level singleton в общем скоупе IIFE. Переключение биома —
 // theme.setBiome(biome); getRole() читает активный биом на каждом кадре, поэтому смена
@@ -67,6 +78,17 @@ const theme = {
   // градиент-мап для PNG-ассета в активном биоме, либо null (recolor не задан)
   getGradientMap(key: string): GradientStop[] | null {
     const g = this.activeBiome.gradientMaps; return (g && g[key]) || null;
+  },
+  // Собрать биом из переопределений ролей: берём дефолтные роли, накатываем overrides,
+  // и ПРОИЗВОДИМ tokens (через ROLE_TOKEN) — так правка роли перекрашивает и роль-точки
+  // (canvas), и все COL/SVG использования соответствующего токена. Токены без роли
+  // (teal/ice/rose/gold/muted/paper…) остаются неоновыми. Используется редактором
+  // палитры в tuning.html (__THEME.buildBiome).
+  buildBiome(name: string, roleOverrides?: Record<string, string>, gradientMaps?: Record<string, GradientStop[]>): ThemeBiome {
+    const roles = Object.assign({}, DEFAULT_BIOME.roles, roleOverrides || {});
+    const tokens = Object.assign({}, NEON_TOKENS);
+    for (const role in ROLE_TOKEN) if (roles[role]) tokens[ROLE_TOKEN[role]] = roles[role];
+    return { name: name || 'custom', tokens, roles, gradientMaps: gradientMaps || {} };
   },
   // Переключить активный биом и переинициализировать зависимые кэши.
   //  • THEME.tokens := биом.tokens → COL (процедурка) и SVG-passthrough перекрашиваются сами;

@@ -8,6 +8,7 @@
     const diffViewEl   = document.getElementById('difficulty-view');
     const assetViewEl  = document.getElementById('asset-view');
     const assetCalViewEl = document.getElementById('asset-calibration-view');
+    const themeViewEl  = document.getElementById('theme-view');
     const testViewEl   = document.getElementById('test-view');
 
     function activateTab(tab) {
@@ -22,6 +23,7 @@
       diffViewEl.style.display  = tab === 'difficulty' ? 'flex' : 'none';
       assetViewEl.style.display = tab === 'assets'     ? 'flex' : 'none';
       if (assetCalViewEl) assetCalViewEl.style.display = tab === 'asset-calibration' ? 'flex' : 'none';
+      if (themeViewEl) themeViewEl.style.display = tab === 'theme' ? 'flex' : 'none';
       if (testViewEl) testViewEl.style.display = tab === 'test' ? 'flex' : 'none';
       // «Движение» и «Сложность» встраивают #groups в свой view для единого скролла.
       if (tab === 'motion' && motionViewEl) {
@@ -56,6 +58,15 @@
       if (tab === 'assets'  && window._resourcesSync) window._resourcesSync();
       if (tab === 'asset-calibration' && window._assetCalibrationSync) window._assetCalibrationSync();
       if (tab === 'test'    && window._testSync)      window._testSync();
+      // «Тема»: как и «Ресурсы», нужен запущенный уровень (иначе видно меню, а не поле).
+      // На входе синхронизируем редактор и применяем текущую палитру; на любой ДРУГОЙ
+      // вкладке возвращаем игре дефолтный неон, чтобы превью других вкладок было «настоящим».
+      if (tab === 'theme') {
+        if (window._getPreviewMode && window._getPreviewMode() !== 'test' && window._runTestWhenReady) window._runTestWhenReady();
+        if (window._themeSync) window._themeSync();
+      } else if (window._themeResetGame) {
+        window._themeResetGame();
+      }
     }
     window._activateTab = activateTab;
     document.querySelectorAll('.t-tab').forEach(btn => {

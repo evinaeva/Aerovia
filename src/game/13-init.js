@@ -152,6 +152,12 @@
     setBiome: (b) => theme.setBiome(b),
     reset: () => theme.setBiome(DEFAULT_BIOME),
     DEFAULT_BIOME,
+    // ---- API редактора палитры (tuning.html «Тема») ----
+    ROLE_KEYS: ROLE_KEYS.slice(),                       // порядок ролей для строк редактора
+    roleDefaults: () => Object.assign({}, DEFAULT_BIOME.roles),   // снимок неон-ролей (для «сброс»)
+    buildBiome: (name, roleOverrides, gradientMaps) => theme.buildBiome(name, roleOverrides, gradientMaps),
+    // применить набор ролей как активный биом (tokens производятся автоматически) — живое превью
+    apply: (name, roleOverrides, gradientMaps) => theme.setBiome(theme.buildBiome(name, roleOverrides, gradientMaps)),
     // Тестовый биом: берём дефолтные токены/роли и ЯВНО перекрашиваем несколько ролей в
     // заведомо «ненеоновые» цвета + включаем PNG gradient-map на ВПП. Это НЕ дизайн будущего
     // tropical-shore (значения намеренно кричащие) — только чтобы глазами убедиться, что
